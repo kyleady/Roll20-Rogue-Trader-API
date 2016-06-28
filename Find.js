@@ -102,5 +102,26 @@ if(msg.type == "api" && msg.content.indexOf("!Find ") == 0){
         sendChat("System","/w " + whisperTarget + " " + LinkList[msg.playerid].length.toString() + " [More](!More) links remain.");
     }
     
+} else if(msg.type == "api" && msg.content == "!More"){
+    if(LinkList[msg.playerid] && LinkList[msg.playerid].length > 0){
+        //who are we talking to?
+        var whisperTarget = msg.who;
+        //shorten the target name to one word
+        if(whisperTarget.indexOf(" ") != -1){
+            whisperTarget = whisperTarget.substring(0,whisperTarget.indexOf(" "));
+        }
+        //only send out the first five links
+        for(i = 1; i <= 5 && LinkList[msg.playerid].length > 0; i++){
+            //whisper the Link to the sender
+            sendChat("System","/w " + whisperTarget + " " + LinkList[msg.playerid][0]);
+            //this Link has been sent. Remove it. 
+            LinkList[msg.playerid].shift();
+        }
+        //are there any Links left?
+        if(LinkList[msg.playerid].length > 0){
+            //whisper the Link to the sender
+            sendChat("System","/w " + whisperTarget + " " + LinkList[msg.playerid].length.toString() + " [More](!More) links remain.");
+        }
+    }
 }
 });
