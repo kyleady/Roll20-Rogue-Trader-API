@@ -21,7 +21,7 @@ on("chat:message", function(msg) {
         if(character == undefined){
             return sendChat(msg.who, "/w gm - character undefined.");
         }
-        //find the remaingin wounds attribute
+        //find the remaining wounds attribute
         var Woundsobjs = findObjs({
             _type: "attribute",
             _characterid: character.id,
