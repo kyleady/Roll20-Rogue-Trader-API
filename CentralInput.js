@@ -1,3 +1,93 @@
+//create a general use funciton which accepts an Attribute object and a
+//text opperator (along with an optional value). The function edits the
+//Attribute as instructed and returns the result.
+function textOperator(attriObj, operator, modifier, editMax){
+  //if no attribObj is include, exit and warn the gm
+  if(attriObj == undefined){
+    return whisper("textOperator() was used on an undefined object.")
+  }
+
+  //if no operator was included, default the query operator "?"
+  operator = operator || "?";
+  //if no modifier was included, default to 0
+  modifier = modifier || 0;
+  //if the editMax flag was not included, assume they do not want to edit the
+  //max value of the attribute
+  editMax = editMax || false;
+
+  //if the modifier was "max", use the attribute's max value
+  if(modifier.toLowerCase() == "max"){
+    modifier = attriObj.get("max");
+  } else{
+    //otherwise, be sure it is a number and not a string
+    modifier = Number(modifier);
+  }
+
+
+  //if the user did wish to edit the max value of the attribute, not that for
+  //ease of use
+  if(editMax){
+    attrProperty = "max";
+  } else {
+    //otherwise just edit the current value
+    attrProperty = "current";
+  }
+
+  //proceed based on the operator specified
+  switch(operator){
+    case "=":
+      //set the value to the modifier
+      attriObj.set(attrProperty, modifier);
+      break;
+    case "+=":
+      //add the modifier to the value
+      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) + modifier));
+      break;
+    case "-=":
+      //subtract the modifier from the value
+      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) - modifier));
+      break;
+    case "*=":
+      //multiply the value by the modifier
+      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) * modifier));
+      break;
+    case "/=":
+      //divide the value by the modifier
+      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) / modifier));
+      break;
+    case "?+":
+      //report what the value is + the modifier
+      return Math.round(Number(attriObj.get(attrProperty)) + modifier);
+      break;
+    case "?-":
+      //report what the value is - the modifier
+      return Math.round(Number(attriObj.get(attrProperty)) - modifier);
+      break;
+    case "?*":
+      //report what the value is * the modifier
+      return Math.round(Number(attriObj.get(attrProperty)) * modifier);
+      break;
+    case "?/":
+      //report what the value is * the modifier
+      return Math.round(Number(attriObj.get(attrProperty)) / modifier);
+      break;
+    default:
+      //by default, just report what the attribute is
+      return attriObj.get(attrProperty);
+      break;
+  }
+
+  //if the function has not already exited with a report AND the max value was
+  //editted, reset the current value to the max value
+  if(editMax){
+    attriObj.set("current",attriObj.get("max"));
+  }
+
+  //report what the value is now
+  return attriObj.get("current");
+}
+
+
 //create a general use function to whisper a reply to a playerid
 function whisper(content, speakingTo, speakingAs){
   //speakingAs is the character sending this message, by default this is
@@ -18,12 +108,13 @@ function whisper(content, speakingTo, speakingAs){
     if(getObj("player",speakingTo)){
       return sendChat(speakingAs, "/w \"" + getObj("player",speakingTo).get("_displayname") + "\" " + content );
     } else {
-      return sendChat(speakingAs, "/w gm Player: " + speakingTo " did not exist to receive the following message: " + content );
+      return sendChat(speakingAs, "/w gm The playerid  " + speakingTo + " was not recognized and the following msg failed to be delivered: " + content );
     }
   } else {
     return sendChat(speakingAs, "/w gm " + content );
   }
 }
+
 
 //often times players will forget to select their character when using various
 //api commands. This function searches for a default charactersheet for this
@@ -79,9 +170,9 @@ CentralInput.addCMD = function(cmdregex, cmdaction, cmdpublic){
     if(cmdregex == undefined){return whisper("A command with no regex could not be included in CentralInput.js.");}
 
     //cmdAction is the function used when the regex is found in an input.
-    //there is no default for cmdAction, if it is not found addCMD will shout
-    //a warning to the gm and quit.
-    if(cmdaction == undefined){return whisper("A command with no action could not be included in CentralInput.js.");}
+    //there is no default for cmdAction, if it is not found addCMD will shout a
+    //warning to the gm and quit.
+    if(cmdregex == undefined){return whisper("A command with no function could not be included in CentralInput.js.");}
 
     //cmdPublic is a boolean dictating if players can use the command (true) or
     //if only the gm can use the command (false)
@@ -111,7 +202,7 @@ CentralInput.input = function(msg){
       inputRecognized = true;
 
       //run the function associated with this command using the regex of the msg as the input
-      this.Commands[i].cmdAction(msg.content.match(this.Commands[i].cmdRegex,msg));
+      this.Commands[i].cmdAction(msg.content.match(this.Commands[i].cmdRegex),msg);
 
       //I will not stop searching here as multiple commands may be overlapping.
       //The gm should watch for this and correct for it.
@@ -121,9 +212,15 @@ CentralInput.input = function(msg){
   //once we have looked through the commands, warn the user if the input was not
   //recognized
   if(inputRecognized == false){
-    whisper("The command " + msg.content + " was not recognized.",msg.who);
+    whisper("The command " + msg.content + " was not recognized.", msg.playerid);
   }
 }
 
-//check every input to see if it matches a recorded command
-on("chat:message", function(msg) { CentralInput.input(msg);});
+//check every api input to see if it matches a recorded command
+on("chat:message", function(msg) {
+    //be sure the msg was an api command
+    //be sure the message came from a user
+    if(msg.type == "api" && msg.playerid && getObj("player",msg.playerid)){
+        CentralInput.input(msg);
+    }
+});

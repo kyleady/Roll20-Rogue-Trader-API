@@ -1,7 +1,6 @@
 //rolls a D100 against the designated stat and outputs the number of successes
 //takes into account corresponding unnatural bonuses
 //negative success equals the number of failures
-//
 
 //matches[0] is the same as msg.content
 //matches[1] is either "gm" or null
@@ -9,6 +8,13 @@
 //matches[3] is the sign of the modifier and is null if no modifier is included
 //matches[4] is the absolute value of the modifier and is null if no modifier is included
 function statRoll(matches, msg){
+
+    //quit early if there were no inputs
+    if(matches == undefined || msg == undefined){
+        //likely the CentralInput is attempting to test the function
+        return whisper("statRoll() was run without any inputs.");
+    }
+    log(matches)
     //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
     if(matches[1]){
         var whisperGM = "/w gm ";
@@ -18,32 +24,17 @@ function statRoll(matches, msg){
 
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
-      case "ws":
-        var statName = "WS";
-        break;
-      case "bs":
-        var statName = "BS";
-        break;
-      case "s":
-        var statName = "S";
-        break;
-      case "t":
-        var statName = "T";
-        break;
-      case "ag":
-        var statName = "Ag";
-        break;
-      case "it":
-        var statName = "It";
-        break;
-      case "wp":
-        var statName = "Wp";
-        break;
       case "pr":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
         var statName = "Per";
         break;
-      case "fe":
-        var statName = "Fe";
+      case "ws": case "bs":
+        //capitalize every letter
+        var statName = matches[2].toUpperCase();
+        break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        var statName = matches[2].replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
         break;
     }
 
@@ -67,6 +58,7 @@ function statRoll(matches, msg){
         //normally msg.selected is just a list of objectids and types of the
         //objects you have selected. If this is the case, find the corresponding
         //character objects.
+
         if(obj._type && obj._type == "graphic"){
           var graphic = getObj("graphic", obj._id);
           //be sure the graphic exists
@@ -91,7 +83,7 @@ function statRoll(matches, msg){
         if(getAttrByName(character.id, statName) != undefined){
           var stat = Number(getAttrByName(character.id, statName));
         } else {
-          return whisper(name + " does not have an attribute named " statName + ".");
+          return whisper(name + " does not have an attribute named " + statName + ".");
         }
 
         //by default, don't include the unnatural bonus
@@ -112,21 +104,23 @@ function statRoll(matches, msg){
         //only allow the gm to see the results of NPCs
         if(character.get("controlledby") == ""){
             //output the roll
-            whisper("&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[floor((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} " + unnatural_bonus);
+            whisper("&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} " + unnatural_bonus);
         } else {
             //check to see if Aging.js has been included
             //note that we are only adding in the aging penalty for player characters
-            if(Aging){
+            //if(Aging == undefined){}else{
               //add in the aging penalty
-              stat -= Aging.penalty(character.id);
-            }
+              //stat -= Aging.penalty(character.id);
+            //}
             //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
-            sendChat("player|" + msg.playerid ,whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[floor((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} {{Unnatural= [[ceil((" + unnatural_stat.toString() + ")/2)]]}}");
+            sendChat("player|" + msg.playerid ,whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
         }
     });
+
 }
+
 //adds the commands after CentralInput has been initialized
-on("ready", function(msg) {
+on("ready", function() {
   //add the stat roller function to the Central Input list as a public command
   //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
   //matches[0] is the same as msg.content
@@ -134,5 +128,5 @@ on("ready", function(msg) {
   //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
   //matches[3] is the sign of the modifier and is null if no modifier is included
   //matches[4] is the absolute value of the modifier and is null if no modifier is included
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,statRoll(),true);
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,statRoll,true);
 });
