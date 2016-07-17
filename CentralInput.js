@@ -1,3 +1,9 @@
+//create a general use function which converts text to title case (capitalize
+//the first letter of each word.)
+String.prototype.toTitleCase = function () {
+    return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
+};
+
 //create a general use funciton which accepts an Attribute object and a
 //text opperator (along with an optional value). The function edits the
 //Attribute as instructed and returns the result.
@@ -16,13 +22,15 @@ function textOperator(attriObj, operator, modifier, editMax){
   editMax = editMax || false;
 
   //if the modifier was "max", use the attribute's max value
-  if(modifier.toLowerCase() == "max"){
-    modifier = attriObj.get("max");
-  } else{
+  if(modifier && modifier.toLowerCase() == "max"){
+    modifier = Number(attriObj.get("max"));
+  //if the modifier was "current" use the attribute's current value
+  } else if(modifier && modifier.toLowerCase() == "current"){
+    modifier = Number(attriObj.get("current"));
+  }  else{
     //otherwise, be sure it is a number and not a string
     modifier = Number(modifier);
   }
-
 
   //if the user did wish to edit the max value of the attribute, not that for
   //ease of use
@@ -87,6 +95,81 @@ function textOperator(attriObj, operator, modifier, editMax){
   return attriObj.get("current");
 }
 
+
+//general use stat modifier/reporter
+//matches[0] is the same as msg.context
+//matches[1] is whether or not the user is editting the max attribute (if == "max")
+//matches[2] is the name of the Attribute
+//matches[3] is the text operator "=", "?+", "*=", etc
+//matches[4] is the sign of the modifier
+//matches[5] is the modifier (numerical or max)
+function statHandler(matches,msg){
+  //find a default character for the player if nothing was selected
+  if(msg.selected == undefined || msg.selected.length <= 0){
+    //make the seleced array include the default character
+    msg.selected = [defaultCharacter(msg.playerid)];
+    //if there is no default character, just quit
+    if(msg.selected[0] == undefined){return;}
+  }
+
+  //by default, use title case for each attribute
+  switch(matches[2].toLowerCase()){
+    case "ws": case "bs":
+      matches[2] = matches[2].toUpperCase();
+      break;
+    case "per":
+      matches[2] = "Pr";
+      break;
+    default:
+      matches[2] = matches[2].toTitleCase();
+      break;
+  }
+
+  //make the max indicator lowercase
+  matches[1] = matches[1].toLowerCase();
+
+  //work through each selected character
+  _.each(msg.selected, function(obj){
+      //normally msg.selected is just a list of objectids and types of the
+      //objects you have selected. If this is the case, find the corresponding
+      //character objects.
+
+      if(obj._type && obj._type == "graphic"){
+        var graphic = getObj("graphic", obj._id);
+        //be sure the graphic exists
+        if(graphic == undefined) {
+            return whisper("graphic undefined");
+        }
+        //be sure the character is valid
+        var character = getObj("character",graphic.get("represents"))
+        if(character == undefined){
+            return whisper("character undefined");
+        }
+      //if using a default character, just accept the default character as the
+      //the character we are working with
+      }else if(obj.get("_type") == "character") {
+        var character = obj;
+      }
+
+      //exit if the character does not have the designated attribute
+      var Attribs = findObjs({type: 'attribute', characterid: character.id, name: matches[2]});
+      if(Attribs.length <= 0){
+        //while exiting, tell the user which character did not have the Attribute
+        return whisper(character.get("name") + " does not have a(n) " + matches[2]  + " Attribute!", msg.playerid);
+      }
+
+      //show what the attribute
+      if(matches[3] == "?") {
+        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + ": " +  textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+      //show what the attribute is with given modifier
+      } else if(matches[3].indexOf("?") != -1) {
+        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + " " + matches[3].substring(1) + " " + matches[4] + matches[5] + ": " +  textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1].toLowerCase() == "max"),msg.playerid);
+      //show what the attribute is now after direct modification
+      } else{
+        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + " = " + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+      }
+  });
+}
 
 //create a general use function to whisper a reply to a playerid
 function whisper(content, speakingTo, speakingAs){
@@ -222,5 +305,5 @@ on("chat:message", function(msg) {
     //be sure the message came from a user
     if(msg.type == "api" && msg.playerid && getObj("player",msg.playerid)){
         CentralInput.input(msg);
-    }
+   }
 });

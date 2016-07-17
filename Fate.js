@@ -44,21 +44,12 @@ function fateHandler(matches,msg){
         return whisper(character.get("name") + " does not have a Fate Attribute!", msg.playerid);
       }
 
-      //if no operator was included, assume the player wanted to spend a Fate point
-      if(matches[2] == ""){
-        //be sure the player has enough fate points to spend
-        if(Number(Fate[0].get("current")) < 1){
-          whisper("You do not have enough Fate to spend.",msg.playerid);
-        } else {
-          //reduce the number of Fate Points by one and report what remains
-          return sendChat("player|" + msg.playerid, "/em - " + character.get("name") + " spends a Fate Point! (" + textOperator(Fate[0],"-=",1) + "/" + Fate[0].get("max") + ") remain.");
-        }
-      } else if(matches[2].indexOf("?") != -1) {
-        //the user is asking about their fate points, give them the report with the character name
-        whisper(character.get("name") + ": " +  textOperator(Fate[0],matches[2],matches[3] + matches[4],matches[1].toLowerCase() == "max"),msg.playerid);
-      } else{
-        //the user is modifying their fate points
-        whisper(character.get("name") + " Fate = " +  textOperator(Fate[0],matches[2],matches[3] + matches[4],matches[1].toLowerCase() == "max"),msg.playerid);
+      //be sure the player has enough fate points to spend
+      if(Number(Fate[0].get("current")) < 1){
+        return whisper("You do not have enough Fate to spend.",msg.playerid);
+      } else {
+        //reduce the number of Fate Points by one and report what remains
+        return sendChat("player|" + msg.playerid, "/em - " + character.get("name") + " spends a Fate Point! (" + textOperator(Fate[0],"-=",1) + "/" + Fate[0].get("max") + ") remain.");
       }
   });
 
@@ -66,12 +57,20 @@ function fateHandler(matches,msg){
 
 //adds the commands after CentralInput has been initialized
 on("ready",function(){
+  //lets the user quickly spend one fate point (as long as they have fate points
+  //to spend)
+  CentralInput.addCMD(/^!\s*fate\s*$/i,fateHandler,true);
+
+  //lets the user quickly view their fate points with modifiers
   //matches[0] is the same as msg.content
-  //matches[1] states wether or not we are manipulating max Fate. (|Max)
-  //matches[2] is the text operator "=", "+=", "?", "?/", etc
-  //matches[3] the sign of the numerical modifier
-  //matches[4] is the numerical modifier
-  CentralInput.addCMD(/^!\s*()\s*fate\s*(|\?\+|\?-|\?\*|\?\/)\s*(?:(|\+|-)\s*(\d*))?\s*$/i,fateHandler,true);
+  //matches[1] records that we are editing the Fate attribute
+  //matches[2] states wether or not we are manipulating max Fate. (|Max)
+  //matches[3] is the text operator "=", "+=", "?", "?/", etc
+  //matches[4] the sign of the numerical modifier
+  //matches[5] is the numerical modifier
+  CentralInput.addCMD(/^!\s*(|max)\s*(Fate)\s*(\?\+|\?-|\?\*|\?\/)\s*(?:(|\+|-)\s*(\d*|max|current))?\s*$/i,statHandler,true);
+  //similar to above, but shows the Fate Value without modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(Fate)\s*(\?)\s*$/i,statHandler,true);
   //the same function as above, but only allows the gm to directly edit the current and max fate values
-  CentralInput.addCMD(/^!\s*(|max)\s*fate\s*(=|\+=|-=|\*=|\/=)\s*(?:(|\+|-)\s*(\d*|max)\s*)?$/i,fateHandler,false);
+  CentralInput.addCMD(/^!\s*(|max)\s*(fate)\s*(=|\+=|-=|\*=|\/=)\s*(?:(|\+|-)\s*(\d*|max|current)\s*)?$/i,statHandler,false);
 });
