@@ -21,6 +21,7 @@ function textOperator(attriObj, operator, modifier, editMax){
   //max value of the attribute
   editMax = editMax || false;
 
+
   //if the modifier was "max", use the attribute's max value
   if(modifier && modifier.toLowerCase() == "max"){
     modifier = Number(attriObj.get("max"));
@@ -158,7 +159,7 @@ function statHandler(matches,msg){
         return whisper(character.get("name") + " does not have a(n) " + matches[2]  + " Attribute!", msg.playerid);
       }
 
-      //show what the attribute
+      //show the attribute
       if(matches[3] == "?") {
         whisper(character.get("name") + "\'s " + matches[1] + matches[2] + ": " +  textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
       //show what the attribute is with given modifier
