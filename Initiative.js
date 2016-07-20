@@ -6,8 +6,9 @@
 //of the tokens and accounts for Lightning Reflexes and Paranoia.
 
 //matches[0] is the same as mgs.content
-//matches[1] is the text operator
-//matches[2] is the modifier
+//matches[1] is the text operator "=", "+=", "?", "?/", etc
+//matches[2] is the sign of the modifier
+//matches[3] is the absolute value of the modifier
 
 //secondAttempt is a flag showing that this function has been attempted once
 //  before, so as to prevent an infinite loop
@@ -66,11 +67,15 @@ function initiativeHandler(matches,msg,secondAttempt){
       var graphic = getObj("graphic", obj._id);
       //be sure the graphic exists
       if(graphic == undefined) {
+          log("graphic undefined")
+          log(obj)
           return whisper("graphic undefined");
       }
       //be sure the character is valid
       var character = getObj("character",graphic.get("represents"))
       if(character == undefined){
+          log("character undefined")
+          log(graphic)
           return whisper("character undefined");
       }
     //if using a default character, just accept the default character as the
@@ -79,6 +84,24 @@ function initiativeHandler(matches,msg,secondAttempt){
     }else if(obj.get("_type") == "character") {
       //record the character
       var character = obj;
+    //if the gm just grabbed every single token on the map, you will already
+    //have the graphic objects, and will need to find the character objects.
+    }else if(obj.get("_type") == "graphic") {
+      //record the graphic
+      var graphic = obj;
+      //be sure the character is valid
+      var character = getObj("character",graphic.get("represents"))
+      if(character == undefined){
+        log("character undefined")
+        log(graphic)
+        return whisper("character undefined");
+      }
+    //if the selected object met none of the above criteria, something went
+    //wrong. Alert the gm.
+    }else{
+      log("Selected is neither a graphic nor a character.")
+      log(obj)
+      return whisper("Selected is neither a graphic nor a character.");
     }
 
     //load up all the notes on the character
@@ -101,28 +124,29 @@ function initiativeHandler(matches,msg,secondAttempt){
     //...and this is our first attempt
     } else {
       //retry the program in 100 milliseconds and flag it as a second attempt
-      setTimout(initiativeHandler,100,matches,msg,true);
-      return;
+      //setTimout(initiativeHandler,100,matches,msg,true);
+      return whisper("Try again.");
     }
   }
-
 
   //work through each selected character
   _.each(msg.selected, function(obj){
       //normally msg.selected is just a list of objectids and types of the
       //objects you have selected. If this is the case, find the corresponding
       //character objects.
-
+    
+      //don't warn the gm if anything goes wrong as we have already done so when
+      //testing the notes.
       if(obj._type && obj._type == "graphic"){
         var graphic = getObj("graphic", obj._id);
         //be sure the graphic exists
         if(graphic == undefined) {
-            return whisper("graphic undefined",msg.playerid);
+            return;
         }
         //be sure the character is valid
         var character = getObj("character",graphic.get("represents"))
         if(character == undefined){
-            return whisper("character undefined",msg.playerid);
+            return;
         }
       //if using a default character, just accept the default character as the
       //the character we are working with, no need to work through tokens to
@@ -175,6 +199,20 @@ function initiativeHandler(matches,msg,secondAttempt){
           return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
 
         }
+      //if the gm just grabbed every single token on the map, you will already
+      //have the graphic objects, and will need to find the character objects.
+      }else if(obj.get("_type") == "graphic") {
+        //record the graphic
+        var graphic = obj;
+        //be sure the character is valid
+        var character = getObj("character",graphic.get("represents"))
+        if(character == undefined){
+          return;
+        }
+      //if the selected object met none of the above criteria, something went
+      //wrong. Alert the gm.
+      }else{
+        return whisper("Selected is neither a graphic or a character.");
       }
 
       //diverge based on the type of text operator specified
@@ -200,16 +238,16 @@ function initiativeHandler(matches,msg,secondAttempt){
         //modify the Initiative Bonus based on the text operator
         switch(matches[1]){
           case "?+":
-            initBonus += Number(matches[2]);
+            initBonus += Number(matches[2] + matches[3]);
             break;
           case "?-":
-            initBonus -= Number(matches[2]);
+            initBonus -= Number(matches[2] + matches[3]);
             break;
           case "?*":
-            initBonus *= Number(matches[2]);
+            initBonus *= Number(matches[2] + matches[3]);
             break;
           case "?/":
-            initBonus /= Number(matches[2]);
+            initBonus /= Number(matches[2] + matches[3]);
             break;
         }
 
@@ -227,44 +265,49 @@ function initiativeHandler(matches,msg,secondAttempt){
         var graphicListed = false;
 
         //step through the turn order
-        for(i = 0; i < turnorder.length; i++){
+        for(var index = 0; index < turnorder.length; index++){
+
             //is the token listed here?
-            if(graphic.id == turnorder[i].id){
+            if(graphic.id == turnorder[index].id){
                 //note that a graphic was found
                 graphicListed = true;
 
+                //note that this turn may no longer be in sequential order
+                turnorder[index].modified = true;
                 //edit the previous initiative roll as instructed
                 //go by the text modifier
                 switch(matches[1]){
                   case "=":
-                    turnorder[i].pr  = Number(matches[2]);
+                    turnorder[index].pr  = Number(matches[2] + matches[3]);
                     break;
                   case "+=":
-                    turnorder[i].pr += Number(matches[2]);
+                    turnorder[index].pr = Number(turnorder[index].pr) + Number(matches[2] + matches[3]);
                     break;
                   case "-=":
-                    turnorder[i].pr -= Number(matches[2]);
+                    turnorder[index].pr = Number(turnorder[index].pr) - Number(matches[2] + matches[3]);
                     break;
                   case "*=":
-                    turnorder[i].pr *= Number(matches[2]);
+                    turnorder[index].pr = Number(turnorder[index].pr) * Number(matches[2] + matches[3]);
                     break;
                   case "/=":
-                    turnorder[i].pr /= Number(matches[2]);
+                    turnorder[index].pr = Number(turnorder[index].pr) / Number(matches[2] + matches[3]);
                     break;
                 }
 
                 //round the initaitive
-                turnorder[i].pr = Math.round(turnorder[i].pr);
+                turnorder[index].pr = Math.round(turnorder[index].pr).toString();
 
                 //report the resultant initiative roll
                 //report the result to everyone if it is controlled by someone
                 if(character.get("controlledby") != ""){
-                    sendChat("System",graphic.get("name") + " rolls a [[" + turnorder[i].pr + "]] for Initiative.");
+                    sendChat("System",graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
                 } else {
                     //report the result to the gm alone if it is an NPC.
-                    whisper(graphic.get("name") + " rolls a [[" + turnorder[i].pr + "]] for Initiative.");
+                    whisper(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
                 }
+
             }
+
         }
 
         //as long as we found the character token listed at least once, we can
@@ -284,7 +327,7 @@ function initiativeHandler(matches,msg,secondAttempt){
       //is the gm overwriting the initiative roll with a specific value?
       if(matches[1] == "="){
         //the bonus is equal to the modifier
-        var initBonus = Number(matches[2]);
+        var initBonus = Number(matches[2] + matches[3]);
         //the roll is equal to 0, to preserve "!Init = modifier"
         var roll = 0;
 
@@ -301,16 +344,16 @@ function initiativeHandler(matches,msg,secondAttempt){
         //modify the initiative bonus as instructed
         switch(matches[1]){
           case "+":
-            initBonus += Number(matches[2]);
+            initBonus += Number(matches[2] + matches[3]);
             break;
           case "-":
-            initBonus -= Number(matches[2]);
+            initBonus -= Number(matches[2] + matches[3]);
             break;
           case "*":
-            initBonus *= Number(matches[2]);
+            initBonus *= Number(matches[2] + matches[3]);
             break;
           case "/":
-            initBonus /= Number(matches[2]);
+            initBonus /= Number(matches[2] + matches[3]);
             break;
         }
       }
@@ -335,33 +378,123 @@ function initiativeHandler(matches,msg,secondAttempt){
       turnObj.id = graphic.id;
       //record the total initiative roll
       turnObj.pr = initBonus + roll;
-
-      //what is the index of where we will insert the token? (-1 flags it as not having been set)
-      var initiativeIndex = -1;
-      //step through the turn order
-      for(i = 0; i < turnorder.length; i++){
-          //has this token already been included?
-          if(turnObj.id == turnorder[i].id){
-              //remove this entry
-              turnorder.splice(i,1);
-              //the array has shrunken, take a step back
-              i--;
-          //is the initiative of the new token higher AND has the initiativeIndex not been set yet?
-          } else if(turnObj.pr > turnorder[i].pr && initiativeIndex == -1){
-              //record the location in the array
-              initiativeIndex = i;
-          }
+      //record it as a string (as that is what it normally is)
+      turnObj.pr = turnObj.pr.toString();
+      //note that this turn might not be in sequential order yet
+      turnObj.modified = true;
+      //record the page id
+      turnObj._pageid = graphic.get("_pageid");
+      //step through the turn order and delete any previous initiative rolls
+      for(index = 0; index < turnorder.length; index++){
+        //has this token already been included?
+        if(turnObj.id == turnorder[index].id){
+          //remove this entry
+          turnorder.splice(index,1);
+          //the array has shrunken, take a step back
+          index--;
+        }
       }
-      //was a place found for the initiativeIndex?
-      if(initiativeIndex != -1){
-          //add the turn object in the specified location
-          turnorder.splice(initiativeIndex,0,turnObj);
-      } else {
-          //just add the turn object at the end
-          turnorder.push(turnObj);
-      }
+      //Add the turnObj to the turn order. We will care about sequential order later
+      turnorder.push(turnObj);
   });
-  Campaign().set("turnorder", JSON.stringify(turnorder));
+
+  //make a turn order that is in sequential order
+  var finalturnorder = [];
+
+  //start by adding every trun that was not modified
+  for(var index = 0; index < turnorder.length; index++){
+    //if no modified attribute was added to the turn, then it was not modified
+    if(turnorder[index].modified == undefined){
+      //keep adding them one after the other, this will retain their original order
+      finalturnorder.push(turnorder[index]);
+    }
+  }
+  
+  //next, add the turns that were modified, but be sure to place them in order
+  for(var index = 0; index < turnorder.length; index++){
+    //if no modified attribute was added to the turn, then it was not modified
+    if(turnorder[index].modified){
+      //remove modified note from this turn, we no longer need it
+      turnorder[index].modified = undefined;
+      //create a flag to determine if we added the turn in the for loop
+      var turnAdded = false;
+      //step through the sequential turn order
+      for(var index2 = 0; index2 < finalturnorder.length; index2++){
+        //does the turn we are inserting (turnorder[index]) have greater initiative than the currently examined turn (finalturnorder[index2])?
+        if(Number(turnorder[index].pr) > Number(finalturnorder[index2].pr)){
+          //note that we are adding the turn
+          turnAdded = true;
+          //insert the modified turn here
+          finalturnorder.splice(index2,0,turnorder[index]);
+          //the turn has been inserted, break out of the search for a place to insert it
+          break;
+        //is their initiative the same?
+        } else if(Number(turnorder[index].pr) == Number(finalturnorder[index2].pr)){
+          //be sure the tokens represent characters
+          var challengerAg = undefined;
+          var championAg = undefined;
+          var challengerCharacter = undefined;
+          var championCharacter = undefined;
+          var challengerGraphic = getObj("graphic",turnorder[index].id);
+          var championGraphic = getObj("graphic",finalturnorder[index2].id);
+          //only search for the linked characters if the tokens exist
+          if(challengerGraphic != undefined && championGraphic != undefined){
+            challengerCharacter = getObj("character",challengerGraphic.get("represents"));;
+            championCharacter = getObj("character",championGraphic.get("represents"));
+          }
+          //only load up the Ag/Detection if the characters exist
+          if(challengerGraphic != undefined && championGraphic != undefined){
+            challengerAg = findObjs({
+              _type: "attribute",
+              _characterid: challengerGraphic.get("represents"),
+              name: "Ag"
+            })[0];
+            championAg = findObjs({
+              _type: "attribute",
+              _characterid: championGraphic.get("represents"),
+              name: "Ag"
+            })[0];
+            //the character may not have an Agility attribute, try Detection
+            if(challengerAg == undefined){
+              challengerAg = findObjs({
+                _type: "attribute",
+                _characterid: challengerGraphic.get("represents"),
+                name: "Detection"
+              })[0];
+            }
+            //the character may not have an Agility attribute, try Detection
+            if(championAg == undefined){
+              championAg = findObjs({
+                _type: "attribute",
+                _characterid: championGraphic.get("represents"),
+                name: "Detection"
+              })[0];
+            }
+          }
+          //if actual values were found for Ag/Detection for both of them, compare the two
+          if(championAg != undefined && challengerAg != undefined){
+            //if the challenger has greater agility (or == and rolling a 2 on a D2)
+            if(challengerAg.get("current") > championAg.get("current")
+            || challengerAg.get("current") == championAg.get("current") && randomInteger(2) == 1){
+              //the challenger has just barely edged ahead in initiative order
+              //note that we are adding the turn
+              turnAdded = true;
+              //insert the modified turn here
+              finalturnorder.splice(index2,0,turnorder[index]);
+              //the turn has been inserted, break out of the search for a place to insert it
+              break;
+            }
+          }
+        }
+      }
+      //if the turn wasn't added anywhere, just throw it on the end
+      if(turnAdded == false){
+        //just throw them onto the end
+        finalturnorder.push(turnorder[index]);
+      }
+    }
+  }
+  Campaign().set("turnorder", JSON.stringify(finalturnorder));
 }
 
 //used inside initiativeHandler() multiple times, this calculates the bonus
@@ -417,3 +550,21 @@ function calcInitBonus(charObj){
     return undefined;
   }
 }
+
+//adds the commands after CentralInput has been initialized
+on("ready",function(){
+  //matches[0] is the same as msg.content
+  //matches[1] is the text operator "=", "+=", "?", "?/", etc
+  //matches[2] is the sign of the modifier
+  //matches[3] is the absolute value of the modifier
+
+  //lets the user quickly view their initiative bonus with modifiers
+  CentralInput.addCMD(/^!\s*init\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler,true);
+  //same as above, except this is a querry without any modifiers
+  CentralInput.addCMD(/^!\s*init\s*(\?)()()$/i,initiativeHandler,true);
+
+  //similar to above, but allows the gm to roll and edit initiative with modifiers
+  CentralInput.addCMD(/^!\s*init\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
+  //similar to above, but allows the gm to roll and edit initiative without modifiers
+  CentralInput.addCMD(/^!\s*init\s*()()()$/i,initiativeHandler);
+});
