@@ -985,7 +985,7 @@
                 }
                 
                 //add in random traits due to the Xenos Base
-                for(i = 0; i < 2; i++){
+                for(var i = 0; i < 2; i++){
                     switch(XenosBase){
                         case 'avian': 
                             switch(randomInteger(10)){

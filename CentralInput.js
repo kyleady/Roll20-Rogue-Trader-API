@@ -230,7 +230,7 @@ function defaultCharacter(playerid){
     //report that there are too many candidates to choose from
     whisper("Too many default character candidates were found for " + getObj("player",playerid).get("_displayname") + ". Please refer to the api output console for a full listing of those characters");
     log("Too many default character candidates for "  + getObj("player",playerid).get("_displayname") + ".")
-    for(i = 0; i < candidateCharacters.length; i++){
+    for(var i = 0; i < candidateCharacters.length; i++){
       log("(" + (i+1) + "/" + candidateCharacters.length + ") " + candidateCharacters[i].get("name"))
     }
   }
@@ -277,7 +277,7 @@ CentralInput.input = function(msg){
   var inputRecognized = false;
 
   //step through every Command, testing each one
-  for(i = 0; i < this.Commands.length; i++){
+  for(var i = 0; i < this.Commands.length; i++){
     //is the msg recognized by this command?
     //AND is this a public command || is the user a gm?
     if(this.Commands[i].cmdRegex.test(msg.content)

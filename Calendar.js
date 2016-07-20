@@ -217,7 +217,7 @@ function Calendar(day,month,year) {
         }
         
         //step through every piece
-        for(i = 0; i < pieces.length; i++){
+        for(var i = 0; i < pieces.length; i++){
             //look for month names in the pieces
             //stop looking once we have found a month
             for(j = 0; output["Month"] == null && j < this.MonthNames.length; j++){
@@ -501,7 +501,7 @@ function Calendar(day,month,year) {
     this.scheduleToText = function(schedule){
         var output = "";
         //step through each event in the schedule
-        for(i = 0; i < schedule.length; i++){
+        for(var i = 0; i < schedule.length; i++){
             //make a new line for this event
             output += "<br>";
             //add the date
@@ -711,7 +711,7 @@ function Calendar(day,month,year) {
         var totalDays = this.Day + this.Month*this.DaysInAMonth + this.Year*this.MonthNames.length*this.DaysInAMonth;
         //create an event object that will be defined later
         var eventObj = null;
-        for(i = 0; i < schedule.length; i++){
+        for(var i = 0; i < schedule.length; i++){
             if(schedule[i]["Day"] + schedule[i]["Month"]*this.DaysInAMonth + schedule[i]["Year"]*this.MonthNames.length*this.DaysInAMonth 
             > totalDays){
                 //setup the event Object

@@ -42,7 +42,7 @@ function XenosImport(input){
     } 
     //use : to determine the label of the line
     var label = [];
-    for(i = 0; i < line.length; i++){
+    for(var i = 0; i < line.length; i++){
         breakIndex = line[i].indexOf(":");
         //did we find a semicolin?
         if(breakIndex != -1){
@@ -68,7 +68,7 @@ function XenosImport(input){
     Xenos.Traits = "";
     Xenos.Gear = "";
     Xenos.Weapons = [];
-    for(i = 0; i < line.length; i++){
+    for(var i = 0; i < line.length; i++){
         piece = "";
         pieces = [];
         indicator = [];

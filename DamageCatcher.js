@@ -54,7 +54,7 @@ on("chat:message", function(msg) {
       
       //record the lowest damage roll
       var lowest = 10
-      for(i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
+      for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
           if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
               lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
           }

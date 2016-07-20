@@ -25,7 +25,7 @@ on("chat:message", function(msg) {
         //var AttributeList = ['WS',"BS","S","T","Ag","Per","Wp","It","Fe","Fate","Insanity","Corruption","Wounds","Fatigue","PR","Armour_H","Armour_B","Armour_RL","Armour_LL","Armour_RA","Armour_LA","Unnatural WS","Unnatural BS","Unnatural S","Unnatural T","Unnatural Ag","Unnatural Wp","Unnatural It","Unnatural Per","Unnatural Fe","Structural Integrity","Armour_F","Armour_S","Armour_R","Manoeuvrability"]
         var AttributeList = findObjs({ type: 'attribute', characterid: character.id});
         
-        for(i = 0; i < AttributeList.length; i++) {
+        for(var i = 0; i < AttributeList.length; i++) {
             //if reseting Fatigue...
             if(AttributeList[i].get("name") == "Fatigue")
             {
