@@ -6,7 +6,12 @@ String.prototype.toTitleCase = function () {
 
 //create a general use funciton which accepts an Attribute object and a
 //text opperator (along with an optional value). The function edits the
-//Attribute as instructed and returns the result.
+//Attribute as instructed and returns the result in the form of a table
+
+//if the textOperator is a querry, one table with the temporarily
+//modified attribute will be shown. If the text operator edits the
+//attribute, two tables will be shown, one of the attribute before
+//modification, the other of the attribute after modification
 function textOperator(attriObj, operator, modifier, editMax){
   //if no attribObj is include, exit and warn the gm
   if(attriObj == undefined){
@@ -38,9 +43,14 @@ function textOperator(attriObj, operator, modifier, editMax){
   if(editMax){
     attrProperty = "max";
   } else {
-    //otherwise just edit the current value
+    //otherwise just edit the current value (default)
     attrProperty = "current";
   }
+
+  //save temporary values for the current and maximum
+  var tempAttribute = [];
+  tempAttribute["current"] = Number(attriObj.get("current"));
+  tempAttribute["max"] = Number(attriObj.get("max"));
 
   //proceed based on the operator specified
   switch(operator){
@@ -65,35 +75,59 @@ function textOperator(attriObj, operator, modifier, editMax){
       attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) / modifier));
       break;
     case "?+":
-      //report what the value is + the modifier
-      return Math.round(Number(attriObj.get(attrProperty)) + modifier);
+      //edit the temporary attribute
+      tempAttribute[attrProperty] += modifier;
       break;
     case "?-":
-      //report what the value is - the modifier
-      return Math.round(Number(attriObj.get(attrProperty)) - modifier);
+      //edit the temporary attribute
+      tempAttribute[attrProperty] -= modifier;
       break;
     case "?*":
-      //report what the value is * the modifier
-      return Math.round(Number(attriObj.get(attrProperty)) * modifier);
+      //edit the temporary attribute
+      tempAttribute[attrProperty] *= modifier;
       break;
     case "?/":
-      //report what the value is * the modifier
-      return Math.round(Number(attriObj.get(attrProperty)) / modifier);
+      //edit the temporary attribute
+      tempAttribute[attrProperty] /= modifier;
       break;
-    default:
-      //by default, just report what the attribute is
-      return attriObj.get(attrProperty);
-      break;
+    //by default do not modify anything
   }
 
-  //if the function has not already exited with a report AND the max value was
-  //editted, reset the current value to the max value
+  //if the max value was editted, reset the current value to the max value
   if(editMax){
     attriObj.set("current",attriObj.get("max"));
   }
 
-  //report what the value is now
-  return attriObj.get("current");
+  //create a table to display the temporary attribte
+  //if this is just a querry, it will show the modified attribute
+  //if this is an edit, it will show the attribute before modification
+  //begin table
+  var attrTable = "<table border = \"2\" width = \"100%\">";
+  //title
+  attrTable += "<caption>" + attriObj.get("name") + "</caption>";
+  //label row - Current, Max
+  attrTable += "<tr><th>Current</th><th>Max</th></tr>";
+  //temporary attribute row (current, max)
+  attrTable += "<tr><td>" + tempAttribute["current"] + "</td><td>" + tempAttribute["max"]  + "</td></tr>";
+  //end table
+  attrTable += "</table>";
+
+  //if this is an edit, show the resultant attribute as well
+  if(operator.indexOf("=") != -1){
+      attrTable += "<table border = \"2\" width = \"100%\">";
+      //title (an arrow pointing to the result)
+      attrTable += "<caption>|</caption>";
+      attrTable += "<caption>V</caption>";
+      //label row - Current, Max
+      attrTable += "<tr><th>Current</th><th>Max</th></tr>";
+      //modified attribute row (current, max)
+      attrTable += "<tr><td>" + attriObj.get("current") + "</td><td>" + attriObj.get("max")  + "</td></tr>";
+      //end table
+      attrTable += "</table>";
+  }
+
+  //report the table
+  return attrTable;
 }
 
 
@@ -105,6 +139,8 @@ function textOperator(attriObj, operator, modifier, editMax){
 //matches[4] is the sign of the modifier
 //matches[5] is the modifier (numerical or max)
 function statHandler(matches,msg){
+  //remove any spaces from the texp operator
+  matches[3] = matches[3].replace(/ /,"");
   //find a default character for the player if nothing was selected
   if(msg.selected == undefined || msg.selected.length <= 0){
     //make the seleced array include the default character
@@ -131,45 +167,95 @@ function statHandler(matches,msg){
 
   //work through each selected character
   _.each(msg.selected, function(obj){
-      //normally msg.selected is just a list of objectids and types of the
-      //objects you have selected. If this is the case, find the corresponding
-      //character objects.
+    //normally msg.selected is just a list of ids and types of the objects you
+    //have selected. If this is the case, find the corresponding character
+    //objects.
 
-      if(obj._type && obj._type == "graphic"){
-        var graphic = getObj("graphic", obj._id);
-        //be sure the graphic exists
-        if(graphic == undefined) {
-            return whisper("graphic undefined");
-        }
-        //be sure the character is valid
-        var character = getObj("character",graphic.get("represents"))
-        if(character == undefined){
-            return whisper("character undefined");
-        }
-      //if using a default character, just accept the default character as the
-      //the character we are working with
-      }else if(obj.get("_type") == "character") {
-        var character = obj;
+    if(obj._type && obj._type == "graphic"){
+      var graphic = getObj("graphic", obj._id);
+      //be sure the graphic exists
+      if(graphic == undefined) {
+          return whisper("graphic undefined");
       }
+      //be sure the character is valid
+      var character = getObj("character",graphic.get("represents"))
+      if(character == undefined){
+          return whisper("character undefined");
+      }
+    //if using a default character, just accept the default character as the
+    //the character we are working with
+    }else if(obj.get("_type") == "character") {
+      var character = obj;
+    }
 
-      //exit if the character does not have the designated attribute
-      var Attribs = findObjs({type: 'attribute', characterid: character.id, name: matches[2]});
-      if(Attribs.length <= 0){
-        //while exiting, tell the user which character did not have the Attribute
-        return whisper(character.get("name") + " does not have a(n) " + matches[2]  + " Attribute!", msg.playerid);
-      }
+    //exit if the character does not have the designated attribute
+    var Attribs = findObjs({type: 'attribute', characterid: character.id, name: matches[2]});
+    if(Attribs.length <= 0){
+      //while exiting, tell the user which character did not have the Attribute
+      return whisper(character.get("name") + " does not have a(n) " + matches[2]  + " Attribute!", msg.playerid);
+    }
 
-      //show the attribute
-      if(matches[3] == "?") {
-        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + ": " +  textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
-      //show what the attribute is with given modifier
-      } else if(matches[3].indexOf("?") != -1) {
-        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + " " + matches[3].substring(1) + " " + matches[4] + matches[5] + ": " +  textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1].toLowerCase() == "max"),msg.playerid);
-      //show what the attribute is now after direct modification
-      } else{
-        whisper(character.get("name") + "\'s " + matches[1] + matches[2] + " = " + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+    //is the user making a querry?
+    if(matches[3].indexOf("?") != -1) {
+      //whisper the result of the querry to just the user
+      whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+    //otherwise the user is editing the attribute
+    } else{
+      //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
+      whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+      if(playerIsGM(msg.playerid) == false){
+        whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"));
       }
+    }
   });
+}
+
+//allows players to quickly view and edit attributes that represent the entire
+//party. The assumption is that only one of these attributes exists in the
+//entire campaign. It therefore searches for that attribute and works with it.
+//matches[0] is the same as msg.content
+//matches[1] is either "" or "max" for working with the max of the attribute
+//matches[2] is the name of the attribute
+//matches[3] is the text operator "=", "?+", "*=", etc
+//matches[4] is the sign of the modifier
+//matches[5] is the absolute value of the modifier
+function partyStatHandler(matches,msg){
+  //the assumption is that every attribute is written with only the first letter
+  //of each word capitalized. However, you can add exceptions here.
+  matches[2] = matches[2].toTitleCase()
+
+  //find the party attribute
+  var partyStatObjs = findObjs({
+    _type: "attribute",
+    name: matches[2]
+  });
+  //are there no which attributes which match the name matches[2]?
+  if(partyStatObjs.length <= 0){
+    //no stat to work with. alert the gm and player
+    whisper("There is nothing in the campaign with a(n) " + matches[2] + " Attribute.",msg.playerid);
+    //but don't alert the gm twice
+    if(playerIsGM(msg.playerid) == false){
+      whisper("There is nothing in the campaign with a(n) " + matches[2] + " Attribute.");
+    }
+    return;
+  //were there too many attributes that matched the name matches[2]?
+  } else if(partyStatObjs.length >= 2){
+    //warn the gm, but continue forward
+    whisper("There were multiple " + matches[2] + " attributes. Using the first one found. A log has been posted in the terminal.")
+    log(matches[2] + " Attributes")
+    log(partyStatObjs)
+  }
+
+  //make the max indicator lowercase
+  matches[1] = matches[1].toLowerCase();
+  //is the user making a querry?
+  if(matches[3].indexOf("?") != -1) {
+    whisper(textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+  //is the user modifying the public stat?
+  } else{
+    //since it is a publicly used stat, let everyone know when it is being modified
+    sendChat("player|" + msg.playerid,textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max"));
+  }
 }
 
 //create a general use function to whisper a reply to a playerid

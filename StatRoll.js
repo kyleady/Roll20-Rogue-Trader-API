@@ -128,7 +128,7 @@ on("ready", function() {
   //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
   //matches[3] is the sign of the modifier and is null if no modifier is included
   //matches[4] is the absolute value of the modifier and is null if no modifier is included
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,statRoll,true);
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,statRoll,true);
 
   //lets the user quickly view their stats with modifiers
   //matches[0] is the same as msg.content
@@ -137,9 +137,7 @@ on("ready", function() {
   //matches[3] is the text operator "=", "+=", "?", "?/", etc
   //matches[4] the sign of the numerical modifier
   //matches[5] is the numerical modifier
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?\+|\?-|\?\*|\?\/)\s*(?:(|\+|-)\s*(\d*|max|current))?\s*$/i,statHandler,true);
-  //similar to above, but shows the Fate Value without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?)\s*$/i,statHandler,true);
-  //the same function as above, but only allows the gm to directly edit the current and max fate values
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*=(|\+=|-=|\*=|\/=)\s*(?:(|\+|-)\s*(\d*|max|current)\s*)?$/i,statHandler,false);
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,statHandler,true);
+  //similar to above, but shows the attribute without modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?)\s*$/i,statHandler,true);
 });
