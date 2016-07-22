@@ -29,10 +29,10 @@ function cohesionHandler(matches,msg){
 //waits until CentralInput has been initialized
 on("ready",function(){
   //Lets anyone make a cohesion test
-  CentralInput.addCMD(/^!\s*cohesion\s*$/i, cohesionHander, true);
+  CentralInput.addCMD(/^!\s*cohesion\s*$/i, cohesionHandler, true);
 
   //Lets players freely view and edit cohesion with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(cohesion)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|+|-)\s*(\d+|current|max)\s*$/i, partyStatHander, true);
+  CentralInput.addCMD(/^!\s*(|max)\s*(cohesion)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, partyStatHander, true);
   //Lets players view cohesion without modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(cohesion)\s*(\?)()()\s*$/i, partyStatHander, true);
 

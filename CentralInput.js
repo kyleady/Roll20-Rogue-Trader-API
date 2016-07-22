@@ -102,7 +102,7 @@ function textOperator(attriObj, operator, modifier, editMax){
   //if this is just a querry, it will show the modified attribute
   //if this is an edit, it will show the attribute before modification
   //begin table
-  var attrTable = "<table border = \"2\" width = \"100%\">";
+  var attrTable = "<table border = \"2\" width = \"100%\" bgcolor = \"8ED4C7\">";
   //title
   attrTable += "<caption>" + attriObj.get("name") + "</caption>";
   //label row - Current, Max

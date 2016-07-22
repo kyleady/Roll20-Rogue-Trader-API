@@ -1,62 +1,99 @@
-on("chat:message", function(msg) {
-    //TokenReset - Reset every attribute to its maxium (except Fatigue, set it to zero)
-    //only the GM may activate this function
-  if(msg.type == "api" && msg.content == ("!ResetToken") && msg.who.indexOf(" (GM)") !== -1)
-  {  
-    //be sure the sender has a token selected
-    if(msg.selected){
-        //run this function on every object selected
-         _.each(msg.selected, function(obj){
-         var graphic = getObj("graphic", obj._id);
-        //be sure the graphic exists
-        if(graphic == undefined){
-            sendChat("System", "/w gm Not a graphic.") 
-            return;
-        }
-        //find the character the token represents
-        var character = getObj("character",graphic.get("represents"))
-        //be sure the character exists
-        if(character == undefined){
-            sendChat("System", "/w gm Not a character.") 
-            return;
-        }
-        
-        //this is the list of all the attributes that will be reset
-        //var AttributeList = ['WS',"BS","S","T","Ag","Per","Wp","It","Fe","Fate","Insanity","Corruption","Wounds","Fatigue","PR","Armour_H","Armour_B","Armour_RL","Armour_LL","Armour_RA","Armour_LA","Unnatural WS","Unnatural BS","Unnatural S","Unnatural T","Unnatural Ag","Unnatural Wp","Unnatural It","Unnatural Per","Unnatural Fe","Structural Integrity","Armour_F","Armour_S","Armour_R","Manoeuvrability"]
-        var AttributeList = findObjs({ type: 'attribute', characterid: character.id});
-        
-        for(var i = 0; i < AttributeList.length; i++) {
-            //if reseting Fatigue...
-            if(AttributeList[i].get("name") == "Fatigue")
-            {
-                //Fatigue is reset to 0
-                AttributeList[i].set('current', 0);
-            }
-            else
-            {
-                //all other attributes are reset to their maximums
-                var attribMax = AttributeList[i].get('max');
-                AttributeList[i].set('current', attribMax);
-            }
-        }
-        
-        //reset Fatigue Bar
-        graphic.set("bar1_value","0");
-        
-        //reset Fate Bar
-        graphic.set("bar2_value",graphic.get("bar2_max"));
-        
-        //reset Wounds Bar
-        graphic.set("bar3_value",graphic.get("bar3_max"));
-        
-        //clear all status markers
-        graphic.set("statusmarkers", "");
-        
-        //inform the gm which token has been reset
-        sendChat(msg.who, "/w gm - " + character.get("name") + " has been reset.");
-         }); //close _.each
-    } else {
-        sendChat("System","/w gm Nothing Selected.");
-    }
+//resets every stat of the selected characters to its maximum (creates an
+//exception for Fatigue as it resets to 0).
+function statReset(matches,msg){
+  //if nothing was selected, select everyone on the current map
+  if(msg.selected == undefined || msg.selected.length <= 0){
+    msg.selected = findObjs({
+        _pageid: Campaign().get("playerpageid"),
+        _type: "graphic",
+        _subtype: "token",
+        isdrawing: false,
+        layer: "objects"
+    });
   }
+
+  //prepare a record of everyone who was reset
+  var resetAnnounce = "The following characters were reset: ";
+
+  _.each(msg.selected, function(obj){
+
+    //normally msg.selected is just a list of objectids and types of the
+    //objects you have selected. If this is the case, find the corresponding
+    //character objects.
+    if(obj._type && obj._type == "graphic"){
+      var graphic = getObj("graphic", obj._id);
+      //be sure the graphic exists
+      if(graphic == undefined) {
+          log("graphic undefined")
+          log(obj)
+          return whisper("graphic undefined");
+      }
+      //be sure the character is valid
+      var character = getObj("character",graphic.get("represents"))
+      if(character == undefined){
+          log("character undefined")
+          log(graphic)
+          return whisper("character undefined");
+      }
+    //if using a default character, just accept the default character as the
+    //the character we are working with, no need to work through tokens to
+    //find this character
+    }else if(obj.get("_type") == "character") {
+      //record the character
+      var character = obj;
+    //if the gm just grabbed every single token on the map, you will already
+    //have the graphic objects, and will need to find the character objects.
+    }else if(obj.get("_type") == "graphic") {
+      //record the graphic
+      var graphic = obj;
+      //be sure the character is valid
+      var character = getObj("character",graphic.get("represents"))
+      if(character == undefined){
+        log("character undefined")
+        log(graphic)
+        return whisper("character undefined");
+      }
+    //if the selected object met none of the above criteria, something went
+    //wrong. Alert the gm.
+    }else{
+      log("Selected is neither a graphic nor a character.")
+      log(obj)
+      return whisper("Selected is neither a graphic nor a character.");
+    }
+
+    //create a list of all of the attributes this character has
+    attribList = findObjs({
+      _type: "attribute",
+      _characterid: character.id
+    });
+
+    //work with every attribute the character has
+    _.each(attribList,function(attrib){
+      attrib.set("current",attrib.get("max"));
+    });
+
+    //reset Fatigue Bar
+    graphic.set("bar1_value",graphic.get("bar1_max"));
+
+    //reset Fate Bar
+    graphic.set("bar2_value",graphic.get("bar2_max"));
+
+    //reset Wounds Bar
+    graphic.set("bar3_value",graphic.get("bar3_max"));
+
+    //clear all status markers
+    graphic.set("statusmarkers", "");
+
+    //add the character to the list of characters that were reset
+    resetAnnounce += "\n" + graphic.get("name");
   });
+  //report to the gm all of the characters that were reset
+  whisper(resetAnnounce);
+}
+
+//waits for CentralInput to be initialized
+on("ready",function(){
+  //resets the attributes and status markets of every selected token (or every
+  //token on the map)
+  CentralInput.addCMD(/^!\s*reset\s*$/i,statReset);
+});

@@ -134,7 +134,7 @@ function initiativeHandler(matches,msg,secondAttempt){
       //normally msg.selected is just a list of objectids and types of the
       //objects you have selected. If this is the case, find the corresponding
       //character objects.
-    
+
       //don't warn the gm if anything goes wrong as we have already done so when
       //testing the notes.
       if(obj._type && obj._type == "graphic"){
@@ -409,7 +409,7 @@ function initiativeHandler(matches,msg,secondAttempt){
       finalturnorder.push(turnorder[index]);
     }
   }
-  
+
   //next, add the turns that were modified, but be sure to place them in order
   for(var index = 0; index < turnorder.length; index++){
     //if no modified attribute was added to the turn, then it was not modified
