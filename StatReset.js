@@ -85,15 +85,15 @@ function statReset(matches,msg){
     graphic.set("statusmarkers", "");
 
     //add the character to the list of characters that were reset
-    resetAnnounce += "\n" + graphic.get("name");
+    resetAnnounce += graphic.get("name") + ", ";
   });
   //report to the gm all of the characters that were reset
-  whisper(resetAnnounce);
+  whisper(resetAnnounce.substring(0,resetAnnounce.lastIndexOf(",")));
 }
 
 //waits for CentralInput to be initialized
 on("ready",function(){
   //resets the attributes and status markets of every selected token (or every
   //token on the map)
-  CentralInput.addCMD(/^!\s*reset\s*$/i,statReset);
+  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?)?)\s*$/i,statReset);
 });

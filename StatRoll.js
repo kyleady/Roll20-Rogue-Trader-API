@@ -14,7 +14,7 @@ function statRoll(matches, msg){
         //likely the CentralInput is attempting to test the function
         return whisper("statRoll() was run without any inputs.");
     }
-    log(matches)
+
     //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
     if(matches[1]){
         var whisperGM = "/w gm ";
@@ -22,21 +22,9 @@ function statRoll(matches, msg){
         var whisperGM = "";
     }
 
-    //capitalize the stat name properly
-    switch(matches[2].toLowerCase()){
-      case "pr":
-        //replace pr with Per (due to conflicts with PsyRating(PR))
-        var statName = "Per";
-        break;
-      case "ws": case "bs":
-        //capitalize every letter
-        var statName = matches[2].toUpperCase();
-        break;
-      default:
-        //most Attributes begin each word with a capital letter (also known as TitleCase)
-        var statName = matches[2].toTitleCase();
-        break;
-    }
+    //record the name of the stat without modification
+    //capitalization modification should be done before this function
+    var statName = matches[2];
 
     //did the player add a modifier?
     if(matches[3] && matches[4]){
@@ -128,7 +116,24 @@ on("ready", function() {
   //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
   //matches[3] is the sign of the modifier and is null if no modifier is included
   //matches[4] is the absolute value of the modifier and is null if no modifier is included
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,statRoll,true);
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    statRoll(matches,msg);
+  },true);
 
   //lets the user quickly view their stats with modifiers
   //matches[0] is the same as msg.content
@@ -137,7 +142,41 @@ on("ready", function() {
   //matches[3] is the text operator "=", "+=", "?", "?/", etc
   //matches[4] the sign of the numerical modifier
   //matches[5] is the numerical modifier
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,statHandler,true);
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    statHandler(matches,msg);
+  },true);
   //similar to above, but shows the attribute without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?)\s*$/i,statHandler,true);
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?)\s*$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    statHandler(matches,msg);
+  },true);
 });

@@ -7,7 +7,7 @@ function journalSearch(matches, msg){
   var searchItems = matches[1].toLowerCase().split(" ");
 
   //filter the handouts and character sheets by the search criteria
-  var searchResults = filterObjs(function(obj) {    
+  var searchResults = filterObjs(function(obj) {
     //first, be sure we are only looking at handouts and characters
     if(obj.get("_type") == "handout" || obj.get("_type") == "character"){
       //save the obj's name for repeated use
@@ -43,11 +43,16 @@ function journalSearch(matches, msg){
 
 //displays the next five search results from !Find <blah>
 function moreSearch(matches,msg){
+  //is there anything to show?
+  if(LinkList[msg.playerid] == undefined || LinkList[msg.playerid].length <= 0){
+    return whisper("No results.",msg.playerid);
+  }
+
   //only send out the first five links
   for(var i = 1; i <= 5 && LinkList[msg.playerid].length > 0; i++){
     //privately whisper the next link to the user
     whisper(LinkList[msg.playerid][0],msg.playerid);
-    //this Link has been sent. Remove it. 
+    //this Link has been sent. Remove it.
     LinkList[msg.playerid].shift();
   }
   //are there any Links left?

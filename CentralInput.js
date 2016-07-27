@@ -26,15 +26,17 @@ function textOperator(attriObj, operator, modifier, editMax){
   //max value of the attribute
   editMax = editMax || false;
 
-
   //if the modifier was "max", use the attribute's max value
   if(modifier && modifier.toLowerCase() == "max"){
-    modifier = Number(attriObj.get("max"));
+    modifier = attriObj.get("max");
   //if the modifier was "current" use the attribute's current value
   } else if(modifier && modifier.toLowerCase() == "current"){
-    modifier = Number(attriObj.get("current"));
-  }  else{
-    //otherwise, be sure it is a number and not a string
+    modifier = attriObj.get("current");
+  }
+
+  //if we are going to perform mathematical operations with the modifier, we
+  //should put it into number format and not a string
+  if(operator != "=" && operator != "?"){
     modifier = Number(modifier);
   }
 
@@ -49,8 +51,8 @@ function textOperator(attriObj, operator, modifier, editMax){
 
   //save temporary values for the current and maximum
   var tempAttribute = [];
-  tempAttribute["current"] = Number(attriObj.get("current"));
-  tempAttribute["max"] = Number(attriObj.get("max"));
+  tempAttribute["current"] = attriObj.get("current");
+  tempAttribute["max"] = attriObj.get("max");
 
   //proceed based on the operator specified
   switch(operator){
@@ -76,19 +78,19 @@ function textOperator(attriObj, operator, modifier, editMax){
       break;
     case "?+":
       //edit the temporary attribute
-      tempAttribute[attrProperty] += modifier;
+      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) + modifier;
       break;
     case "?-":
       //edit the temporary attribute
-      tempAttribute[attrProperty] -= modifier;
+      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) - modifier;
       break;
     case "?*":
       //edit the temporary attribute
-      tempAttribute[attrProperty] *= modifier;
+      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) * modifier;
       break;
     case "?/":
       //edit the temporary attribute
-      tempAttribute[attrProperty] /= modifier;
+      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) / modifier;
       break;
     //by default do not modify anything
   }
@@ -102,13 +104,13 @@ function textOperator(attriObj, operator, modifier, editMax){
   //if this is just a querry, it will show the modified attribute
   //if this is an edit, it will show the attribute before modification
   //begin table
-  var attrTable = "<table border = \"2\" width = \"100%\" bgcolor = \"8ED4C7\">";
+  var attrTable = "<table border = \"2\" width = \"100%\">";
   //title
   attrTable += "<caption>" + attriObj.get("name") + "</caption>";
   //label row - Current, Max
-  attrTable += "<tr><th>Current</th><th>Max</th></tr>";
+  attrTable += "<tr bgcolor = \"00E518\"><th>Current</th><th>Max</th></tr>";
   //temporary attribute row (current, max)
-  attrTable += "<tr><td>" + tempAttribute["current"] + "</td><td>" + tempAttribute["max"]  + "</td></tr>";
+  attrTable += "<tr bgcolor = \"White\"><td>" + tempAttribute["current"] + "</td><td>" + tempAttribute["max"]  + "</td></tr>";
   //end table
   attrTable += "</table>";
 
@@ -119,9 +121,9 @@ function textOperator(attriObj, operator, modifier, editMax){
       attrTable += "<caption>|</caption>";
       attrTable += "<caption>V</caption>";
       //label row - Current, Max
-      attrTable += "<tr><th>Current</th><th>Max</th></tr>";
+      attrTable += "<tr bgcolor = \"Yellow\"><th>Current</th><th>Max</th></tr>";
       //modified attribute row (current, max)
-      attrTable += "<tr><td>" + attriObj.get("current") + "</td><td>" + attriObj.get("max")  + "</td></tr>";
+      attrTable += "<tr bgcolor = \"White\"><td>" + attriObj.get("current") + "</td><td>" + attriObj.get("max")  + "</td></tr>";
       //end table
       attrTable += "</table>";
   }
@@ -137,7 +139,7 @@ function textOperator(attriObj, operator, modifier, editMax){
 //matches[2] is the name of the Attribute
 //matches[3] is the text operator "=", "?+", "*=", etc
 //matches[4] is the sign of the modifier
-//matches[5] is the modifier (numerical or max)
+//matches[5] is the modifier (numerical, current, max, or an inline roll)
 function statHandler(matches,msg){
   //remove any spaces from the texp operator
   matches[3] = matches[3].replace(/ /,"");
@@ -149,17 +151,12 @@ function statHandler(matches,msg){
     if(msg.selected[0] == undefined){return;}
   }
 
-  //by default, use title case for each attribute
-  switch(matches[2].toLowerCase()){
-    case "ws": case "bs":
-      matches[2] = matches[2].toUpperCase();
-      break;
-    case "per":
-      matches[2] = "Pr";
-      break;
-    default:
-      matches[2] = matches[2].toTitleCase();
-      break;
+  //check if the modifier was randomly rolled
+  if(matches[5] == "$[[0]]"){
+    matches[5] = msg.inlinerolls[0].results.total.toString();
+    //overwrite the sign of the modifier with 0 so that any addition done will
+    //be leave matches[5] unaffected
+    matches[4] = "";
   }
 
   //make the max indicator lowercase
@@ -220,10 +217,6 @@ function statHandler(matches,msg){
 //matches[4] is the sign of the modifier
 //matches[5] is the absolute value of the modifier
 function partyStatHandler(matches,msg){
-  //the assumption is that every attribute is written with only the first letter
-  //of each word capitalized. However, you can add exceptions here.
-  matches[2] = matches[2].toTitleCase()
-
   //find the party attribute
   var partyStatObjs = findObjs({
     _type: "attribute",
@@ -246,15 +239,38 @@ function partyStatHandler(matches,msg){
     log(partyStatObjs)
   }
 
+  //check if the modifier was randomly rolled
+  if(matches[5] == "$[[0]]"){
+    matches[5] = msg.inlinerolls[0].results.total.toString();
+    //overwrite the sign of the modifier with 0 so that any addition done will
+    //be leave matches[5] unaffected
+    matches[4] = "";
+  }
+
   //make the max indicator lowercase
   matches[1] = matches[1].toLowerCase();
   //is the user making a querry?
   if(matches[3].indexOf("?") != -1) {
     whisper(textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
   //is the user modifying the public stat?
-  } else{
-    //since it is a publicly used stat, let everyone know when it is being modified
-    sendChat("player|" + msg.playerid,textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max"));
+  } else {
+    //get a list of players that can see the character sheet
+    var viewerList = getObj("character",partyStatObjs[0].get("_characterid")).get("inplayerjournals").split(",");
+    //save the result
+    var partyStatChange = textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max");
+    //if "all" was found, tell everyone
+    if(viewerList.indexOf("all") != -1){
+      sendChat("player|" + msg.playerid,partyStatChange);
+    } else {
+      //whisper to each owning player that is not a gm
+      _.each(viewerList, function(viewer){
+        if(playerIsGM(viewer) == false){
+          whisper(partyStatChange,viewer);
+        }
+        //inform the gm as well
+        whisper(partyStatChange);
+      });
+    }
   }
 }
 
