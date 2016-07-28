@@ -116,7 +116,7 @@ on("ready", function() {
   //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
   //matches[3] is the sign of the modifier and is null if no modifier is included
   //matches[4] is the absolute value of the modifier and is null if no modifier is included
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
       case "pr":
@@ -127,6 +127,12 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
+      case "Int":
+        matches[2] = "It";
+      break;
+      case "Fel":
+        matches[2] = "Fe";
+      break;
       default:
         //most Attributes begin each word with a capital letter (also known as TitleCase)
         matches[2] = matches[2].toTitleCase();
@@ -142,7 +148,7 @@ on("ready", function() {
   //matches[3] is the text operator "=", "+=", "?", "?/", etc
   //matches[4] the sign of the numerical modifier
   //matches[5] is the numerical modifier
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
       case "pr":
@@ -153,15 +159,25 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
+      case "Int":
+        matches[2] = "It";
+      break;
+      case "Fel":
+        matches[2] = "Fe";
+      break;
       default:
         //most Attributes begin each word with a capital letter (also known as TitleCase)
         matches[2] = matches[2].toTitleCase();
         break;
     }
+    if(/^armour(\s*|_)\w\w?$/i.test(matches[2])){
+        matches[2] = matches[2].replace(/^Armour\s*/,"Armour_");
+        matches[2] = matches[2].replace(/_\w\w?$/, function(txt){return txt.toUpperCase();});
+    }
     statHandler(matches,msg);
   },true);
   //similar to above, but shows the attribute without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Wp|Pr|Fe|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection)\s*(\?)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
       case "pr":
@@ -172,10 +188,20 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
+      case "Int":
+        matches[2] = "It";
+      break;
+      case "Fel":
+        matches[2] = "Fe";
+      break;
       default:
         //most Attributes begin each word with a capital letter (also known as TitleCase)
         matches[2] = matches[2].toTitleCase();
         break;
+    }
+    if(/^armour(\s*|_)\w\w?$/i.test(matches[2])){
+        matches[2] = matches[2].replace(/^Armour\s*/,"Armour_");
+        matches[2] = matches[2].replace(/_\w\w?$/, function(txt){return txt.toUpperCase();});
     }
     statHandler(matches,msg);
   },true);

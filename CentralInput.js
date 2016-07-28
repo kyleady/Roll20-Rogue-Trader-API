@@ -398,7 +398,7 @@ CentralInput.input = function(msg){
   //once we have looked through the commands, warn the user if the input was not
   //recognized
   if(inputRecognized == false){
-    whisper("The command " + msg.content + " was not recognized.", msg.playerid);
+    whisper("The command " + msg.content + " was not recognized. See " + GetLink("!help") + " for a list of commands.", msg.playerid);
   }
 }
 

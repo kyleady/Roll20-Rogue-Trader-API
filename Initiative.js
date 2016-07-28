@@ -559,9 +559,9 @@ on("ready",function(){
   //matches[3] is the absolute value of the modifier
 
   //lets the user quickly view their initiative bonus with modifiers
-  CentralInput.addCMD(/^!\s*init\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler,true);
   //same as above, except this is a querry without any modifiers
-  CentralInput.addCMD(/^!\s*init\s*(\?)()()$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler,true);
 
   //similar to above, but allows the gm to roll and edit initiative with modifiers
   CentralInput.addCMD(/^!\s*init\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
