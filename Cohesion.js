@@ -34,12 +34,12 @@ on("ready",function(){
   //Lets players freely view and edit cohesion with modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(cohesion)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, function(matches,msg){
     matches[2] = "Cohesion";
-    partyStatHander(matches,msg);
+    partyStatHandler(matches,msg);
   }, true);
   //Lets players view cohesion without modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(cohesion)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = "Cohesion";
-    partyStatHander(matches,msg);
+    partyStatHandler(matches,msg);
   }, true);
 
 });
