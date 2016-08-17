@@ -1,115 +1,296 @@
-function statRoll(statName,who,selected,modifier,whisper){
-    //define the variables
-    var stat;
-    var unnatural_stat;
-    var aging;
-    var name;
-    var reason = "";
-    var piece = "";
-    //default the inputs
-    if(!whisper){
-        //whisper = "/em - ";
-        whisper = "";
+//rolls a D100 against the designated stat and outputs the number of successes
+//takes into account corresponding unnatural bonuses
+//negative success equals the number of failures
+
+//matches[0] is the same as msg.content
+//matches[1] is either "gm" or null
+//matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
+//matches[3] is the sign of the modifier and is null if no modifier is included
+//matches[4] is the absolute value of the modifier and is null if no modifier is included
+function statRoll(matches, msg){
+
+    //quit early if there were no inputs
+    if(matches == undefined || msg == undefined){
+        //likely the CentralInput is attempting to test the function
+        return whisper("statRoll() was run without any inputs.");
+    }
+
+    //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
+    if(matches[1]){
+        var whisperGM = "/w gm ";
     } else {
-        whisper = "/w gm ";
+        var whisperGM = "";
     }
-    //find the reason and modifier
-    if(modifier.indexOf(" ") != -1){
-        reason = modifier.substring(modifier.indexOf(" "));
-        modifier = Number(modifier.substring(0,modifier.indexOf(" ")));
+
+    //record the name of the stat without modification
+    //capitalization modification should be done before this function
+    var statName = matches[2];
+
+    //did the player add a modifier?
+    if(matches[3] && matches[4]){
+      var modifier = Number(matches[3] + matches[4]);
     } else {
-        modifier = Number(modifier);
+      var modifier = 0
     }
-    //be sure the modifier is sensible
-    if(!modifier){
-        modifier = 0;
+
+    //find a default character for the player if nothing was selected
+    if(msg.selected == undefined || msg.selected.length <= 0){
+      //make the seleced array include the default character
+      msg.selected = [defaultCharacter(msg.playerid)];
+      //if there is no default character, just quit
+      if(msg.selected[0] == undefined){return;}
     }
+
     //work through each selected character
-    _.each(selected, function(obj){
-        var graphic = getObj("graphic", obj._id);
-        //be sure the graphic exists
-        if(graphic == undefined) {
-            return sendChat(msg.who, "/w gm - graphic undefined.");
+    _.each(msg.selected, function(obj){
+        //normally msg.selected is just a list of objectids and types of the
+        //objects you have selected. If this is the case, find the corresponding
+        //character objects.
+
+        if(obj._type && obj._type == "graphic"){
+          var graphic = getObj("graphic", obj._id);
+          //be sure the graphic exists
+          if(graphic == undefined) {
+              return whisper("graphic undefined");
+          }
+          //be sure the character is valid
+          var character = getObj("character",graphic.get("represents"))
+          if(character == undefined){
+              return whisper("character undefined");
+          }
+        //if using a default character, just accept the default character as the
+        //the character we are working with
+        }else if(obj.get("_type") == "character") {
+          var character = obj;
         }
-        //be sure the character is valid
-        var character = getObj("character",graphic.get("represents"))
-        if(character == undefined){
-            return sendChat(msg.who, "/w gm - character undefined.");
-        }
-        //load up the stats
-        stat = Number(getAttrByName(character.id, statName));
-        unnatural_stat = Number(getAttrByName(character.id, "Unnatural " + statName));
-        //load up the name
+
+        //load up the character name
         name = character.get("name");
-        //default the stats
-        if(!stat){
+
+        //be sure the stat exists
+        if(getAttrByName(character.id, statName) != undefined){
+          var stat = Number(getAttrByName(character.id, statName));
+        } else {
+          return whisper(name + " does not have an attribute named " + statName + ".");
+        }
+
+        //by default, don't include the unnatural bonus
+        var unnatural_bonus = "";
+        //if there is an Unnatural Stat associated with this stat, note how many
+        //successes it would add
+        if(getAttrByName(character.id, "Unnatural " + statName) != undefined
+        && Number(getAttrByName(character.id, "Unnatural " + statName)) != undefined){
+          unnatural_bonus = "{{Unnatural= [[ceil((" + getAttrByName(character.id, "Unnatural " + statName).toString() + ")/2)]]}}";
+        }//don't warn the gm if no unnatural stat was found, it will be clear
+        //from the lack of an unnatural bonus in the roll template.
+
+        //default the stat to zero
+        if(stat == undefined){
             stat = 0;
         }
-        if(!unnatural_stat){
-            unnatural_stat = 0;
-        }
-        //override a whisper for secret characters
+
+        //only allow the gm to see the results of NPCs
         if(character.get("controlledby") == ""){
             //output the roll
-            sendChat(who,"/w gm &{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[(" + stat.toString() + "+" + modifier.toString() + "-D100)/10]]}} {{Unnatural= [[ceil((" + unnatural_stat.toString() + ")/2)]]}}")
-            //sendChat(who,whisper + name + " rolls [[(" + stat.toString() + "+" + modifier.toString() + "-D100)/10]](+[[" + unnatural_stat.toString() + "]]) successes on a " + statName +  " test." + reason);    
+            whisper("&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} " + unnatural_bonus);
         } else {
-            //add any penalties for aging
-            aging = Number(getAttrByName(character.id,"Age").substring(0,getAttrByName(character.id,"Age").indexOf(" years")));
-            //aging shouldn't take affect until the age of 25
-            aging -= 25;
-            //reduce the effects of aging by any potions of youth, etc
-            aging -= Number(getAttrByName(character.id, "Juvenat"));
-            //reduce the effects of aging by any corruption
-            aging -= Number(getAttrByName(character.id, "Corruption")) + Number(getAttrByName(character.id, "Unnatural Corruption"))*10;
-            //be sure the penalties don't turn into bonuses
-            if(aging < 0 || !aging){aging = 0;}
-            //add in the penalty
-            stat -= aging;
-            //output the roll
-            sendChat(who,whisper + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[(" + stat.toString() + "+" + modifier.toString() + "-D100)/10]]}} {{Unnatural= [[ceil((" + unnatural_stat.toString() + ")/2)]]}}")
-            //sendChat(who,whisper + name + " rolls [[(" + stat.toString() + "+" + modifier.toString() + "-D100)/10]](+[[" + unnatural_stat.toString() + "]]) successes on a " + statName +  " test." + reason);
+            //check to see if Aging.js has been included
+            //note that we are only adding in the aging penalty for player characters
+            //if(Aging == undefined){}else{
+              //add in the aging penalty
+              //stat -= Aging.penalty(character.id);
+            //}
+            //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
+            sendChat("player|" + msg.playerid ,whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
         }
-        
-    });    
+    });
+
 }
 
-on("chat:message", function(msg) {
-if(msg.type == "api" && (msg.content == "!WS" || msg.content.indexOf("!WS ") == 0)){
-    statRoll("WS","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!BS" || msg.content.indexOf("!BS ") == 0)){
-    statRoll("BS","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!S" || msg.content.indexOf("!S ") == 0)){
-    statRoll("S","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!T" || msg.content.indexOf("!T ") == 0)){
-    statRoll("T","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!Ag" || msg.content.indexOf("!Ag ") == 0)){
-    statRoll("Ag","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!Pr" || msg.content.indexOf("!Pr ") == 0)){
-    statRoll("Per","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!It" || msg.content.indexOf("!It ") == 0)){
-    statRoll("It","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!Wp" || msg.content.indexOf("!Wp ") == 0)){
-    statRoll("Wp","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!Fe" || msg.content.indexOf("!Fe ") == 0)){
-    statRoll("Fe","player|" + msg.playerid,msg.selected,msg.content.substring(3).trim());
-} else if(msg.type == "api" && (msg.content == "!gmWS" || msg.content.indexOf("!gmWS ") == 0)){
-    statRoll("WS","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmBS" || msg.content.indexOf("!gmBS ") == 0)){
-    statRoll("BS","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmS" || msg.content.indexOf("!gmS ") == 0)){
-    statRoll("S","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmT" || msg.content.indexOf("!gmT ") == 0)){
-    statRoll("T","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmAg" || msg.content.indexOf("!gmAg ") == 0)){
-    statRoll("Ag","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmPr" || msg.content.indexOf("!gmPr ") == 0)){
-    statRoll("Per","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmIt" || msg.content.indexOf("!gmIt ") == 0)){
-    statRoll("It","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmWp" || msg.content.indexOf("!gmWp ") == 0)){
-    statRoll("Wp","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
-} else if(msg.type == "api" && (msg.content == "!gmFe" || msg.content.indexOf("!gmFe ") == 0)){
-    statRoll("Fe","player|" + msg.playerid,msg.selected,msg.content.substring(5).trim(),true);
+//rolls a D100 against the designated stat and outputs the number of successes
+//negative success equals the number of failures
+
+//matches[0] is the same as msg.content
+//matches[1] is either "gm" or null
+//matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
+//matches[3] is the sign of the modifier and is null if no modifier is included
+//matches[4] is the absolute value of the modifier and is null if no modifier is included
+function partyStatRoll(matches, msg){
+
+    //quit early if there were no inputs
+    if(matches == undefined || msg == undefined){
+        //likely the CentralInput is attempting to test the function
+        return whisper("statRoll() was run without any inputs.");
+    }
+
+    //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
+    if(matches[1]){
+        var whisperGM = "/w gm ";
+    } else {
+        var whisperGM = "";
+    }
+
+    //record the name of the stat without modification
+    //capitalization modification should be done before this function
+    var statName = matches[2];
+
+    //did the player add a modifier?
+    if(matches[3] && matches[4]){
+      var modifier = Number(matches[3] + matches[4]);
+    } else {
+      var modifier = 0
+    }
+
+    //find the party attribute
+    var partyStatObjs = findObjs({
+      _type: "attribute",
+      name: statName
+    });
+    //are there no which attributes which match the name matches[2]?
+    if(partyStatObjs.length <= 0){
+      //no stat to work with. alert the gm and player
+      whisper("There is nothing in the campaign with a(n) " + statName + " Attribute.",msg.playerid);
+      //but don't alert the gm twice
+      if(playerIsGM(msg.playerid) == false){
+        whisper("There is nothing in the campaign with a(n) " + statName + " Attribute.");
+      }
+      return;
+    //were there too many attributes that matched the name matches[2]?
+    } else if(partyStatObjs.length >= 2){
+      //warn the gm, but continue forward
+      whisper("There were multiple " + statName + " attributes. Using the first one found. A log has been posted in the terminal.")
+      log(statName+ " Attributes")
+      log(partyStatObjs)
+    }
+
+    //record the stat
+    stat = Number(partyStatObjs[0].get("current"));
+
+    //default the stat to zero
+    if(stat == undefined){
+        stat = 0;
+    }
+
+    //only allow the gm to see the results of NPCs
+    if(getObj("character",partyStatObjs[0].get("_characterid")).get("inplayerjournals") == ""){
+        //output the roll
+        whisper("&{template:default} {{name=<strong>" + statName +  "</strong>}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} " + unnatural_bonus);
+    } else {
+        //check to see if Aging.js has been included
+        //note that we are only adding in the aging penalty for player characters
+        //if(Aging == undefined){}else{
+          //add in the aging penalty
+          //stat -= Aging.penalty(character.id);
+        //}
+        //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
+        sendChat("player|" + msg.playerid ,whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}}");
+    }
 }
+
+
+//adds the commands after CentralInput has been initialized
+on("ready", function() {
+  //add the stat roller function to the Central Input list as a public command
+  //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr": case "pe":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      case "int": case "in":
+        matches[2] = "It";
+      break;
+      case "fel":
+        matches[2] = "Fe";
+      break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    statRoll(matches,msg);
+  },true);
+
+  //lets the user quickly view their stats with modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|In|It|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr": case "pe":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      case "int": case "in":
+        matches[2] = "It";
+      break;
+      case "fel":
+        matches[2] = "Fe";
+      break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    if(/^armour(\s*|_)\w\w?$/i.test(matches[2])){
+        matches[2] = matches[2].replace(/^Armour\s*/,"Armour_");
+        matches[2] = matches[2].replace(/_\w\w?$/, function(txt){return txt.toUpperCase();});
+    }
+    statHandler(matches,msg);
+  },true);
+
+  //similar to above, but shows the attribute without modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|In|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
+    //capitalize the stat name properly
+    switch(matches[2].toLowerCase()){
+      case "pr": case "pe":
+        //replace pr with Per (due to conflicts with PsyRating(PR))
+        matches[2] = "Per";
+        break;
+      case "ws": case "bs":
+        //capitalize every letter
+        matches[2] = matches[2].toUpperCase();
+        break;
+      case "int": case "in":
+        matches[2] = "It";
+      break;
+      case "fel":
+        matches[2] = "Fe";
+      break;
+      default:
+        //most Attributes begin each word with a capital letter (also known as TitleCase)
+        matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    if(/^armour(\s*|_)\w\w?$/i.test(matches[2])){
+        matches[2] = matches[2].replace(/^Armour\s*/,"Armour_");
+        matches[2] = matches[2].replace(/_\w\w?$/, function(txt){return txt.toUpperCase();});
+    }
+    statHandler(matches,msg);
+  },true);
+
+  //Lets players make a Profit Factor Test
+  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit\s*Factor|P\s*F)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+    matches[2] = "Profit Factor";
+    partyStatRoll(matches,msg);
+  },true);
+
+  //Lets players freely view and edit cohesion with modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, function(matches,msg){
+    matches[2] = "Profit Factor";
+    partyStatHandler(matches,msg);
+  }, true);
+  //Lets players view cohesion without modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?)()()\s*$/i, function(matches,msg){
+    matches[2] = "Profit Factor";
+    partyStatHandler(matches,msg);
+  }, true);
 });

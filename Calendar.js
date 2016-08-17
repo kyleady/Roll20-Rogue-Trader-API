@@ -3,12 +3,12 @@ function Calendar(day,month,year) {
     this.Day = Number(day) || 1;
     this.Month = Number(month) || 0;
     this.Year = Number(year) || 40000;
-    
+
     //what are the static limits on the days and months?
-    this.DaysInAMonth = 35;  
+    this.DaysInAMonth = 35;
     //what are the names of the months?
-    this.MonthNames = ["Terra", "El\'Jonson", "Jaghatai", "Russ", "Dorn", "Sanguinius", "Manus", "Gulliman", "Vulkan", "Corax"];    
-    
+    this.MonthNames = ["Terra", "El\'Jonson", "Jaghatai", "Russ", "Dorn", "Sanguinius", "Manus", "Gulliman", "Vulkan", "Corax"];
+
     //converts a series of numbers into a text date
     this.dateToText = function(day,month,year){
         if(day == null){
@@ -20,17 +20,17 @@ function Calendar(day,month,year) {
         if(year == null){
             year = this.Year
         }
-        
+
         //create an output to show the date, starting with the numerical day
         var output = day.toString();
-        //add a suffix based on the one's digit 
+        //add a suffix based on the one's digit
         //however, all the teens are weird and get th
         if(Math.floor(day/10) == 1){
             output += "th";
         } else {
             //get the suffix based on the one's digit
             switch(day - Math.floor(day/10)*10){
-                case 1:                    
+                case 1:
                     output += "st";
                 break;
                 case 2:
@@ -44,34 +44,32 @@ function Calendar(day,month,year) {
                 break;
             }
         }
-        
+
         //add the month
         output += " of " + this.MonthNames[month];
-        
+
         //add the year
         output += ", in the year " + year.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        
+
         //report the date in text form
         return output;
     }
-    
+
     //display the current date to the player
     this.show = function(pretext, who){
-        //if no pretext was specified, default to nothing
-        pretext = pretext || "";
-        //create an output to show the date, starting with the numerical day
-        var output = pretext + this.dateToText() + ".";
-        //if we are not reporting back to a specific person, then report back to everyone
-        if(who == null){
-            sendChat("System",output)    
-        } else {
-            //report the date privatly to the inquirer
-            sendChat("System","/w " + who + " " + output)    
-        }
-        
-        
+      //if no pretext was specified, default to nothing
+      pretext = pretext || "";
+      //create an output to show the date, starting with the numerical day
+      var output = pretext + this.dateToText() + ".";
+      //if we are not reporting back to a specific person, then report back to everyone
+      if(who == null){
+          sendChat("System",output)
+      } else {
+          //report the date privatly to the inquirer
+          whisper(output,who)
+      }
     }
-    
+
     //increases the calendar date based on string input
     this.advance = function(input){
         //step through the input and disect it by the space " "
@@ -93,7 +91,7 @@ function Calendar(day,month,year) {
                 if(breakIndex != 0){
                     pieces.push(input.substring(0,breakIndex));
                 }
-                //remove the piece and the 1 character space from the main input 
+                //remove the piece and the 1 character space from the main input
                 input = input.substring(breakIndex+1);
             }
         }
@@ -147,13 +145,13 @@ function Calendar(day,month,year) {
         }
         //correct the day/month/year so that none are over their maximum
         this.correct();
-        
+
         output["Day"] = this.Day;
         output["Month"] = this.Month;
         output["Year"] = this.Year;
         return output;
     }
-    
+
     //adjusts the calendar to meed the limits on days and months
     this.correct = function() {
         //for each chunck of MaxDays that we have, add an extra month (while subtracting that extra chunck of MaxDays)
@@ -161,33 +159,33 @@ function Calendar(day,month,year) {
             this.Day -= this.DaysInAMonth;
             this.Month++
         }
-        
+
         //for each chunck of MaxMonths that we have, add an extra year (while subtracting that extra chunck of MaxMonths)
         while(this.Month >= this.MonthNames.length){
             this.Month -= this.MonthNames.length;
             this.Year++
         }
-        
+
         //if we are in negative days, borrow from months
         while(this.Day < 0){
             this.Day += this.DaysInAMonth;
             this.Month--;
         }
-        
+
         //if we are in negative months, borrow from years
         while(this.Month < 0){
             this.Month += this.MonthNames.length;
             this.Year--;
         }
     }
-    
+
     //break down a text date into numbers
     this.textToNumbers = function(input){
         //the input is expected to conform to something like "14th of Mamby, 20,000,000"
-        
+
         //create an output variable to save our work in
         var output = {};
-        
+
         //divide the input up by spaces
         //delete any commas
         //step through the GMNotes and disect it by the space " "
@@ -209,15 +207,15 @@ function Calendar(day,month,year) {
                 if(breakIndex != 0 && input.substring(0,breakIndex).replace(/,/g,"") != ""){
                     //save the piece without commas
                     pieces.push(input.substring(0,breakIndex).replace(/,/g,""));
-                    
+
                 }
-                //remove the piece and the 1 character space from the main input 
+                //remove the piece and the 1 character space from the main input
                 input = input.substring(breakIndex+1);
             }
         }
-        
+
         //step through every piece
-        for(i = 0; i < pieces.length; i++){
+        for(var i = 0; i < pieces.length; i++){
             //look for month names in the pieces
             //stop looking once we have found a month
             for(j = 0; output["Month"] == null && j < this.MonthNames.length; j++){
@@ -241,12 +239,12 @@ function Calendar(day,month,year) {
             }
                 //default to Day first, then Year
         }
-        
+
         //output the date object
         return output;
-        
+
     }
-    
+
     //finds the number of day/month/year difference from date1-date2
     //date2 will default as the current date
     this.difference = function(date1,date2){
@@ -270,7 +268,7 @@ function Calendar(day,month,year) {
         if(date2["Year"] == null){
             date2["Year"] = this.Year;
         }
-        
+
         //create an output variable to save our work in
         var output = {};
         //calculate the difference of date1 - date2
@@ -283,7 +281,7 @@ function Calendar(day,month,year) {
         log(date2)
         log("output")
         log(output)
-        
+
         //are there more days than a month?
         while(output["Day"] > this.DaysInAMonth){
             //reduce the number of days by the maximm number of days in a month
@@ -355,7 +353,7 @@ function Calendar(day,month,year) {
             }
             //otherwise, return the difference
             return output["Text"] + " until ";
-            
+
         } else {
             output["Year"] *= -1;
             output["Month"] *= -1;
@@ -373,7 +371,7 @@ function Calendar(day,month,year) {
                 output["Year"]--;
             }
             //now output the positive results
-            
+
             //any number of days until date1?
             if(output["Day"] > 0){
                 //output the number of days until date 1
@@ -416,9 +414,9 @@ function Calendar(day,month,year) {
             //otherwise, return the difference
             return output["Text"] + " past ";
         }
-        
+
     }
-     
+
     //convert input calendar text into a schedule object
     this.getSchedule = function(input){
         log("input")
@@ -427,7 +425,7 @@ function Calendar(day,month,year) {
         var breakIndex = 0;
         var pieces = [];
         while(true) {
-            
+
             //find the next space
             breakIndex = input.indexOf("<br>");
             if(breakIndex == -1){
@@ -439,22 +437,22 @@ function Calendar(day,month,year) {
                 //we are done. abort.
                 break;
             } else {
-                //save the piece 
+                //save the piece
                 if(breakIndex != 0){
                     //save the piece without commas
                     pieces.push(input.substring(0,breakIndex));
                 }
-                //remove the piece and the 1 character space from the main input 
+                //remove the piece and the 1 character space from the main input
                 input = input.substring(breakIndex + 4);
             }
-            
+
         }
-        
+
         log("pieces")
         log(pieces)
         //break the line into date and description by the :
         var output = [];
-        
+
         for(ii = 0; ii < pieces.length; ii++){
             log(pieces[ii])
             //do not accept lines that do not have a : in them
@@ -472,36 +470,36 @@ function Calendar(day,month,year) {
                     log(output[output.length-1]["repeat"])
                     //convert the text date into a list of numbers
                     var tempDate = this.textToNumbers(pieces[ii].substring(0,pieces[ii].indexOf(" %")));
-                    
+
                 //otherwise it is not a repeating date
                 } else{
                     //convert the text date into a list of numbers
                     var tempDate = this.textToNumbers(pieces[ii].substring(0,pieces[ii].indexOf(":"))) ;
                 }
-                
+
                 log("tempDate")
                 log(tempDate)
-                
+
                 //add the date individually
                 output[output.length-1]["Day"]   = tempDate["Day"];
                 output[output.length-1]["Month"] = tempDate["Month"];
                 output[output.length-1]["Year"]  = tempDate["Year"];
-                
+
                 log("ii")
                 log(ii)
             }
             log("output")
             log(output)
         }
-        
+
         //return the result
         return output;
     }
-    
+
     this.scheduleToText = function(schedule){
         var output = "";
         //step through each event in the schedule
-        for(i = 0; i < schedule.length; i++){
+        for(var i = 0; i < schedule.length; i++){
             //make a new line for this event
             output += "<br>";
             //add the date
@@ -519,7 +517,7 @@ function Calendar(day,month,year) {
         //return the result
         return output;
     }
-    
+
     //attempts to add the event, pulling apart its description and date
     //second input allows you to denote if this event should be added to the public notes or the gmnotes
     this.addEvent = function(event,gm){
@@ -569,7 +567,7 @@ function Calendar(day,month,year) {
         ModifierList["@"] = "";
         ModifierList["+"] = "";
         ModifierList["%"] = "";
-        
+
         //gather all the content for the modifier list
         for(signifier1 in ModifierList){
             //only do this if the modifier index is even present
@@ -587,19 +585,19 @@ function Calendar(day,month,year) {
                 }
                 //trim off any spaces on the edges
                 ModifierList[signifier1] = ModifierList[signifier1].trim();
-                
+
                 //check if this signifier is in the remaining Event Description
                 if(EventDescription.indexOf(signifier1) > -1){
-                    //trim out this content from the Event Description                
+                    //trim out this content from the Event Description
                     EventDescription = EventDescription.substring(0,EventDescription.indexOf(signifier1))
                 }
-                
+
             }
-            
+
         }
         //trim down the final Event Description
         EventDescription = EventDescription.trim();
-        
+
         /*
         //record where the @ and + symbols occur
         var StartingDateIndex = event.indexOf("@");
@@ -626,7 +624,7 @@ function Calendar(day,month,year) {
             EventDescription = event.trim();
         }
         */
-        
+
         log("EventDescription: " + EventDescription)
         log("DateModifier: " + ModifierList["+"])
         log("StartingDate: " + ModifierList["@"])
@@ -662,7 +660,7 @@ function Calendar(day,month,year) {
             this.Month = date0["Month"];
             this.Year  = date0["Year"];
         }
-        
+
         log("Starting Day: " + this.Day)
         log("Starting Month: " + this.Month)
         log("Starting Year: " + this.Year)
@@ -675,7 +673,7 @@ function Calendar(day,month,year) {
         log("Adjusted Month: " + this.Month)
         log("Adjusted Year: " + this.Year)
         //if the date is <= 0 days away from the current date, we will want to add it to the Log Book instead of the Calendar
-        //create an object to look at the difference between the current date and the event date 
+        //create an object to look at the difference between the current date and the event date
         var dateDiff = {}
         dateDiff["Day"]   = this.Day   - getAttrByName(calendar.id,"Day");
         dateDiff["Month"] = this.Month - getAttrByName(calendar.id,"Month");
@@ -699,20 +697,20 @@ function Calendar(day,month,year) {
         (dateDiff["Day"] == 0 && dateDiff["Month"] == 0 && dateDiff["Year"] == 0)){
             //chop up the events into an array of dates and event descriptions
             var schedule = this.getSchedule(LogBookNotes);
-        //otherwise you are talking about a future event, put it in the calendar        
+        //otherwise you are talking about a future event, put it in the calendar
         }else{
             //chop up the events into an array of dates and event descriptions
             var schedule = this.getSchedule(CalendarNotes);
         }
         log(schedule)
-        
+
         //put the event in the list, but do so in chronological order
         //for ease of comparison, convert the date into # of days since 0/0/0
         var totalDays = this.Day + this.Month*this.DaysInAMonth + this.Year*this.MonthNames.length*this.DaysInAMonth;
         //create an event object that will be defined later
         var eventObj = null;
-        for(i = 0; i < schedule.length; i++){
-            if(schedule[i]["Day"] + schedule[i]["Month"]*this.DaysInAMonth + schedule[i]["Year"]*this.MonthNames.length*this.DaysInAMonth 
+        for(var i = 0; i < schedule.length; i++){
+            if(schedule[i]["Day"] + schedule[i]["Month"]*this.DaysInAMonth + schedule[i]["Year"]*this.MonthNames.length*this.DaysInAMonth
             > totalDays){
                 //setup the event Object
                 eventObj = {};
@@ -746,12 +744,12 @@ function Calendar(day,month,year) {
             eventObj["Day"]   = this.Day;
             eventObj["Month"] = this.Month;
             eventObj["Year"]  = this.Year;
-            
-            
+
+
             //add it to the end
             schedule.push(eventObj);
         }
-        
+
         log("eventObj")
             log(eventObj)
         //recheck if we are working with the LogBook or the Calendar
@@ -767,7 +765,7 @@ function Calendar(day,month,year) {
                 logbook.set("bio","<u>Recorded Events</u>" + this.scheduleToText(schedule));
                 sendChat("System","The " + GetLink("Log Book") + " has been updated.");
             }
-        //otherwise you are talking about a future event, put it in the calendar        
+        //otherwise you are talking about a future event, put it in the calendar
         }else{
             //are we working with the gmnotes or the public notes?
             if(gm){
@@ -780,11 +778,11 @@ function Calendar(day,month,year) {
                 sendChat("System","The " + GetLink("Calendar") + " has been updated.");
             }
         }
-        
+
         //it made it to the end without error
         return true;
     }
-    
+
     //when time advances, this updates the log book and calendar
     this.updateCalendar = function(){
         log("updateCalendar()")
@@ -801,7 +799,7 @@ function Calendar(day,month,year) {
         calendar.get('bio',function(obj){
             CalendarNotes = obj;
         });
-        
+
         //If the notes were not properly loaded..
         //(this always happens on the first try)
         if (CalendarNotes == "" || CalendarGMNotes == ""){
@@ -810,25 +808,25 @@ function Calendar(day,month,year) {
             sendChat("System","/w gm Notes are empty.");
             return false;
         }
-        
+
         log("Calendar Notes")
         log(CalendarNotes)
         log("Calendar GMNotes")
         log(CalendarGMNotes)
-        
+
         //convert the calendar into a schedule object
-        
+
         var schedule = this.getSchedule(CalendarNotes);
-        
+
         log("schedule")
         log(schedule)
-        
+
         //calculate the # of days since 0/0/0
         log(this.Day + "/" + this.Month + "/" + this.Year)
         var totalDays = this.Day + this.Month*this.DaysInAMonth + this.Year*this.DaysInAMonth*this.MonthNames.length;
         //record a list of annoucements to make
         var anouncements = [];
-        
+
         //continue working with the schedule until there is nothing left to work with
         while(schedule.length > 0){
             log("schedule[0]")
@@ -866,25 +864,25 @@ function Calendar(day,month,year) {
                 }
                 //remove this event from the calendar
                 schedule.shift();
-                
+
             } else {
                 log("schedule[0][\"days\"] > totalDays")
                 //we are making the foolish assumption that the events are in chronological order
-                //thus if we are already beyond the totalDays, we should never go under it again                
+                //thus if we are already beyond the totalDays, we should never go under it again
                 //stop searching
                 break;
             }
         }
-        
+
         //update the calendar's bio
         calendar.set("bio","<u>Upcoming Events</u>" + this.scheduleToText(schedule));
-        
+
         log("===============================GM SECTION=====================================")
         //convert the hidden calendar into a schedule object
         var schedule = this.getSchedule(CalendarGMNotes);
         log("schedule")
         log(schedule)
-        
+
         //continue working with the hidden schedule until there is nothing left to work with
         while(schedule.length > 0){
             //calculate the total days for this event
@@ -896,7 +894,7 @@ function Calendar(day,month,year) {
                     //keep checking to see if this repeating event happens again
                     var baseDays = schedule[0]["Day"] + schedule[0]["Month"]*this.DaysInAMonth + schedule[0]["Year"]*this.DaysInAMonth*this.MonthNames.length;
                     var repeatDays = 0;
-                    
+
                     log("Base Days")
                     log(baseDays)
                     log("Repeat Days")
@@ -920,61 +918,82 @@ function Calendar(day,month,year) {
                 }
                 //remove this event from the calendar
                 schedule.shift();
-                
+
             } else {
                 //we are making the foolish assumption that the events are in chronological order
-                //thus if we are already beyond the totalDays, we should never go under it again                
+                //thus if we are already beyond the totalDays, we should never go under it again
                 //stop searching
                 break;
             }
         }
-        
+
         //update the calendar's gmnotes
         calendar.set("gmnotes","<u>Upcoming Hidden Events</u>" + this.scheduleToText(schedule));
-        
+
         //nothing bad happened
         return true;
     }
-   
+
+
+
    //age a character by a number of days
-    this.AgeCharacter = function(charID,days){
-        
-        //get character's age
-        var ageObj = findObjs({ type: 'attribute', characterid: charID, name: "Age" })[0];
-        //was anything found?
-        if(ageObj == undefined){
-            sendChat("System","/w gm Age not found.");
-            return;
-        }
-        //the age should be stated as a pair of strings of 'X years' for the current and 'Y days' for the max
-        //convert the strings into numbers
-        var ageYears = Number(ageObj.get("current").substring(0,ageObj.get("current").indexOf(" years")));
-        var ageDays  = Number(ageObj.get("max").substring(0,ageObj.get("max").indexOf(" days")));
-        
-        //be sure the years and days were found
-        if(ageYears == NaN || ageYears == undefined){
-            sendChat("System","/w gm Age.Years invalid. Reseting it to 20 years.");
-            ageYears = 20;
-        }
-        if(ageDays == NaN || ageDays == undefined){
-            sendChat("System","/w gm Age.Days invalid. Reseting it to 0 days.");
-            ageDays = 0;
-        }
-        log(ageYears + " years and " + ageDays)
-        //increse the age
-        ageDays += days;
-        
-        //let any overflow go into years
-        while(ageDays >= this.DaysInAMonth * this.MonthNames.length){
-            ageDays -= this.DaysInAMonth * this.MonthNames.length;
-            ageYears++;
-        }
-        log(ageYears + " years and " + ageDays)
-        //record the resultant age
-        ageObj.set('current',ageYears.toString() + " years");
-        ageObj.set('max',ageDays.toString() + " days");
+    this.ageCharacters = function(delta_t){
+
+        //get the age of every character
+        dayObjs  = findObjs({ _type: "attribute", name: "Age_Days"});
+        yearObjs = findObjs({ _type: "attribute", name: "Age_Years"});
+
+        //organize the attributes by character id
+        var charAges = [];
+        _.each(dayObjs,function(dayObj){
+          //be sure the character id has not been added yet
+          for(var i = 0; i < charAges.length; i++){
+            if(charAges[i].id == dayObj.get("characterid")){
+              return;
+            }
+          }
+          //add the first age_years with a matching character id
+          for(var i = 0; i < yearObjs.length; i++){
+            if(yearObjs[i].get("characterid") == dayObj.get("characterid")){
+              charAges.push({id: yearObjs[i].get("characterid"), days: dayObj, years: yearObjs[i]});
+              return;
+            }
+          }
+        });
+
+        //calculate the days in a year
+        var daysInAYear = this.DaysInAMonth * this.MonthNames.length;
+
+        //add the time in days to each age
+        //spill over any excess days into years
+        //update the characters
+        _.each(charAges,function(charAge){
+          var totalDays = Number(charAge.days.get("max")) + Number(delta_t);
+          var totalYears = Number(charAge.years.get("max"));
+
+          //be sure the years and days were valid
+          if(totalYears == NaN){
+              whisper(getObj("character",charAge.id).get("name") + "\'s Age_Years is invalid. Reseting it to 20 years.");
+              totalYears = 20;
+          }
+          if(totalDays == NaN){
+              whisper(getObj("character",charAge.id).get("name") + "\'s Age_Days is invalid. Reseting it to 20 years.");
+              totalDays = 0;
+          }
+
+          //let any overflow go into years
+          while(totalDays >= daysInAYear){
+              totalDays -= daysInAYear;
+              totalYears++;
+          }
+
+          //record the results
+          charAge.days.set("current",totalDays);
+          charAge.days.set("max",totalDays);
+          charAge.years.set("current",totalYears);
+          charAge.years.set("max",totalYears);
+        });
     }
-    
 }
 
 on("chat:message", function(msg) {
@@ -997,7 +1016,7 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
     //if the update was successful...
     //load up the day variable
     var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Day" })[0];
-    
+
     //update the day
     attribObj.set("current",currentTime["Day"]);
     //load up the month variable
@@ -1008,68 +1027,16 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
     var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Year" })[0];
     //update the year
     attribObj.set("current",currentTime["Year"]);
-    
+
     //age the player characters
-    myCalendar.AgeCharacter("-K8GPuGMVrED4Cr4_c5l",currentTime["days"])//Naamah
-    myCalendar.AgeCharacter("-K8AP2b2Hjm0JfHh7opN",currentTime["days"])//Bill
+    myCalendar.ageCharacters(currentTime["days"]);
     //myCalendar.AgeCharacter("Ken",currentTime["days"])
-    
+
     //report the time
     myCalendar.show("<br>It is now the ", null);
     //get rid of the evidence
     delete myCalendar;
-} else if(msg.type == "api" && msg.content == "!Time"){
-    //load the GM variables
-    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
-    //create the Calendar Object based on the stored GM variables
-    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
-    //who are we talking to?
-    var whisperTarget = msg.who;
-    //shorten the target name to one word
-    if(whisperTarget.indexOf(" ") != -1){
-        whisperTarget = whisperTarget.substring(0,whisperTarget.indexOf(" "));
-    }
-    //report the time
-    myCalendar.show("It is currently the ", whisperTarget);
-    //get rid of the evidence
-    delete myCalendar;
-} else if(msg.type == "api" && msg.content.indexOf("!Time ?+ ") == 0){
-    //load the GM variables
-    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
-    //create the Calendar Object based on the stored GM variables
-    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
-    //advance the Calendar forward by the stated time
-    var currentTime = myCalendar.advance(msg.content.substring(9));
-    //do not save the result!
-    
-    //who are we talking to?
-    var whisperTarget = msg.who;
-    //shorten the target name to one word
-    if(whisperTarget.indexOf(" ") != -1){
-        whisperTarget = whisperTarget.substring(0,whisperTarget.indexOf(" "));
-    }
-    //report the time
-    myCalendar.show("It will be the ", whisperTarget);
-    //get rid of the evidence
-    delete myCalendar;
-} else if(msg.type == "api" && msg.content.indexOf("!Time ? ") == 0){
-    //load the GM variables
-    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
-    //create the Calendar Object based on the stored GM variables
-    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
-    //advance the Calendar forward by the stated time
-    var currentTime = myCalendar.textToNumbers(msg.content.substring(8));
 
-    //who are we talking to?
-    var whisperTarget = msg.who;
-    //shorten the target name to one word
-    if(whisperTarget.indexOf(" ") != -1){
-        whisperTarget = whisperTarget.substring(0,whisperTarget.indexOf(" "));
-    }
-    //report the time in number format
-    sendChat("System", "/w " + whisperTarget + " " + myCalendar.difference(currentTime) + msg.content.substring(8));
-    //get rid of the evidence
-    delete myCalendar;
 } else if(msg.type == "api" && msg.content.indexOf("!Event ") == 0 && playerIsGM(msg.playerid)){
     log(msg.content.substring(7))
     //create the Calendar Object based on the stored GM variables
@@ -1087,4 +1054,52 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
     //get rid of the evidence
     delete myCalendar;
 }
+});
+
+//wait for the Central Input object to initialize
+on("ready",function(){
+  //Lets the user quickly learn the current date
+  CentralInput.addCMD(/^!\s*time\s*\??\s*$/i,function(matches,msg){
+    //load the GM variables
+    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
+    //create the Calendar Object based on the stored GM variables
+    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
+    //report the time
+    myCalendar.show("It is currently the ", msg.playerid);
+    //get rid of the evidence
+    delete myCalendar;
+  });
+
+  //Lets the user ask what day it will be after <x> days|weeks|etc
+  CentralInput.addCMD(/^!\s*time\s*\?\s*\+\s*((?:\d+\s*(?:day|month|week|year|decade|century)s?\s*)+)$/i,function(matches,msg){
+    //load the GM variables
+    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
+    //create the Calendar Object based on the stored GM variables
+    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
+    //advance the Calendar forward by the stated time
+    var currentTime = myCalendar.advance(matches[1]);
+    //do not save the result!
+
+    //report the time
+    myCalendar.show("It will be the ", msg.playerid);
+    //get rid of the evidence
+    delete myCalendar;
+  });
+
+  //Lets the user ask how long until the given date
+  CentralInput.addCMD(/^!\s*time\s*\?\s*([^\+\s].*)$/i,function(matches,msg){
+    //load the GM variables
+    var storage =  findObjs({type: 'character', name: "Calendar"})[0];
+    //create the Calendar Object based on the stored GM variables
+    myCalendar = new Calendar(getAttrByName(storage.id,"Day"),getAttrByName(storage.id,"Month"), getAttrByName(storage.id,"Year"));
+    //advance the Calendar forward by the stated time
+    var currentTime = myCalendar.textToNumbers(matches[1]);
+
+    //report the time in number format
+    whisper(myCalendar.difference(currentTime) + matches[1],msg.playerid);
+    //get rid of the evidence
+    delete myCalendar;
+  });
+
+
 });

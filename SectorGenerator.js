@@ -1,6 +1,6 @@
 function Sector(){
     this.Grid = [];  //create an array to hold the system objects
-    
+
     //create a function to randomly make a connected blob of systems
     this.GenerateGrid = function(size){
         //reset the grid
@@ -16,7 +16,7 @@ function Sector(){
                 this.Grid[i][j].Y = [];
             }
         }
-        
+
         //now that the grid exists, with a list of connections ready for each system, generate connections between the systems
         //step through each system in the grid
         for(var i = 0; i < size; i++){
@@ -56,8 +56,8 @@ function Sector(){
                 }
             }
         }
-        
-        
+
+
         //now that the grid is randomly connected, label each connected blob
         //create a label counter
         var counter = 0;
@@ -94,7 +94,7 @@ function Sector(){
                 }
             }
         }
-        
+
         //now that the blobs are labeled, find the biggest blob
         //create an array to tally how big each blob is
         var tally = [];
@@ -114,7 +114,7 @@ function Sector(){
                 largestTally = k;
             }
         }
-        
+
         //now that the largest blob has been found, delete the connections of all the systems within other blobs
         for(var i = 0; i < size; i++){
             for(var j = 0; j < size; j++){
@@ -126,14 +126,14 @@ function Sector(){
                 }
             }
         }
-        
+
         //output the number of connections each system has
         var output = "";
         for(var i = 0; i < size; i++){
             output += "|";
             for(var j = 0; j < size; j++){
                 if(this.Grid[i][j].X.length == 0){
-                    output += "--";  
+                    output += "--";
                 } else if(this.Grid[i][j].X.length < 10){
                     output += " " + this.Grid[i][j].X.length;
                 } else {
@@ -145,13 +145,13 @@ function Sector(){
             output += "<br>";
         }
         //find the damage catcher character sheet
-        var outputWindow = findObjs({                              
+        var outputWindow = findObjs({
           _type: "character",
           name: "Damage Catcher"
         })[0];
-        
+
         outputWindow.set('gmnotes',output);
-        
+
         sendChat("System","/w gm Largest Blob " + tally[largestTally].toString());
     }
     //create a function to build up a map of the sector, start by hiding everything in the GM Overlay so that players cannot see what is ahead
@@ -173,20 +173,20 @@ function Sector(){
         }
         //clear the room of any objects
         //find all of the objects on this page
-        var SectorGraphics = findObjs({                              
-          _pageid: SectorRoom.id,                              
-          _type: "graphic",                          
+        var SectorGraphics = findObjs({
+          _pageid: SectorRoom.id,
+          _type: "graphic",
         });
         //delete each found object
         _.each(SectorGraphics, function(obj) {obj.remove();});
-        
+
         //size the room according to the grid size
         SectorRoom.set("width",2*this.Grid.length);
         SectorRoom.set("height",2*this.Grid.length);
-        
+
         //write the width of the connection ahead of time, so that it can be easily adjusted later
         var connectionWidth = 30;
-        
+
         //add any system which has > 0 connections
         for(var i = 0; i < this.Grid.length; i++){
             for(var j = 0; j < this.Grid[i].length; j++){
@@ -194,7 +194,7 @@ function Sector(){
                     //where will the system and all of its connections be placed?
                     this.Grid[i][j].Left = 35 + 140 * j + randomInteger(69);
                     this.Grid[i][j].Top = 35 + 140 * i + randomInteger(69);
-                    
+
                     //place the system at a slightly randomized position
                     var systemToken = createObj("graphic", {
                         name: "?????",
@@ -215,11 +215,11 @@ function Sector(){
                 }
             }
         }
-        
+
         //now that all the tokens are on the map, write down the connections with the token IDs
         for(var i = 0; i < this.Grid.length; i++){
             for(var j = 0; j < this.Grid[i].length; j++){
-                //only add connection notes 
+                //only add connection notes
                 if(this.Grid[i][j].X.length > 0){
                     //reset the list of warp connections and their duration
                     var warpTravel = "";
@@ -308,10 +308,10 @@ function Sector(){
                 }
             }
         }
-        
-        
+
+
     }
-    
+
     //attempts to create a NewSystem for a selected token on the map
     this.TokenToSystem = function(obj,content){
         //get the graphic object
@@ -362,7 +362,7 @@ function Sector(){
             });
         }
     }
-    
+
     this.UpdateConnections = function(token){
         //get the graphic
         var graphic = getObj("graphic",token._id);
@@ -406,7 +406,7 @@ function Sector(){
         //alert the GM
         sendChat("System","/w gm " + graphic.get("name") + "'s connections updated.");
     }
-    
+
 }
 
 on("chat:message", function(msg) {
@@ -422,7 +422,7 @@ if(msg.type == 'api' && msg.content.indexOf('!NewSector ') == 0 && playerIsGM(ms
         var graphic = getObj("graphic", msg.selected[0]._id);
         //be sure the graphic is valid
         if(graphic == undefined){
-            sendChat(msg.who, "/em - graphic undefined.") 
+            sendChat(msg.who, "/em - graphic undefined.")
             return;
         }
         log("imgsrc");
@@ -438,11 +438,11 @@ if(msg.type == 'api' && msg.content.indexOf('!NewSector ') == 0 && playerIsGM(ms
     mySector = new Sector();
     _.each(msg.selected,function(obj){
         mySector.TokenToSystem(obj,msg.content)
-    });   
+    });
 } else if(msg.type == "api" && msg.content.indexOf("!UpdateConnections") == 0 && playerIsGM(msg.playerid) && msg.selected){
     log("connections")
     mySector = new Sector();
-    
+
     _.each(msg.selected,function(obj){
         log(obj)
         mySector.UpdateConnections(obj)

@@ -1,1145 +1,1158 @@
+//searches every message for rolls to hit and damage rolls.
 on("chat:message", function(msg) {
-    //if the message matches the traditional pattern, the system records the Damage, Damage Type, Penetration, and Primitive
-    if( (((msg.type == "emote" && msg.content.indexOf( "- ") !== -1) || (msg.type == "whisper" && msg.target == "gm"))
-    && msg.content.indexOf(" deals ") !== -1
-    && msg.content.indexOf(" Damage, ") !== -1
-    && msg.content.indexOf(" Pen") !== -1
-    && (msg.content.indexOf(" with ") !== -1 ))//|| msg.content.indexOf(" with an ") !== -1
-    || (msg.content.indexOf("{{Damage= $[[0]]}}") != -1
-    && msg.content.indexOf("{{Pen=  $[[1]]}}") != -1
-    && msg.content.indexOf("{{name=<strong>Damage</strong>: ")   )
-    && msg.inlinerolls.length > 1)
-  {
-      log(msg.inlinerolls)
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "DamageType" })[0];
-      
-      //I don't know why I need to do this BUT for some reason when the message is sent by the API
-      //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
-      //"with a(n) " is the generic method I have the api using. Player sent commands are expected to be more intelligent
-      if(msg.inlinerolls[0] == undefined){
-        var rollIndex = 1;
-      } else {
-        var rollIndex = 0;
-      }
-      log("rollIndex")
-      log(rollIndex)
-      log("msg.inlinerolls[0]")
-      log(msg.inlinerolls[0])
-      log("msg.inlinerolls[1]")
-      log(msg.inlinerolls[1])
-      log("msg.inlinerolls[2]")
-      log(msg.inlinerolls[2])
-      //record Damage Type
-      var DamageType;
-      if(msg.content.indexOf(" Energy ") !== -1 || msg.content.indexOf(">E<") !== -1){
-          DamageType = "E";
-          attribObj.set('current', "E");
-      } else if(msg.content.indexOf(" Rending ") !== -1 || msg.content.indexOf(">R<") !== -1){
-          DamageType = "R";
-          attribObj.set('current', "R");
-      } else if(msg.content.indexOf(" Explosive ") !== -1 || msg.content.indexOf(">X<") !== -1){
-          DamageType = "X";
-          attribObj.set('current', "X");
-      } else {//if(msg.content.indexOf(" Energy ") !== -1){
-          DamageType = "I";
-          attribObj.set('current', "I");
-      }
-      
-      //record Damage
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      attribObj.set('current', msg.inlinerolls[rollIndex].results.total);
-      log(msg.inlinerolls[rollIndex].results.total)
-      log(msg.inlinerolls[rollIndex].results.rolls[0].results)
-      
-      //record the lowest damage roll
-      var lowest = 10
-      for(i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
-          if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
-              lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
-          }
-      }   
-      
-      //record Penetration
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      attribObj.set('current', msg.inlinerolls[rollIndex + 1].results.total);
-      
-      //record Felling
-      var fellingIndex = msg.content.indexOf("Felling");
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Felling" })[0];
-      //is there any Felling inside the weapon?
-      if(fellingIndex >= 0){
-          //find the parenthesis after Felling
-          var startIndex = msg.content.indexOf("(",fellingIndex);
-          var endIndex = msg.content.indexOf(")",startIndex);
-          //be sure the parenthesis were both found
-          if (startIndex >= 0 && endIndex >= 0 && Number(msg.content.substring(startIndex+1,endIndex))){
-              //record the amount of felling
-              attribObj.set('current',Number(msg.content.substring(startIndex+1,endIndex)));
-          } else {
-              //record zero felling
-              attribObj.set('current', 0);
-          }
-      } else {
-          //record zero felling
-          attribObj.set('current', 0);
-      }
-      
-      //record Primitive
-      if(msg.content.indexOf("Primitive") != -1 && msg.content.indexOf("Mono") == -1) {
-        //report to the gm that everything was found
-        sendChat("System","/w gm Dam: " + Number(getAttrByName(storage.id, "Damage")) + " " + DamageType + ", Pen: " +  msg.inlinerolls[rollIndex + 1].results.total + ", Felling: " + Number(getAttrByName(storage.id, "Felling")) + ", Primitive");  
-        
-        //record Primitive
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Primitive" })[0];
-        attribObj.set('current', 1);
-      }  else {
-        //report to the gm that everything was found
-        sendChat("System","/w gm Dam: " + Number(getAttrByName(storage.id, "Damage")) + " " + DamageType + ", Pen: " +  msg.inlinerolls[rollIndex + 1].results.total + ", Felling: " + Number(getAttrByName(storage.id, "Felling")));  
-        
-        //record Primitive
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Primitive" })[0];
-        attribObj.set('current', 0);
-      }
-      //was this a private attack?
-      if(msg.type == "whisper"){
-        //report the lowest roll privately
-        sendChat("System",'/w gm <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")  
-      } else {
-        //report the lowest roll publicly
-        sendChat("",'/desc <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")    
-      }
-      
-        
-  } //if the message matches the traditional roll to hit, record the roll
-  else if((msg.type == "emote"
-  && msg.content.indexOf("- ") != -1
-  && msg.content.indexOf(" rolls ") != -1
-  && (msg.content.indexOf(" successes on a WS test for ") != -1 || msg.content.indexOf(" successes on a BS test for ") != -1 || msg.content.indexOf(" successes on a Wp test for ") != -1))
-  ||((msg.content.indexOf(" {{name=<strong>WS</strong>: ") != -1 || msg.content.indexOf(" {{name=<strong>BS</strong>: ") != -1 || msg.content.indexOf(" {{name=<strong>Wp</strong>: ") != -1)
-  && msg.content.indexOf("{{Successes=$[[0]]}} {{Unnatural= $[[1]]}}") != -1)
-  && msg.inlinerolls.length == 2) {
-        //load up the AmmoTracker object to calculate the hit location
-        myTracker = new AmmoTracker();
-        myTracker.calculateLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
-        
-        //load up the GM variables
-        var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-        //record the number of hits
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-        //the negative modifier keeps the total number of hits <= 1 while still storing the number of hits, this is because all hits are assumed to be Single Shot mode
-        attribObj.set('current', -1*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total)));
-        
-        //was the roll a Wp check?
-        if(msg.content.indexOf(" {{name=<strong>Wp</strong>: ") != -1){
-            //was the one's place a 9?
-            if((msg.inlinerolls[0].results.rolls[1].results[0].v - 10*Math.floor(msg.inlinerolls[0].results.rolls[1].results[0].v/10)) == 9){
-                sendChat("The warp","/em makes an unexpected twist.")
-            }
-            
-        }
-  }
-  else if(msg.type == "api" && msg.content.indexOf("!Dam += ") == 0 && playerIsGM(msg.playerid)){
-      if(msg.inlinerolls && msg.inlinerolls.length > 0) {
-        //be sure we are accessing data that exists
-        var rollIndex = 0;
-        if(msg.inlinerolls[rollIndex] == undefined){
-            rollIndex++;
-        }
-        var DamageModifier = msg.inlinerolls[rollIndex].results.total;
-      } else {
-        //get the damage modifier from the input
-        var DamageModifier = Number(msg.content.substring(8)) || 0;
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      //add the modifier
-      attribObj.set('current', Number(getAttrByName(storage.id, "Damage")) + DamageModifier);
-      
-      //alert the GM
-      sendChat("System","/w gm Dam = " + getAttrByName(storage.id, "Damage"));
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Dam *= ") == 0 && playerIsGM(msg.playerid)){
-      if(msg.inlinerolls && msg.inlinerolls.length > 0) {
-        //be sure we are accessing data that exists
-        var rollIndex = 0;
-        if(msg.inlinerolls[rollIndex] == undefined){
-            rollIndex++;
-        }
-        //record the randomized total
-        var DamageModifier = msg.inlinerolls[rollIndex].results.total;
-      } else {
-        //get the damage modifier from the input
-        var DamageModifier = Number(msg.content.substring(8)) || 0;
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      //multiply by the modifier
-      attribObj.set('current', Number(getAttrByName(storage.id, "Damage")) * DamageModifier);
-      
-      //alert the GM
-      sendChat("System","/w gm Dam = " + getAttrByName(storage.id, "Damage"));
-  }  
-  else if(msg.type == "api" && msg.content.indexOf("!Dam -= ") == 0 && playerIsGM(msg.playerid)){
-      if(msg.inlinerolls && msg.inlinerolls.length > 0) {
-        //be sure we are accessing data that exists
-        var rollIndex = 0;
-        if(msg.inlinerolls[rollIndex] == undefined){
-            rollIndex++;
-        }
-        //record the randomized total
-        var DamageModifier = msg.inlinerolls[rollIndex].results.total;
-      } else {
-        //get the damage modifier from the input
-        var DamageModifier = Number(msg.content.substring(8)) || 0;
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      //subtract the modifier
-      attribObj.set('current', Number(getAttrByName(storage.id, "Damage")) - DamageModifier);
-      
-      //alert the GM
-      sendChat("System","/w gm Dam = " + getAttrByName(storage.id, "Damage"));
-  }  
-  else if(msg.type == "api" && msg.content.indexOf("!Dam /= ") == 0 && playerIsGM(msg.playerid)){
-      if(msg.inlinerolls && msg.inlinerolls.length > 0) {
-        //be sure we are accessing data that exists
-        var rollIndex = 0;
-        if(msg.inlinerolls[rollIndex] == undefined){
-            rollIndex++;
-        }
-        //record the randomized total
-        var DamageModifier = msg.inlinerolls[rollIndex].results.total;
-      } else {
-        //get the damage modifier from the input
-        var DamageModifier = Number(msg.content.substring(8)) || 0;
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      //divide by the modifier
-      attribObj.set('current', Math.round(Number(getAttrByName(storage.id, "Damage")) / DamageModifier));
-      
-      //alert the GM
-      sendChat("System","/w gm Dam = " + getAttrByName(storage.id, "Damage"));
-  }  
-  else if(msg.type == "api" && msg.content.indexOf("!Dam = ") == 0 && playerIsGM(msg.playerid)){
-      if(msg.inlinerolls && msg.inlinerolls.length > 0) {
-        //be sure we are accessing data that exists
-        var rollIndex = 0;
-        if(msg.inlinerolls[rollIndex] == undefined){
-            rollIndex++;
-        }
-        //record the randomized total
-        var DamageModifier = msg.inlinerolls[rollIndex].results.total;
-      } else {
-        //get the damage modifier from the input
-        var DamageModifier = Number(msg.content.substring(7)) || 0;
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      //set the Damage
-      attribObj.set('current', DamageModifier);
-      
-      //alert the GM
-      sendChat("System","/w gm Dam = " + getAttrByName(storage.id, "Damage"));
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Dam") == 0 && playerIsGM(msg.playerid)) {
-       if(msg.selected) {
-          _.each(msg.selected, function(obj){
-          var graphic = getObj("graphic", obj._id);
-          //be sure the graphic exists
-          if(graphic == undefined) {
-              sendChat(msg.who, "/w gm - Nope2.");
-              return;
-          }
-          
-          //be sure the character is valid
-          var character = getObj("character",graphic.get("represents"))
-          if(character == undefined){
-              sendChat(msg.who, "/w gm - character undefined.") 
-              return;
-          }
-           //bring up the system variables sheet
-          var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-          var armour = null;
-          var damage = Number(getAttrByName(storage.id, "Damage"));
-          var location = msg.content.substring(5).trim().toLowerCase();
-          
-          //get the armour of the appropriate location
-          //getAttrByName(character.id, "Vehicle") || 
-          
-          //is the target a vehicle?
-          if(getAttrByName(character.id,"Structural Integrity") != undefined) {
-              //has the user specified a specific location?
-              if(location != ""){
-                  switch(location) {
-                      case "rear": case "r": //the side was preset to hit the rear arour
-                        armour = Number(getAttrByName(character.id, "Armour_R"));
-                        location = "vehicle";
-                        break;
-                      case "side": case "s": //the side was preset to hit the side armour
-                        armour = Number(getAttrByName(character.id, "Armour_S"));
-                        location = "vehicle"
-                        break;
-                      case "front": case "f": //If a side has not been preset, hit the front armour
-                        armour = Number(getAttrByName(character.id, "Armour_F"));
-                        location = "vehicle"
-                        break;
-                  }
-              }
-              //have we loaded up a specific armour location yet?
-              if(armour == null) {
-                  switch(getAttrByName(storage.id, "TensLocation")) {
-                      case "-2": //the side was preset to hit the rear arour
-                        armour = Number(getAttrByName(character.id, "Armour_R"));
-                        location = "vehicle";
-                        break;
-                      case "-1": //the side was preset to hit the side armour
-                        armour = Number(getAttrByName(character.id, "Armour_S"));
-                        location = "vehicle"
-                        break;
-                      default: //If a side has not been preset, hit the front armour
-                        armour = Number(getAttrByName(character.id, "Armour_F"));
-                        location = "vehicle"
-                        break;
-                  }
-             }
-          }
-          //is the target a starship?
-          else if(getAttrByName(character.id,"Hull") != undefined){
-              //has the user specified a location?
-              if(location != ""){
-                  switch(location) {
-                      case "rear": case "r": case "aft": case "a": //the side was preset to hit the rear arour
-                        armour = Number(getAttrByName(character.id, "Armour_A"));
-                        location = "starship";
-                        break;
-                      case "side": case "s": case "starboard": //the side was preset to hit the side armour
-                        armour = Number(getAttrByName(character.id, "Armour_S"));
-                        location = "starship"
-                        break;
-                      case "front": case "f": case "fore": //hit the front armour
-                        armour = Number(getAttrByName(character.id, "Armour_F"));
-                        location = "starship"
-                        break;
-                      case "port": case "p": //hit the portside
-                        armour = Number(getAttrByName(character.id, "Armour_P"));
-                        location = "starship"
-                        break;
-                  }
-              }
-              //have we loaded up a specific armour location yet?
-              if(armour == null) {
-                  switch(getAttrByName(storage.id, "TensLocation")) {
-                      case "-1": //the side was preset to hit the rear arour
-                        armour = Number(getAttrByName(character.id, "Armour_A"));
-                        location = "starship";
-                        break;
-                      case "-2": //the side was preset to hit the side armour
-                        armour = Number(getAttrByName(character.id, "Armour_S"));
-                        location = "starship"
-                        break;
-                      case "-3": //hit the portside
-                        armour = Number(getAttrByName(character.id, "Armour_P"));
-                        location = "starship"
-                        break;
-                      default:  //hit the front armour
-                        armour = Number(getAttrByName(character.id, "Armour_F"));
-                        location = "starship"
-                        break;
-                  }
-             }
-          }
-          //the target is assumed to be a person
-          else{
-              //has the user specified a location?
-              if(location != ""){
-                  switch(location) {
-                      case "head": case "h":
-                          armour = Number(getAttrByName(character.id, "Armour_H"));
-                          location = "Head"
-                          break;
-                      case "right leg": case "rl":
-                          armour = Number(getAttrByName(character.id, "Armour_RL"));
-                          location = "Leg"
-                          break;
-                      case "left leg": case "ll":
-                          armour = Number(getAttrByName(character.id, "Armour_LL"));
-                          location = "Leg"
-                          break;
-                      case "right arm": case "ra":
-                          armour = Number(getAttrByName(character.id, "Armour_RA"));
-                          location = "Arm"
-                          break;
-                      case "left arm": case "la":
-                          armour = Number(getAttrByName(character.id, "Armour_LA"));
-                          location = "Arm"
-                          break;
-                      case "body": case "b":
-                          armour = Number(getAttrByName(character.id, "Armour_B"));
-                          location = "Body"
-                          break;
-                  }
-              }
-              //has the armour still not been specified yet?
-              if(armour == null){
-                switch(getAttrByName(storage.id, "OnesLocation")) {
-                  case 0:
-                  case 10:
-                      armour = Number(getAttrByName(character.id, "Armour_H"));
-                      location = "Head"
-                      break;
-                  case 1:
-                  case 2:
-                  case 3:
-                      if(getAttrByName(storage.id, "TensLocation") % 2 == 0) {
-                        armour = Number(getAttrByName(character.id, "Armour_RL"));
-                      } else {
-                        armour = Number(getAttrByName(character.id, "Armour_LL"));
-                      }
-                      location = "Leg"
-                      break;
-                  case 8:
-                  case 9:
-                      if(getAttrByName(storage.id, "TensLocation") % 2 == 0) {
-                        armour = Number(getAttrByName(character.id, "Armour_RA"));
-                      } else {
-                        armour = Number(getAttrByName(character.id, "Armour_LA"));
-                      }
-                      location = "Arm"
-                      break;
-                  default:
-                      armour = Number(getAttrByName(character.id, "Armour_B"));
-                      location = "Body"
-                      break;
-               }  
-              }          
-          }
-          //penetration for starships is handled differently
-          if(getAttrByName(character.id,"Hull") == undefined){
-              //multiply armour if damage is primitive
-              if(Number(getAttrByName(storage.id, "Primitive")) != 0){ armour *= 2;}
-              
-              //use penetration against the armour
-              armour -= Number(getAttrByName(storage.id, "Penetration"));
-              
-              //be sure armour is not left in the negative
-              if(armour < 0){armour = 0;}
-          } else {
-              //if attacking a starship and the penetration is greater than zero, ignore all armour
-             if(Number(getAttrByName(storage.id, "Penetration")) != 0){
-                 armour = 0;
-             }
-          }
-          //reduce the damage by the remaining armour
-          damage -= armour;
-          
-          //reduce the damage by Toughness Bonus
-          //only do this if the target is not a vehicle
-          if(getAttrByName(character.id,"Structural Integrity") == undefined && getAttrByName(character.id,"Hull") == undefined) {
-            damage -= Math.floor(Number(getAttrByName(character.id, "T"))/10);
-            //reduce the damage by Unnatural Toughness
-            damage -= Number(getAttrByName(character.id, "Unnatural T"));
-            //add one more to the T bonus (reducing the damage by one) if the token if frenzied
-            if(graphic.get("status_red")){
-                damage -= 1;
-            }
-            //add damage for Felling
-            if(Number(getAttrByName(character.id, "Unnatural T")) > Number(getAttrByName(storage.id, "Felling"))){
-                damage += Number(getAttrByName(storage.id, "Felling"));
-            } else {
-                damage += Number(getAttrByName(character.id, "Unnatural T"));
-            }
-            
-          }
-          
-          //be sure the damage is not left in the negative
-          if(damage < 0){damage = 0;}
-          //check if you are damaging a Horde
-          if(graphic.get("bar2_value") == "H" && damage > 0){
-              //by default only do one horde damage
-              if(getAttrByName(storage.id, "Hits") <= 1)
-              {
-                  damage = 1;
-              } else {
-                  //otherwise it will do damage equal to the number of hits
-                  damage = getAttrByName(storage.id, "Hits");
-              }
-          }
-          
-          //report how much damage was done
-          sendChat("System", "/w gm " + graphic.get("name") + " takes " + damage + " damage.")
-          
-          //temporarily use damage to store the new vaule for the 3rd bar
-          damage = Number(graphic.get("bar3_value")) - damage;
-          //has the target taken critical damage?
-          if(damage < 0){
-              if(location == "vehicle"){
-                  sendChat("System","<strong>Critical Damage</strong>: " + GetLink("Vehicle Critical Effects") + " (" + Math.ceil(-1 * damage.toString() / Math.max(1,Math.floor(Number(getAttrByName(character.id, "Structural Integrity"))/10) + Number(getAttrByName(character.id, "Unnatural Structural Integrity"))) )  + ")" )  
-              } else if(location == "starship"){
-                  sendChat("System","<strong>Critical Damage</strong>: " + damage.toString() + " " + GetLink("Starship Critical Effects"))  
-                  //starship critical damage is not saved
-                  damage = 0;
-              } else {
-                  switch(getAttrByName(storage.id, "DamageType")){
-                      case "I": 
-                          sendChat("System","<strong>Critical Damage</strong>: " + GetLink("Impact Critical Effects - " + location) + " (" + Math.ceil(-1 * damage.toString() / Math.max(1,Math.floor(Number(getAttrByName(character.id, "Wounds"))/10) + Number(getAttrByName(character.id, "Unnatural Wounds"))) ) + ")")
-                      break;
-                      case "R": 
-                          sendChat("System","<strong>Critical Damage</strong>: " + GetLink("Rending Critical Effects - " + location) + " (" + Math.ceil(-1 * damage.toString() / Math.max(1,Math.floor(Number(getAttrByName(character.id, "Wounds"))/10) + Number(getAttrByName(character.id, "Unnatural Wounds"))) ) + ")")  
-                      break;
-                      case "X": 
-                          sendChat("System","<strong>Critical Damage</strong>: " + GetLink("Explosive Critical Effects - " + location) + " (" + Math.ceil(-1 * damage.toString() / Math.max(1,Math.floor(Number(getAttrByName(character.id, "Wounds"))/10) + Number(getAttrByName(character.id, "Unnatural Wounds"))) ) + ")")  
-                      break;
-                      case "E": 
-                          sendChat("System","<strong>Critical Damage</strong>: " + GetLink("Energy Critical Effects - " + location) + " (" + Math.ceil(-1 * damage.toString() / Math.max(1,Math.floor(Number(getAttrByName(character.id, "Wounds"))/10) + Number(getAttrByName(character.id, "Unnatural Wounds"))) ) + ")")  
-                      break;
-                  }
-              }
-              
-          }
-          
-          //update the 3rd bar to the correct vaule
-          graphic.set("bar3_value",damage.toString());
-          }); //end _.each function
-          //starship damage is reset to 0 after use. This is because Starship damage adds up to overwhelm the armour of starships
-          var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-          var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "DamageType" })[0];
-          if(attribObj.get('current') == "S"){
-              //the damage has been used up, delete the damage
-              attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-              attribObj.set('current', 0);
-          }
-          //load up the AmmoTracker object to calculate the next hit location
-          myTracker = new AmmoTracker();
-          myTracker.calculateLocation(randomInteger(100));
-        }
-        else {
-            //nothing was selected
-            sendChat(msg.who, "/w gm - Nope1.");
-        }
-        
-      
-  } 
-  else if(msg.type == "api" && msg.content == "!Primitive" && playerIsGM(msg.playerid)){
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Primitive" })[0];
-      //multiply by the modifier
-      if(Number(getAttrByName(storage.id, "Primitive"))){
-          attribObj.set('current', 0);
-          //alert the GM
-          sendChat("System","/w gm Not Primitive");
-      } else {
-          attribObj.set('current', 1);
-          sendChat("System","/w gm Primitive");
-      }
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Pen = ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var PenModifier = Number(msg.content.substring(7)) || 0;
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //set the Penetration
-      attribObj.set('current', PenModifier);
-      //alert the GM
-      sendChat("System","/w gm Pen = " + getAttrByName(storage.id, "Penetration"));      
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Pen += ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var PenModifier = Number(msg.content.substring(8)) || 0;
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //add the modifier
-      attribObj.set('current', PenModifier + Number(getAttrByName(storage.id, "Penetration")));
-      //alert the GM
-      sendChat("System","/w gm Pen = " + getAttrByName(storage.id, "Penetration"));
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Pen -= ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var PenModifier = Number(msg.content.substring(8)) || 0;
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //add the modifier
-      attribObj.set('current', PenModifier - Number(getAttrByName(storage.id, "Penetration")));
-      //alert the GM
-      sendChat("System","/w gm Pen = " + getAttrByName(storage.id, "Penetration"));
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Pen *= ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var PenModifier = Number(msg.content.substring(8)) || 1;
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //add the modifier
-      attribObj.set('current', PenModifier * Number(getAttrByName(storage.id, "Penetration")));
-      //alert the GM
-      sendChat("System","/w gm Pen = " + getAttrByName(storage.id, "Penetration"));
-  } else if(msg.type == "api" && msg.content.indexOf("!Pen /= ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var PenModifier = Number(msg.content.substring(8)) || 1;
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //add the modifier
-      attribObj.set('current', Math.round(PenModifier / Number(getAttrByName(storage.id, "Penetration"))));
-      //alert the GM
-      sendChat("System","/w gm Pen = " + getAttrByName(storage.id, "Penetration"));
-  } else if(msg.type == "api" && msg.content.indexOf("!DamageType = ") == 0 && playerIsGM(msg.playerid)){
-      //get the damage modifier from the input
-      var input = msg.content[14].toUpperCase() || "";
-      
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Damage variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "DamageType" })[0];
-      //figure out the damage type, if it is nothing of the following, do not modify the damage type
-      if (input == 'X' || input == 'E' || input == 'R' || input == 'I' || input == "S"){
-        attribObj.set('current', input);   
-      }      
-      //alert the GM
-      sendChat("System","/w gm Damage Type = " + getAttrByName(storage.id, "DamageType"));
-  } else if(msg.type == "api" && msg.content.indexOf("!Target ") == 0 && playerIsGM(msg.playerid)) {
-    //load up the Damage Catcher variables
-    var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-    //load up the tens location and ones location variables in Damage Catcher
-    var TensLoc = findObjs({ type: 'attribute', characterid: storage.id, name: "TensLocation" })[0];
-    var OnesLoc = findObjs({ type: 'attribute', characterid: storage.id, name: "OnesLocation" })[0];
-    //figure out what we are targeting
-    switch(msg.content.substring(8).toLowerCase()){
-        case "head": case "h": 
-            OnesLoc.set('current', "0"); 
-            sendChat("System","Targeting Head"); 
-            break;
-        case "right arm": case "ra": 
-            OnesLoc.set('current', "8"); 
-            TensLoc.set('current', "0"); 
-            sendChat("System","Targeting Right Arm"); 
-            break;
-        case "left arm": case "la": 
-            OnesLoc.set('current', "8"); 
-            TensLoc.set('current', "1"); 
-            sendChat("System","Targeting Left Arm"); 
-            break;
-        case "body": case "b": 
-            OnesLoc.set('current', "4"); 
-            sendChat("System","Targeting Body"); 
-            break;
-        case "right leg": case "rl": 
-            OnesLoc.set('current', "1"); 
-            TensLoc.set('current', "0"); 
-            sendChat("System","Targeting Right Leg"); 
-            break;
-        case "left leg": case "ll": 
-            OnesLoc.set('current', "1"); 
-            TensLoc.set('current', "1"); 
-            sendChat("System","Targeting Left Leg"); 
-            break;
-        case "front": case "f": case "fore": 
-            TensLoc.set('current', "0"); 
-            sendChat("System","Targeting Front"); 
-            break;
-        case "side": case "s": case "starboard": 
-            TensLoc.set('current', "-1"); 
-            sendChat("System","Targeting Side"); 
-            break;
-        case "rear": case "r": case "aft": case "a": 
-            TensLoc.set('current', "-2"); 
-            sendChat("System","Targeting Rear"); 
-            break;
-        case "port": case "p": 
-            TensLoc.set('current', "-3"); 
-            sendChat("System","Targeting Portside"); 
-            break;
+  //if a message matches one of two types of formats, the system records the
+  //Damage, Damage Type, Penetration, Primitive, and Felling of the attack.
+  //The roll to hit, and thus the number of hits, are expected to be in a
+  //different message.
+
+  //Format 1
+  //A whisper to the gm
+  //"/w gm [name] deals [[damage]] [damagetype] Damage, [[penetration]] Pen
+  //[optional list of special rules separated by commas] with a(n) [weapon]"
+
+  //Format 2
+  //Similar to above, but in a public emote
+  //"/em - [name] deals [[damage]] [damagetype] Damage, [[penetration]] Pen
+  //[optional list of special rules separated by commas] with a/an [weapon]"
+
+  //Format 3
+  //This roll template can be whispered or publicly shown
+  //Any roll template that has a title starting with ""<strong>Damage</strong>: "
+  //and its first two inline rolls are Damage and Pen
+
+  //At least two inline rolls are expected
+  if( (((msg.type == "emote") || (msg.type == "whisper" && msg.target == "gm"))
+  && /deals\s*\$\[\[0\]\]\s*(impact|explosive|rending|energy|.*>I<.*|.*>X<.*|.*>R<.*|.*>E<.*)\s*damage,\s*\$\[\[1\]\]\s*(pen|penetration).*with\s+a/i.test(msg.content)
+  )
+  || (/^\s*{{\s*name\s*=\s*(<strong>|\*\*)\s*damage\s*(<\/strong>|\*\*):.*}}/i.test(msg.content)
+  && /{{\s*(damage|dam)\s*=\s*\$\[\[0\]\]\s*}}/i.test(msg.content)
+  && /{{\s*(penetration|pen)\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content))
+  && msg.inlinerolls.length >= 2) {
+    //load up all of the damage variables, wherever they may be
+    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+    var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+    var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+    var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
+    var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
+
+    //be sure every variable was successfully loaded
+    var successfulLoad = true;
+    //warn the gm for each attribute that was not found
+    if(DamTypeObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
     }
-  } 
-  else if(msg.type == "api" && msg.content == "!Full" && playerIsGM(msg.playerid)){
-    //load up the Damage Catcher variables
-    var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-    //load up the Hits variable in Damage Catcher
-    var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-    if(getAttrByName(storage.id, "Hits") >= 0) {
-        sendChat("System","/w gm Number of Hits already modified");
+    if(DamObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(PenObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(FellObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(PrimObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(successfulLoad == false){
+      return;
+    }
+
+    //I don't know why I need to do this BUT for some reason when the message is sent by the API
+    //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
+    //"with a(n) " is the generic method I have the api using. Player sent commands are expected to be more intelligent
+    if(msg.inlinerolls[0] == undefined){
+      var rollIndex = 1;
     } else {
-        attribObj.set('current',-1 * getAttrByName(storage.id, "Hits"));
-        sendChat("System",getAttrByName(storage.id, "Hits") + " hit(s)");
-    }
-  } else if(msg.type == "api" && msg.content == "!Semi" && playerIsGM(msg.playerid)){
-    //load up the Damage Catcher variables
-    var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-    //load up the Hits variable in Damage Catcher
-    var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-    if(getAttrByName(storage.id, "Hits") >= 0) {
-        sendChat("System","/w gm Number of Hits already modified");
-    } else {
-        //complicated formula for 1 base hit plus 1 more per two full hits
-        //the -1 * it to bring the hits from negative to positive
-        attribObj.set('current',1 + Math.floor(((-1 * getAttrByName(storage.id, "Hits")) -1)/2));
-        sendChat("System",getAttrByName(storage.id, "Hits") + " hit(s)");
-    }
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Hits += ") == 0 && playerIsGM(msg.playerid)){
-        //get the hits modifier from the input
-        var HitsModifier = Number(msg.content.substring(9)) || 0;
-        //load up the Damage Catcher variables
-        var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-        //load up the Hits variable in Damage Catcher
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-        //if there is less than one hit, assume that there is one hit (negative numbers are used for potential semi auto or full auto attacks)
-        if(getAttrByName(storage.id, "Hits") < 1){
-            attribObj.set('current', 1 + HitsModifier);
-        } else {
-            //otherwise add as normal
-            attribObj.set('current', getAttrByName(storage.id, "Hits") + HitsModifier);
-        }
-        //report the total number of hits to the GM
-        sendChat("System", "/w gm " + getAttrByName(storage.id, "Hits") + " hits");
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Hits *= ") == 0 && playerIsGM(msg.playerid)){
-        //get the hits modifier from the input
-        var HitsModifier = Number(msg.content.substring(9)) || 0;
-        //load up the Damage Catcher variables
-        var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-        //load up the Hits variable in Damage Catcher
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-        //if there is less than one hit, assume that there is one hit (negative numbers are used for potential semi auto or full auto attacks)
-        if(getAttrByName(storage.id, "Hits") < 1){
-            attribObj.set('current', HitsModifier);
-        } else {
-            //otherwise multiply as normal as normal
-            attribObj.set('current', getAttrByName(storage.id, "Hits") * HitsModifier);
-        }
-        //report the total number of hits to the GM
-        sendChat("System", "/w gm " + getAttrByName(storage.id, "Hits") + " hits");
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Hits = ") == 0 && playerIsGM(msg.playerid)){
-        //get the hits modifier from the input
-        var HitsModifier = Number(msg.content.substring(8)) || 0;
-        //load up the Damage Catcher variables
-        var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-        //load up the Hits variable in Damage Catcher
-        var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Hits" })[0];
-        //store the Hits Modifier
-        attribObj.set('current', HitsModifier);
-        //report the total number of hits to the GM
-        sendChat("System", "/w gm " + getAttrByName(storage.id, "Hits") + " hits");
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!ShipCrit ") == 0 && playerIsGM(msg.playerid)){
-      //be sure a token is selected
-      if(!msg.selected || msg.selected.length <= 0) {
-          return sendChat("System","/w gm Nothing selected.")
-      }
-      log(msg.selected[0]._id)
-      var graphic = getObj("graphic", msg.selected[0]._id);
-      //be sure the graphic exists
-      if(graphic == undefined) {
-          return sendChat("System", "/w gm Graphic undefined.");
-      }
-      //disect the input into pieces
-      var ShipCritPiece = "";
-      var ShipCritPieces = [];
-      for(shipCritIndex = 10; shipCritIndex < msg.content.length; shipCritIndex++){
-          //save this piece if it is not empty
-          if(msg.content[shipCritIndex] == " " && ShipCritPiece != ""){
-              ShipCritPieces.push(ShipCritPiece);
-              //reset the piece
-              ShipCritPiece = "";
-          //save the character to the current piece
-          } else { 
-              ShipCritPiece += msg.content[shipCritIndex];
-          }
-      }
-      //save the final piece if it is worth saving
-      if(ShipCritPiece != ""){
-          ShipCritPieces.push(ShipCritPiece);
-          //reset the piece
-          ShipCritPiece = "";
-      }
-      //be sure there is at least one input
-      if(ShipCritPieces.length <= 0){
-          return sendChat("System","No input stated.");
-      }
-      log(ShipCritPieces)
-      //which critical effect should we mark?
-      if(ShipCritPieces[0].toLowerCase() == "depressurized" || ShipCritPieces[0].toLowerCase() == "1"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_edge-crack"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_edge-crack",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_edge-crack",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_edge-crack",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "damaged" || ShipCritPieces[0].toLowerCase() == "2"){
-          log(graphic.get("status_spanner"))
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_spanner"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_spanner",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_spanner",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_spanner",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "sensors" || ShipCritPieces[0].toLowerCase() == "3"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_bleeding-eye"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_bleeding-eye",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_bleeding-eye",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_bleeding-eye",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "thrusters" || ShipCritPieces[0].toLowerCase() == "4"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_cobweb"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_cobweb",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_cobweb",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_cobweb",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "fire" || ShipCritPieces[0].toLowerCase() == "5"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_half-haze"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_half-haze",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_half-haze",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_half-haze",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "engines" || ShipCritPieces[0].toLowerCase() == "6"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_snail"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_snail",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_snail",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_snail",false);
-          }
-      } else if(ShipCritPieces[0].toLowerCase() == "unpowered" || ShipCritPieces[0].toLowerCase() == "7"){
-          //was there only one notation?
-          if(ShipCritPieces.length <= 1){
-              //default to one
-              ShipCritPieces[1] = "1";
-          } 
-          //add the stated number of markers
-          if(Number(ShipCritPieces[1])){
-              //what is the number marker on this badge?
-              var degeneracy = Number(graphic.get("status_lightning-helix"));
-              //add the input
-              degeneracy += Number(ShipCritPieces[1]);
-              //are there still any badges?
-              if(degeneracy > 0){
-                  //update the badge
-                  graphic.set("status_lightning-helix",degeneracy.toString());
-              } else {
-                  //remove the badge
-                  graphic.set("status_lightning-helix",false);
-              }
-          } else if(ShipCritPieces[1].toLowerCase() == "clear"){
-              //remove the badge
-              graphic.set("status_lightning-helix",false);
-          }
-      }
-      return sendChat("System","/w gm Updated.")
-      
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Echo ") == 0){
-      //who are we talking to?
-      var whisperTarget = msg.who;
-      if(whisperTarget.indexOf(" ") != -1){
-          whisperTarget = whisperTarget.substring(0,whisperTarget.indexOf(" "));
-      }
-      //whisper back to the sender
-      return sendChat("System","/w " + whisperTarget + " " + msg.content.substring(6));
-  } 
-  else if((msg.content.indexOf(" Starship Damage ") != -1 
-  && msg.content.indexOf(" deals ") != -1 
-  && msg.content.indexOf(" with ") != -1
-  && msg.type == "emote") 
-  ||(msg.content.indexOf(" {{name=**Damage**: ") != -1
-  && msg.content.indexOf("}} {{Damage=") != -1
-  && (msg.content.indexOf("{{Type=Macro}}") != -1 || msg.content.indexOf("{{Type=Nova}}") != -1 || msg.content.indexOf("{{Type=Torpedo}}") != -1 || msg.content.indexOf("{{Type=Lance}}") != -1 || msg.content.indexOf("{{Type=Bomber}}") != -1)
-      )){
       var rollIndex = 0;
-      if(msg.inlinerolls[rollIndex] == undefined){
-          rollIndex++;
+    }
+
+    //record Damage Type
+    var DamageType;
+    if(msg.content.indexOf(" Energy ") !== -1 || msg.content.indexOf(">E<") !== -1){
+      DamageType = "E";
+    } else if(msg.content.indexOf(" Rending ") !== -1 || msg.content.indexOf(">R<") !== -1){
+      DamageType = "R";
+    } else if(msg.content.indexOf(" Explosive ") !== -1 || msg.content.indexOf(">X<") !== -1){
+      DamageType = "X";
+    //
+    } else {//if(msg.content.indexOf(" Impact ") !== -1){
+      DamageType = "I";
+    }
+    DamTypeObj.set("current",DamageType);
+
+    //record Damage
+    DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
+
+    //record the lowest damage roll
+    var lowest = 10
+    for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
+      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
+        lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
       }
-      log(msg.inlinerolls[rollIndex])
-      //the selected token is making an attack
-      //load up the datastorage
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the current damage
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      var starshipDamage = Number(attribObj.get('current'));
-      //load up the current damage type
-      attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "DamageType" })[0];
-      //was the last attack a starship attack?
-      if(attribObj.get('current') != "S"){
-          //we are now making this starship damage
-          attribObj.set('current', "S");
-          //the new damage is just saved without regard for any of the old damage
-          starshipDamage = msg.inlinerolls[rollIndex].results.total;
+    }
+
+    //record Penetration
+    PenObj.set('current', msg.inlinerolls[rollIndex + 1].results.total);
+
+    //record Felling
+    var fellingIndex = msg.content.indexOf("Felling");
+    //is there any Felling inside the weapon?
+    if(fellingIndex >= 0){
+      //find the parenthesis after Felling
+      var startIndex = msg.content.indexOf("(",fellingIndex);
+      var endIndex = msg.content.indexOf(")",startIndex);
+      //be sure the parenthesis were both found
+      if (startIndex >= 0 && endIndex >= 0 && Number(msg.content.substring(startIndex+1,endIndex))){
+        //record the amount of felling
+        FellObj.set('current',Number(msg.content.substring(startIndex+1,endIndex)));
       } else {
-          //add the new damage to the old damage
-          starshipDamage += msg.inlinerolls[rollIndex].results.total;
+        //record zero felling
+        FellObj.set('current', 0);
       }
-      //record the total Damage
-      attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-      attribObj.set('current', starshipDamage);
-      //record Penetration
-      attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //is the weapon a lance?
-      if(msg.content.toLowerCase().indexOf("lance") != -1 || msg.content.toLowerCase().indexOf("nova") != -1){
-        attribObj.set('current', 1);
-        sendChat("System","/w gm Dam: " + starshipDamage.toString() + ", Pen: true");
-      } else {
-        attribObj.set('current', 0);
-        sendChat("System","/w gm Dam: " + starshipDamage.toString() + ", Pen: false");
-      }
-  } 
-  else if(msg.type == "api" && msg.content.indexOf("!Crit") == 0 && playerIsGM(msg.playerid)){
-      //load of the damage data
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //is this a vehicle?
-      if(msg.content.toLowerCase().indexOf("v") == 6){
-        sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Vehicle Critical Effects")) 
-      //is this a starship?
-      } else if(msg.content.toLowerCase().indexOf("s") == 6){
-        sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Starship Critical Effects")) 
-      //assume it is a person
-      } else {
-        //where is this location?
-      var location = ""
-      log(getAttrByName(storage.id, "OnesLocation"))
-      switch(getAttrByName(storage.id, "OnesLocation")) {
-          case 0:
-          case 10:
-              location = "Head"
-              break;
-          case 1:
-          case 2:
-          case 3:
-              location = "Leg"
-              break;
-          case 8:
-          case 9:
-              location = "Arm"
-              break;
-          default:
-              location = "Body"
-              break;
-      }
-      switch(getAttrByName(storage.id, "DamageType")){
-          case "I": 
-              sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Impact Critical Effects - " + location))  
-          break;
-          case "R": 
-              sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Rending Critical Effects - " + location))  
-          break;
-          case "X": 
-              sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Explosive Critical Effects - " + location))  
-          break;
-          case "E": 
-              sendChat("System","<strong>Critical Hit</strong>: " + GetLink("Energy Critical Effects - " + location))  
-          break;
-      }  
-      }
-      
-    //is the damage mitigated by cover?  
-  } 
-  else if (msg.content.indexOf("!Cover ") == 0 && playerIsGM(msg.playerid)){
-      log("cover")
-      //how much cover is there?
-      var cover = Number(msg.content.substr(7));
-      log(cover)
-      //is there enough cover for us to care?
-      if(cover <= 0){
-          return sendChat("System","/w gm Insuficient cover.")
-      }
-      //load up the Damage Catcher variables
-      var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
-      //load up the Penegration variable in Damage Catcher
-      var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Penetration" })[0];
-      //reduce the penetration by half the cover
-      var pen = Number(getAttrByName(storage.id, "Penetration")) - cover/2;
-      //has the cover been entirely used?
-      if(pen >= 0){
-        //record the remaining Penetration
-        attribObj.set('current', Math.round(pen));
-      } else {
-        //record the 0 penetration left
-        attribObj.set('current', 0);
-        //load up the damage variable
-        attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "Damage" })[0];
-        //reduce the damage by the remaining cover
-        var dam = Number(getAttrByName(storage.id, "Damage")) + 2*pen;
-        //does any cover remain?
-        if(dam >= 0){
-            //record the remaining damage
-            attribObj.set('current', dam);
-        } else {
-            //record the remaining damage
-            attribObj.set('current', 0);
-        }
-      }
-      //alert the GM
-      sendChat("System","/w gm Dam: " + Number(getAttrByName(storage.id, "Damage")) + ", Pen: " + Number(getAttrByName(storage.id, "Penetration")));  
+    } else {
+      //record zero felling
+      FellObj.set('current', 0);
+    }
+
+    //record Primitive
+    //if the weapon is Primitive and does not have the mono upgrade
+    if(msg.content.indexOf("Primitive") != -1 && msg.content.indexOf("Mono") == -1) {
+      //record Primitive
+      PrimObj.set("current",1);
+      //report to the gm that everything was found
+      whisper("Dam: " + DamObj.get("current") + " " + DamTypeObj.get("current") + ", Pen: " +  PenObj.get("current") + ", Felling: " + FellObj.get("current") + ", Primitive");
+    }  else {
+      //record Primitive
+      PrimObj.set("current",0);
+      //report to the gm that everything was found
+      whisper("Dam: " + DamObj.get("current") + " " + DamTypeObj.get("current") + ", Pen: " +  PenObj.get("current") + ", Felling: " + FellObj.get("current"));
+    }
+
+    //was this a private attack?
+    if(msg.type == "whisper"){
+      //report the lowest roll privately
+      sendChat("System",'/w gm <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")
+    } else {
+      //report the lowest roll publicly
+      sendChat("",'/desc <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")
+    }
+
+    //save the damage variables to their maximums as well
+    DamObj.set("max",DamObj.get("current"));
+    DamTypeObj.set("max",DamTypeObj.get("current"));
+    PenObj.set("max",PenObj.get("current"));
+    FellObj.set("max",FellObj.get("current"));
+    PrimObj.set("max",PrimObj.get("current"));
+
+
+  //If the message was a roll to hit, record the number of Hits. The roll to hit
+  //must be a roll template and that roll template must have the following
+
+  //A title begining with "<strong>WS</strong>: ", "<strong>BS</strong>: ", or
+  //"<strong>Wp</strong>: ".
+  //The first inline roll must be the number of successes
+  //The second inline roll must be the number of unnatural successes
+  //There must be exactly two inline rolls
   }
-  else if(msg.type == "api" && msg.content == "!AddUnnaturalSI" && playerIsGM(msg.playerid)){
-    //at the end check if the process was still error free
-    var ErrorFree = true;
-    //check each character
-    _.each(findObjs({_type: "character"}),function(obj){
-        //and try to load up the character's bio and gmnotes
-        var Bio = "";
-        var GMNotes = "";
-        obj.get("bio", function(bio) {Bio = bio;});
-        obj.get("gmnotes", function(gmnotes) {GMNotes = gmnotes;});
-        
-        //if both are empty, we can assume that they did not load properly (as they never do on the first try since compliling)
-        if(Bio == "" && GMNotes == ""){
-            ErrorFree = false;
-            //we still want to attempt to access each bio and gmnotes, even if they will all load improperly
-        //if there were no problems, then check if the character has structural integrity and if it does not have unnatural structural integrity
-        }else if(getAttrByName(obj.id,"Structural Integrity") != undefined
-        && getAttrByName(obj.id,"Unnatural Structural Integrity") == undefined){
-            //the character still needs Unnatural Structural Integrity
-            //check their bio and gmnotes to see if they have reinforced hull
-            if(Bio.indexOf(">Reinforced Hull<") >= 0 || GMNotes.indexOf(">Reinforced Hull<") >= 0){
-                //it has a reinforced hull, set its unnatural structural integrity to 1
-                createObj("attribute", {
-                    name: "Unnatural Structural Integrity",
-                    current: 1,
-                    max: 1,
-                    characterid: obj.id
-                });
-            } else {
-                //there is no reinforced hull, set its unnatural structural Integrity to 0
-                createObj("attribute", {
-                    name: "Unnatural Structural Integrity",
-                    current: 0,
-                    max: 0,
-                    characterid: obj.id
-                });
-            }
-        }
-    });
-    
-    if(ErrorFree){
-        sendChat("System","/w gm Unnatural Structural Integrity Added");
-    }else{
-        sendChat("System","/w gm Try Again?");
+  else if(/^\s*{{\s*name\s*=\s*(<strong>|\*\*)\s*(WS|BS|Wp)\s*(<\/strong>|\*\*):.*}}/i.test(msg.content)
+  && /{{\s*successes\s*=\s*\$\[\[0\]\]\s*}}/i.test(msg.content)
+  && /{{\s*unnatural\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content)
+  && msg.inlinerolls.length == 2) {
+    //record the number of hits
+    var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+    //besure there is a Hits Attribute to work with
+    if(HitsObj == undefined){
+      return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    }
+
+    //load up the AmmoTracker object to calculate the hit location
+    ammoObj = new AmmoTracker;
+    ammoObj.calculateLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
+
+    //if the number of successes was positive, add in Unnatural and save it
+    if(msg.inlinerolls[0].results.total > 0){
+      //the negative modifier keeps the total number of hits <= -1 while still
+      //storing the number of hits, this is because all hits are assumed to be
+      //Single Shot mode, but later commands such as (!Full and !Semi) will
+      //convert these negative numbers into a positive number of hits.
+      HitsObj.set('current', (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total)));
+    //otherwise record that there were no hits
+    } else {
+      HitsObj.set('current', 0);
+    }
+
+    //check for perils of the warp
+    if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){
+      //was the one's place a 9?
+      if((msg.inlinerolls[0].results.rolls[1].results[0].v - 10*Math.floor(msg.inlinerolls[0].results.rolls[1].results[0].v/10)) == 9){
+          sendChat("The warp","/em makes an unexpected twist. (" + GetLink("Psychic Phenomena") + ")")
+      }
+    } else if(/^\s*{{\s*name\s*=\s*<strong>\s*BS\s*<\/strong>:.*}}/i.test(msg.content)){
+      //was the roll >= 96?
+      if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 96){
+        //warn the gm that the weapon jammed
+        whisper("Weapon Jam!");
+      //Full Auto and Semi Auto attacks jam on a 94+. Warn the gm just in case
+      //this is one of them.
+      } else if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 94){
+        //warn the gm that the weapon may have jammed
+        whisper("Full/Semi Auto Weapon Jam!");
+      }
     }
   }
-  
+  //Watches for starship attack damage. It records the damage and penetration
+  //of the starship attack. The message must have the form of a roll template.
+  //The title must start with "<strong>Damage<strong>:"
+  //The first entry must be Damage with an inline roll
+  //The second entry must be the type of weapon used: Macro, Lance, Torpedo,Nova, Bomber
+  else if(/^\s*{{\s*name\s*=\s*(<strong>|\*\*)\s*damage\s*(<\/strong>|\*\*):.*}}\s*{{\s*(damage|dam)\s*=\s*\$\[\[0\]\]\s*}}\s*{{\s*type\s*=\s*(macro|nova|torpedo|lance|bomber)\s*}}/i.test(msg.content)
+  && msg.inlinerolls.length >= 1) {
+    //I don't know why I need to do this BUT for some reason when the message is sent by the API
+    //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
+    //"with a(n) " is the generic method I have the api using. Player sent commands are expected to be more intelligent
+    var rollIndex = 0;
+    if(msg.inlinerolls[rollIndex] == undefined){
+        rollIndex++;
+    }
+    //load up the damage attributes
+    var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+    var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+
+    //be sure every variable was successfully loaded
+    var successfulLoad = true;
+    //warn the gm for each attribute that was not found
+    if(DamTypeObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(DamObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(PenObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(successfulLoad == false){
+      return;
+    }
+
+    //prepare to numically modifify the old damage
+    starshipDamage = Number(DamObj.get("current"));
+
+    //was the last attack a starship attack?
+    if(DamTypeObj.get('current') != "S"){
+        //we are now making this starship damage
+        DamTypeObj.set('current', "S");
+        //the new damage is just saved without regard for any of the old damage
+        starshipDamage = msg.inlinerolls[rollIndex].results.total;
+    } else {
+        //add the new damage to the old damage
+        starshipDamage += msg.inlinerolls[rollIndex].results.total;
+    }
+
+    //record the total Damage
+    DamObj.set('current', starshipDamage);
+
+    //record Penetration
+    //is the weapon a lance or a nova weapon?
+    if(msg.content.toLowerCase().indexOf("lance") != -1 || msg.content.toLowerCase().indexOf("nova") != -1){
+      PenObj.set('current', 1);
+      whisper("Dam: " + DamObj.get("current") + ", Pen: true");
+    } else {
+      PenObj.set('current', 0);
+      whisper("Dam: " + DamObj.get("current") + ", Pen: false");
+    }
+
+    //record the attack to max as well
+    DamObj.set('max',DamObj.get("current"));
+    DamTypeObj.set('max',DamTypeObj.get("current"));
+    PenObj.set('max',PenObj.get("current"));
+  }
+});
+
+//a function which converts the numer of successes into a number of Hits
+//if a number of hits is not specified, it will default to the number of
+//successes saved in the last roll. The number will be negative as the number
+//of Hits is 1 by default. This function converts that negative number into
+//a positive number by the Full Auto formula.
+function fullautoConverter(matches,msg){
+  //record the number of hits
+  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  //besure there is a Hits Attribute to work with
+  if(HitsObj == undefined){
+    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+  }
+
+  //did the user specify a number of Successes?
+  if(matches[1] != ""){
+    var Hits = Number(matches[1]) + 1;
+  //otherwise, default to the numer of succeses recorded from the last roll to
+  //hit
+  } else {
+    //check if the stored number of successes has already been converted
+    if(HitsObj.get("current") > 0){
+      return whisper("Number of successes has already been converted into " + HitsObj.get("current") + " hits. Aborting.");
+    }
+    //convert the number of successes into hits
+    var Hits = (-1) * HitsObj.get("current");
+  }
+
+  //Round the number of hits, just in case
+  Hits = Math.round(Hits);
+
+  //Save the number of hits.
+  HitsObj.set("current",Hits);
+
+  //Report the number of hits
+  whisper("Hits: " + HitsObj.get("current"));
+}
+
+//a function which converts the numer of successes into a number of Hits
+//if a number of hits is not specified, it will default to the number of
+//successes saved in the last roll. The number will be negative as the number
+//of Hits is 1 by default. This function converts that negative number into
+//a positive number by the Semi Auto formula.
+function semiautoConverter(matches,msg){
+  //record the number of hits
+  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  //besure there is a Hits Attribute to work with
+  if(HitsObj == undefined){
+    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+  }
+
+  //did the user specify a number of Successes?
+  if(matches[1] != ""){
+    var Hits = Math.floor(Number(matches[1]) / 2) + 1;
+  //otherwise, default to the numer of succeses recorded from the last roll to
+  //hit
+  } else {
+    //check if the stored number of successes has already been converted
+    if(HitsObj.get("current") > 0){
+      return whisper("Number of successes has already been converted into " + HitsObj.get("current") + " hits. Aborting.");
+    }
+    //convert the number of successes into hits
+    var Hits = Math.floor( ((-1) * Number(HitsObj.get("current")) - 1) / 2 ) + 1;
+  }
+
+  //Round the number of hits, just in case
+  Hits = Math.round(Hits);
+
+  //Save the number of hits.
+  HitsObj.set("current",Hits);
+
+  //Report the number of hits
+  whisper("Hits: " + HitsObj.get("current"));
+}
+
+//a function that privately whispers a link to the relavant crit table
+//matches[0] is the same as msg.content
+//matches[1] is the type of critical hit table: vehicle, starship, impact, etc
+//matches[2] is the location: head, body, legs, arm
+function showCritTable(matches, msg){
+  //determine table type based on user input
+  switch (matches[1].toLowerCase()){
+    case "v": case "vehicle":
+      return whisper("**Critical Hit**: " + GetLink("Vehicle Critical Effects"),msg.playerid);
+    break;
+    case "s": case "starship":
+      return whisper("**Critical Hit**: " + GetLink("Starship Critical Effects"),msg.playerid);
+    break;
+    case "i": case "impact":
+      matches[1] = "Impact";
+    break;
+    case "r": case "rending":
+      matches[1] = "Rending";
+    break;
+    case "e": case "energy":
+      matches[1] = "Energy";
+    break;
+    case "x": case "explosive":
+      matches[1] = "Explosive";
+    break;
+    default:
+      //if the user did not give a effect type input, default to the stored
+      //damage type
+      var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+      if(DamTypeObj == undefined){
+        whisper("There is no Damage Type attribute in the campaign.",msg.playerid);
+        return whisper("There is no Damage Type attribute in the campaign.");
+      }
+
+      //determine the effect table based on the recorded damage type
+      switch(DamTypeObj.get("current").toLowerCase()){
+        case "s":
+          return whisper("**Critical Hit**: " + GetLink("Starship Critical Effects"),msg.playerid);
+        break;
+        case "i":
+          matches[1] = "Impact";
+        break;
+        case "r":
+          matches[1] = "Rending";
+        break;
+        case "e":
+          matches[1] = "Energy";
+        break;
+        case "x":
+          matches[1] = "Explosive";
+        break;
+        default:
+          return whisper("Unknown Damage Type",msg.playerid);
+        break;
+      }
+    break;
+  }
+
+  //determine hit location based on user input
+  if(/^(h|head)$/i.test(matches[2])){
+    matches[2] = "Head";
+  } else if(/^((|l|r)\s*a|(|left|right)\s*arms?)$/.test(matches[2])){
+    matches[2] = "Arm";
+  } else if(/^(b|body)$/.test(matches[2])){
+    matches[2] = "Body";
+  } else if(/^((|l|r)\s*l|(|left|right)\s*legs?)$/.test(matches[2])){
+    matches[2] = "Leg";
+  //the user did not specify a location, default to the hit location
+  } else {
+    //refer to the damage variables to determine the hit location
+    var onesLocObj = findObjs({ _type: "attribute", name: "OnesLocation"})[0];
+    //be sure the OnesLocation was found
+    if(onesLocObj == undefined){
+      whisper("The OnesLocation attribute does not exist anywhere in the campaign.",msg.playerid);
+      return whisper("The OnesLocation attribute does not exist anywhere in the campaign.");
+    }
+    switch(Number(onesLocObj.get("current"))) {
+        case 0: case 10:
+          matches[2] = "Head"
+          break;
+        case 1: case 2: case 3:
+          matches[2] = "Leg"
+          break;
+        case 8: case 9:
+          matches[2] = "Arm"
+          break;
+        case 4: case 5: case 6: case 7:
+          matches[2] = "Body"
+          break;
+        default:
+          whisper("Location unknown.",msg.playerid);
+          return whisper("Location unknown.");
+          break;
+    }
+  }
+
+  //now that damage type and location have been determined, return the link to the user
+  whisper("**Critical Hit**: " + GetLink(matches[1] + " Critical Effects - " + matches[2]),msg.playerid);
+}
+
+//a function which reduces the penetration and then damage of an attack with
+//Primitive cover.
+
+//matches[0] is the same as msg.content
+//matches[1] is the positive numerical value of the cover's AP
+function applyCover(matches,msg){
+  //load up the relavant damage variables
+  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+  var attributesUndefiend = false;
+  if(DamObj == undefined){
+    whisper("There is no Damage attribute in the campaign.");
+    attributesUndefiend = true;
+  }
+  if(PenObj == undefined){
+    whisper("There is no Penetration attribute in the campaign.");
+    attributesUndefiend = true;
+  }
+  if(attributesUndefiend){
+    return;
+  }
+  //reduce the penetration by half the cover
+  var pen = Number(PenObj.get("current")) - Number(matches[1])/2;
+  //has the cover been entirely used?
+  if(pen >= 0){
+    //record the remaining Penetration
+    PenObj.set('current', Math.round(pen));
+  } else {
+    //record the 0 penetration left
+    PenObj.set('current', 0);
+    //reduce the damage by the remaining cover
+    var dam = Number(DamObj.get("current")) + 2*pen;
+    //does any cover remain?
+    if(dam >= 0){
+        //record the remaining damage
+        DamObj.set('current', dam);
+    } else {
+        //record the remaining damage
+        DamObj.set('current', 0);
+    }
+  }
+  //alert the GM
+  whisper("Dam: " + DamObj.get("current") + ", Pen: " + PenObj.get("current"));
+}
+
+//resets all the damage variables to their maximum values (the attack before any
+//modifications)
+function attackReset(matches,msg){
+  //load up all of the damage variables, wherever they may be
+  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
+  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
+
+  //be sure every variable was successfully loaded
+  var successfulLoad = true;
+  //warn the gm for each attribute that was not found
+  if(DamTypeObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(DamObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PenObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(FellObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PrimObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(successfulLoad == false){
+    return;
+  }
+
+  //reset the damage variables to their maximums
+  DamObj.set("current",DamObj.get("max"));
+  DamTypeObj.set("current",DamTypeObj.get("max"));
+  PenObj.set("current",PenObj.get("max"));
+  FellObj.set("current",FellObj.get("max"));
+  PrimObj.set("current",PrimObj.get("max"));
+
+  //report the resut
+  attackShow()
+}
+//used throughout DamageCatcher.js to whisper the full attack variables in a
+//compact whisper
+//matches[0] is the same as msg.content
+//matches[1] is a flag for (|max)
+function attackShow(matches,msg){
+  //load up all of the damage variables, wherever they may be
+  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
+  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
+
+  //be sure every variable was successfully loaded
+  var successfulLoad = true;
+  //warn the gm for each attribute that was not found
+  if(DamTypeObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(DamObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PenObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(FellObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PrimObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(successfulLoad == false){
+    return;
+  }
+
+  if(matches && matches[1] && matches[1].toLowerCase() == "max"){
+    matches[1] = "max";
+  } else {
+    matches = [];
+    matches[1] = "current";
+  }
+
+  if(DamTypeObj.get(matches[1]).toLowerCase() == "s"){
+    if(PenObj.get(matches[1])){
+      whisper("Dam: " + DamObj.get(matches[1]) + ", Pen: true");
+    } else {
+      whisper("Dam: " + DamObj.get(matches[1]) + ", Pen: false");
+    }
+  } else {
+    if(PrimObj.get(matches[1])) {
+      whisper("Dam: " + DamObj.get(matches[1]) + " " + DamTypeObj.get(matches[1]) + ", Pen: " +  PenObj.get(matches[1]) + ", Felling: " + FellObj.get(matches[1]) + ", Primitive");
+    }  else {
+      whisper("Dam: " + DamObj.get(matches[1]) + " " + DamTypeObj.get(matches[1]) + ", Pen: " +  PenObj.get(matches[1]) + ", Felling: " + FellObj.get(matches[1]));
+    }
+  }
+}
+
+//a function which accepts input to override the targeted location of a creature, vehicle, or starship
+//matches[0] is the same as msg.content
+//matches[1] is the indicator for left or right (l|r|left|right)
+//matches[2] is the abriviation or full name of the desired location
+function hitlocationHandler(matches,msg){
+  //load up the hit location attributes
+  onesLocObj = findObjs({_type: "attribute", name: "OnesLocation"})[0];
+  tensLocObj = findObjs({_type: "attribute", name: "TensLocation"})[0];
+
+  //are they defined?
+  var objsAreDefined = true;
+  if(onesLocObj == undefined){
+    whisper("The OnesLocation attribute was not found anywhere in the campaign.");
+    objsAreDefined = false;
+  }
+  if(tensLocObj == undefined){
+    whisper("The TensLocation attribute was not found anywhere in the campaign.");
+    objsAreDefined = false;
+  }
+  //if at least one of the objects was not found, exit
+  if(objsAreDefined == false){
+    return;
+  }
+
+  var targeting = "";
+  //did the user specify left or right?
+  switch(matches[1].toLowerCase()){
+    case "l": case "left":
+      tensLocObj.set("current","1");
+      targeting = "Left ";
+    break;
+    case "r": case "right":
+      tensLocObj.set("current","0");
+      targeting = "Right ";
+    break;
+  }
+
+  //store the specified side numerically
+  switch(matches[2].toLowerCase()){
+    //characters
+    case "h": case "head":
+      onesLocObj.set("current","0");
+      targeting = "Head";
+    break;
+    case "a": case "arm":
+      onesLocObj.set("current","8");
+      targeting += "Arm";
+    break;
+    case "b": case "body":
+      onesLocObj.set("current","4");
+      targeting = "Body";
+    break;
+    case "l": case "leg":
+      onesLocObj.set("current","1");
+      targeting += "Leg";
+    break;
+
+    //vehicles and starships
+    case "front": case "f": case "fore":
+      tensLocObj.set('current', "0");
+      targeting = "Front";
+    break;
+    case "side": case "s":
+      tensLocObj.set('current', "-1");
+      targeting = "Side";
+    break;
+    case "starboard":
+      tensLocObj.set('current', "-1");
+      targeting = "starboard";
+    break;
+    case "rear": case "r": case "aft":
+      tensLocObj.set('current', "-2");
+      targeting = "Rear";
+    break;
+    case "port": case "p":
+      tensLocObj.set('current', "-3");
+      targeting = "Port";
+    break;
+  }
+
+  //report to the gm what we are now targeting
+  whisper("Targeting: " + targeting);
+}
+
+//applies status markers for the various starship critical hits based on user
+//input
+//matches[0] is the same as msg.content
+//matches[1] is number rolled on the crit table or a short name for the critical
+//  effect
+//matches[2] is the sign of the number of times to apply the crit
+//matches[3] is the number of times to apply the crit (by default this is one)
+function applyCrit(matches,msg){
+  //be something is selected
+  if(msg.selected == undefined || msg.selected.length <= 0) {
+      return whisper("Nothing selected.");
+  }
+
+  //default to applying this crit once
+  if(matches[3] == undefined || matches[3] == "" ){
+    critQty = 1;
+  } else {
+    critQty = Number(matches[2] + matches[3]);
+  }
+
+  //apply the crit effect to every selected token
+  _.each(msg.selected,function(obj){
+    var graphic = getObj("graphic", obj._id);
+    //be sure the graphic exists
+    if(graphic == undefined) {
+      return sendChat("System", "/w gm Graphic undefined.");
+    }
+
+    //which status marker corresponds to the critical effect?
+    var statMarker = "";
+    var effectName = "[Error]";
+    switch(matches[1].toLowerCase()){
+      case "depressurized": case "1":
+        statMarker = "status_edge-crack";
+        effectName = "Component Depressurized"
+      break;
+      case "damaged": case "2":
+        statMarker = "status_spanner";
+        effectName = "Component Damaged"
+      break;
+      case "sensors": case "3":
+        statMarker = "status_bleeding-eye";
+        effectName = "Sensors Damaged"
+      break;
+      case "thrusters": case "4":
+        statMarker = "status_cobweb";
+        effectName = "Thrusters Damaged"
+      break;
+      case "fire": case "5":
+        statMarker = "status_half-haze";
+        effectName = "Fire!"
+      break;
+      case "engines": case "6":
+        statMarker = "status_snail";
+        effectName = "Engine Damaged"
+      break;
+      case "unpowered": case "7":
+        statMarker = "status_lightning-helix";
+        effectName = "Component Unpowered"
+      break;
+    }
+
+    //what is the number marker on this badge?
+    var degeneracy = Number(graphic.get(statMarker));
+    //add the input
+    degeneracy += critQty;
+    //are there still any badges?
+    if(degeneracy > 0){
+      //update the badge
+      graphic.set(statMarker,degeneracy.toString());
+    } else {
+      //remove the badge
+      graphic.set(statMarker,false);
+    }
+    //report which crit was applied and how many times it was applied
+    whisper (graphic.get("name") + ": " + effectName + " (" + critQty + ")");
+  });
+}
+
+//damages every selected character according to the stored damage variables
+function applyDamage(matches,msg){
+  //load up all of the variables
+  //load up all of the damage variables, wherever they may be
+  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
+  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
+  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
+  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
+  var HitsObj = findObjs({ type: 'attribute', name: "Hits"})[0];
+  var OnesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
+  var TensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
+
+  //be sure every variable was successfully loaded
+  var successfulLoad = true;
+  //warn the gm for each attribute that was not found
+  if(DamTypeObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(DamObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PenObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(FellObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(PrimObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(HitsObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Hits was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(OnesLocObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named OnesLocation was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(TensLocObj == undefined){
+    successfulLoad = false;
+    whisper("No attribute named TensLocation was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(successfulLoad == false){
+    return;
+  }
+  //be sure something was selected
+  if(msg.selected == undefined || msg.selected.length <= 0){
+    return whisper("Nothing selected.");
+  }
+  //apply the damage to every selected character
+  _.each(msg.selected,function(obj){
+    var graphic = getObj("graphic", obj._id);
+    //be sure the graphic exists
+    if(graphic == undefined) {
+        return whisper("Graphic undefined.");
+    }
+    //be sure the character is valid
+    var character = getObj("character",graphic.get("represents"))
+    if(character == undefined){
+        return whisper("Character undefined for graphic " + graphic.get("name") + ".");
+    }
+
+    //get ready to calculate the damage applied to the character
+    var damCalc = 0;
+
+    //Character, Vehicle, or Starship?
+    var targetType = "character";
+    //if the target has Structural Integrity, they are a vehicle
+    if(findObjs({_type: "attribute", _characterid: character.id, name: "Structural Integrity"}).length > 0){
+      targetType = "vehicle";
+    //if the target has Hull, they are a starship
+    } else if(findObjs({_type: "attribute", _characterid: character.id, name: "Hull"}).length > 0) {
+      targetType = "starship";
+    }
+
+    //be sure the damage type matches the targetType
+    if(targetType == "starship" && DamTypeObj.get("current").toUpperCase() != "S"){
+      return whisper(graphic.get("name") + ": Using non-starship damage on a starship. Aborting. [Correct](!damage type = s)");
+    } else if(targetType != "starship" && DamTypeObj.get("current").toUpperCase() == "S"){
+      return whisper(graphic.get("name") + ": Using starship damage on a non-starship. Aborting. [Correct](!damage type = i)");
+    }
+
+    //apply Armour==============================================================
+    //==========================================================================
+    var armourName = "";
+    switch(targetType){
+      case "character":
+        switch(OnesLocObj.get("current")){
+          case "0": case "10":
+            armourName = "H"
+          break;
+          case "9": case "8":
+            if(TensLocObj.get("current") % 2 == 0){
+              armourName = "RA";
+            } else {
+              armourName = "LA";
+            }
+          break;
+          case "3": case "2": case "1":
+            if(TensLocObj.get("current") % 2 == 0){
+              armourName = "RL";
+            } else {
+              armourName = "LL";
+            }
+          break;
+          default: //case "4": case "5": case "6": case "7":
+            armourName = "B";
+          break;
+        }
+      break;
+      case "vehicle":
+        switch(TensLocObj.get("current")){
+          case "-1":
+            armourName = "S"
+          break;
+          case "-2":
+            armourName = "R"
+          break;
+          default: //case "0":
+            armourName = "F";
+          break;
+        }
+      break;
+      case "starship":
+        switch(TensLocObj.get("current")){
+          case "-1":
+            armourName = "S"
+          break;
+          case "-2":
+            armourName = "P"
+          break;
+          case "-3":
+            armourName = "A"
+          break;
+          default: //case "0":
+            armourName = "F";
+          break;
+        }
+      break;
+    }
+
+    var damCalc = 0;
+    ArmourObj = findObjs({_type: "attribute", _characterid: character.id, name: "Armour_" + armourName})[0];
+    if(ArmourObj == undefined){
+      whisper(character.get("current") + " has no attribute named Armour_" + armourName + ".");
+    } else if(targetType == "starship"){
+      //starship weapons either have no penetration, or infinite penetration
+      if(Number(PenObj.get("current")) <= 0){
+        damCalc = - Number(ArmourObj.get("current"));
+      } //else Armour = 0
+    }else {
+      //calculate the armour reduction after penetration
+      damCalc = Number(PenObj.get("current")) - Number(ArmourObj.get("current"));
+
+      //if there was more penetration than there was armour, discount it
+      if(damCalc > 0){damCalc = 0;}
+    }
+
+    //add in the damage to the calculation
+    damCalc += Number(DamObj.get("current"));
+
+    //apply Toughness===========================================================
+    //==========================================================================
+    if(targetType == "character"){
+      //Toughness Bonus
+      ToughObj = findObjs({_type: "attribute", _characterid: character.id, name: "T"})[0];
+      //warn the gm if the Toughness Object is undefined
+      if(ToughObj == undefined){
+        whisper(character.get("current") + " has no attribute named T.");
+      } else {
+        damCalc -= Math.floor(Number(ToughObj.get("current"))/10);
+      }
+      //Unnatural Toughness
+      UToughObj = findObjs({_type: "attribute", _characterid: character.id, name: "Unnatural T"})[0];
+      //warn the gm if the Toughness Object is undefined
+      if(UToughObj == undefined){
+        whisper(character.get("current") + " has no attribute named Unnatural T.");
+      } else {
+        //reduce unnatural toughness by felling damage before applying Unnatural
+        //Toughness
+        if(Number(UToughObj.get("current")) - Number(FellObj.get("current")) > 0){
+          damCalc -= Number(UToughObj.get("current")) - Number(FellObj.get("current"));
+        }
+      }
+    }
+
+    //be sure the total damage is positive
+    if(damCalc < 0){damCalc = 0;}
+
+    //a capital H in bar2 alerts the system that this graphic is a horde
+    if(graphic.get("bar2_value") == "H"){
+      //if the damage is non-zero, overwrite the damage with the number of Hits
+      //(gm's can add bonus horde damage beforehand by modifying the number of
+      //hits. This is will leave the damage unaffected on other tokens.)
+      if(damCalc > 0){
+        damCalc = HitsObj.get("Current");
+        //explosive damage deals one extra point of horde damage
+        if(DamTypeObj.get("current").toUpperCase() == "X"){
+          damCalc++;
+        }
+      }
+    }
+
+    //be sure that the final result is a number
+    damCalc = Number(damCalc);
+    if(damCalc == undefined || damCalc == NaN){
+      return whisper(graphic.get("name") + ": Damage undefined.");
+    }
+
+    //apply the damage to the graphic's bar3_value. If bar3 is linked to a
+    //character sheet's wounds, the wounds will be immediately updated as well
+    var remainingWounds = Number(graphic.get("bar3_value")) - damCalc;
+
+    //Has the token taken critical damage?
+    if(remainingWounds < 0){
+      //calculate the critical effect that should be applied
+      var critEffect =  (-1) * remainingWounds;
+      switch(targetType){
+        case "character":
+          //Load up the Wounds and Unnatural Wounds attributes. Warn the gm if
+          //they are not found.
+          var WBonus = 1;
+          WObj = findObjs({_type: "attribute", _characterid: character.id, name: "Wounds"})[0];
+          if(WObj == undefined){
+            whisper(character.get("name") + " has no attribute named Wounds.");
+          } else {
+            //Calculate the Structural Integrity Bonus of the Vehicle
+            WBonus = Math.floor(Number(WObj.get("current"))/10);
+          }
+          UWObj = findObjs({_type: "attribute", _characterid: character.id, name: "Unnatural Wounds"})[0];
+          if(UWObj == undefined){
+            whisper(character.get("name") + " has no attribute named Unnatural Wounds.");
+          } else {
+            //Add in any Unnatural Structural Integrity to the Bonus
+            WBonus += Number(UWObj.get("current"));
+          }
+          //At minimum, the SIBonus is one.
+          Math.max(WBonus,1);
+          //Calculate the resulting Critical Effect
+          critEffect = Math.ceil(critEffect/WBonus);
+          //report the critcal effect to the gm
+          whisper(graphic.get("name") + ": [Critical Damage!](!crit ? " + DamTypeObj.get("current") + " " + armourName + ") (" + critEffect + ")");
+        break;
+        case "vehicle":
+          //Load up the Structural Integrity and Unnatural Structural Integrity
+          //Attributes. Warn the gm if they are not found.
+          var SIBonus = 1;
+          SIObj = findObjs({_type: "attribute", _characterid: character.id, name: "Structural Integrity"})[0];
+          if(SIObj == undefined){
+            whisper(character.get("name") + " has no attribute named Structural Integrity.");
+          } else {
+            //Calculate the Structural Integrity Bonus of the Vehicle
+            SIBonus = Math.floor(Number(SIObj.get("current"))/10);
+          }
+          USIObj = findObjs({_type: "attribute", _characterid: character.id, name: "Unnatural Structural Integrity"})[0];
+          if(USIObj == undefined){
+            whisper(character.get("name") + " has no attribute named Unnatural Structural Integrity.");
+          } else {
+            //Add in any Unnatural Structural Integrity to the Bonus
+            SIBonus += Number(USIObj.get("current"));
+          }
+          //At minimum, the SIBonus is one.
+          Math.max(SIBonus,1);
+          //Calculate the resulting Critical Effect
+          critEffect = Math.ceil(critEffect/SIBonus);
+          //report the critcal effect to the gm
+          whisper(graphic.get("name") + ": [Critical Damage!](!crit ? v) (" + critEffect + ")");
+        break;
+        case "starship":
+          //The critcal effect for starships is not modified
+          whisper(graphic.get("name") + ": [Critical Damage!](!crit ? s) (" + critEffect + ")");
+          //However, starships never record critical damage
+          remainingWounds = 0;
+        break;
+      }
+    }
+
+    //record the damage
+    graphic.set("bar3_value",remainingWounds);
+
+    //Reroll Location after each hit
+    if(targetType == "character"){
+      ammoObj = new AmmoTracker;
+      ammoObj.calculateLocation(randomInteger(100));
+     }
+
+    //report an exact amount to the gm
+    whisper(graphic.get("name") + " took " + damCalc + " damage.");
+    //report an estimate to everyone
+    sendChat("","/desc " + graphic.get("name") + ": [[" +  Math.round(damCalc * 100 / graphic.get("bar3_max")) + "]]% taken.");
+  });
+  //reset starship damage
+  //starship damage is a running tally and needs to be reset when used
+  if(DamTypeObj.get("current").toUpperCase() == "S"){
+    DamObj.set("current",0);
+    //damage can be recovered by setting the current to the maximum
+  }
+}
+
+
+//waits until CentralInput has been initialized
+on("ready",function(){
+  //Lets gm  view and edit damage variables with modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|fell|felling|prim|primitive)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
+    switch(matches[2].toLowerCase()){
+        case "dam":
+          matches[2] = "Damage";
+        break;
+        case "pen":
+          matches[2] = "Penetration";
+        break;
+        case "prim":
+          matches[2] = "Primitive";
+        break;
+        case "fell":
+          matches[2] = "Felling";
+        break;
+        default:
+          matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    partyStatHandler(matches,msg);
+    partyStatHandler(matches,msg);
+  });
+  //Lets gm view damage variables without modifiers
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive)\s*(\?)()()\s*$/i, function(matches,msg){
+    switch(matches[2].toLowerCase()){
+        case "dam":
+          matches[2] = "Damage";
+        break;
+        case "pen":
+          matches[2] = "Penetration";
+        break;
+        case "damtype":
+          matches[2] = "Damage Type";
+        break;
+        case "prim":
+          matches[2] = "Primitive";
+        break;
+        case "fell":
+          matches[2] = "Felling";
+        break;
+        default:
+          matches[2] = matches[2].toTitleCase();
+        break;
+    }
+    partyStatHandler(matches,msg);
+  });
+  //Lets the gm set the damage type
+  CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
+    matches[2] = "Damage Type";
+    matches[5] = matches[5].toUpperCase();
+    partyStatHandler(matches,msg);
+  });
+  //Lets anyone get a quick link to critical effects table based on user input
+  //or based on the damage type and hit location stored in the damage variables
+  CentralInput.addCMD(/^!\s*crit\s*\?\s*(|v|vehicle|s|starship|i|impact|e|energy|r|rending|x|explosive)\s*(|h|head|(?:|l|r)\s*(?:a|l)|(?:|left|right)\s*(?:arm|leg)s?|b|body)\s*$/i,showCritTable,true);
+  //Lets the gm reduce damage and penetration when an attack passes through cover
+  CentralInput.addCMD(/^!\s*cover\s*(\d+)$/i,applyCover);
+  //Lets the gm reset an attack back to how it was first detected, before
+  //modifications
+  CentralInput.addCMD(/^!\s*attack\s*=\s*max$/i,attackReset);
+  //Lets the gm view the attack variables in a susinct format
+  CentralInput.addCMD(/^!\s*(|max)\s*attack\s*\?\s*$/i,attackShow);
+  //Lets the gm specify the hit location
+  CentralInput.addCMD(/^!\s*target\s*=\s*(|l|r|left|right)\s*(h|head|a|arm|b|body|l|leg|f|front|s|side|starboard|p|port|r|rear|aft)\s*$/i,hitlocationHandler);
+  //Lets the gm convert the number of successes into Hits, as per the Full Auto formula
+  CentralInput.addCMD(/^!\s*full\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,fullautoConverter);
+  //Lets the gm convert the number of successes into Hits, as per the Semi Auto formula
+  CentralInput.addCMD(/^!\s*semi\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,semiautoConverter);
+  //Lets the gm quickly mark starships with status markers to remember
+  CentralInput.addCMD(/^!\s*crit\s*\+\s*=\s*([1-7]|depressurized|damaged|sensors|thrusters|fire|engines|unpowered)\s*(?:\s*(|\+|-)\s*(\d+))?\s*$/i,applyCrit);
+  CentralInput.addCMD(/^!\s*crit\s*\-\s*=\s*([1-7]|depressurized|damaged|sensors|thrusters|fire|engines|unpowered)\s*(?:\s*(|\+|-)\s*(\d+))?\s*$/i,function(matches,msg){
+    //switch the sign of the quantity
+    if(matches[2] == "-"){
+      matches[2] = "";
+    } else {
+      matches[2] = "-";
+    }
+    applyCrit(matches,msg);
+  });
+  CentralInput.addCMD(/^!\s*dam(?:age)?\s*$/i,applyDamage);
 });

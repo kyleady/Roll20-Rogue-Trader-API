@@ -19,13 +19,13 @@ this.calculateLocation = function(roll){
     var Location = "";
     switch(ones){
         case 10: case 0: Location = "Head"; break;
-        case 9: case 8: 
+        case 9: case 8:
             switch(tens % 2){
                 case 0: Location = "Right "; break;
                 case 1: Location = "Left "; break;
             } Location += "Arm"; break;
         case 4: case 5: case 6: case 7: Location = "Body"; break;
-        case 3: case 2: case 1: 
+        case 3: case 2: case 1:
             switch(tens % 2){
                 case 0: Location = "Right "; break;
                 case 1: Location = "Left "; break;
@@ -106,13 +106,13 @@ this.getRange = function(){
 this.getSingle = function(){
     //record what signifies the location of Class
     var signifier = "<strong>RoF</strong>: ";
-    //record where the class of the weapon begins 
+    //record where the class of the weapon begins
     var startIndex = this.notes.indexOf(signifier) + signifier.length;
     //if the signifier was not found, try a different one
     if(this.notes.indexOf(signifier) == -1){
         //record what signifies the location of Class
         signifier = "<strong>Rate of Fire</strong>: ";
-        //record where the class of the weapon begins 
+        //record where the class of the weapon begins
         startIndex = this.notes.indexOf(signifier) + signifier.length;
         //if the signifier was not found, abort with nothing to show
         if(this.notes.indexOf(signifier) == -1){return true;}
@@ -226,7 +226,7 @@ this.getDamageBase = function(){
     else {snippet = this.notes.substring(startIndex,stopIndex); }
     //check to see if the DamageType is included in a Hyperlink
     stopIndex = snippet.indexOf("<a href=");
-    //if a link was not found, you will have to work with 
+    //if a link was not found, you will have to work with
     if(stopIndex == -1){
         if(snippet.indexOf("I") != -1){
             //Impact Damage
@@ -244,7 +244,7 @@ this.getDamageBase = function(){
             //the damage type must not have been listed
             stopIndex = snippet.length;
         }
-    } 
+    }
     //narrow in on the target area
     snippet = snippet.substring(0,stopIndex);
     //if D10 x PR was listed, throw that out, we want the starting base
@@ -275,7 +275,7 @@ this.getDamageBase = function(){
         //if nothing was found, then there must have been no damage base to note
         return 0;
     }
-    
+
 }
 //returns the number of D10s used in the damage roll. [2]D10+6
 this.getD10s = function(){
@@ -312,7 +312,7 @@ this.getD10s = function(){
                 return -1;
             }
         }
-        
+
         //otherwise it has found a number right before D10, output that number
         if(Number(this.notes.substring(startIndex,stopIndex))){
             return Number(this.notes.substring(startIndex,stopIndex))
@@ -406,13 +406,13 @@ this.getDamageType = function(){
 this.getPenetration = function(){
     //record what signifies the location of Class
     var signifier = "<strong>Penetration</strong>: ";
-    //record where the class of the weapon begins 
+    //record where the class of the weapon begins
     var startIndex = this.notes.indexOf(signifier) + signifier.length;
     //if the signifier was not found, try a different one
     if(this.notes.indexOf(signifier) == -1){
         //record what signifies the location of Class
         signifier = "<strong>Pen</strong>: ";
-        //record where the class of the weapon begins 
+        //record where the class of the weapon begins
         startIndex = this.notes.indexOf(signifier) + signifier.length;
         //if the signifier was not found, abort with nothing to show
         if(this.notes.indexOf(signifier) == -1){return 0;}
@@ -444,7 +444,7 @@ this.getPenetration = function(){
             return -1;
         }
     }
-    
+
     //be sure the final output is sensible
     output = Number(output);
     if(output){
@@ -457,7 +457,7 @@ this.getPenetration = function(){
 this.getClip = function(){
     //record what signifies the location of Class
     var signifier = "<strong>Clip</strong>: ";
-    //record where the class of the weapon begins 
+    //record where the class of the weapon begins
     var startIndex = this.notes.indexOf(signifier) + signifier.length;
     //find the end of the line, that indicates the end of the search
     var stopIndex = this.notes.indexOf("<br>",startIndex);
@@ -601,9 +601,9 @@ this.track = function(fullInput,selected,who){
                         if(myTracker.ammonotes.length == 0){
                             //exit the program. Nothing productive is going to come out of having an empty string
                             if(selected != "Test"){sendChat("System", "/w gm Try again?");}
-                        } 
-                    }    
-                
+                        }
+                    }
+
                 }
             }
         } else {
@@ -621,35 +621,35 @@ this.track = function(fullInput,selected,who){
                     //exit the program. Nothing productive is going to come out of having an empty string
                     if(selected != "Test"){sendChat("System", "/w gm Try again?");}
                     return;
-                } 
+                }
             }
         }
     }
-    
+
     //the first try with each new sandbox fails(leaves the bio/notes empty). I don't know why. Just try again.
     if(myTracker.notes.length == 0 || charNotes.length == 0){
         //exit the program. Nothing productive is going to come out of having an empty string
         if(selected != "Test"){sendChat("System", "/w gm Try again?");}
         return;
     }
-    
+
     //A test run only tries to load the weapon info. Stop here and do no more.
     if(selected == "Test"){return;}
-    
+
     //look for any special bonuses
     var Special = this.getSpecial();
-    
+
     //add all the ammo specific special rules to the list of special rules
     if(Special.length > 0 && this.getAmmoSpecial().length > 0){Special += ", ";}
     Special += this.getAmmoSpecial();
-    
+
     //The second input should be toHit Modifiers
     var Modifier = 0;
     if(input.length >= 2){
         //make sure the modifier is sensible
         if(Number(input[1])){Modifier = Number(input[1]);}
     }
-    
+
     //calculate Class, will be important for calculating RoF
     var Class = "Ranged";
     switch(this.getClass()){
@@ -660,7 +660,7 @@ this.track = function(fullInput,selected,who){
             Class = "Psychic";
             break;
         case "Melee":
-        case "Melee*": 
+        case "Melee*":
             Skill = Number(getAttrByName(character.id, "WS"));
             SkillType = "WS";
             UnnaturalSkill = Number(getAttrByName(character.id, "Unnatural WS"));
@@ -680,8 +680,8 @@ this.track = function(fullInput,selected,who){
     if(input.length >= 3){
         //single is the defaut mode and always fires a single shot, thus we don't need to look it up
         //if(input[1].toLowerCase().indexOf("single") != -1){
-        //    
-        //} else 
+        //
+        //} else
         if(input[2].toLowerCase().indexOf("semi") != -1){
             Mode = "Semi-Auto";
             if(Class == "Psychic"){
@@ -719,7 +719,7 @@ this.track = function(fullInput,selected,who){
     if(input.length >= 5){
         ExtraSpecial = input[4];
     }
-    
+
     //check if the player chose single and the weapon cannot fire on Single
     //also check if the Rate of Fire is valid
     if((Mode == "Single" && !this.getSingle()) || RoF <= 0){
@@ -728,18 +728,18 @@ this.track = function(fullInput,selected,who){
     }
     //get ready to make a weapon report (ammo, weapon name)
     var WeaponReport = "<strong>Weapon</strong>: <a href=\"http://journal.roll20.net/handout/"  + weapon.id + "\">"+ weapon.get("name") + "</a>";
-    
+
     //report any special ammunition
     if(specialammo != undefined){
         WeaponReport += "<br><strong>Special</strong>: <a href=\"http://journal.roll20.net/handout/"  + specialammo.id + "\">"+ specialammo.get("name") + "</a>";
     }
-    
+
     //report how the weapon is firing
     if(RoF > 1){
         //don't bother reporting if you are firing on Single, everyone does that and I am tired of hearing it
         WeaponReport += "<br><strong>Mode</strong>: " + Mode + "(" + RoF.toString() + ")";
     }
-    
+
     //be sure this attack uses ammo
     var Clip = this.getClip();
     if(Clip > 0){
@@ -747,7 +747,7 @@ this.track = function(fullInput,selected,who){
         var AmmoName = input[0];
         //add in the name of the special ammunition, if it exists
         if(specialammo != undefined){
-            AmmoName += "(" + input[5] + ")"; 
+            AmmoName += "(" + input[5] + ")";
         }
         //note that it is Ammo
         AmmoName += " Ammo"
@@ -781,19 +781,19 @@ this.track = function(fullInput,selected,who){
                 current: Clip - RoF,
                 max: Clip,
                 characterid: character.id
-                });    
+                });
             }
-            
-            
+
+
         }
-        
-        
+
+
         //Report the remaining Ammo
         WeaponReport += "<br><strong>Ammo</strong>: " + getAttrByName(character.id, AmmoName ) + "/" + getAttrByName(character.id, AmmoName ,"max");
     }
     //deliver the Weapon Report
     sendChat("",WeaponReport)
-    
+
     //add any toHit bonuses based on Rate of Fire
     switch(Mode){
         case 'Single': Modifier += 10; break;
@@ -804,7 +804,7 @@ this.track = function(fullInput,selected,who){
     var Skill;
     var SkillType;
     var UnnaturalSkill;
-    
+
     //record the number of D10s in the damage as they could be modified by how well you roll
     var D10s = this.getD10s();
     //check if the D10s are multiplied by Psy Rating
@@ -813,7 +813,7 @@ this.track = function(fullInput,selected,who){
         //multiply out the negativity and multiply in the psy rating
         D10s = -1 * D10s * PsyRating;
     }
-    
+
     //roll to hit
     var toHit = randomInteger(100);
     //calculate the number of hits
@@ -821,7 +821,7 @@ this.track = function(fullInput,selected,who){
         //if the character hit, add up the successes + the unnatural skill bonus. This is the total degrees of success
         var Hits =  Math.floor((Skill + Modifier - toHit)/10) + Math.ceil(UnnaturalSkill/2);
         switch(Mode){
-            case "Single": 
+            case "Single":
                 //accurate weapons will gain extra damage if they hit well enough
                 if(Special.indexOf(">Accurate<") != -1 || ExtraSpecial.indexOf("Accurate") != -1){
                     if(Hits == 1){
@@ -830,9 +830,9 @@ this.track = function(fullInput,selected,who){
                         D10s += 2;
                     }
                 }
-                Hits = 1; 
+                Hits = 1;
             break;
-            case "Semi-Auto": 
+            case "Semi-Auto":
                 //Hits = 1 + 1 for every two full successes
                 Hits = 1 + Math.floor(Hits/2);
             break;
@@ -848,7 +848,7 @@ this.track = function(fullInput,selected,who){
             //subtract the rate of fire again
             Hits = Hits * 2;
         }
-        
+
     } else {
         var Hits = 0;
     }
@@ -859,9 +859,9 @@ this.track = function(fullInput,selected,who){
     if(toHit == 100){
         setTimeout(sendChat,500,"","/desc [Critical Failure!](!ThisIsn'tAnythingYet)")
     } else if(toHit == 1) {
-        setTimeout(sendChat,500,"","/desc [Critical Success!](!ThisIsn'tAnythingYet)")        
+        setTimeout(sendChat,500,"","/desc [Critical Success!](!ThisIsn'tAnythingYet)")
     }
-   
+
     //output the hit location (and record it)
     this.calculateLocation(toHit);
     //record hits
@@ -900,7 +900,7 @@ this.track = function(fullInput,selected,who){
             DamageBase += Number(ExtraSpecial.substring(damageIndex+7,endIndex));
         }
     }
-    
+
     var D5s = this.getD5s();
     var Pen = this.getPenetration();
     //check if the Pen is multiplied by Psy Rating
@@ -927,7 +927,7 @@ this.track = function(fullInput,selected,who){
     if(penIndex != -1){
         var endIndex = ExtraSpecial.indexOf(")",penIndex+12);
         log(ExtraSpecial.substring(penIndex+12,endIndex))
-        
+
         //only add the damage if it is sensible
         if(endIndex != -1 && Number(ExtraSpecial.substring(penIndex+12,endIndex))){
             Pen += Number(ExtraSpecial.substring(penIndex+12,endIndex));
@@ -977,7 +977,7 @@ this.track = function(fullInput,selected,who){
             //pull out "PR x "
             Blast = Blast.replace("PR");
             Blast = Blast.replace(" x ","");
-            
+
             //check if blast is now sensible
             if(Number(Blast)){
                 attribObj.set('current', Hits*Number(Blast)*PsyRating);
@@ -1002,7 +1002,7 @@ this.track = function(fullInput,selected,who){
             //pull out "PR x "
             Blast = Blast.replace("PR");
             Blast = Blast.replace(" x ","");
-            
+
             //check if blast is now sensible
             if(Number(Blast)){
                 attribObj.set('current', Hits*Number(Blast)*PsyRating);
@@ -1014,7 +1014,7 @@ this.track = function(fullInput,selected,who){
         }
         }
     }
-    
+
     var Proven = 0;
     if(ExtraSpecial.indexOf("Proven") != -1){
         var startIndex = ExtraSpecial.indexOf("(",ExtraSpecial.indexOf("Proven"))+1;
@@ -1131,7 +1131,7 @@ this.track = function(fullInput,selected,who){
         if(Tearing > 0){
             D5s -= Tearing;
             Damage += "k" + D5s.toString();
-        }    
+        }
     }
     //be sure there is a Damage base to work with
     if(DamageBase > 0){
@@ -1142,7 +1142,7 @@ this.track = function(fullInput,selected,who){
     //if this is a melee weapon, remember to add the character's S bonus
     if(Class == "Melee"){
         Damage += "+" + getAttrByName(character.id, "Unnatural S").toString() + "+floor((" + getAttrByName(character.id, "S").toString() + ")/10)";
-        
+
         if(Special.indexOf(">Fist<") != -1) {
             Damage += "+" + getAttrByName(character.id, "Unnatural S").toString() + "+floor((" + getAttrByName(character.id, "S").toString() + ")/10)";
         }
@@ -1174,9 +1174,9 @@ this.track = function(fullInput,selected,who){
     */
     //send the total Damage at a 1 second delay
     setTimeout(sendChat,1000,who,Damage)
-    
-    
-    
+
+
+
 }
 //reset ammo on all characters
 this.ammoReset = function(character){
@@ -1201,19 +1201,16 @@ this.ammoReset = function(character){
     }
     });
     if(character == undefined){
-        sendChat("System","/w gm All ammo has been reset.");    
+        sendChat("System","/w gm All ammo has been reset.");
     } else {
         sendChat("System","/w gm " + character.get("name") + "'s ammo has been reset.")
     }
-    
+
 }
 }
 //watches for the user to request the fucntions to activate
 on("chat:message", function(msg) {
-if(msg.type == 'api' && msg.content.indexOf("!Fire ") == 0){
-    myTracker = new AmmoTracker();
-    myTracker.track(msg.content,msg.selected,"player|" + msg.playerid);
-} else if(msg.type == 'api' && msg.content.indexOf("!ParseTest ") == 0){
+if(msg.type == 'api' && msg.content.indexOf("!ParseTest ") == 0){
     myTracker = new AmmoTracker();
     var weaponObj = findObjs({_type:"handout",_name:msg.content.substring(11)})[0];
     //be sure the weapon was found
@@ -1237,7 +1234,7 @@ if(msg.type == 'api' && msg.content.indexOf("!Fire ") == 0){
         sendChat("System", "/desc <strong>Pen</strong>: " + myTracker.getPenetration().toString());
         sendChat("System", "/desc <strong>Clip</strong>: " + myTracker.getClip().toString());
         sendChat("System", "/desc <strong>Reload</strong>: " + myTracker.getReload());
-        sendChat("System", "/desc <strong>Special</strong>: " + myTracker.getSpecial());    
+        sendChat("System", "/desc <strong>Special</strong>: " + myTracker.getSpecial());
     } else {
         sendChat("System", "/w GM Try again?");
     }
@@ -1251,18 +1248,18 @@ if(msg.type == 'api' && msg.content.indexOf("!Fire ") == 0){
     //be sure the character is valid
     var character = getObj("character",graphic.get("represents"))
     if(character == undefined){return sendChat("System", "/em - character undefined.");}
-    
+
     var Abilities = findObjs({
         _type: "ability",
         _characterid: character.id
     });
-    
+
     log(Abilities);
     sendChat("System","/w gm Task complete.")
 } else if(msg.type == "api" && msg.content == "!ResetAmmo" && playerIsGM(msg.playerid)){
     //open up the ammotracker object
     myTracker = new AmmoTracker();
-    
+
     if(msg.selected.length < 1 || msg.selected == undefined){
         //reset the ammo of every character
         myTracker.ammoReset();
@@ -1281,47 +1278,36 @@ if(msg.type == 'api' && msg.content.indexOf("!Fire ") == 0){
 //Looking at the bio or notes gives you nothing the first time you try
 //This makeshift function tries every bio and note once, eliminating that annoying first time from user perception
 on("ready", function() {
-    //gather up all the abilities
-    var Abilities = findObjs({
-        _type: "ability"
-    });
-    log("Testing Handout readability.")
-    //step through each ability
-    _.each(Abilities, function(Ability){
-    //find each ability that starts with "!Fire "
-    if(Ability.get("action").indexOf("!Fire ") == 0){
-        myTracker = new AmmoTracker();
-        myTracker.track(Ability.get("action"),"Test","gm")
-        /*
-        //get the first input of the !Fire ability
-        var stopIndex = Ability.get("action").indexOf(";");
-        var weaponName = "";
-        if(stopIndex != -1){
-            weaponName = Ability.get("action").substring(6,stopIndex);;
-        } else {
-            weaponName = Ability.get("action").substring(6);
-        }
-        //find the weapon
-        var weapon = findObjs({_type:"handout",_name:weaponName})[0];
-        //be sure the weapon was found
-        if(weapon == undefined){return sendChat("System","/w gm " + weaponName + " not found.");}
-        //load up the notes
-        weapon.get("notes", function(notes) {
-            notes;
-        });*/
-    }
+    //add the !Fire command to the Central Input object
+    CentralInput.addCMD(/^!fire .+/i,function(matches,msg){
+      myTracker = new AmmoTracker();
+      myTracker.track(msg.content,msg.selected,"player|" + msg.playerid);
+    },true);
+
+    //attempt to read every handout and character sheet so that the next time
+    //they are read, it is successful. (The first attempt always returns an
+    //empty string)
+
+    //gather up all the handouts
+    var Handouts = findObjs({
+        _type: "handout"
     });
     //gather up all the characters
     var Characters = findObjs({
         _type: "character"
     });
+
+    log("Reading through every handout and character")
+    //step through each handout
+    _.each(Handouts, function(handout){
+        handout.get("notes",function(notes){notes;});
+        handout.get("gmnotes",function(gmnotes){gmnotes;});
+    });
+    log("...")
     //step through each character
     _.each(Characters, function(Character){
-    //find each ability that starts with "!Fire "
-    Character.get("bio", function(bio) {
-        bio;
+        Character.get("bio", function(bio) {bio;});
+        Character.get("gmnotes", function(gmnotes) {gmnotes;});
     });
-    });
-    LinkList = [];
-    log("Handout and character notes have been read.")
+    log("Reading complete.")
 });

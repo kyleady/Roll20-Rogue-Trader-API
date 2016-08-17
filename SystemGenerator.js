@@ -1149,13 +1149,13 @@ function System(){
         }
         
         //generate mandatory exotic bounties
-        for(i = 0; i < this.PlanetExoticBounty; i++){
+        for(var i = 0; i < this.PlanetExoticBounty; i++){
             output += "<li>" + this.RandomMineral(randomInteger(100),"Exotic " + GetLink("Minerals"))+ "</li>";
         }
         
         //generate mandatory extra ruins
         //for each result of Empire
-        for(i = 0; i < this.EmpireRuins; i++){
+        for(var i = 0; i < this.EmpireRuins; i++){
             //add D3-1 ruins to this planet
             for(k = randomInteger(3)-1; k > 0; k--){
                 //add a random ruin from the available presets
@@ -2098,7 +2098,7 @@ function System(){
     }
     
     //be sure there are no negative planets
-    for(i = 0; i < 3; i++){
+    for(var i = 0; i < 3; i++){
         if(Planets[i]<0){Planets[i] = 0;}
     }
     
