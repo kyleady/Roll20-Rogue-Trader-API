@@ -31,11 +31,6 @@ function journalSearch(matches, msg){
     }
   });
 
-  //be sure the link list exists
-  if(LinkList == undefined){
-    LinkList = []
-  }
-
   //erase any old search results for the specific player
   LinkList[msg.playerid] = [];
   //save the search results for the specific player
@@ -49,7 +44,7 @@ function journalSearch(matches, msg){
 //displays the next five search results from !Find <blah>
 function moreSearch(matches,msg){
   //is there anything to show?
-  if(LinkList == undefined || LinkList[msg.playerid] == undefined || LinkList[msg.playerid].length <= 0){
+  if(LinkList[msg.playerid] == undefined || LinkList[msg.playerid].length <= 0){
     return whisper("No results.",msg.playerid);
   }
 
@@ -68,6 +63,8 @@ function moreSearch(matches,msg){
 }
 
 on("ready",function(){
+  LinkList = [];
+
   //matches[0] is the same as msg.content
   //matches[1] is the search criteria
   CentralInput.addCMD(/^!\s*find\s+(\S.*)$/i,journalSearch,true);

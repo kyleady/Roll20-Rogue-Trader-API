@@ -49,7 +49,7 @@ function fateHandler(matches,msg){
         return whisper("You do not have enough Fate to spend.",msg.playerid);
       } else {
         //announce that the player is spending a fate point
-        sendChat("player|" + msg.playerid, "/em - " + character.get("name") + " spends a Fate Point!" +  + " remain.");
+        sendChat("player|" + msg.playerid, "/em - " + character.get("name") + " spends a Fate Point!");
         //reduce the number of fate points by one
         textOperator(Fate[0],"-=","1");
         //report what remains

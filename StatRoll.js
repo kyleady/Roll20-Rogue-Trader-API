@@ -195,7 +195,7 @@ on("ready", function() {
   CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
-      case "pr":
+      case "pr": case "pe":
         //replace pr with Per (due to conflicts with PsyRating(PR))
         matches[2] = "Per";
         break;
@@ -203,10 +203,10 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
-      case "Int":
+      case "int": case "in":
         matches[2] = "It";
       break;
-      case "Fel":
+      case "fel":
         matches[2] = "Fe";
       break;
       default:
@@ -218,10 +218,10 @@ on("ready", function() {
   },true);
 
   //lets the user quickly view their stats with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|In|It|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
-      case "pr":
+      case "pr": case "pe":
         //replace pr with Per (due to conflicts with PsyRating(PR))
         matches[2] = "Per";
         break;
@@ -229,10 +229,10 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
-      case "Int":
+      case "int": case "in":
         matches[2] = "It";
       break;
-      case "Fel":
+      case "fel":
         matches[2] = "Fe";
       break;
       default:
@@ -248,10 +248,10 @@ on("ready", function() {
   },true);
 
   //similar to above, but shows the attribute without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|In|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
     //capitalize the stat name properly
     switch(matches[2].toLowerCase()){
-      case "pr":
+      case "pr": case "pe":
         //replace pr with Per (due to conflicts with PsyRating(PR))
         matches[2] = "Per";
         break;
@@ -259,10 +259,10 @@ on("ready", function() {
         //capitalize every letter
         matches[2] = matches[2].toUpperCase();
         break;
-      case "Int":
+      case "int": case "in":
         matches[2] = "It";
       break;
-      case "Fel":
+      case "fel":
         matches[2] = "Fe";
       break;
       default:
@@ -278,18 +278,18 @@ on("ready", function() {
   },true);
 
   //Lets players make a Profit Factor Test
-  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit\s*Factor)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit\s*Factor|P\s*F)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     matches[2] = "Profit Factor";
     partyStatRoll(matches,msg);
   },true);
 
   //Lets players freely view and edit cohesion with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, function(matches,msg){
     matches[2] = "Profit Factor";
     partyStatHandler(matches,msg);
   }, true);
   //Lets players view cohesion without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor)\s*(\?)()()\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = "Profit Factor";
     partyStatHandler(matches,msg);
   }, true);

@@ -1,3 +1,582 @@
+//create a single character importer object
+charImport = {}
+
+charImport.clean = function(){
+  //the character object
+  this.CharObj = undefined;
+  //the text of the character, to be disected
+  this.CharText = "";
+
+  //the character in data format
+  this.Stat    = {};
+  this.Bonus   = {};
+  this.Armour  = {};
+  this.Extra   = {};
+
+  this.Move    = [];
+  this.Weapons = [];
+
+  this.Skills  = [];
+  this.Talents = [];
+  this.Traits  = [];
+  this.Gear    = [];
+
+  this.Rules   = [];
+
+  //the order of the character's characteristics
+  this.StatNames = ["WS", "BS", "S", "T", "Ag", "It", "Per", "Wp", "Fe", "Renown"];
+  //a list of stats beyond the basic characteristics
+  this.ExtraNames = ["Wounds", "Fatigue", "Fate", "PR", "Unnatural Wounds", "Insanity", "Corruption", "Unnatural Corruption"];
+  //the order of the movement speeds
+  this.MoveNames = ["Half", "Full", "Charge", "Run"];
+  //the order of Armour
+  this.ArmourNames = ["Armour_H", "Armour_RA", "Armour_LA", "Armour_B", "Armour_RL", "Armour_LL"];
+
+  //default each named value to zero
+  _.each(charImport.StatNames,function(name){
+    charImport.Stat[name] = 0;
+    charImport.Bonus["Unnatural " + name] = 0;
+  });
+  _.each(charImport.ExtraNames,function(name){
+    charImport.Extra[name] = 0;
+  });
+  _.each(charImport.ArmourNames,function(name){
+    charImport.Armour[name] = 0;
+  });
+};
+
+
+//save the content of the character bio
+charImport.getCharacter = function(charName){
+  this.clean();
+  //reset the character data
+  //create a list of charactersheets that have the given name
+  var charList = findObjs({_type: "character", name: charName});
+
+  //are there too few matches?
+  if(charList.length <= 0){
+    whisper("Character not found.");
+    return false;
+  //are there too many matches?
+  } else if(charList.length >= 2){
+    whisper("Multiple matches. Aborting. See log for details.")
+    _.each(charList,function(char){
+      log(char.get("name"))
+    });
+    return false;
+  }
+  //save the character object
+  this.CharObj = charList[0];
+  var charBio = "";
+  //otherwise try to load the Bio of the given character
+  this.CharObj.get("bio", function(bio){
+    charBio = bio;
+  });
+
+  //was the bio empty?
+  if(charBio == ""){
+    whisper("Bio is empty.")
+    return false;
+  } else {
+    //there was no problem saving the bio
+    this.charText = charBio;
+    return true;
+  }
+
+}
+
+//convert text into character
+charImport.convert = function(){
+  //split the input by line
+  var lines = this.charText.split(/\s*<br>\s*/);
+  //disect each line into label and content (by the colon)
+  var labeled = [];
+  var unlabeled = [];
+  _.each(lines,function(line){
+    if(line.match(/:/g)){
+      //disect the content by label
+      labeled.push({label: line.substring(0,line.indexOf(":")).trim(), content: line.substring(line.indexOf(":")+1).trim()});
+    } else {
+      //this line is not labeled
+      //check if we can add this to the last labeled line
+      if(labeled.length >= 1){
+        //attach this to the last bit of content
+        labeled[labeled.length-1].content += " " + line;
+      } else {
+        //there is no label to attach this content to
+        unlabeled.push(line);
+      }
+    }
+  });
+
+  log("labeled")
+  log(labeled)
+  log("unlabeled")
+  log(unlabeled)
+  log("Known Labels")
+  log(this.KnownLabels.length)
+  //act on each labeled line
+  _.each(labeled,function(line){
+    charImport.process(line);
+  });
+  //search unlabled content for unnaturals and characteristics
+  var addedLines = 0;
+  _.each(unlabeled,function(line){
+    //only accept lines that are purely numbers, spaces, and parenthesies
+    if(line.match(/^[–\s\d\(\)]+$/)){
+      //are we free to fill out the unnaturals?
+      if(addedLines == 0){
+        //save every number found
+        var bonus = line.match(/(\d+|– –)/g);
+        //correlate the numbers with the named stats
+        for(var i = 0; i < charImport.StatNames.length; i++){
+          //default to "0" when no number is given for a stat
+          if(Number(bonus[i])){
+            charImport.Bonus["Unnatural " + charImport.StatNames[i]] = bonus[i];
+          } else {
+            charImport.Bonus["Unnatural " + charImport.StatNames[i]] = "0";
+          }
+        }
+        log("charImport.Bonus")
+        log(charImport.Bonus)
+      //are we free to fill out the characteristics?
+      } else if(addedLines == 1) {
+        //save every number found
+        var stat = line.match(/(\d+|– –)/g);
+        //correlate the numbers with the named stats
+        for(var i = 0; i < charImport.StatNames.length; i++){
+          //default to "0" when no number is given for a stat
+          if(Number(stat[i])){
+            charImport.Stat[charImport.StatNames[i]] = stat[i];
+          } else {
+            charImport.Stat[charImport.StatNames[i]] = "0";
+          }
+        }
+        log("charImport.Stat")
+        log(charImport.Stat)
+      } else {
+        whisper("Too many numical lines. Stats and Unnatural Stats are likely inaccurate.");
+      }
+      //a numerical line has been interpreted
+      addedLines++;
+    }
+
+  });
+  //if only one numerical line was added, assume the only one added was the statline
+  if(addedLines == 1){
+    for(var name in this.Stat){
+      this.Stat[name] = this.Bonus["Unnatural " + name];
+      this.Bonus["Unnatural " + name] = 0;
+    }
+  }
+  //convert the data of the character into a character sheet
+  this.makeCharacter()
+  //tell the gm that the character has been Imported
+  //warn them that attributes will not show up until the character is closed and opened again
+  whisper(GetLink(this.CharObj.get("name")) + " has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+  //ask the gm if the conversion was satisfactory
+
+}
+
+charImport.process = function(line){
+  //step through every known label, testing each one
+  for(var i = 0; i < this.KnownLabels.length; i++){
+    if(this.KnownLabels[i].labelRegex.test(line.label) ){
+      //run the function associated with this label
+      this.KnownLabels[i].interpret(line.content,line.label.match(this.KnownLabels[i].labelRegex));
+      //this line was processed, no need to process it again
+      return;
+    }
+  }
+  //if we made it to this point, then inpret the label as a unique special rule
+  this.Rules.push("<strong>" + line.label + "</strong>: " + line.content);
+}
+
+//disects a list
+charImport.interpretList = function(content,matches){
+  //use the label to determine which List this is
+  var group = matches[1].toTitleCase();
+  //remove any occurance of a grammatical 'and' in the list
+  content = content.replace(/,\s+and\s+/g, ', ');
+  //create a pattern for items in the list
+  var itemregexTxt = "";
+  //each item should start with a name
+  itemregexTxt += "([0-9a-z†\\s]+)";
+  //allow the item to have a list of subgroups
+  itemregexTxt += "\\s*(?:(?:\\(([,\\+\\d\\s0-9a-z†]+)\\)\\s*)?";
+  //assume that the item is associated with a characteristic, but allow it not to be
+  itemregexTxt += "\\s*\\((?:WS|BS|S|T|Ag|Int|Per|WP|Fel)\\)|(?:\\(([,\\+\\d\\s0-9a-z†]+)\\)\\s*)?)"
+  //allow the item to have a numerical bonus
+  itemregexTxt += "\\s*(?:\\+(10|20|30))?";
+  var itemregex = new RegExp(itemregexTxt,"ig");
+  //create a list of all the items
+  var itemList = content.match(itemregex);
+  //prepare to break up the individual items
+  itemregex = new RegExp(itemregexTxt,"i");
+  //break up each item into its parts and save those parts
+  _.each(itemList, function(item){
+    var itempieces = item.match(itemregex);
+    charImport[group].push({
+      name: itempieces[1].trim(),
+      subgroups: itempieces[2],
+      bonus: itempieces[3]
+    });
+  });
+  log(group)
+  log(charImport[group])
+}
+
+//disects the character's movement
+charImport.interpretMovement = function(content){
+  //record each number listed for movement
+  charImport.Move = content.match(/\d+/g);
+}
+
+//discects the character's armour
+charImport.interpretArmour = function(content){
+  //find numbers associated with names
+  var armourmatches = content.match(/(?:all|body|head|arms|legs)\s+:?\s*\d+/gi);
+
+  //step through the matches and disect out the name and number
+  _.each(armourmatches,function(armourmatch){
+    //make the armour value into a number
+    var armourvalue = Number(armourmatch.match(/\d+/)[0]);
+    var armourname = armourmatch.match(/(?:all|body|head|arms|legs)/i)[0].toLowerCase();
+    switch(armourname){
+      case "head":
+        charImport.Armour["Armour_H"] += armourvalue;
+      break;
+      case "arms":
+        charImport.Armour["Armour_RA"] += armourvalue;
+        charImport.Armour["Armour_LA"] += armourvalue;
+      break;
+      case "body":
+        charImport.Armour["Armour_B"] += armourvalue;
+      break;
+      case "legs":
+        charImport.Armour["Armour_RL"] += armourvalue;
+        charImport.Armour["Armour_LL"] += armourvalue;
+      break;
+      case "all":
+        _.each(charImport.ArmourNames,function(name){
+          charImport.Armour[name] += armourvalue;
+        });
+      break;
+    }
+  });
+  log("this.Armour")
+  log(charImport.Armour)
+}
+
+//record the Wounds
+charImport.interpretWounds = function(content){
+  if(/\d+/.test(content)){
+    charImport.Extra["Wounds"] = content.match(/\d+/)[0];
+  } else {
+    whisper("Wounds is not a number.");
+  }
+}
+
+charImport.interpretWeapons = function(content){
+  log("weapons")
+  log(content)
+  //build up a regex for matching weapons
+  weaponregexTxt = "";
+  //start with the name of the weapon
+  weaponregexTxt += "([-\\sa-z0-9–—]+)";
+  //every weapon must have its details closed in parenthesies
+  weaponregexTxt += "\\(";
+  //provide an optional pattern for weapon type
+  weaponregexTxt += "\\s*(|Melee|Pistol|Basic|Heavy)\\s*(?:|;|,)";
+  //provide an optional pattern for weapon range
+  weaponregexTxt += "\\s*(?:(\\d+)\\s*(k?m))?\\s*(?:|;|,)";
+  //provide an optional pattern for rate of fire
+  weaponregexTxt += "\\s*(?:(S|—|-|–)\\s*\\/\\s*(\\d+|—|-|–)\\s*\\/\\s*(\\d+|—|-|–))?\\s*(?:|;|,)";
+  //provide a mandatory pattern for weapon damage
+  weaponregexTxt += "\\s*(\\d*)\\s*d\\s*(5|10)\\s*(|\\+|—|-|–)\\s*(\\d*)\\s*(E|R|X|I)\\s*(?:;|,)";
+  //provide a mandatory pattern for weapon penetration
+  weaponregexTxt += "\\s*pen\\s*(\\d+)\\s*(?:|;|,)";
+  //provide an optional pattern for the weapon's clip
+  weaponregexTxt += "\\s*(?:Clip\\s+(\\d+|-|—|–))?\\s*(?:|;|,)";
+  //provide an optional pattern for the weapon reload
+  weaponregexTxt += "\\s*(?:(?:Reload|Rld)\\s+(Free|Half|\\d*\\s*Full|—|-|–))?\\s*(?:|;|,)";
+  //provide an optional pattern for special rules (a list of words that might have numbers in parenthesies)
+  var qualityregexTxt = "([-|-—–a-z0-9\\s]+)(?:[\\(\\[](\\d+)[\\)\\]])?,?";
+  weaponregexTxt += "((?:" + qualityregexTxt + ")*)\\s*";
+  //finish close off the main parenthesies
+  weaponregexTxt += "\\)";
+  //old regex /([-\sa-z0-9–—]+)\(\s*(?:(\d+)\s*k?m)?\s*(?:|;|,)\s*(?:(S|—|-|–)\s*\/\s*(\d+|—|-|–)\s*\/\s*(\d+|—|-|–))?\s*(?:|;|,)\s*(\d*)\s*d\s*(5|10)\s*(|\+|—|-|–)\s*(\d*)\s*(E|R|X|I)\s*(?:;|,)\s*pen\s*(\d+)\s*(?:|;|,)\s*(?:clip\s+(\d+|-|—|–))?\s*(?:|;|,)\s*(?:(?:Reload|Rld)\s+(Free|Half|\d*\s*Full|—|-|–))?\s*(?:|;|,)((?:[-|-—–a-z0-9\s]+(?:\(?:\d+\))?,?)*)\s*\)/gi
+  var weaponregex = new RegExp(weaponregexTxt,"gi");
+  var weaponmatches = content.match(weaponregex);
+  var weaponregex = new RegExp(weaponregexTxt,"i");
+  _.each(weaponmatches,function(weaponmatch){
+    log("weaponmatch")
+    log(weaponmatch)
+    var pieces = weaponmatch.match(weaponregex);
+    log("weaponpieces")
+    log(pieces)
+
+    //pull apart the weapon qualities, pieces[16]
+    var qualityregex = new RegExp(qualityregexTxt,"gi");
+    var qualities = pieces[16].match(qualityregex);
+    qualityregex = new RegExp(qualityregexTxt,"i");
+    //find the names of the qualities and attempt to turn them into links
+    var qualityinfo = "";
+    _.each(qualities,function(quality){
+      var qualitypieces = quality.match(qualityregex);
+      qualityinfo += GetLink(qualitypieces[1].trim());
+      //did the quality have a numerical value?
+      if(qualitypieces[2]){
+        qualityinfo += "[" + qualitypieces[2] + "]";
+      }
+      //add a comma
+      qualityinfo += ", ";
+    });
+    //remove the last comma and space
+    qualityinfo = qualityinfo.substring(0,qualityinfo.length-2);
+
+    //add the weapon
+    charImport.Weapons.push({
+      Name:      pieces[1].trim(),
+      Type:      pieces[2],
+      Range:     pieces[3],
+      RangeUnit: pieces[4],
+      Single:    pieces[5],
+      Semi:      pieces[6],
+      Full:      pieces[7],
+      DiceNum:   pieces[8],
+      DiceType:  pieces[9],
+      DamBase:   pieces[10] + pieces[11],
+      DamType:   pieces[12],
+      Pen:       pieces[13],
+      Reload:    pieces[14],
+      Clip:      pieces[15],
+      Qualities: qualityinfo
+    });
+  });
+  log("charImport.Weapons")
+  log(charImport.Weapons)
+}
+
+charImport.KnownLabels = [];
+charImport.KnownLabels.push({labelRegex: /^\s*(skills|talents|traits|gear)\s*$/i, interpret: charImport.interpretList});
+charImport.KnownLabels.push({labelRegex: /^\s*move(ment)?\s*$/i, interpret: charImport.interpretMovement});
+charImport.KnownLabels.push({labelRegex: /^\s*armour\s*$/i, interpret: charImport.interpretArmour});
+charImport.KnownLabels.push({labelRegex: /^\s*wounds\s*$/i, interpret: charImport.interpretWounds});
+charImport.KnownLabels.push({labelRegex: /^\s*weapons?\s*$/i, interpret: charImport.interpretWeapons});
+//delete instances of TotalTB
+charImport.KnownLabels.push({labelRegex: /^\s*total\s*TB\s*$/i, interpret: function(){}});
+//creates a standard for section titles
+charImport.toTitle = function(txt){
+  return "<strong><u>" + txt + "</strong></u><br>";
+}
+
+//creates attributes for a list of stats
+charImport.addAttributes = function(Stats){
+  for(var name in Stats){
+    createObj("attribute",{
+      name: name,
+      current: Stats[name],
+      max: Stats[name],
+      characterid: charImport.CharObj.id
+    });
+  }
+}
+
+//creates an HTML text out of a list of items
+charImport.showList = function(group){
+  var list = this.toTitle(group);
+  _.each(this[group],function(item){
+    if(group == "Gear"){item.name = item.name.toTitleCase();}
+    list += GetLink(item.name);
+    if(item.subgroups){
+      list += "(" + item.subgroups + ")";
+    }
+    if(item.bonus){
+      list += "+" + item.bonus;
+    }
+    list += "<br>";
+  });
+  list += "<br>";
+
+  return list;
+}
+
+//creates an HTML table for a list of arrays
+charImport.toTable = function(){
+  //find the width of the table
+  var widths = [];
+  _.each(arguments,function(row){
+    widths.push(row.length);
+  });
+  var width = Math.max(...widths);
+
+  //create the HTML table
+  table = "<table><tbody>";
+
+  //start with a header
+  var isHeader = true;
+
+  //show each row
+  _.each(arguments,function(row){
+    //begin the row
+    table += "<tr>";
+    //make sure every row has the same length
+    for(var i = 0; i < width; i++){
+      //begin the cell
+      table += "<td>";
+      if(isHeader){
+        table += "<strong>";
+      }
+      //only show content that exists
+      if(row[i]){
+        table += row[i];
+      }
+      //end the cell
+      if(isHeader){
+        table += "</strong>";
+      }
+      table += "</td>";
+    }
+    //end the row
+    table += "</tr>";
+
+    //only one Header
+    isHeader = false;
+  });
+
+  //close off the table
+  table += "</table></tbody>";
+
+  return table;
+}
+
+//converts the weapons into a string
+charImport.showWeapons = function(){
+  //start with the title
+  var weaponTxt = this.toTitle("Weapons");
+  //work through each weapon
+  _.each(this.Weapons,function(weapon){
+    weaponTxt += weapon.Name.toTitleCase();
+    weaponTxt += " (";
+    if(weapon.Type){
+      weaponTxt += weapon.Type + "; ";
+    }
+    if(weapon.Range){
+      weaponTxt += weapon.Range + weapon.RangeUnit + "; ";
+    }
+    if(weapon.Single){
+      weaponTxt += weapon.Single + "/" + weapon.Semi + "/" + weapon.Full + "; ";
+    }
+    if(weapon.DiceNum != "1"){
+      weaponTxt += weapon.DiceNum;
+    }
+    weaponTxt += "D" + weapon.DiceType + weapon.DamBase + " " + GetLink(weapon.DamType.toUpperCase()) + "; ";
+    weaponTxt += "Pen " + weapon.Pen + "; ";
+    if(weapon.Reload){
+      weaponTxt += "Rld " + weapon.Reload + "; ";
+    }
+    if(weapon.Clip){
+      weaponTxt += "Clip " + weapon.Clip + "; ";
+    }
+    if(weapon.Qualities != ""){
+      weaponTxt += weapon.Qualities;
+    } else {
+      //if there are no qualities to finish off the weapon info, then remove the last semicolon
+      weaponTxt = weaponTxt.substring(0,weaponTxt.length-2);
+    }
+    weaponTxt += ")<br>";
+  });
+  weaponTxt += "<br>";
+
+  return weaponTxt;
+}
+
+charImport.showAbility = function(weapon){
+
+}
+
+charImport.makeCharacter = function(){
+  //correct the unnatural characteristics to only reflect the benifit they give
+  //beyond the natural bonus that the characteristics give
+  for(var name in this.Stat){
+    //leave Unnatural Bonuses of 0 at 0
+    if(this.Bonus["Unnatural " + name] != 0){
+      this.Bonus["Unnatural " + name] = Number(this.Bonus["Unnatural " + name]) - Math.floor(Number(this.Stat[name])/10);
+    }
+  }
+
+  //at this time, Unnatural Renown is not used
+  delete this.Bonus["Unnatural Renown"];
+
+  //clear out any old attributes or abilities associated with the character
+  var charAttr = findObjs({_type: "attribute", characterid: this.CharObj.id});
+  var charAbil = findObjs({_type: "ability", characterid: this.CharObj.id});
+  _.each(charAttr,function(attribute){attribute.remove();});
+  _.each(charAbil,function(ability){ability.remove();});
+
+  //begin writing the new bio for the character (saved in the gmnotes)
+  var gmnotes = ""
+  //display the movement
+  gmnotes += this.toTable(this.MoveNames,this.Move) + "<br>";
+  //display the weapons
+  gmnotes += this.showWeapons();
+  //display the list of Skills, Talents, Traits, and Gear
+  gmnotes += this.showList("Skills");
+  gmnotes += this.showList("Talents");
+  gmnotes += this.showList("Traits");
+  gmnotes += this.showList("Gear");
+
+  //add in Special Rules
+  _.each(this.Rules,function(rule){
+    gmnotes += rule + "<br><br>";
+  });
+
+  //Add in attributes
+  this.addAttributes(this.Stat);
+  this.addAttributes(this.Armour);
+  this.addAttributes(this.Extra);
+  this.addAttributes(this.Bonus);
+
+  //save the gmnotes to the character
+  this.CharObj.set("gmnotes",gmnotes);
+}
+
+on("ready",function(){
+  CentralInput.addCMD(/^!\s*import\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
+    if(charImport.getCharacter(matches[1])){
+      charImport.convert();
+    }
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //input a character name
 function XenosImport(input){
     //find the character sheet with that name
@@ -36,10 +615,10 @@ function XenosImport(input){
             if(breakIndex != 0){
                 line.push(Notes.substring(0,breakIndex));
             }
-            //remove the line and the 4 character break from the main input 
+            //remove the line and the 4 character break from the main input
             Notes = Notes.substring(breakIndex+4);
         }
-    } 
+    }
     //use : to determine the label of the line
     var label = [];
     for(var i = 0; i < line.length; i++){
@@ -122,7 +701,7 @@ function XenosImport(input){
             }
         //unnatural || bonus
         //disect the line by space and throw out any parenthesies
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("unnatural") == 0 || label[i].toLowerCase().indexOf("bonus") == 0){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -172,7 +751,7 @@ function XenosImport(input){
             }
         //move[ment]
         //disect the line by / and spaces
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("move") == 0 || label[i].toLowerCase() == "speed"){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -216,7 +795,7 @@ function XenosImport(input){
             }
         //wound[s]
         //trim any spaces out
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("wound") == 0){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -255,10 +834,10 @@ function XenosImport(input){
                     case 0: Xenos.Wounds   = pieces[j]; break;
                 }
             }
-        
+
         //armo[ur]
         //trim any spaces
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("armour") == 0){
             indicator[0] = "";
             //disect the line by space
@@ -303,7 +882,7 @@ function XenosImport(input){
                 //record the stat appropriately
                 if(pieces[j] != "not a number"){
                     switch(indicator[0]){
-                        case "all":  
+                        case "all":
                             if(!Xenos.Armour_H ){Xenos.Armour_H  = pieces[j]; }
                             if(!Xenos.Armour_RA){Xenos.Armour_RA = pieces[j]; }
                             if(!Xenos.Armour_LA){Xenos.Armour_LA = pieces[j]; }
@@ -313,23 +892,23 @@ function XenosImport(input){
                             //erase the indicator
                             indicator[0] = "";
                         break;
-                        case "head": 
+                        case "head":
                             Xenos.Armour_H  = pieces[j];
                             //erase the indicator
                             indicator[0] = "";
                         break;
-                        case "body": 
-                            Xenos.Armour_B  = pieces[j]; 
+                        case "body":
+                            Xenos.Armour_B  = pieces[j];
                             //erase the indicator
                             indicator[0] = "";
                         break;
-                        case "arms": 
+                        case "arms":
                             Xenos.Armour_RA = pieces[j];
                             Xenos.Armour_LA = pieces[j];
                             //erase the indicator
                             indicator[0] = "";
                         break;
-                        case "legs": 
+                        case "legs":
                             Xenos.Armour_RL = pieces[j];
                             Xenos.Armour_LL = pieces[j];
                             //erase the indicator
@@ -340,7 +919,7 @@ function XenosImport(input){
             }
         //skill[s]
         //disect the line by , and spaces
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("skill") == 0){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -420,7 +999,7 @@ function XenosImport(input){
             }
         //talent[s]
         //disect the line by , and spaces
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("talent") == 0){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -500,7 +1079,7 @@ function XenosImport(input){
             }
         //trait[s]
         //disect the line by , and spaces
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("trait") == 0){
             //disect the line by space
             for(j = 0; j < line[i].length; j++){
@@ -563,7 +1142,7 @@ function XenosImport(input){
             Xenos.Traits = "";
             //stich together each piece using links
             for(j = 0; j < pieces.length; j++){
-                
+
                 if(pieces[j].indexOf("Unnatural ") == 0 && pieces[j]){
                     //seporate each entry by a line break
                     Xenos.Traits += "<br>";
@@ -578,31 +1157,31 @@ function XenosImport(input){
                         //for example, if the unnatural was x2 and the stat was 33, then the increase would be 3
                         var bonus = 0;
                         switch(pieces[j].substring(10).toLowerCase()){
-                            case "weapon skill": 
+                            case "weapon skill":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.WS/10);
                             break;
-                            case "balistic skill": 
+                            case "balistic skill":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.BS/10);
                             break;
-                            case "strength": 
+                            case "strength":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.S/10);
                             break;
-                            case "toughness": 
+                            case "toughness":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.T/10);
                             break;
-                            case "agility": 
+                            case "agility":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.Ag/10);
                             break;
-                            case "intelligence": 
+                            case "intelligence":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.It/10);
                             break;
-                            case "perception": 
+                            case "perception":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.Pr/10);
                             break;
-                            case "willpower": 
+                            case "willpower":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.Wp/10);
                             break;
-                            case "fellowship": 
+                            case "fellowship":
                                 bonus = (Number(indicator[j].substring(1))-1)*Math.floor(Xenos.Fe/10);
                             break;
                         }
@@ -632,12 +1211,12 @@ function XenosImport(input){
                         Xenos.Traits += "(" + indicator[j] + ")";
                     }
                 }
-                
+
             }
         //weapon[s]
         //disect the line by ,
         //disect the piece by ( and ;
-        } 
+        }
         else if(label[i].toLowerCase().indexOf("weapon") == 0){
             //what parenthesis layer are we in?
             var parenLayer = 0;
@@ -654,7 +1233,7 @@ function XenosImport(input){
                 //is this char the first open paren or a period?
                 if((line[i][j] == "(" && parenLayer <= 1) || line[i][j] == "."){
                     //it is
-                    
+
                     //check to see if the number of indicators matches the number of pieces
                     while(indicator.length < pieces.length){
                         indicator.push("");
@@ -711,7 +1290,7 @@ function XenosImport(input){
             while(indicator.length < pieces.length){
                 indicator.push("");
             }
-            
+
             //record that stats of the all the weapons
             for(j = 0; j < pieces.length; j++){
                 //add a new weapon
@@ -766,7 +1345,7 @@ function XenosImport(input){
                         Xenos.Weapons[j].Semi = Number(weaponBits[k].substring(weaponBits[k].indexOf("/")+1,weaponBits[k].indexOf("/",weaponBits[k].indexOf("/")+1)) );
                         log(weaponBits[k].substring(weaponBits[k].indexOf("/",weaponBits[k].indexOf("/")+1)+1))
                         Xenos.Weapons[j].Full = Number(weaponBits[k].substring(weaponBits[k].indexOf("/",weaponBits[k].indexOf("/")+1)+1));
-                        
+
                         log(Xenos.Weapons[j].Single)
                         log(Xenos.Weapons[j].Semi)
                         log(Xenos.Weapons[j].Full)
@@ -883,21 +1462,21 @@ function XenosImport(input){
                             Xenos.Weapons[j].Qualities += GetLink(weaponBits[k].trim());
                         }
                     }
-                }  
+                }
             }
         //note[s]
         //disect the remaining information by label
         //bold and output the label
         //place the content after a :
         //add a <br> before the next label
-        } 
-        else if(label[i].length > 0) {
-            Xenos.Notes += "<br><strong>" + label[i] + "</strong>: " + line[i] + "<br>"; 
         }
-    }    
+        else if(label[i].length > 0) {
+            Xenos.Notes += "<br><strong>" + label[i] + "</strong>: " + line[i] + "<br>";
+        }
+    }
     //reset the Xenos
     //gather up all the attributes
-    var xenosObjs = findObjs({                              
+    var xenosObjs = findObjs({
       _characterid: XenosSheets[0].id,
       _type: "attribute",
     });
@@ -907,7 +1486,7 @@ function XenosImport(input){
       obj.remove();
     });
     //gather up all the abilities
-    xenosObjs = findObjs({                              
+    xenosObjs = findObjs({
       _characterid: XenosSheets[0].id,
       _type: "ability",
     });
@@ -916,7 +1495,7 @@ function XenosImport(input){
       //delete the ability
       obj.remove();
     });
-    
+
     //==========================================================================================================================
     //==========================================================================================================================
     //OUTPUT THE XENOS
@@ -992,7 +1571,7 @@ function XenosImport(input){
             Xenos.WeaponText += "; " + Xenos.Weapons[weaponIndex].Qualities;
         }
         Xenos.WeaponText += ")<br>";
-        
+
         //create a token ability for this weapon
         //convert to ability
         var AbilityText = "/w gm - @{character_name} deals [[";
@@ -1020,8 +1599,8 @@ function XenosImport(input){
         if(Xenos.Weapons[weaponIndex].Damage){
             AbilityText += "+" + Xenos.Weapons[weaponIndex].Damage.toString()
         }
-        AbilityText += "]] "; 
-        
+        AbilityText += "]] ";
+
         switch(Xenos.Weapons[weaponIndex].DamageType){
             case "I": AbilityText += "Impact"; break;
             case "R": AbilityText += "Rending"; break;
@@ -1040,9 +1619,9 @@ function XenosImport(input){
             istokenaction: true,
             characterid: XenosSheets[0].id
         });
-    
+
     }
-    
+
     //Compile the GM Notes
     Xenos.gmnotes = "";
     Xenos.bio = "";
@@ -1122,18 +1701,18 @@ function XenosImport(input){
     if(!Xenos.Wounds){Xenos.Wounds = 3}
     //calculate the total toughness bonus and save it as the Fatigue cap
     Xenos.Fatigue = Math.floor(Xenos.T/10) + Xenos.Unnatural_T;
-//=========================================================================================        
+//=========================================================================================
     //Feature not available yet :(
     //create the default token for the Xenos from the 'Ahh! A Monster Blueprint!' Character Sheet
     //var Blueprint = findObjs({type: 'character', name: "Ahh! A Monster Blueprint!"})[0];
     //var Token = JSON.parse(Blueprint._defaulttoken);
-    
+
     //Link the token to the sheet
     //Token.represents = NewXenos.id;
-    
+
     //Record the Xenos' name
     //Token.name = UniqueName;
-    
+
     //setup the token bars that are seen by the players
     //Token.bar1_vaule = 0;
     //Token.bar1_max = Xenos.Fatigue.toString();
@@ -1141,11 +1720,11 @@ function XenosImport(input){
     //Token.bar2_max   = 0;
     //Token.bar3_vaule = Xenos.Wounds.toString();
     //Token.bar3_max   = Xenos.Wounds.toString();
-    
+
     //record the default token
     //NewXenos.set("defaulttoken", JSON.stringify(Token));
-//=========================================================================================        
-    
+//=========================================================================================
+
     //Potential work around, create an object to use as the default token
     //start out by finding the creature creation room
     var WaitingRooms = findObjs({type: "page", name: "Creature Creation"});
@@ -1156,7 +1735,7 @@ function XenosImport(input){
         //if the room does not exist, make it exist
         WaitingRoom = createObj("page", {name: "Creature Creation"});
     }
-    
+
     //create the token in the room
     var Token = createObj("graphic", {pageid: WaitingRoom.id, name: XenosSheets[0].get("name") , height: 70, width:70, left: 350, top: 350, layer: "objects", imgsrc: "https://s3.amazonaws.com/files.d20.io/images/3360725/NFy-FPDogVUZbxiRowb2Ag/thumb.png?1394439373"});
     //Fatigue
@@ -1193,7 +1772,7 @@ function XenosImport(input){
     createObj("attribute", {name: "It", current: Xenos.It, max: Xenos.It, characterid: XenosSheets[0].id});
     createObj("attribute", {name: "Per",current: Xenos.Pr, max: Xenos.Pr, characterid: XenosSheets[0].id});
     createObj("attribute", {name: "Fe", current: Xenos.Fe, max: Xenos.Fe, characterid: XenosSheets[0].id});
-    
+
     //Stats: Wounds, Fatigue, Fate
     createObj("attribute", {name: "Wounds",  current: Xenos.Wounds, max: Xenos.Wounds, characterid: XenosSheets[0].id});
     createObj("attribute", {name: "Fatigue", current: 0, max: Xenos.Fatigue, characterid: XenosSheets[0].id});
@@ -1217,7 +1796,7 @@ function XenosImport(input){
     createObj("attribute", {name: "Unnatural It", current: Xenos.Unnatural_It, max: Xenos.Unnatural_It, characterid: XenosSheets[0].id});
     createObj("attribute", {name: "Unnatural Per",current: Xenos.Unnatural_Pr, max: Xenos.Unnatural_Pr, characterid: XenosSheets[0].id});
     createObj("attribute", {name: "Unnatural Fe", current: Xenos.Unnatural_Fe, max: Xenos.Unnatural_Fe, characterid: XenosSheets[0].id});
-    
+
     log(Xenos)
     //alert the gm that the character was updated
     sendChat("System","/w gm The <a href=\"http://journal.roll20.net/character/" + XenosSheets[0].id + "\">" + XenosSheets[0].get("name") + "</a>" + " has been Imported.")
@@ -1233,7 +1812,7 @@ function GetLink (Name,Link){
             Name = "Multiple Legs";
             var Handouts = findObjs({ type: 'handout', name: Name });
             if(Handouts.length > 0){
-                return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>(4)";    
+                return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>(4)";
             } else {
                 return "[Quadruped]";
             }
@@ -1243,9 +1822,9 @@ function GetLink (Name,Link){
         if(Name.indexOf("†") != -1) {
             return Name;
         } else if(Handouts.length > 0){
-            return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>";    
+            return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>";
         } else if(Characters.length > 0){
-            return "<a href=\"http://journal.roll20.net/character/" + Characters[0].id + "\">" + Name + "</a>";    
+            return "<a href=\"http://journal.roll20.net/character/" + Characters[0].id + "\">" + Name + "</a>";
         } else {
             return "[" + Name + "]";
         }

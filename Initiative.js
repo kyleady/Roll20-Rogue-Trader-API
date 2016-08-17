@@ -564,7 +564,7 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler,true);
 
   //similar to above, but allows the gm to roll and edit initiative with modifiers
-  CentralInput.addCMD(/^!\s*init\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
   //similar to above, but allows the gm to roll and edit initiative without modifiers
-  CentralInput.addCMD(/^!\s*init\s*()()()$/i,initiativeHandler);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler);
 });
