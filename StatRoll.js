@@ -8,103 +8,70 @@
 //matches[3] is the sign of the modifier and is null if no modifier is included
 //matches[4] is the absolute value of the modifier and is null if no modifier is included
 function statRoll(matches, msg){
+  //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
+  if(matches[1]){
+      var whisperGM = "/w gm ";
+  } else {
+      var whisperGM = "";
+  }
 
-    //quit early if there were no inputs
-    if(matches == undefined || msg == undefined){
-        //likely the CentralInput is attempting to test the function
-        return whisper("statRoll() was run without any inputs.");
+  //record the name of the stat without modification
+  //capitalization modification should be done before this function
+  var statName = matches[2];
+
+  //did the player add a modifier?
+  if(matches[3] && matches[4]){
+    var modifier = Number(matches[3] + matches[4]);
+  } else {
+    var modifier = 0
+  }
+
+  //find a default character for the player if nothing was selected
+  if(msg.selected == undefined || msg.selected.length <= 0){
+    //make the seleced array include the default character
+    msg.selected = [defaultCharacter(msg.playerid)];
+    //if there is no default character, just quit
+    if(msg.selected[0] == undefined){return;}
+  }
+
+  //work through each selected character
+  _.each(msg.selected, function(obj){
+    //normally msg.selected is just a list of objectids and types of the
+    //objects you have selected. If this is the case, find the corresponding
+    //character objects.
+
+    if(obj._type && obj._type == "graphic"){
+      var graphic = getObj("graphic", obj._id);
+      //be sure the graphic exists
+      if(graphic == undefined) {
+          return whisper("graphic undefined");
+      }
+      var stat = attrValue(statName,{graphicid: obj._id});
+      var unnatural_stat = attrValue("Unnatural " + statName,{graphicid: obj._id, alert: false});
+      var name = graphic.get("name");
+    //if using a default character, just accept the default character as the
+    //the character we are working with
+    }else if(obj.get("_type") == "character") {
+      var stat = attrValue(statName,{characterid: obj.id});
+      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: obj.id, alert: false});
+      var name = obj.get("name");
     }
 
-    //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
-    if(matches[1]){
-        var whisperGM = "/w gm ";
-    } else {
-        var whisperGM = "";
+    //be sure the stat exists
+    if(stat == undefined){
+      //attrValue should warn if something went wrong
+      return;
     }
 
-    //record the name of the stat without modification
-    //capitalization modification should be done before this function
-    var statName = matches[2];
-
-    //did the player add a modifier?
-    if(matches[3] && matches[4]){
-      var modifier = Number(matches[3] + matches[4]);
-    } else {
-      var modifier = 0
+    //by default, don't include the unnatural bonus
+    var unnatural_bonus = "";
+    if(unnatural_stat != undefined){
+      unnatural_bonus = "{{Unnatural= [[ceil((" + unnatural_stat + ")/2)]]}}";
     }
 
-    //find a default character for the player if nothing was selected
-    if(msg.selected == undefined || msg.selected.length <= 0){
-      //make the seleced array include the default character
-      msg.selected = [defaultCharacter(msg.playerid)];
-      //if there is no default character, just quit
-      if(msg.selected[0] == undefined){return;}
-    }
-
-    //work through each selected character
-    _.each(msg.selected, function(obj){
-        //normally msg.selected is just a list of objectids and types of the
-        //objects you have selected. If this is the case, find the corresponding
-        //character objects.
-
-        if(obj._type && obj._type == "graphic"){
-          var graphic = getObj("graphic", obj._id);
-          //be sure the graphic exists
-          if(graphic == undefined) {
-              return whisper("graphic undefined");
-          }
-          //be sure the character is valid
-          var character = getObj("character",graphic.get("represents"))
-          if(character == undefined){
-              return whisper("character undefined");
-          }
-        //if using a default character, just accept the default character as the
-        //the character we are working with
-        }else if(obj.get("_type") == "character") {
-          var character = obj;
-        }
-
-        //load up the character name
-        name = character.get("name");
-
-        //be sure the stat exists
-        if(getAttrByName(character.id, statName) != undefined){
-          var stat = Number(getAttrByName(character.id, statName));
-        } else {
-          return whisper(name + " does not have an attribute named " + statName + ".");
-        }
-
-        //by default, don't include the unnatural bonus
-        var unnatural_bonus = "";
-        //if there is an Unnatural Stat associated with this stat, note how many
-        //successes it would add
-        if(getAttrByName(character.id, "Unnatural " + statName) != undefined
-        && Number(getAttrByName(character.id, "Unnatural " + statName)) != undefined){
-          unnatural_bonus = "{{Unnatural= [[ceil((" + getAttrByName(character.id, "Unnatural " + statName).toString() + ")/2)]]}}";
-        }//don't warn the gm if no unnatural stat was found, it will be clear
-        //from the lack of an unnatural bonus in the roll template.
-
-        //default the stat to zero
-        if(stat == undefined){
-            stat = 0;
-        }
-
-        //only allow the gm to see the results of NPCs
-        if(character.get("controlledby") == ""){
-            //output the roll
-            whisper("&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} " + unnatural_bonus);
-        } else {
-            //check to see if Aging.js has been included
-            //note that we are only adding in the aging penalty for player characters
-            //if(Aging == undefined){}else{
-              //add in the aging penalty
-              //stat -= Aging.penalty(character.id);
-            //}
-            //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
-            sendChat("player|" + msg.playerid ,whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
-        }
-    });
-
+    //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
+    sendChat("player|" + msg.playerid , whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>: " + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
+  });
 }
 
 //rolls a D100 against the designated stat and outputs the number of successes
