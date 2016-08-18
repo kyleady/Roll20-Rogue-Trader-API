@@ -74,6 +74,10 @@ function canViewAttr(name,options){
 function statHandler(matches,msg,options){
   //default to no options
   options = options || {};
+  //by default, show the results of the handler
+  if(options["show"] == undefined){
+    options["show"] = true;
+  }
 
   var isMax = matches[1].toLowerCase() == "max";
   var statName = matches[2];
@@ -179,6 +183,11 @@ function statHandler(matches,msg,options){
 
     //is the user making a querry?
     if(operator.indexOf("?") != -1) {
+      //are we showing the result?
+      if(options["show"] == false){
+        //end here before showing any results
+        return;
+      }
       //add some formating to name if it isn't empty
       if(name != ""){
         name = name + "'s ";
@@ -199,6 +208,12 @@ function statHandler(matches,msg,options){
       //the character we are working with
       } else if(obj.get("_type") == "character") {
         attrValue(statName,{setTo: stat, characterid: obj.id, max: isMax});
+      }
+
+      //are we showing the result?
+      if(options["show"] == false){
+        //end here before showing any results
+        return;
       }
 
       var attrTable = "<table border = \"2\" width = \"100%\">";
@@ -228,6 +243,7 @@ function statHandler(matches,msg,options){
       attrTable += "<tr bgcolor = \"White\"><td>" + currentAttr + "</td><td>" + maxAttr  + "</td></tr>";
       //end table
       attrTable += "</table>";
+
 
       if(options["partyStat"]){
         //get the list of people who can view the host character sheet
