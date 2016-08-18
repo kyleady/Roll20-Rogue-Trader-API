@@ -4,6 +4,66 @@ String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
 
+//returns an array of player ids that can view the character sheet hosting the attribute
+function canViewAttr(name,options){
+  //default to no options
+  options = options || [];
+
+  //default to alerting the gm
+  if(options["alert"] == undefined){
+    options["alert"] = true;
+  }
+
+  //was a graphic id supplied?
+  if(options["graphicid"]){
+    //get the graphic
+    var graphic = getObj("graphic",options["graphicid"]);
+    //be sure the graphic was found
+    if(graphic == undefined){
+      if(options["alert"]){whisper("Graphic " + options["graphicid"] + " does not exist.");}
+      return undefined;
+    }
+
+    //otherwise, just save the linked charater id and continue
+    options["characterid"] = graphic.get("represents");
+  }
+
+  //do we have a specific character id at this point?
+  if(options["characterid"]){
+    //be sure the character exists
+    var character = getObj("character",options["characterid"]);
+    if(character == undefined){
+      if(options["alert"]){whisper("Character " + options["characterid"] + " does not exist.");}
+      return undefined;
+    }
+
+  //otherwise, assume that the user was searching for a unique attribute
+  } else {
+    //these unique attributes are often single attributes shared by the entire party
+    var statObjs = findObjs({
+      _type: "attribute",
+      name: name
+    });
+    //were there no attributes with that name anywhere?
+    if(statObjs.length <= 0){
+      //no stat to work with. report the error and exit.
+      if(options["alert"]){whisper("There is nothing in the campaign with a(n) " + name + " Attribute.");}
+      return undefined;
+    //were there too many attributes that matched the name?
+    } else if(statObjs.length >= 2){
+      //warn the gm, but continue forward
+      if(options["alert"]){whisper("There were multiple " + name + " attributes. Using the first one found. A log has been posted in the terminal.");}
+      log(name + " Attributes")
+      log(statObjs)
+    }
+
+    //get the character object hosting the attribute
+    var character = getObj("character",statObjs[0].get("_characterid"));
+  }
+  //make an array out of the list of players that can view this character sheet
+  return viewerList = character.get("inplayerjournals").split(",");
+}
+
 //general use stat modifier/reporter
 //matches[0] is the same as msg.context
 //matches[1] is whether or not the user is editting the max attribute (if == "max")
@@ -170,8 +230,22 @@ function statHandler(matches,msg,options){
       attrTable += "</table>";
 
       if(options["partyStat"]){
-        //publicly announce the change to everyone
-        sendChat("player|" + msg.playerid,name + attrTable);
+        //get the list of people who can view the host character sheet
+        var viewers = canViewAttr(statName,{alert: false});
+        //can everyone see the sheet?
+        if(viewers.indexOf("all") != -1){
+          //publicly announce the change to everyone
+          sendChat("player|" + msg.playerid, name + attrTable);
+        } else {
+          if(viewers[0] != ""){
+            //inform each player that can view the attribute of the change
+            _.each(viewers, function(viewer){
+              whisper(name + attrTable,viewer);
+            });
+          }
+          //also inform the gm
+          whisper(name + attrTable);
+        }
       } else {
         //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
         whisper(name + attrTable,msg.playerid);
@@ -209,7 +283,6 @@ function whisper(content, speakingTo, speakingAs){
     return sendChat(speakingAs, "/w gm " + content );
   }
 }
-
 
 //often times players will forget to select their character when using various
 //api commands. This function searches for a default charactersheet for this
