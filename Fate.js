@@ -26,34 +26,41 @@ function fateHandler(matches,msg){
         if(graphic == undefined) {
             return whisper("graphic undefined");
         }
-        //be sure the character is valid
-        var character = getObj("character",graphic.get("represents"))
-        if(character == undefined){
-            return whisper("character undefined");
-        }
+        var Fate = attrValue("Fate",{graphicid: obj._id});
+        var name = graphic.get("name");
       //if using a default character, just accept the default character as the
       //the character we are working with
-      }else if(obj.get("_type") == "character") {
-        var character = obj;
+      } else if(obj.get("_type") == "character") {
+        var Fate = attrValue("Fate",{characterid: obj.id});
+        var name = obj.get("name");
       }
 
       //exit if the character does not have Fate Points
-      var Fate = findObjs({type: 'attribute', characterid: character.id, name: "Fate"});
-      if(Fate.length <= 0){
+      if(Fate == undefined){
         //while exiting, tell the user which character did not have a Fate Attribute
-        return whisper(character.get("name") + " does not have a Fate Attribute!", msg.playerid);
+        return whisper(name + " does not have a Fate Attribute!", msg.playerid);
       }
 
       //be sure the player has enough fate points to spend
-      if(Number(Fate[0].get("current")) < 1){
-        return whisper("You do not have enough Fate to spend.",msg.playerid);
+      if(Fate < 1){
+        return whisper(name + " does not have enough Fate to spend.",msg.playerid);
       } else {
         //announce that the player is spending a fate point
-        sendChat("player|" + msg.playerid, "/em - " + character.get("name") + " spends a Fate Point!");
+        sendChat("player|" + msg.playerid, "/em - " + name + " spends a Fate Point!");
         //reduce the number of fate points by one
-        textOperator(Fate[0],"-=","1");
+        if(obj._type && obj._type == "graphic"){
+          attrValue("Fate",{setTo: Fate - 1, graphicid: obj._id});
+        //if using a default character, just accept the default character as the
+        //the character we are working with
+        } else if(obj.get("_type") == "character") {
+          attrValue("Fate",{setTo: Fate - 1, characterid: obj.id});
+        }
         //report what remains
-        whisper(character.get("name") + textOperator(Fate[0],"?"),msg.playerid);
+        var finalReport = name + " has " + (Fate-1).toString + " more Fate Point";
+        if(Fate-1 != 1){
+          finalReport += "s";
+        }
+        whisper(finalReport,msg.playerid);
       }
   });
 
