@@ -28,6 +28,21 @@ function Hash(hashString) {
     }
   }
 
+  //outputs the hash as a string
+  this.toString = function(){
+      var output = "{";
+      for(var k in this){
+        //ignore any utility functions included in the hash
+        if(!(typeof this[k] === 'function')){
+            output += k + ": \"" + this[k] + "\", ";
+        }
+      }
+      //remove the last comma
+      output = output.substring(0,output.length-2);
+      output += "}";
+      return output;
+  }
+
   //default the hashString to something empty
   hashString = hashString || "{}";
 
@@ -47,21 +62,6 @@ function Hash(hashString) {
   for(var i = 0; i < itemList.length; i++){
     var matches = itemList[i].match(itemRegex);
     this[matches[1]] = matches[2];
-  }
-
-  //outputs the hash as a string
-  this.toString = function(){
-      var output = "{";
-      for(var k in this){
-        //ignore any utility functions included in the hash
-        if(!(typeof this[k] === 'function')){
-            output += k + ": \"" + this[k] + "\", ";
-        }
-      }
-      //remove the last comma
-      output = output.substring(0,output.length-2);
-      output += "}";
-      return output;
   }
 }
 
