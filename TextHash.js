@@ -110,7 +110,6 @@ function attrValue(name, options){
         } else {
             gmnotes = gmnotes + "<br>" + tempAttrs.toString();
         }
-        gmnotes = gmnotes.replace(tempAttrs.hashRegex(),tempAttrs.toString());
         //return the gmnotes back into their URI Component form
         gmnotes = encodeURIComponent(gmnotes);
         graphic.set("gmnotes",gmnotes);
