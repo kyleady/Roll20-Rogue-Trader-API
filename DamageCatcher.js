@@ -1077,55 +1077,19 @@ function applyDamage(matches,msg){
 on("ready",function(){
   //Lets gm  view and edit damage variables with modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|fell|felling|prim|primitive)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
-    switch(matches[2].toLowerCase()){
-        case "dam":
-          matches[2] = "Damage";
-        break;
-        case "pen":
-          matches[2] = "Penetration";
-        break;
-        case "prim":
-          matches[2] = "Primitive";
-        break;
-        case "fell":
-          matches[2] = "Felling";
-        break;
-        default:
-          matches[2] = matches[2].toTitleCase();
-        break;
-    }
-    partyStatHandler(matches,msg);
-    partyStatHandler(matches,msg);
+    matches[2] = getProperStatName(matches[2]);
+    statHandler(matches,msg,{partyStat: true});
   });
   //Lets gm view damage variables without modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive)\s*(\?)()()\s*$/i, function(matches,msg){
-    switch(matches[2].toLowerCase()){
-        case "dam":
-          matches[2] = "Damage";
-        break;
-        case "pen":
-          matches[2] = "Penetration";
-        break;
-        case "damtype":
-          matches[2] = "Damage Type";
-        break;
-        case "prim":
-          matches[2] = "Primitive";
-        break;
-        case "fell":
-          matches[2] = "Felling";
-        break;
-        default:
-          matches[2] = matches[2].toTitleCase();
-        break;
-    }
-    partyStatHandler(matches,msg);
+    matches[2] = getProperStatName(matches[2]);
+    statHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm set the damage type
   CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
     matches[2] = "Damage Type";
     matches[5] = matches[5].toUpperCase();
-    partyStatHandler(matches,msg);
+    statHandler(matches,msg,{partyStat: true});
   });
   //Lets anyone get a quick link to critical effects table based on user input
   //or based on the damage type and hit location stored in the damage variables

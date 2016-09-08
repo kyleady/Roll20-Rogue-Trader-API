@@ -4,134 +4,65 @@ String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
 
-//create a general use funciton which accepts an Attribute object and a
-//text opperator (along with an optional value). The function edits the
-//Attribute as instructed and returns the result in the form of a table
+//returns an array of player ids that can view the character sheet hosting the attribute
+function canViewAttr(name,options){
+  //default to no options
+  options = options || [];
 
-//if the textOperator is a querry, one table with the temporarily
-//modified attribute will be shown. If the text operator edits the
-//attribute, two tables will be shown, one of the attribute before
-//modification, the other of the attribute after modification
-function textOperator(attriObj, operator, modifier, editMax){
-  //if no attribObj is include, exit and warn the gm
-  if(attriObj == undefined){
-    return whisper("textOperator() was used on an undefined object.")
+  //default to alerting the gm
+  if(options["alert"] == undefined){
+    options["alert"] = true;
   }
 
-  //if no operator was included, default the query operator "?"
-  operator = operator || "?";
-  //if no modifier was included, default to 0
-  modifier = modifier || 0;
-  //if the editMax flag was not included, assume they do not want to edit the
-  //max value of the attribute
-  editMax = editMax || false;
+  //was a graphic id supplied?
+  if(options["graphicid"]){
+    //get the graphic
+    var graphic = getObj("graphic",options["graphicid"]);
+    //be sure the graphic was found
+    if(graphic == undefined){
+      if(options["alert"]){whisper("Graphic " + options["graphicid"] + " does not exist.");}
+      return undefined;
+    }
 
-  //if the modifier was "max", use the attribute's max value
-  if(modifier && modifier.toLowerCase() == "max"){
-    modifier = attriObj.get("max");
-  //if the modifier was "current" use the attribute's current value
-  } else if(modifier && modifier.toLowerCase() == "current"){
-    modifier = attriObj.get("current");
+    //otherwise, just save the linked charater id and continue
+    options["characterid"] = graphic.get("represents");
   }
 
-  //if we are going to perform mathematical operations with the modifier, we
-  //should put it into number format and not a string
-  if(operator != "=" && operator != "?"){
-    modifier = Number(modifier);
-  }
+  //do we have a specific character id at this point?
+  if(options["characterid"]){
+    //be sure the character exists
+    var character = getObj("character",options["characterid"]);
+    if(character == undefined){
+      if(options["alert"]){whisper("Character " + options["characterid"] + " does not exist.");}
+      return undefined;
+    }
 
-  //if the user did wish to edit the max value of the attribute, not that for
-  //ease of use
-  if(editMax){
-    attrProperty = "max";
+  //otherwise, assume that the user was searching for a unique attribute
   } else {
-    //otherwise just edit the current value (default)
-    attrProperty = "current";
+    //these unique attributes are often single attributes shared by the entire party
+    var statObjs = findObjs({
+      _type: "attribute",
+      name: name
+    });
+    //were there no attributes with that name anywhere?
+    if(statObjs.length <= 0){
+      //no stat to work with. report the error and exit.
+      if(options["alert"]){whisper("There is nothing in the campaign with a(n) " + name + " Attribute.");}
+      return undefined;
+    //were there too many attributes that matched the name?
+    } else if(statObjs.length >= 2){
+      //warn the gm, but continue forward
+      if(options["alert"]){whisper("There were multiple " + name + " attributes. Using the first one found. A log has been posted in the terminal.");}
+      log(name + " Attributes")
+      log(statObjs)
+    }
+
+    //get the character object hosting the attribute
+    var character = getObj("character",statObjs[0].get("_characterid"));
   }
-
-  //save temporary values for the current and maximum
-  var tempAttribute = [];
-  tempAttribute["current"] = attriObj.get("current");
-  tempAttribute["max"] = attriObj.get("max");
-
-  //proceed based on the operator specified
-  switch(operator){
-    case "=":
-      //set the value to the modifier
-      attriObj.set(attrProperty, modifier);
-      break;
-    case "+=":
-      //add the modifier to the value
-      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) + modifier));
-      break;
-    case "-=":
-      //subtract the modifier from the value
-      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) - modifier));
-      break;
-    case "*=":
-      //multiply the value by the modifier
-      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) * modifier));
-      break;
-    case "/=":
-      //divide the value by the modifier
-      attriObj.set(attrProperty, Math.round(Number(attriObj.get(attrProperty)) / modifier));
-      break;
-    case "?+":
-      //edit the temporary attribute
-      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) + modifier;
-      break;
-    case "?-":
-      //edit the temporary attribute
-      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) - modifier;
-      break;
-    case "?*":
-      //edit the temporary attribute
-      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) * modifier;
-      break;
-    case "?/":
-      //edit the temporary attribute
-      tempAttribute[attrProperty] = Number(tempAttribute[attrProperty]) / modifier;
-      break;
-    //by default do not modify anything
-  }
-
-  //if the max value was editted, reset the current value to the max value
-  if(editMax){
-    attriObj.set("current",attriObj.get("max"));
-  }
-
-  //create a table to display the temporary attribte
-  //if this is just a querry, it will show the modified attribute
-  //if this is an edit, it will show the attribute before modification
-  //begin table
-  var attrTable = "<table border = \"2\" width = \"100%\">";
-  //title
-  attrTable += "<caption>" + attriObj.get("name") + "</caption>";
-  //label row - Current, Max
-  attrTable += "<tr bgcolor = \"00E518\"><th>Current</th><th>Max</th></tr>";
-  //temporary attribute row (current, max)
-  attrTable += "<tr bgcolor = \"White\"><td>" + tempAttribute["current"] + "</td><td>" + tempAttribute["max"]  + "</td></tr>";
-  //end table
-  attrTable += "</table>";
-
-  //if this is an edit, show the resultant attribute as well
-  if(operator.indexOf("=") != -1){
-      attrTable += "<table border = \"2\" width = \"100%\">";
-      //title (an arrow pointing to the result)
-      attrTable += "<caption>|</caption>";
-      attrTable += "<caption>V</caption>";
-      //label row - Current, Max
-      attrTable += "<tr bgcolor = \"Yellow\"><th>Current</th><th>Max</th></tr>";
-      //modified attribute row (current, max)
-      attrTable += "<tr bgcolor = \"White\"><td>" + attriObj.get("current") + "</td><td>" + attriObj.get("max")  + "</td></tr>";
-      //end table
-      attrTable += "</table>";
-  }
-
-  //report the table
-  return attrTable;
+  //make an array out of the list of players that can view this character sheet
+  return viewerList = character.get("inplayerjournals").split(",");
 }
-
 
 //general use stat modifier/reporter
 //matches[0] is the same as msg.context
@@ -140,138 +71,206 @@ function textOperator(attriObj, operator, modifier, editMax){
 //matches[3] is the text operator "=", "?+", "*=", etc
 //matches[4] is the sign of the modifier
 //matches[5] is the modifier (numerical, current, max, or an inline roll)
-function statHandler(matches,msg){
-  //remove any spaces from the texp operator
-  matches[3] = matches[3].replace(/ /,"");
-  //find a default character for the player if nothing was selected
-  if(msg.selected == undefined || msg.selected.length <= 0){
+function statHandler(matches,msg,options){
+  //default to no options
+  options = options || {};
+  //by default, show the results of the handler
+  if(options["show"] == undefined){
+    options["show"] = true;
+  }
+
+  var isMax = matches[1].toLowerCase() == "max";
+  var statName = matches[2];
+  var operator = matches[3].replace("/\s/g","");
+  var sign = matches[4] || "";
+  //check if the modifier was randomly rolled
+  if(matches[5] == "$[[0]]"){
+    var modifier = msg.inlinerolls[0].results.total.toString();
+  } else {
+    //otherwise save the modifier without transforming it into a number yet
+    var modifier = matches[5] || "";
+  }
+
+  //is the stat a public stat, shared by the entire party?
+  if(options["partyStat"]){
+    //overwrite msg.selected. Whatever was selected does not matter
+    //we need one item in msg.selected to iterate over
+    msg.selected = ["partyStat"];
+  //otherwise find a default character for the player if nothing was selected
+  } else if(msg.selected == undefined || msg.selected.length <= 0){
     //make the seleced array include the default character
     msg.selected = [defaultCharacter(msg.playerid)];
     //if there is no default character, just quit
     if(msg.selected[0] == undefined){return;}
   }
 
-  //check if the modifier was randomly rolled
-  if(matches[5] == "$[[0]]"){
-    matches[5] = msg.inlinerolls[0].results.total.toString();
-    //overwrite the sign of the modifier with 0 so that any addition done will
-    //be leave matches[5] unaffected
-    matches[4] = "";
-  }
-
-  //make the max indicator lowercase
-  matches[1] = matches[1].toLowerCase();
-
   //work through each selected character
   _.each(msg.selected, function(obj){
-    //normally msg.selected is just a list of ids and types of the objects you
-    //have selected. If this is the case, find the corresponding character
-    //objects.
-
-    if(obj._type && obj._type == "graphic"){
+    //first check if the selected characters are being overwritten with the party stat
+    if(options["partyStat"]){
+      var currentAttr = attrValue(statName,{max: false});
+      var maxAttr     = attrValue(statName,{max: true, alert: false});
+      var name = "";
+    //normally msg.selected is just a list of object ids and types of the
+    //objects you have selected. If this is the case, find the corresponding
+    //character objects.
+    } else if(obj._type && obj._type == "graphic"){
       var graphic = getObj("graphic", obj._id);
       //be sure the graphic exists
       if(graphic == undefined) {
           return whisper("graphic undefined");
       }
-      //be sure the character is valid
-      var character = getObj("character",graphic.get("represents"))
-      if(character == undefined){
-          return whisper("character undefined");
-      }
+      var currentAttr = attrValue(statName,{graphicid: obj._id, max: false});
+      var maxAttr     = attrValue(statName,{graphicid: obj._id, max: true, alert: false});
+      var name = graphic.get("name");
     //if using a default character, just accept the default character as the
     //the character we are working with
-    }else if(obj.get("_type") == "character") {
-      var character = obj;
+    } else if(obj.get("_type") == "character") {
+      var currentAttr = attrValue(statName,{characterid: obj.id, max: false});
+      var maxAttr     = attrValue(statName,{characterid: obj.id, max: true, alert: false});
+      var name = obj.get("name");
     }
 
-    //exit if the character does not have the designated attribute
-    var Attribs = findObjs({type: 'attribute', characterid: character.id, name: matches[2]});
-    if(Attribs.length <= 0){
-      //while exiting, tell the user which character did not have the Attribute
-      return whisper(character.get("name") + " does not have a(n) " + matches[2]  + " Attribute!", msg.playerid);
+    //be sure the attribute we are seeking exists
+    if(currentAttr == undefined){
+      //attrValue should warn if something went wrong
+      return;
+    }
+
+    //if the currentAttr exists but the maxAttr does not then we are likely
+    //dealing with a temporary attribute that does not exist on the represented
+    //character sheet.
+    if(maxAttr == undefined){
+      //if the user is trying to edit the maximum stat, inform them that this is
+      //impossible and quit
+      if(isMax || modifier == "max"){
+        whisper("Temporary attributes do not have maximums to work with.");
+        return;
+      } else {
+        maxAttr = "-";
+      }
+    }
+
+    //which stat are we editing?
+    if(isMax){
+      var stat = maxAttr;
+    } else {
+      var stat = currentAttr;
+    }
+
+    //is the modifier the max or current attribute?
+    if(modifier.toLowerCase() == "max"){
+      var tempModifier = maxAttr;
+    } else if(modifier.toLowerCase == "current"){
+      var tempModifier = currentAttr;
+    } else {
+      var tempModifier = modifier;
+    }
+
+    //modify the stat number with the operator
+    if(operator.indexOf("+") != -1){
+      stat = Number(stat) + Number(sign + tempModifier);
+    } else if(operator.indexOf("-") != -1){
+      stat = Number(stat) - Number(sign + tempModifier);
+    } else if(operator.indexOf("*") != -1){
+      stat = Number(stat) * Number(sign + tempModifier);
+    } else if(operator.indexOf("/") != -1){
+      stat = Number(stat) / Number(sign + tempModifier);
+      stat = Math.round(stat);
+    } else if(operator == "="){
+      stat = sign + tempModifier;
     }
 
     //is the user making a querry?
-    if(matches[3].indexOf("?") != -1) {
+    if(operator.indexOf("?") != -1) {
+      //are we showing the result?
+      if(options["show"] == false){
+        //end here before showing any results
+        return;
+      }
+      //add some formating to name if it isn't empty
+      if(name != ""){
+        name = name + "'s ";
+      }
       //whisper the result of the querry to just the user
-      whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
+      whisper(name + "<strong>" + statName + "</strong> " + operator + " " + sign + modifier + " = " + stat.toString(),msg.playerid);
     //otherwise the user is editing the attribute
-    } else{
-      //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
-      whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
-      if(playerIsGM(msg.playerid) == false){
-        whisper(character.get("name")  + textOperator(Attribs[0],matches[3],matches[4] + matches[5],matches[1] == "max"));
+    } else if(operator.indexOf("=") != -1){
+      //save the result
+      if(options["partyStat"]){
+        attrValue(statName,{setTo: stat, max: isMax});
+      //normally msg.selected is just a list of object ids and types of the
+      //objects you have selected. If this is the case, find the corresponding
+      //character objects.
+      } else if(obj._type && obj._type == "graphic"){
+        attrValue(statName,{setTo: stat, graphicid: obj._id, max: isMax});
+      //if using a default character, just accept the default character as the
+      //the character we are working with
+      } else if(obj.get("_type") == "character") {
+        attrValue(statName,{setTo: stat, characterid: obj.id, max: isMax});
+      }
+
+      //are we showing the result?
+      if(options["show"] == false){
+        //end here before showing any results
+        return;
+      }
+
+      var attrTable = "<table border = \"2\" width = \"100%\">";
+      //title
+      attrTable += "<caption>" + statName + "</caption>";
+      //label row - Current, Max
+      attrTable += "<tr bgcolor = \"00E518\"><th>Current</th><th>Max</th></tr>";
+      //temporary attribute row (current, max)
+      attrTable += "<tr bgcolor = \"White\"><td>" + currentAttr + "</td><td>" + maxAttr + "</td></tr>";
+      //end table
+      attrTable += "</table>";
+
+      //show the change
+      if(isMax){
+        maxAttr = stat;
+      } else {
+        currentAttr = stat;
+      }
+
+      attrTable += "<table border = \"2\" width = \"100%\">";
+      //title (an arrow pointing to the result)
+      attrTable += "<caption>|</caption>";
+      attrTable += "<caption>V</caption>";
+      //label row - Current, Max
+      attrTable += "<tr bgcolor = \"Yellow\"><th>Current</th><th>Max</th></tr>";
+      //modified attribute row (current, max)
+      attrTable += "<tr bgcolor = \"White\"><td>" + currentAttr + "</td><td>" + maxAttr  + "</td></tr>";
+      //end table
+      attrTable += "</table>";
+
+
+      if(options["partyStat"]){
+        //get the list of people who can view the host character sheet
+        var viewers = canViewAttr(statName,{alert: false});
+        //can everyone see the sheet?
+        if(viewers.indexOf("all") != -1){
+          //publicly announce the change to everyone
+          sendChat("player|" + msg.playerid, name + attrTable);
+        } else {
+          if(viewers[0] != ""){
+            //inform each player that can view the attribute of the change
+            _.each(viewers, function(viewer){
+              whisper(name + attrTable,viewer);
+            });
+          }
+          //also inform the gm
+          whisper(name + attrTable);
+        }
+      } else {
+        //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
+        whisper(name + attrTable,msg.playerid);
+        if(playerIsGM(msg.playerid) == false){
+          whisper(name + attrTable);
+        }
       }
     }
   });
-}
-
-//allows players to quickly view and edit attributes that represent the entire
-//party. The assumption is that only one of these attributes exists in the
-//entire campaign. It therefore searches for that attribute and works with it.
-//matches[0] is the same as msg.content
-//matches[1] is either "" or "max" for working with the max of the attribute
-//matches[2] is the name of the attribute
-//matches[3] is the text operator "=", "?+", "*=", etc
-//matches[4] is the sign of the modifier
-//matches[5] is the absolute value of the modifier
-function partyStatHandler(matches,msg){
-  //find the party attribute
-  var partyStatObjs = findObjs({
-    _type: "attribute",
-    name: matches[2]
-  });
-  //are there no which attributes which match the name matches[2]?
-  if(partyStatObjs.length <= 0){
-    //no stat to work with. alert the gm and player
-    whisper("There is nothing in the campaign with a(n) " + matches[2] + " Attribute.",msg.playerid);
-    //but don't alert the gm twice
-    if(playerIsGM(msg.playerid) == false){
-      whisper("There is nothing in the campaign with a(n) " + matches[2] + " Attribute.");
-    }
-    return;
-  //were there too many attributes that matched the name matches[2]?
-  } else if(partyStatObjs.length >= 2){
-    //warn the gm, but continue forward
-    whisper("There were multiple " + matches[2] + " attributes. Using the first one found. A log has been posted in the terminal.")
-    log(matches[2] + " Attributes")
-    log(partyStatObjs)
-  }
-
-  //check if the modifier was randomly rolled
-  if(matches[5] == "$[[0]]"){
-    matches[5] = msg.inlinerolls[0].results.total.toString();
-    //overwrite the sign of the modifier with 0 so that any addition done will
-    //be leave matches[5] unaffected
-    matches[4] = "";
-  }
-
-  //make the max indicator lowercase
-  matches[1] = matches[1].toLowerCase();
-  //is the user making a querry?
-  if(matches[3].indexOf("?") != -1) {
-    whisper(textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max"),msg.playerid);
-  //is the user modifying the public stat?
-  } else {
-    //get a list of players that can see the character sheet
-    var viewerList = getObj("character",partyStatObjs[0].get("_characterid")).get("inplayerjournals").split(",");
-    //save the result
-    var partyStatChange = textOperator(partyStatObjs[0],matches[3],matches[4] + matches[5],matches[1] == "max");
-    //if "all" was found, tell everyone
-    if(viewerList.indexOf("all") != -1){
-      sendChat("player|" + msg.playerid,partyStatChange);
-    } else {
-      //whisper to each owning player that is not a gm
-      _.each(viewerList, function(viewer){
-        if(playerIsGM(viewer) == false){
-          whisper(partyStatChange,viewer);
-        }
-        //inform the gm as well
-        whisper(partyStatChange);
-      });
-    }
-  }
 }
 
 //create a general use function to whisper a reply to a playerid
@@ -300,7 +299,6 @@ function whisper(content, speakingTo, speakingAs){
     return sendChat(speakingAs, "/w gm " + content );
   }
 }
-
 
 //often times players will forget to select their character when using various
 //api commands. This function searches for a default charactersheet for this
