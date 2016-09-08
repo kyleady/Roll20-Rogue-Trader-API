@@ -56,11 +56,11 @@ function fateHandler(matches,msg){
           attrValue("Fate",{setTo: Fate - 1, characterid: obj.id});
         }
         //report what remains
-        var finalReport = name + " has " + (Fate-1).toString + " more Fate Point";
+        var finalReport = name + " has [[" + Fate + "-1]] Fate Point";
         if(Fate-1 != 1){
           finalReport += "s";
         }
-        whisper(finalReport,msg.playerid);
+        whisper(finalReport + " left.",msg.playerid);
       }
   });
 
