@@ -62,6 +62,34 @@ function moreSearch(matches,msg){
   }
 }
 
+function GetLink (Name,Link){
+    Link = Link || "";
+    if(Link == ""){
+        if(Name == "Quadruped"){
+            Name = "Multiple Legs";
+            var Handouts = findObjs({ type: 'handout', name: Name });
+            if(Handouts.length > 0){
+                return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>(4)";
+            } else {
+                return "[Quadruped]";
+            }
+        }
+        var Handouts = findObjs({ type: 'handout', name: Name });
+        var Characters = findObjs({ type: 'handout', name: Name });
+        if(Name.indexOf("†") != -1) {
+            return Name;
+        } else if(Handouts.length > 0){
+            return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>";
+        } else if(Characters.length > 0){
+            return "<a href=\"http://journal.roll20.net/character/" + Characters[0].id + "\">" + Name + "</a>";
+        } else {
+            return "[" + Name + "]";
+        }
+    } else {
+        return "<a href=\"" + Link + "\">" + Name + "</a>";
+    }
+}
+
 on("ready",function(){
   LinkList = [];
 
