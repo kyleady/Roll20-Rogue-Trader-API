@@ -9,6 +9,7 @@ on("chat:message", function(msg) {
         sendChat("System","/w gm No healing to be done.")
         return;
     }
+
     _.each(msg.selected, function(obj){
         //get the character id of the selected token
         var graphic = getObj("graphic", obj._id);
@@ -68,7 +69,7 @@ on("chat:message", function(msg) {
         Woundsobjs[0].set("current",NewWounds);
         //report the total healing
         sendChat("System", character.get("name") + " has been healed to " + NewWounds.toString() + " Wounds.");
-        
+
     });
 }
 });
@@ -77,32 +78,32 @@ on("chat:message", function(msg) {
 on("change:attribute:current", function(obj, prev) {
     //quit if the attribute changed was not Wounds
     if(obj.get("name") != "Wounds"){return;}
-    
+
     //get the current and max wounds in number format
     var CurrentWounds = Number(obj.get("current"));
     var MaxWounds = Number(obj.get("max"));
-    
+
     //quit if either the current or max wounds are not numbers
     if(CurrentWounds == NaN || MaxWounds == NaN){return;}
-    
+
     //quit if the change was a net positive
     if(CurrentWounds - Number(prev.current) < 0){return;}
-    
+
     //find the Max Healing attribute
     var MaxHealingobjs = findObjs({
         _type: "attribute",
         _characterid: obj.get("_characterid"),
         name: "Max Healing"
     });
-    
+
     //be sure you found at least one Max Healing attribute
     if(MaxHealingobjs.length > 0){
         //record the Max Healing in number format
         var MaxHealing = Number(MaxHealingobjs[0].get("current"));
-        
+
         //quit if Max Healing is not a number
         if(MaxHealing == NaN){return;}
-        
+
         //is the new health greater than the current cap?
         if(CurrentWounds > MaxHealing){
             //is the new health greater than the max health?

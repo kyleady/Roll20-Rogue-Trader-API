@@ -3,7 +3,9 @@
 //listed on the turn tracker, they will be replaced. Character and vehicle
 //initiative is determined by Agility. Starship initiative is determined by
 //Detection. Currently, initiativeHandler reads the associated Character Sheets
-//of the tokens and accounts for Lightning Reflexes and Paranoia.
+//of the tokens and accounts for
+  //Lightning Reflexes
+  //Paranoia
 
 //matches[0] is the same as mgs.content
 //matches[1] is the text operator "=", "+=", "?", "?/", etc
@@ -12,6 +14,13 @@
 
 //secondAttempt is a flag showing that this function has been attempted once
 //  before, so as to prevent an infinite loop
+
+//The reason this function attempts to run a second time is due to an issue with
+//the roll20 api. When attempting to read the notes/bio or gmnotes of a handout
+//or character sheet, it will always return an empty string on the first
+//attempt. In the past I just asked the user to "Try Again". However, this
+//work around will have the function silently attempt to read the notes
+//a second time. If this second attempt does not work, it will warn the user.
 
 function initiativeHandler(matches,msg,secondAttempt){
   //get the JSON string of the turn order and make it into an array
@@ -50,13 +59,6 @@ function initiativeHandler(matches,msg,secondAttempt){
   //attempt to read the character sheet of every selected character. If there
   //is an issue, try running this function a second time. If there is no issue
   //continue forward.
-
-  //The reason this function attempts to run a second time is due to an issue
-  //roll20 api. When attempting to read the notes/bio or gmnotes of a handout
-  //or character sheet, it will always return an empty string on the first
-  //attempt. In the past I just asked the user to "Try Again". However, this
-  //work around will have the function silently attempt to read the notes
-  //a second time. If this second attempt does not work, it will warn the user
   var EmptyNotes = false;
   _.each(msg.selected, function(obj){
     //normally msg.selected is just a list of objectids and types of the
