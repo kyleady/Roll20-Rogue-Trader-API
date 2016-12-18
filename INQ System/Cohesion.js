@@ -15,7 +15,7 @@ function cohesionHandler(matches,msg){
     }
     return;
   //were there too many cohesion attributes?
-} else if(cohesionObjs.length >= 2){
+  } else if(cohesionObjs.length >= 2){
     //warn the gm, but continue forward
     whisper("There were multiple " + "Cohesion" + " attributes. Using the first one found. A log has been posted in the terminal.")
     log("Cohesion" + " Attributes")
