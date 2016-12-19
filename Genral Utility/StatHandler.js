@@ -29,7 +29,7 @@ function statHandler(matches,msg,options){
   if(options["partyStat"]){
     //overwrite msg.selected. Whatever was selected does not matter
     //we need one item in msg.selected to iterate over
-    msg.selected = ["partyStat"];
+    msg.selected = [{_type: "custom"}];
   //otherwise find a default character for the player if nothing was selected
   } else if(msg.selected == undefined || msg.selected.length <= 0){
     //make the seleced array include the default character

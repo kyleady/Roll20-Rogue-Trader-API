@@ -50,26 +50,31 @@ function eachCharacter(msg, func){
     //normally msg.selected is just a list of objectids and types of the
     //objects you have selected. If this is the case, find the any
     //character objects associated with these objects.
-    if(obj._type && obj._type == "graphic"){
+    if(obj._type == "graphic"){
       var graphic = getObj("graphic", obj._id);
       //be sure the graphic exists
       if(graphic == undefined) {
-          log("graphic undefined")
-          log(obj)
-          return whisper("graphic undefined");
+        log("graphic undefined")
+        log(obj)
+        return whisper("graphic undefined");
       }
 
       //be sure the character is valid
       var character = getObj("character", graphic.get("represents"))
       if(character == undefined){
-          log("character undefined")
-          log(graphic)
-          return whisper("character undefined");
+        log("character undefined")
+        log(graphic)
+        return whisper("character undefined");
       }
+    //if the object's type is unique, just proceed anyways with an undefined
+    //graphic and character
+    } else if(obj._type == "unique"){
+      var graphic = undefined;
+      var character = undefined;
     //if using a default character, just accept the default character as the
     //the character we are working with, no need to work through tokens to
     //find this character
-    }else if(obj.get("_type") == "character") {
+    } else if(typeof obj.get === "function" && obj.get("_type") == "character") {
       //record the character
       var character = obj;
       var graphic = undefined;
@@ -90,9 +95,9 @@ function eachCharacter(msg, func){
         //attempt to find a token linked to this character on the player's
         //current page
         graphic = findObjs({
-            _pageid: Campaign().get("playerspecificpages")[msg.playerid],
-            _type: "graphic",
-            represents: character.id
+          _pageid: Campaign().get("playerspecificpages")[msg.playerid],
+          _type: "graphic",
+          represents: character.id
         })[0];
       }
 
@@ -100,9 +105,9 @@ function eachCharacter(msg, func){
       //main player page
       if(graphic == undefined){
         graphic = findObjs({
-            _pageid: Campaign().get("playerpageid"),
-            _type: "graphic",
-            represents: character.id
+          _pageid: Campaign().get("playerpageid"),
+          _type: "graphic",
+          represents: character.id
         })[0];
       }
       //if no token was found on the player page, then search for any token
@@ -120,7 +125,7 @@ function eachCharacter(msg, func){
 
     //if the gm just grabbed every single token on the map, you will already
     //have the graphic objects, and will need to find the character objects.
-    }else if(obj.get("_type") == "graphic") {
+    } else if(typeof obj.get === "function" && obj.get("_type") == "graphic") {
       //record the graphic
       var graphic = obj;
       //be sure the character is valid
@@ -130,11 +135,6 @@ function eachCharacter(msg, func){
         log(graphic)
         return whisper("character undefined");
       }
-    //if the object's type is unique, just proceed anyways with an undefined
-    //graphic and character
-    } else if(obj._type == "unique"){
-      var graphic = undefined;
-      var character = undefined;
     //if the selected object met none of the above criteria, alert the gm.
     } else{
       log("Selected is neither a graphic nor a character.")
