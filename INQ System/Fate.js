@@ -2,7 +2,7 @@
 //matches[0] is the same as msg.content
 function fateHandler(matches,msg){
   //work through each selected character
-  eachCharacter(msg, {}, function(character, graphic){
+  eachCharacter(msg, function(character, graphic){
       var Fate = attrValue("Fate",{characterid: character.id});
       var name = character.get("name");
 

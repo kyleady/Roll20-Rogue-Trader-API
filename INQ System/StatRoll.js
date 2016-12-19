@@ -9,11 +9,7 @@
 //matches[4] is the absolute value of the modifier and is null if no modifier is included
 function statRoll(matches, msg, options){
   //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
-  if(matches[1]){
-      var whisperGM = "/w gm ";
-  } else {
-      var whisperGM = "";
-  }
+  var toGM = matches[1] && matches[1].toLowerCase() == "gm"
 
   //record the name of the stat without modification
   //capitalization modification should be done before this function
@@ -31,48 +27,40 @@ function statRoll(matches, msg, options){
 
   //is the stat a public stat, shared by the entire party?
   if(options["partyStat"]){
-    //overwrite msg.selected. Whatever was selected does not matter
-    //we need one item in msg.selected to iterate over
-    msg.selected = ["partyStat"];
-  //otherwise, overwrite msg.selected if it is empty
-  } else if(msg.selected == undefined || msg.selected.length <= 0){
-    //make the seleced array include the default character
-    msg.selected = [defaultCharacter(msg.playerid)];
-    //if there is no default character, just quit
-    if(msg.selected[0] == undefined){return;}
+    //then tell eachCharacter to not even look for a character
+    msg.selected = [{_type: "unique"}];
   }
 
   //work through each selected character
-  _.each(msg.selected, function(obj){
-    //first check if the selected characters are being overwritten with the party stat
+  eachCharacter(msg, function(character, graphic){
+    //by default assume each character is not an NPC
+    var isNPC = false;
+    //if working for a group stat, search for the stat anywhere in the campaign
     if(options["partyStat"]){
+      //retrieve the value of the stat we are working with
       var stat = attrValue(statName);
+      //retrive the unnatural bonus to the stat we are working with
+      //but don't worry if you can't find one
+      var unnatural_stat = attrValue("Unnatural " + statName,{alert: false});
+      //ignore the name of the character that owns this stat
       var name = "";
-    //normally msg.selected is just a list of object ids and types of the
-    //objects you have selected. If this is the case, find the corresponding
-    //character objects.
-    } else if(obj._type && obj._type == "graphic"){
-      var graphic = getObj("graphic", obj._id);
-      //be sure the graphic exists
-      if(graphic == undefined) {
-          return whisper("graphic undefined");
-      }
-      var stat = attrValue(statName,{graphicid: obj._id});
-      var unnatural_stat = attrValue("Unnatural " + statName,{graphicid: obj._id, alert: false});
-      var name = graphic.get("name");
-    //if using a default character, just accept the default character as the
-    //the character we are working with
-    } else if(obj.get("_type") == "character") {
-      var stat = attrValue(statName,{characterid: obj.id});
-      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: obj.id, alert: false});
-      var name = obj.get("name");
+    } else {
+      //retrieve the value of the stat we are working with
+      var stat = attrValue(statName,{characterid: character.id});
+      //retrive the unnatural bonus to the stat we are working with
+      //but don't worry if you can't find one
+      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, alert: false});
+      //retrive the name of the character that owns the stat
+      //and add a bit a formatting for later
+      var name = ": " + character.get("name");
+      //if the gm rolls for a character that isn't controlled by anyone, roll it
+      //privately
+      isNPC = character.get("controlledby") == "";
     }
 
     //be sure the stat exists
-    if(stat == undefined){
-      //attrValue should warn if something went wrong
-      return;
-    }
+    //attrValue should warn if something went wrong
+    if(stat == undefined){return;}
 
     //by default, don't include the unnatural bonus
     var unnatural_bonus = "";
@@ -80,16 +68,22 @@ function statRoll(matches, msg, options){
       unnatural_bonus = "{{Unnatural= [[ceil((" + unnatural_stat + ")/2)]]}}";
     }
 
-    //add a slight bit of formating to the name, if it exists
-    if(name != ""){
-      name = ": " + name;
+    //if this is sent to the gm or if the gm is rolling for an NPC, whisper it
+    if(toGM || (isNPC && playerIsGM(msg.playerid))){
+      var whisperGM = "/w gm ";
+      if(!playerIsGM(msg.playerid)){
+        whisper("Rolling " + statName + " for GM.", msg.playerid);
+      }
+    } else {
+      var whisperGM = "";
     }
-
     //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
     sendChat("player|" + msg.playerid , whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>" + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
   });
 }
 
+//trims down and properly capitalizes any alternate stat names that the user
+//enters
 function getProperStatName(statName){
   switch(statName.toLowerCase()){
     case "pr": case "pe":

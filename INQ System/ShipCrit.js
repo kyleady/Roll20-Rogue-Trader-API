@@ -6,11 +6,8 @@
 //matches[2] is the sign of the number of times to apply the crit
 //matches[3] is the number of times to apply the crit (by default this is one)
 function applyCrit(matches,msg){
-  //be something is selected
-  if(msg.selected == undefined || msg.selected.length <= 0) {
-      return whisper("Nothing selected.");
-  }
-
+  //record the name of the critical effect
+  var critName = matches[1].toLowerCase();
   //default to applying this crit once
   if(matches[3] == undefined || matches[3] == "" ){
     critQty = 1;
@@ -19,17 +16,11 @@ function applyCrit(matches,msg){
   }
 
   //apply the crit effect to every selected token
-  _.each(msg.selected,function(obj){
-    var graphic = getObj("graphic", obj._id);
-    //be sure the graphic exists
-    if(graphic == undefined) {
-      return sendChat("System", "/w gm Graphic undefined.");
-    }
-
+  eachCharacter(msg, function(character, graphic){
     //which status marker corresponds to the critical effect?
     var statMarker = "";
     var effectName = "[Error]";
-    switch(matches[1].toLowerCase()){
+    switch(critName){
       case "depressurized": case "1":
         statMarker = "status_edge-crack";
         effectName = "Component Depressurized"
@@ -87,6 +78,10 @@ on("ready",function(){
       matches[2] = "";
     } else {
       matches[2] = "-";
+      //specify a quantity if none is given
+      if(!matches[3]){
+        matches[3] = "1";
+      }
     }
     applyCrit(matches,msg);
   });

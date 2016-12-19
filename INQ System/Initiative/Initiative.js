@@ -36,7 +36,7 @@ function initiativeHandler(matches,msg,secondAttempt){
   var modifier = matches[2] + matches[3];
 
   //work through each selected character
-  eachCharacter(msg, {defaultSelectAll: true, requireToken: true}, function(character, graphic){
+  eachCharacter(msg, function(character, graphic){
     //diverge based on the type of text operator specified
     //  Includes "?": Just a query and does not roll anything or edit the
     //    turn order.

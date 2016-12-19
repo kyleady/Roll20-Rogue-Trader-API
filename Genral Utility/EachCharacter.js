@@ -9,31 +9,21 @@ search for the character sheet associated with each token.
 If no character sheet is associated with a token, that token will be ignored.
 
 In the case that nothing is selected, the function will use the playerid to
-search for a default character sheet.
+search for a default character sheet. If the player is the gm, it will just
+select every token **on the main player page**.
 
 
 Inputs
   msg  - the object delivered when the chat:message event occurs
   func - the function used on each character
-  flags
-    requireToken = false - If a default character is used, does it need to have
-                          a token which represents it at least somewhere on a
-                          map? Any map? Typically used for initiative.
-    defaultSelectAll = false - If the gm has nothing selected, should the func be
-                        applied to each token on the playerpage?
 */
 
-function eachCharacter(msg,flags,func){
-  //setup the default values
-  flags = flags || {}
-  flags.requireToken = flags.requireToken || false
-  flags.defaultSelectAll = flags.defaultSelectAll || false
-
+function eachCharacter(msg, func){
   //was nothing selected?
   if(msg.selected == undefined || msg.selected.length <= 0){
     //are we defaulting to selecting everying on the player page?
     //gm only
-    if(flags.defaultSelectAll && playerIsGM(msg.playerid)){
+    if(playerIsGM(msg.playerid)){
       //just select every token on the player's map that is not simply a
       //drawing and is on the object layer (the layer players can see and
       //interact with)
@@ -70,7 +60,7 @@ function eachCharacter(msg,flags,func){
       }
 
       //be sure the character is valid
-      var character = getObj("character",graphic.get("represents"))
+      var character = getObj("character", graphic.get("represents"))
       if(character == undefined){
           log("character undefined")
           log(graphic)
@@ -91,45 +81,42 @@ function eachCharacter(msg,flags,func){
       //default token code is just here in case a different gm wishes to
       //allow players to roll their initiative.
 
-      //will only need a token if the user is not making a simple inquiry
-      if(flags.requireToken){
-        //when searching for a token that represents the character, prioritize
-        //the page the player is currently on, next prioritize the page the main
-        //group is on, lastly just accept any page.
+      //when searching for a token that represents the character, prioritize
+      //the page the player is currently on, next prioritize the page the main
+      //group is on, lastly just accept any page.
 
-        //is the player on their own page?
-        if(Campaign().get("playerspecificpages") && Campaign().get("playerspecificpages")[msg.playerid]){
-          //attempt to find a token linked to this character on the player's
-          //current page
-          graphic = findObjs({
-              _pageid: Campaign().get("playerspecificpages")[msg.playerid],
-              _type: "graphic",
-              represents: character.id
-          })[0];
-        }
-
-        //if a linked graphic has not been found, try searching for it on the
-        //main player page
-        if(graphic == undefined){
-          graphic = findObjs({
-              _pageid: Campaign().get("playerpageid"),
-              _type: "graphic",
-              represents: character.id
-          })[0];
-        }
-        //if no token was found on the player page, then search for any token
-        //in the Campaign
-        if(graphic == undefined){
-          graphic = findObjs({
-              _type: "graphic",
-              represents: character.id
-          })[0];
-        }
-
-        //if there is still no token, warn the user and gm, then exit
-        whisper(character.get("name") + " does not have a token on any map in the entire campaign.", msg.playerid);
-        return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
+      //is the player on their own page?
+      if(Campaign().get("playerspecificpages") && Campaign().get("playerspecificpages")[msg.playerid]){
+        //attempt to find a token linked to this character on the player's
+        //current page
+        graphic = findObjs({
+            _pageid: Campaign().get("playerspecificpages")[msg.playerid],
+            _type: "graphic",
+            represents: character.id
+        })[0];
       }
+
+      //if a linked graphic has not been found, try searching for it on the
+      //main player page
+      if(graphic == undefined){
+        graphic = findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: "graphic",
+            represents: character.id
+        })[0];
+      }
+      //if no token was found on the player page, then search for any token
+      //in the Campaign
+      if(graphic == undefined){
+        graphic = findObjs({
+          _type: "graphic",
+          represents: character.id
+        })[0];
+      }
+
+      //if there is still no token, warn the user and gm, then exit
+      whisper(character.get("name") + " does not have a token on any map in the entire campaign.", msg.playerid);
+      return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
 
     //if the gm just grabbed every single token on the map, you will already
     //have the graphic objects, and will need to find the character objects.
@@ -143,8 +130,13 @@ function eachCharacter(msg,flags,func){
         log(graphic)
         return whisper("character undefined");
       }
+    //if the object's type is unique, just proceed anyways with an undefined
+    //graphic and character
+    } else if(obj._type == "unique"){
+      var graphic = undefined;
+      var character = undefined;
     //if the selected object met none of the above criteria, alert the gm.
-    }else{
+    } else{
       log("Selected is neither a graphic nor a character.")
       log(obj)
       return whisper("Selected is neither a graphic nor a character.");
