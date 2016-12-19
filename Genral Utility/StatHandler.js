@@ -29,17 +29,11 @@ function statHandler(matches,msg,options){
   if(options["partyStat"]){
     //overwrite msg.selected. Whatever was selected does not matter
     //we need one item in msg.selected to iterate over
-    msg.selected = [{_type: "custom"}];
-  //otherwise find a default character for the player if nothing was selected
-  } else if(msg.selected == undefined || msg.selected.length <= 0){
-    //make the seleced array include the default character
-    msg.selected = [defaultCharacter(msg.playerid)];
-    //if there is no default character, just quit
-    if(msg.selected[0] == undefined){return;}
+    msg.selected = [{_type: "unique"}];
   }
 
   //work through each selected character
-  _.each(msg.selected, function(obj){
+  eachCharacter(msg, function(character, graphic){
     //first check if the selected characters are being overwritten with the party stat
     if(options["partyStat"]){
       var currentAttr = attrValue(statName,{max: false});
@@ -48,21 +42,10 @@ function statHandler(matches,msg,options){
     //normally msg.selected is just a list of object ids and types of the
     //objects you have selected. If this is the case, find the corresponding
     //character objects.
-    } else if(obj._type && obj._type == "graphic"){
-      var graphic = getObj("graphic", obj._id);
-      //be sure the graphic exists
-      if(graphic == undefined) {
-          return whisper("graphic undefined");
-      }
-      var currentAttr = attrValue(statName,{graphicid: obj._id, max: false});
-      var maxAttr     = attrValue(statName,{graphicid: obj._id, max: true, alert: false});
-      var name = graphic.get("name");
-    //if using a default character, just accept the default character as the
-    //the character we are working with
-    } else if(obj.get("_type") == "character") {
-      var currentAttr = attrValue(statName,{characterid: obj.id, max: false});
-      var maxAttr     = attrValue(statName,{characterid: obj.id, max: true, alert: false});
-      var name = obj.get("name");
+    } else {
+      var currentAttr = attrValue(statName,{characterid: character.id, max: false});
+      var maxAttr     = attrValue(statName,{characterid: character.id, max: true, alert: false});
+      var name = character.get("name");
     }
 
     //be sure the attribute we are seeking exists
@@ -102,18 +85,7 @@ function statHandler(matches,msg,options){
     }
 
     //modify the stat number with the operator
-    if(operator.indexOf("+") != -1){
-      stat = Number(stat) + Number(sign + tempModifier);
-    } else if(operator.indexOf("-") != -1){
-      stat = Number(stat) - Number(sign + tempModifier);
-    } else if(operator.indexOf("*") != -1){
-      stat = Number(stat) * Number(sign + tempModifier);
-    } else if(operator.indexOf("/") != -1){
-      stat = Number(stat) / Number(sign + tempModifier);
-      stat = Math.round(stat);
-    } else if(operator == "="){
-      stat = sign + tempModifier;
-    }
+    stat = numModifier.calc(stat, operator, sign+tempModifier);
 
     //is the user making a querry?
     if(operator.indexOf("?") != -1) {
@@ -127,7 +99,7 @@ function statHandler(matches,msg,options){
         name = name + "'s ";
       }
       //whisper the result of the querry to just the user
-      whisper(name + "<strong>" + statName + "</strong> " + operator + " " + sign + modifier + " = " + stat.toString(),msg.playerid);
+      whisper(name + "<strong>" + statName + "</strong> " + operator + " " + sign + modifier + ": [[" + stat.toString() + "]]", msg.playerid);
     //otherwise the user is editing the attribute
     } else if(operator.indexOf("=") != -1){
       //save the result
@@ -136,12 +108,8 @@ function statHandler(matches,msg,options){
       //normally msg.selected is just a list of object ids and types of the
       //objects you have selected. If this is the case, find the corresponding
       //character objects.
-      } else if(obj._type && obj._type == "graphic"){
-        attrValue(statName,{setTo: stat, graphicid: obj._id, max: isMax});
-      //if using a default character, just accept the default character as the
-      //the character we are working with
-      } else if(obj.get("_type") == "character") {
-        attrValue(statName,{setTo: stat, characterid: obj.id, max: isMax});
+      } else {
+        attrValue(statName,{setTo: stat, characterid: character.id, max: isMax});
       }
 
       //are we showing the result?

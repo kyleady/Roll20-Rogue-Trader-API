@@ -1,87 +1,85 @@
-
-//resets all the damage variables to their maximum values (the attack before any
-//modifications)
-function attackReset(matches,msg){
+function damDetails() {
   //load up all of the damage variables, wherever they may be
-  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
-  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
+  var details = {};
+  details.DamType = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  details.Dam     = findObjs({ type: 'attribute', name: "Damage" })[0];
+  details.Pen     = findObjs({ type: 'attribute', name: "Penetration" })[0];
+  details.Fell    = findObjs({ type: 'attribute', name: "Felling" })[0];
+  details.Prim    = findObjs({ type: 'attribute', name: "Primitive" })[0];
+  details.Hits    = findObjs({ type: 'attribute', name: "Hits"})[0];
+  details.OnesLoc = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
+  details.TensLoc = findObjs({ type: 'attribute', name: "TensLocation"})[0];
 
   //be sure every variable was successfully loaded
   var successfulLoad = true;
   //warn the gm for each attribute that was not found
-  if(DamTypeObj == undefined){
+  if(details.DamType == undefined){
     successfulLoad = false;
     whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
   }
-  if(DamObj == undefined){
+  if(details.Dam == undefined){
     successfulLoad = false;
     whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
   }
-  if(PenObj == undefined){
+  if(details.Pen == undefined){
     successfulLoad = false;
     whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
   }
-  if(FellObj == undefined){
+  if(details.Fell == undefined){
     successfulLoad = false;
     whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
   }
-  if(PrimObj == undefined){
+  if(details.Prim == undefined){
     successfulLoad = false;
     whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
   }
+  if(details.Hits == undefined){
+    successfulLoad = false;
+    whisper("No attribute named Hits was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(details.OnesLoc == undefined){
+    successfulLoad = false;
+    whisper("No attribute named OnesLocation was found anywhere in the campaign. Damage was not recorded.");
+  }
+  if(details.TensLoc == undefined){
+    successfulLoad = false;
+    whisper("No attribute named TensLocation was found anywhere in the campaign. Damage was not recorded.");
+  }
+  //if just one was missing, don't return anything.
   if(successfulLoad == false){
     return;
+  } else {
+    //otherwise return everything
+    return details;
   }
 
+}
+//resets all the damage variables to their maximum values (the attack before any
+//modifications)
+function attackReset(matches,msg){
+  //get the damage details obj
+  var details = damDetails();
+  //quit if one of the details was not found
+  if(details == undefined){
+    return;
+  }
   //reset the damage variables to their maximums
-  DamObj.set("current",DamObj.get("max"));
-  DamTypeObj.set("current",DamTypeObj.get("max"));
-  PenObj.set("current",PenObj.get("max"));
-  FellObj.set("current",FellObj.get("max"));
-  PrimObj.set("current",PrimObj.get("max"));
-
+  for(var k in details){
+    details[k].set("current",details.get("max"));
+  }
   //report the resut
   attackShow()
 }
+
 //used throughout DamageCatcher.js to whisper the full attack variables in a
 //compact whisper
 //matches[0] is the same as msg.content
 //matches[1] is a flag for (|max)
 function attackShow(matches,msg){
-  //load up all of the damage variables, wherever they may be
-  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
-  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
-
-  //be sure every variable was successfully loaded
-  var successfulLoad = true;
-  //warn the gm for each attribute that was not found
-  if(DamTypeObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(DamObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(PenObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(FellObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(PrimObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(successfulLoad == false){
+  //get the damage details obj
+  var details = damDetails();
+  //quit if one of the details was not found
+  if(details == undefined){
     return;
   }
 
@@ -91,18 +89,21 @@ function attackShow(matches,msg){
     matches = [];
     matches[1] = "current";
   }
-
-  if(DamTypeObj.get(matches[1]).toLowerCase() == "s"){
-    if(PenObj.get(matches[1])){
-      whisper("Dam: " + DamObj.get(matches[1]) + ", Pen: true");
+  //starship damage only cares about the straight damage and if there is any
+  //penetration at all
+  if(details.DamType.get(matches[1]).toLowerCase() == "s"){
+    if(details.Pen.get(matches[1])){
+      whisper("Dam: [[" + details.Dam.get(matches[1]) + "]] Starship, Pen: true");
     } else {
-      whisper("Dam: " + DamObj.get(matches[1]) + ", Pen: false");
+      whisper("Dam: [[" + details.Dam.get(matches[1]) + "]] Starship, Pen: false");
     }
+  //output normal damage
   } else {
-    if(PrimObj.get(matches[1])) {
-      whisper("Dam: " + DamObj.get(matches[1]) + " " + DamTypeObj.get(matches[1]) + ", Pen: " +  PenObj.get(matches[1]) + ", Felling: " + FellObj.get(matches[1]) + ", Primitive");
-    }  else {
-      whisper("Dam: " + DamObj.get(matches[1]) + " " + DamTypeObj.get(matches[1]) + ", Pen: " +  PenObj.get(matches[1]) + ", Felling: " + FellObj.get(matches[1]));
+    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]) + ", Pen: [[" +  details.Pen.get(matches[1]) + "]], Felling: [[" + details.Fell.get(matches[1]) + "]]";
+    if(details.Prim.get(matches[1])) {
+      whisper( output + ", Primitive");
+    } else {
+      whisper(output);
     }
   }
 }

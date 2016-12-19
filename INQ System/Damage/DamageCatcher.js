@@ -28,39 +28,17 @@ on("chat:message", function(msg) {
   && /{{\s*(damage|dam)\s*=\s*\$\[\[0\]\]\s*}}/i.test(msg.content)
   && /{{\s*(penetration|pen)\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content))
   && msg.inlinerolls.length >= 2) {
-    //load up all of the damage variables, wherever they may be
-    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-    var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-    var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-    var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
-    var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
-
-    //be sure every variable was successfully loaded
-    var successfulLoad = true;
-    //warn the gm for each attribute that was not found
-    if(DamTypeObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(DamObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(PenObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(FellObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(PrimObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(successfulLoad == false){
+    //get the damage details obj
+    var details = damDetails();
+    //quit if one of the details was not found
+    if(details == undefined){
       return;
     }
+    var DamTypeObj = details.DamType;
+    var DamObj = details.Dam;
+    var PenObj = details.Pen;
+    var FellObj = details.Fell;
+    var PrimObj = details.Prim;
 
     //I don't know why I need to do this BUT for some reason when the message is sent by the API
     //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
@@ -219,29 +197,17 @@ on("chat:message", function(msg) {
     if(msg.inlinerolls[rollIndex] == undefined){
         rollIndex++;
     }
-    //load up the damage attributes
-    var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-    var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-
-    //be sure every variable was successfully loaded
-    var successfulLoad = true;
-    //warn the gm for each attribute that was not found
-    if(DamTypeObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(DamObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(PenObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(successfulLoad == false){
+    //get the damage details obj
+    var details = damDetails();
+    //quit if one of the details was not found
+    if(details == undefined){
       return;
     }
+    var DamTypeObj = details.DamType;
+    var DamObj = details.Dam;
+    var PenObj = details.Pen;
+    var FellObj = details.Fell;
+    var PrimObj = details.Prim;
 
     //prepare to numically modifify the old damage
     starshipDamage = Number(DamObj.get("current"));

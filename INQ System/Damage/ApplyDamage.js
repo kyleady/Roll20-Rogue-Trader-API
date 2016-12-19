@@ -1,71 +1,13 @@
 //damages every selected character according to the stored damage variables
 function applyDamage(matches,msg){
-  //load up all of the variables
-  //load up all of the damage variables, wherever they may be
-  var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-  var FellObj = findObjs({ type: 'attribute', name: "Felling" })[0];
-  var PrimObj = findObjs({ type: 'attribute', name: "Primitive" })[0];
-  var HitsObj = findObjs({ type: 'attribute', name: "Hits"})[0];
-  var OnesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
-  var TensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
-
-  //be sure every variable was successfully loaded
-  var successfulLoad = true;
-  //warn the gm for each attribute that was not found
-  if(DamTypeObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(DamObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Damage was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(PenObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Penetration was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(FellObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Felling was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(PrimObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(HitsObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named Hits was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(OnesLocObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named OnesLocation was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(TensLocObj == undefined){
-    successfulLoad = false;
-    whisper("No attribute named TensLocation was found anywhere in the campaign. Damage was not recorded.");
-  }
-  if(successfulLoad == false){
+  //get the damage details obj
+  var details = damDetails();
+  //quit if one of the details was not found
+  if(details == undefined){
     return;
   }
-  //be sure something was selected
-  if(msg.selected == undefined || msg.selected.length <= 0){
-    return whisper("Nothing selected.");
-  }
   //apply the damage to every selected character
-  _.each(msg.selected,function(obj){
-    var graphic = getObj("graphic", obj._id);
-    //be sure the graphic exists
-    if(graphic == undefined) {
-        return whisper("Graphic undefined.");
-    }
-    //be sure the character is valid
-    var character = getObj("character",graphic.get("represents"))
-    if(character == undefined){
-        return whisper("Character undefined for graphic " + graphic.get("name") + ".");
-    }
-
+  eachCharacter(msg,function(character, graphic){
     //get ready to calculate the damage applied to the character
     var damCalc = 0;
 
