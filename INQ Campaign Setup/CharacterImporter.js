@@ -405,11 +405,10 @@ charImport.showList = function(group){
 //creates an HTML table for a list of arrays
 charImport.toTable = function(){
   //find the width of the table
-  var widths = [];
+  var width = 0;
   _.each(arguments,function(row){
-    widths.push(row.length);
+    width = Math.max(width,row.length);
   });
-  var width = Math.max(...widths);
 
   //create the HTML table
   table = "<table><tbody>";
