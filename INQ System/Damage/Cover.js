@@ -3,48 +3,72 @@
 
 //matches[0] is the same as msg.content
 //matches[1] is the positive numerical value of the cover's AP
+//matches[2] is a flag to determine if the cover is primitive
 function applyCover(matches,msg){
   //load up the relavant damage variables
-  var DamObj = findObjs({ type: 'attribute', name: "Damage" })[0];
-  var PenObj = findObjs({ type: 'attribute', name: "Penetration" })[0];
-  var attributesUndefiend = false;
-  if(DamObj == undefined){
-    whisper("There is no Damage attribute in the campaign.");
-    attributesUndefiend = true;
+  var details = damDetails();
+  if(details == undefined){return;}
+
+  //get the cover from the user
+  var cover = Number(matches[1]) || 0;
+  //determine if the the cover is primitive
+  var primitiveCover = matches[2] != "" || false;
+
+  //determine how effective the attack is against the cover
+  var attackMultiplier = 1;
+
+  //primitive cover means the attack is twice as effective against the cover
+  if(primitiveCover){
+    attackMultiplier *= 2;
   }
-  if(PenObj == undefined){
-    whisper("There is no Penetration attribute in the campaign.");
-    attributesUndefiend = true;
+
+  //a primitive attack means the attack is half as effective against the cover
+  if(Number(details.Prim)){
+    attackMultiplier /= 2;
   }
-  if(attributesUndefiend){
-    return;
-  }
-  //reduce the penetration by half the cover
-  var pen = Number(PenObj.get("current")) - Number(matches[1])/2;
+
+  //Apply Cover=================================================================
+
+  //Penetration is twice as effective as Damage
+  attackMultiplier *= 2;
+
+  //Reduce the Penetration by the Cover (accounting for the multiplier)
+  var pen = Number(details.Pen.get("current"))
+  pen -= ( cover / attackMultiplier );
+  //and round the result
+  pen = Math.round(pen);
+
   //has the cover been entirely used?
   if(pen >= 0){
     //record the remaining Penetration
-    PenObj.set('current', Math.round(pen));
+    details.Pen.set('current', pen);
   } else {
-    //record the 0 penetration left
-    PenObj.set('current', 0);
-    //reduce the damage by the remaining cover
-    var dam = Number(DamObj.get("current")) + 2*pen;
+    //record that 0 penetration is left
+    details.Pen.set('current', 0);
+
+    //determine the remaining damage after cover
+    var dam = Number(details.Dam.get("current"));
+    //the penetration ended up negative, apply it to the damage next
+    //also multiply by two to negate the double effectiveness of the penetration
+    dam += pen*2;
+    //and round the result
+    dam = Math.round(pen);
+
     //does any cover remain?
     if(dam >= 0){
         //record the remaining damage
-        DamObj.set('current', dam);
+        details.Dam.set('current', dam);
     } else {
         //record the remaining damage
-        DamObj.set('current', 0);
+        details.Dam.set('current', 0);
     }
   }
   //alert the GM
-  whisper("Dam: " + DamObj.get("current") + ", Pen: " + PenObj.get("current"));
+  whisper("Dam: " + details.Dam.get("current") + ", Pen: " + details.Pen.get("current"));
 }
 
 //waits until CentralInput has been initialized
 on("ready",function(){
   //Lets the gm reduce damage and penetration when an attack passes through cover
-  CentralInput.addCMD(/^!\s*cover\s*(\d+)$/i,applyCover);
+  CentralInput.addCMD(/^!\s*cover\s*(\d+)\s*(|p|prim|primitive)\s*$/i,applyCover);
 });

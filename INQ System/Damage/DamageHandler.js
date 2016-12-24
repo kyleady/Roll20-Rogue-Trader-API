@@ -100,7 +100,7 @@ function attackShow(matches,msg){
   //output normal damage
   } else {
     var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]) + ", Pen: [[" +  details.Pen.get(matches[1]) + "]], Felling: [[" + details.Fell.get(matches[1]) + "]]";
-    if(details.Prim.get(matches[1])) {
+    if(Number(details.Prim.get(matches[1]))) {
       whisper( output + ", Primitive");
     } else {
       whisper(output);
