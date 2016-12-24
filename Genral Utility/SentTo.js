@@ -163,7 +163,12 @@ function returnPlayers(matches, msg){
   });
 
   //save the result
-  Campaign().set("playerspecificpages", playerPages);
+  if(_.isEmpty(playerPages)){
+    //if there are no player specific pages, set the whole thing to false
+    Campaign().set("playerspecificpages", false); 
+  } else {
+    Campaign().set("playerspecificpages", playerPages);
+  }
 }
 
 on("ready",function(){
