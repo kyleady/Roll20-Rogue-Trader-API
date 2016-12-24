@@ -1,34 +1,58 @@
+//a general use function that searches for all of the objects that match at
+//least one of the given types and all of the given keywords
+function matchingObjs(types, keywords, additionalCriteria){
+  //be sure at least one keyword was given
+  //otherwise return nothing
+  if(keywords.length <= 0){
+    return [];
+  }
+
+  return filterObjs(function(obj){
+    //the object must match at least one of the types
+    if(types.indexOf(obj.get("_type")) == -1){
+      return false;
+    }
+
+    //the object must have every key word within it
+    //case insensitive
+    if(obj.get("_type") == "player"){
+      var name = obj.get("_displayname").toLowerCase();
+    } else {
+      var name = obj.get("name").toLowerCase();
+    }
+    for(var i = 0; i < keywords.length; i++){
+      if(name.indexOf(keywords[i]) == -1){
+        //one of the keywords was not found, do not keep this result
+        return false;
+      }
+    }
+
+    //allow for additional criteria to be specified
+    if(additionalCriteria == undefined){
+      //every valid check was passed
+      return true;
+    } else {
+      return additionalCriteria(obj);
+    }
+  });
+}
+
 //searches every handout and character sheet for titles that meet the search criteria
 //whispers the first five results to the user and saves the rest to be accessed with !More
 //matches[0] is the same as msg.content
 //matches[1] is the search criteria
 function journalSearch(matches, msg){
   //break apart the search criteria by spaces (and change it to lower case)
-  var searchItems = matches[1].toLowerCase().split(" ");
+  var keywords = matches[1].toLowerCase().split(" ");
 
-  //filter the handouts and character sheets by the search criteria
-  var searchResults = filterObjs(function(obj) {
-    //first, be sure we are only looking at handouts and characters
-    if(obj.get("_type") == "handout" || obj.get("_type") == "character"){
-      //save the obj's name for repeated use
-      var objName = obj.get("name").toLowerCase();
-      for(var i = 0; i < searchItems.length; i++){
-        if(objName.indexOf(searchItems[i]) == -1){
-          return false;
-        }
-      }
-      //be sure the player has access to this handout/character sheet
-      if(playerIsGM(msg.playerid) || obj.get("inplayerjournals").split(",").indexOf("all") != -1 || obj.get("inplayerjournals").split(",").indexOf(msg.playerid)){
-        //the obj met the search criteria and can be viewed by the player
-        return true;
-      } else {
-        //the obj cannot be viewed by the player
-        return false;
-      }
-    }else{
-      //this is not a handout or character, ignore it
-      return false;
-    }
+  //get a list of all the handouts and characters that have every keyword and
+  //that can be viewed by the current player
+  var searchResults = matchingObjs(["handout", "character"], keywords, function(obj){
+    //the gm can view any handout or character
+    if(playerIsGM(msg.playerid)){return true;}
+    //be sure the current player can view this handout/character
+    var permissions = result.get("inplayerjournals").split(",");
+    return permissions.indexOf("all") != -1 || permissions.indexOf(msg.playerid)
   });
 
   //erase any old search results for the specific player
