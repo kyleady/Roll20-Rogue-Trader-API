@@ -1,31 +1,23 @@
 //general use function that attempts to set the current player page
 //it can also be used to set the current page for specific players
 //matches[1] is a list of key words to determine which map to send the players to
-//matches[2] is a numerical modifier to specify which map to send the players to
-            //if there are multiple maps with identical names
-//matches[3] is a list of key words to determine which players to send
+//matches[2] is a list of key words to determine which players to send
 function sendToPage(matches,msg){
-  //be sure the matches exist
-  matches[1] = matches[1] || "";
-  matches[2] = matches[2] || "";
-  matches[3] = matches[3] || "";
+  //be sure the optional match exist
+  var mapPhrase    = matches[1] || "";
+  var playerPhrase = matches[2] || "";
 
   //turn the user input into data
-  var mapKeywords    = matches[1].toLowerCase().split(" ");
-  var whichMap       = Number(matches[2]) || 1;
-  var playerKeywords = matches[3].toLowerCase().split(" ");
-
-  //be sure there are no empty keywords
-  if(mapKeywords[0] == ""){mapKeywords = [];}
-  if(playerKeywords[0] == ""){playerKeywords = [];}
+  var mapKeywords    = mapPhrase.split(" ");
+  var playerKeywords = playerPhrase.split(" ");
 
   //get arrays of matching maps, players, and default characters
-  var mapResults    = matchingObjs(["page"], mapKeywords);
-  var playerResults = matchingObjs(["player"], playerKeywords);
-  var characterResults = matchingObjs(["character"], playerKeywords, function(obj){
+  var mapResults    = matchingObjs("page", mapKeywords);
+  var playerResults = matchingObjs("player", playerKeywords);
+  var characterResults = matchingObjs("character", playerKeywords, function(obj){
     //check if this character is controlled by just one non-gm player
     var owners = obj.get("controlledby").split(",")
-    return !(owners.length != 1 || owners[0] == "all" || playerIsGM(owners[0]))
+    return !(owners.length != 1 || owners[0] == "" || owners[0] == "all" || playerIsGM(owners[0]))
   });
 
   //get the owning players from the default characters and add any unique ones
@@ -49,20 +41,72 @@ function sendToPage(matches,msg){
     return whisper("No matching maps were found.");
   }
   //rage quit if no players were found WHEN attempting to find a specific player
-  if(playerResults.length <= 0 && playerKeywords.length >= 1){
+  if(playerResults.length <= 0 && playerPhrase != ""){
     return whisper("No matching players were found.")
   }
 
-  //first, resolve any disambiguation between maps
+  //if multiple maps were found, see if we can trim down the results to just exact matches
   if(mapResults.length >= 2){
-    whisper("Multiple maps found.");
+    var exactMapMatches = [];
+    //exact matches are case sensitive
+    _.each(mapResults, function(map){
+      if(map.get("name") == mapPhrase){
+        exactMapMatches.push(map);
+      }
+    });
+    //was there at least one exact match?
+    if(exactMapMatches.length >= 1){
+      mapResults = exactMapMatches;
+    }
+  }
 
+  //if multiple players were found, see if we can trim down the results to just exact matches
+  if(playerResults.length >= 2){
+    var exactPlayerMatches = [];
+    //exact matches are case sensitive
+    _.each(playerResults, function(player){
+      if(player.get("_displayname") == playerPhrase){
+        exactPlayerMatches.push(player);
+      }
+    });
+    //was there at least one exact match?
+    if(exactPlayerMatches.length >= 1){
+      playerResults = exactPlayerMatches;
+    }
+  }
+
+  //if there are still too many map results, make the user specify
+  if(mapResults.length >= 2){
+    //let the gm know that multiple maps were found
+    whisper("Which map did you mean?");
+    //determine the player keywords
+    var playerSearch = "";
+    if(playerResults.length == 1){
+      playerSearch = "|" + playerResults[0].get("_displayname");
+    } else if(playerResults.length > 1){
+      playerSearch = "|" + playerPhrase;
+    }
+    //give a suggestion for each possible map match
+    _.each(mapResults, function(map){
+      var suggestion = map.get("name") + playerSearch;
+      whisper("[" + suggestion + "](!sendTo " + suggestion + ")");
+    });
+    //stop here, we have done all we can for now
     return;
   }
-  //second, resolve any disambiguation between players
-  if(playerResults.length >= 2){
-    whisper("Multiple players found.")
 
+  //if there are still too many player results, make the user specify
+  if(playerResults.length >= 2){
+    //let the gm know that multiple maps were found
+    whisper("Which player did you mean?");
+    //note the map search
+    var mapSearch = mapResults[0].get("name");
+    //give a suggestion for each possible player match
+    _.each(playerResults, function(player){
+      var suggestion = mapSearch + "|" + player.get("_displayname");
+      whisper("[" + suggestion + "](!sendTo " + suggestion + ")");
+    });
+    //stop here, we have done all we can for now
     return;
   }
 
@@ -73,19 +117,22 @@ function sendToPage(matches,msg){
     //move the party
     Campaign().set("playerpageid", mapResults[0].id);
     //tell the gm what happened
-    whisper("The party has been moved to " + mapResults[0].get("name"));
+    whisper("The party has been moved to *" + mapResults[0].get("name") + "*");
   //otherwise set the page for the specific player
   } else {
     //get the list of specific pages
     var playerPages = Campaign().get("playerspecificpages");
     //be sure the player specific pages object exists
     playerPages = playerPages || {};
-    //specify the page for the player
-    playerPages[playerResults[0].id] = mapResults[0].id;
+    //send each named player to the specified map
+    _.each(playerResults, function(player){
+      //specify the page for the player
+      playerPages[player.id] = mapResults[0].id;
+      //tell the gm what happened
+      whisper("*" + player.get("_displayname") + "* was moved to *" + mapResults[0].get("name") + "*");
+    });
     //record the result
     Campaign().set("playerspecificpages", playerPages);
-    //tell the gm what happened
-    whisper("*" + playerResults[0].get("_displayname") + "* was moved to *" + mapResults[0].get("name") + "*");
   }
 }
 
@@ -104,11 +151,10 @@ function returnPlayers(matches, msg){
     playersToReturn.push(player);
   }
 
+  //make the player phrase
+  var playerPhrase = matches[1] || "";
   //create a list of keywords from the user input
-  var playerKeywords = matches[1].toLowerCase().split(" ");
-
-  //do not accept an empty string as a keyword
-  if(playerKeywords[0] == ""){playerKeywords = [];}
+  var playerKeywords = playerPhrase.split(" ");
 
   //get arrays of matching players and characters
   var playerResults = matchingObjs(["player"], playerKeywords);
@@ -135,8 +181,23 @@ function returnPlayers(matches, msg){
   });
 
   //rage quit if no players were found WHEN attempting to find a specific player
-  if(playerResults.length <= 0 && playerKeywords.length >= 1){
+  if(playerResults.length <= 0 && playerPhrase != ""){
     return whisper("No matching players were found.")
+  }
+
+  //trim down the results to exact matches if exact matches are found
+  if(playerResults.length >= 2){
+    var exactPlayerMatches = [];
+    //exact matches are case sensitive
+    _.each(playerResults, function(player){
+      if(player.get("_displayname") == playerPhrase){
+        exactPlayerMatches.push(player);
+      }
+    });
+    //was there at least one exact match?
+    if(exactPlayerMatches.length >= 1){
+      playerResults = exactPlayerMatches;
+    }
   }
 
   //trim down the results based on who there is to return
@@ -149,8 +210,22 @@ function returnPlayers(matches, msg){
     }
   });
 
+  //if there are still too many player results, make the user specify
+  if(playerResults.length >= 2){
+    //let the gm know that multiple maps were found
+    whisper("Which player did you mean?");
+    //give a suggestion for each possible player match
+    _.each(playerResults, function(player){
+      var suggestion = player.get("_displayname");
+      whisper("[" + suggestion + "](!return " + suggestion + ")");
+    });
+    //stop here, we have done all we can for now
+    return;
+  }
+
   //if no keywords were given, just return everyone
-  if(playerKeywords.length <= 0){
+  playerPhrase.trim();
+  if(playerPhrase == ""){
     _.each(playersToReturn, function(playerid){
       returningPlayers.push(getObj("player", playerid));
     });
@@ -165,7 +240,7 @@ function returnPlayers(matches, msg){
   //save the result
   if(_.isEmpty(playerPages)){
     //if there are no player specific pages, set the whole thing to false
-    Campaign().set("playerspecificpages", false); 
+    Campaign().set("playerspecificpages", false);
   } else {
     Campaign().set("playerspecificpages", playerPages);
   }
@@ -174,11 +249,10 @@ function returnPlayers(matches, msg){
 on("ready",function(){
   //matches[0] is the same as msg.content
   //matches[1] is the map search criteria
-  //matches[2] is the number map (when maps have the exact same name)
-  //matches[3] is the player search criteria
-  CentralInput.addCMD(/^!\s*send\s*to\s+([^\|\[\]]+)\s*(?:\[(\d+)\])?\s*(?:\|\s*([^\|\[\]]+)\s*)?$/i,sendToPage);
+  //matches[2] is the player search criteria
+  CentralInput.addCMD(/^!\s*send\s*to\s([^\|\[\]]+)\s*(?:\|\s*([^\|\[\]]+)\s*)?$/i,sendToPage);
 
   //matches[0] is the same as msg.content
   //matches[1] is the player search criteria
-  CentralInput.addCMD(/^!\s*return\s*([^\|\[\]]*)\s*$/i,returnPlayers);
+  CentralInput.addCMD(/^!\s*return(?:\s([^\|\[\]]+))?$/i,returnPlayers);
 });
