@@ -3,6 +3,8 @@ function INQCharacterParser(){
   //the text that will be parsed
   this.Text = "";
 
+  //take apart this.Text to find all of the lists
+  //currently it assumes that weapons will be in the form of a link
   this.parseLists = function(){
     var link = new INQLinkParser();
     var regex = "(?:\\s*(?:<br>|<em>|<strong>|<u>)\\s*){3,}";
@@ -32,7 +34,8 @@ function INQCharacterParser(){
     });
     this.List = Lists;
   }
-
+  //parse out the movement of the character
+  //assumes movement will be in the form of a table and in a specific order
   this.parseMovement = function(){
     var regex = "\\s*<table>";
     regex += "\\s*<tr>";
@@ -59,6 +62,7 @@ function INQCharacterParser(){
       this.Movement.Run = Number(matches[4]);
     }
   }
+  //saves any notes on the character
   this.parseSpecialRules = function(){
     var link = new INQLinkParser();
     var regex = "\\s*(?:<strong>|<em>)";
@@ -82,6 +86,7 @@ function INQCharacterParser(){
     });
     this.SpecialRules = Rules;
   }
+  //the full parsing of the character
   this.parse = function(character){
     var notes = "";
     character.get("bio", function(bio){

@@ -1,5 +1,5 @@
 //the prototype for weapons
-function INQWeapon(){
+function INQWeapon(obj){
 
   //default weapon stats
   this.Class          = "Melee";
@@ -15,11 +15,18 @@ function INQWeapon(){
   this.Penetration    = 0;
   this.Clip           = 0;
   this.Reload         = -1;
-  this.SpecialRules   = [];
+  this.Special        = [];
   this.Weight         = 0;
   this.Requisition    = 0;
   this.Renown         = "";
   this.Availability   = "";
+
+  //allow the user to immediately parse a weapon in the constructor
+  if(obj != undefined){
+    Object.setPrototypeOf(this, new INQWeaponParser());
+    this.parse(obj);
+    Object.setPrototypeOf(this, new INQWeapon());
+  }
 
   //prototype -> text functions
 
@@ -48,6 +55,9 @@ function INQWeapon(){
       } else {
         output += Math.round(this.Range/1000).toString() + "km; ";
       }
+    //is this a thrown weapon?
+    } else if(this.Range < 0){
+      output += "SB x " + (this.Range*-1).toString() + "; ";
     }
     //does this weapon have a Rate of Fire?
     if(this.Single > 0 || this.Semi > 0 || this.Full > 0){
@@ -97,17 +107,15 @@ function INQWeapon(){
     //Reload
     if(this.Reload == 0){
       output += "Reload Free; ";
-    } else if(this.Reload == 1){
+    } else if(this.Reload == 0.5){
       output += "Reload Half; ";
-    } else if(this.Reload == 2){
+    } else if(this.Reload == 1){
       output += "Reload Full; ";
-    } else if(this.Reload > 2 && this.Reload % 2 == 0){
-      output += "Reload " + Math.floor(this.Reload/2) + " Full; ";
-    } else if(this.Reload > 2 && this.Reload % 2 == 1){
-      output += "Reload " + this.Reload + " Half; ";
+    } else {
+      output += "Reload " + Math.floor(this.Reload).toString() + " Full; ";
     }
     //Special Rules
-    _.each(this.SpecialRules, function(rule){
+    _.each(this.Special, function(rule){
       output += GetLink(rule.Name);
       if(rule.Value >= 0){
         output += "[" + rule.Value + "]";

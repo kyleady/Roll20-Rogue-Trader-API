@@ -1,8 +1,7 @@
 //the prototype for characters
-function INQCharacter(){
+function INQCharacter(obj){
   //default character movement
   this.Movement = {};
-
   this.Movement.Half = 0;
   this.Movement.Full = 0;
   this.Movement.Charge = 0;
@@ -58,6 +57,13 @@ function INQCharacter(){
   this.Attributes.Corruption = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
+
+  //allow the user to immediately parse a character in the constructor
+  if(obj != undefined){
+    Object.setPrototypeOf(this, new INQCharacterParser());
+    this.parse(obj);
+    Object.setPrototypeOf(this, new INQCharacter());
+  }
 
   //create a character object from the prototype
   this.toCharacterObj = function(isPlayer){
@@ -137,3 +143,31 @@ function INQCharacter(){
     return character;
   }
 }
+
+on("ready", function(){
+  CentralInput.addCMD(/^!\s*weapontest\s+(\S.*)$/i,function(matches, msg){
+    var objs = matchingObjs("handout", matches[1].split(" "));
+    if(objs.length < 1){
+      whisper("No matches")
+    } else if(objs.length > 1){
+      whisper("Too many matches. Please specify.")
+    } else {
+      var obj = new INQWeapon(objs[0]);
+      log(obj)
+      whisper("See log")
+    }
+  });
+
+  CentralInput.addCMD(/^!\s*charactertest\s+(\S.*)$/i,function(matches, msg){
+    var objs = matchingObjs("character", matches[1].split(" "));
+    if(objs.length < 1){
+      whisper("No matches")
+    } else if(objs.length > 1){
+      whisper("Too many matches. Please specify.")
+    } else {
+      var obj = new INQCharacter(objs[0]);
+      log(obj)
+      whisper("See log")
+    }
+  });
+});

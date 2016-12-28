@@ -16,12 +16,21 @@ function INQWeaponParser(){
   }
   this.parseRange = function(){
     var regex = "<(?:strong|em)>\\s*Range\\s*<\\/(?:strong|em)>\\s*:\\s*";
+    regex += "(?:"
     regex += "(\\d+)k?m";
+    regex += "|";
+    regex += "(?:SB|Strength\\s*Bonus)\\s*x\\s*(\\d+)"
+    regex += ")";
     regex += "\\s*(?:<br>|\n|$)";
     var re = new RegExp(regex, "i");
     var matches = this.Text.match(re);
     if(matches){
-      this.Range = Number(matches[1]);
+      if(matches[1]){
+        this.Range = Number(matches[1]);
+      }
+      if(matches[2]){
+        this.Range = Number("-" + matches[2])
+      }
     }
   }
   this.parseRoF = function(){
@@ -61,7 +70,9 @@ function INQWeaponParser(){
           this.DiceMultiplier = Number(matches[1]);
         }
       }
-      if(matches[2] != ""){
+      if(matches[2] == ""){
+        this.DiceNumber = 1;
+      } else {
         this.DiceNumber = Number(matches[2]);
       }
       this.DiceType = Number(matches[3]);
@@ -123,27 +134,15 @@ function INQWeaponParser(){
   this.parseSpecialRules = function(){
     var link = new INQLinkParser();
     var regex = "<(?:strong|em)>\\s*Special\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "\\s*(?:-|((?:" + link.regex() + ")+))";
+    regex += "\\s*(?:-|((?:" + link.regex() + "\\s*,?\\s*)+))";
     regex += "\\s*(?:<br>|\n|$)";
     var re = new RegExp(regex, "i");
     var matches = this.Text.match(re);
     if(matches && matches[1]){
-      var re = new RegExp(link.regex(), "gi");
-      matches = matches[1].match(re);
-      if(matches){
-        var rules = [];
-        _.each(matches, function(match){
-          var rule = {};
-          var re = new RegExp(link.regex(), "i");
-          var ruleMatches = match.match(re);
-          rule.Name = ruleMatches[1];
-          if(ruleMatches[2]){
-            rule.Value = Number(ruleMatches[2]);
-          }
-          rules.push(rule);
-        });
-        this.Special = rules;
-      }
+      var rules = [];
+      this.Special = _.map(matches[1].split(","), function(rule){
+        return new INQLink(rule);
+      });
     }
   }
   this.parseWeight = function(){
