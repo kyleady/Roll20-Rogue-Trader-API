@@ -7,9 +7,7 @@
 //If multiple candidates are found within your journal, it will choose the first
 //one, defaulting to handouts before characters.
 
-//If nothing is found, it will return the string "[Name]" so that the link can
-//easily be made in the future.
-//See https://wiki.roll20.net/Journal#Link_Between_Journal_Entries
+//If nothing is found, it will return just the name with no link at all
 
 function GetLink (Name,Link){
     Link = Link || "";
@@ -21,7 +19,7 @@ function GetLink (Name,Link){
         } else if(Characters.length > 0){
             return "<a href=\"http://journal.roll20.net/character/" + Characters[0].id + "\">" + Name + "</a>";
         } else {
-            return "[" + Name + "]";
+            return Name;
         }
     } else {
         return "<a href=\"" + Link + "\">" + Name + "</a>";
