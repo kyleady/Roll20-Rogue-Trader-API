@@ -59,8 +59,8 @@ function attrValue(name, options){
       if(options["setTo"] != undefined){
         tempAttrs[name] = options["setTo"];
         //record the change (while leaving any other notes in tact)
-        if(tempAttrs.hashRegex().test(gmnotes)){
-            gmnotes = gmnotes.replace(tempAttrs.hashRegex(),tempAttrs.toString());
+        if(tempAttrs.regex().test(gmnotes)){
+            gmnotes = gmnotes.replace(tempAttrs.regex(),tempAttrs.toString());
         } else {
             gmnotes = gmnotes + "<br>" + tempAttrs.toString();
         }

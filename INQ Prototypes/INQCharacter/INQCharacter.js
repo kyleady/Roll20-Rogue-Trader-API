@@ -1,5 +1,5 @@
 //the prototype for characters
-function INQCharacter(obj){
+function INQCharacter(character, graphic){
   //default character movement
   this.Movement = {};
   this.Movement.Half = 0;
@@ -59,9 +59,9 @@ function INQCharacter(obj){
   this.Attributes.Renown = 0;
 
   //allow the user to immediately parse a character in the constructor
-  if(obj != undefined){
+  if(character != undefined){
     Object.setPrototypeOf(this, new INQCharacterParser());
-    this.parse(obj);
+    this.parse(character, graphic);
     Object.setPrototypeOf(this, new INQCharacter());
   }
 
@@ -166,7 +166,18 @@ on("ready", function(){
       whisper("Too many matches. Please specify.")
     } else {
       var obj = new INQCharacter(objs[0]);
-      log(obj)
+      log("===Movement===")
+      log(obj.Movement)
+      for(var k in obj.List){
+        log("===" + k + "===")
+        _.each(obj.List[k], function(item){
+          log(item)
+        });
+      }
+      log("===Special Rules===")
+      _.each(obj.SpecialRules, function(rule){
+        log(rule)
+      });
       whisper("See log")
     }
   });

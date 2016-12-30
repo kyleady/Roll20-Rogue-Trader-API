@@ -5,14 +5,14 @@ function INQLinkParser(){
   this.regex = function(){
     var regex = "\\s*(?:<a href=\"http:\\//journal\\.roll20\\.net\\/handout\\/[-\\w\\d]+\">)?([^<>\\(\\), -][^<>\\(\\)]*)(?:<\\/a>)?";
     regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
-    regex += "\\s*(?:\\(\\s*x\\s(\\d+)\\))?";
+    regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
     regex += "\\s*(?:\\+\\s*(\\d+))?\\s*";
 
     return regex;
   }
   //take text and turn it into an INQLink
   this.parse = function(text){
-    var re = RegExp(this.regex(), "i");
+    var re = RegExp("^" + this.regex() + "$", "i");
     var matches = text.match(re);
     if(matches){
       if(matches[1]){
