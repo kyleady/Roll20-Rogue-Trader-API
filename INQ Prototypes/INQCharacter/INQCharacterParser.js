@@ -73,7 +73,7 @@ function INQCharacterParser(){
       characterid: this.ObjID
     });
     for(var i = 0; i < attributes.length; i++){
-      this.Attributes[attributes[i].get("name")] = attributes[i].get("current");
+      this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
     }
     //when working with a generic enemy's current stats, we need to check for temporary values
     //generic enemies are those who represent a character, yet none of their stats are linked
@@ -87,7 +87,7 @@ function INQCharacterParser(){
       var tempAttrs = new Hash(gmnotes);
       //overwrite any values detailed here
       for(var k in tempAttrs){
-        this.Attributes[k] = tempAttrs[k];
+        this.Attributes[k] = Number(tempAttrs[k]);
       }
     }
   }
@@ -97,6 +97,10 @@ function INQCharacterParser(){
     this.Name = character.get("name");
     this.ObjID = character.id;
     this.ObjType = character.get("_type");
+
+    if(graphic){
+      this.GraphicID = graphic.id;
+    }
 
     this.parseLists();
     this.parseMovement();

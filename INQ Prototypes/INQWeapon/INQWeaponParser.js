@@ -58,7 +58,7 @@ function INQWeaponParser(){
     regex += "(?:(PR|\\d+)\\s*x\\s*)?";
     regex += "(\\d+|)\\s*D\\s*(\\d+)";
     regex += "(?:\\s*(\\+|-)\\s*(\\d+|PR))?";
-    regex += link.regex();
+    regex += "(" + link.regex() + ")";
     regex += "\\s*(?:<br>|\n|$)";
     var re = new RegExp(regex, "i");
     var matches = this.Text.match(re);
@@ -84,7 +84,7 @@ function INQWeaponParser(){
         }
       }
       if(matches[6]){
-        this.DamageType = matches[6].toUpperCase();
+        this.DamageType = new INQLink(matches[6]);
       }
     }
   }
