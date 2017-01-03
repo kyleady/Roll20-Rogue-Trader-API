@@ -65,6 +65,20 @@ function INQCharacter(character, graphic){
     Object.setPrototypeOf(this, new INQCharacter());
   }
 
+  //check if the weapon has an inqlink with the given name
+  //and within the given list
+  //return the inqlink if found
+  //if nothing was found, return undefined
+  this.has = function(ability, list){
+    var inqlink = undefined;
+    _.each(this.List[list], function(rule){
+      if(rule.Name == ability){
+        inqlink = rule;
+      }
+    });
+    return inqlink;
+  }
+
   //create a character object from the prototype
   this.toCharacterObj = function(isPlayer){
     //create the gmnotes of the character

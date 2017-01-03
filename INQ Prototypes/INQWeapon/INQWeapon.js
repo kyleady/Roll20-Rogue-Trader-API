@@ -4,7 +4,7 @@ function INQWeapon(obj){
   //default weapon stats
   this.Class          = "Melee";
   this.Range          = 0;
-  this.Single         = 0;
+  this.Single         = true;
   this.Semi           = 0;
   this.Full           = 0;
   this.DiceType       = 10;
@@ -26,6 +26,19 @@ function INQWeapon(obj){
     Object.setPrototypeOf(this, new INQWeaponParser());
     this.parse(obj);
     Object.setPrototypeOf(this, new INQWeapon());
+  }
+
+  //check if the weapon has an inqlink with the given name
+  //return the inqlink if found
+  //if nothing was found, return undefined
+  this.has = function(ability){
+    var inqlink = undefined;
+    _.each(this.Special, function(rule){
+      if(rule.Name == ability){
+        inqlink = rule;
+      }
+    });
+    return inqlink;
   }
 
   //prototype -> text functions

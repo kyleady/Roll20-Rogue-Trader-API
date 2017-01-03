@@ -66,11 +66,11 @@ on("chat:message", function(msg) {
     //record Damage
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
 
-    //record the lowest damage roll
-    var lowest = 10
+    //record the highest damage roll
+    var highest = 0
     for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
-      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
-        lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
+      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v > highest){
+        highest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
       }
     }
 
@@ -113,11 +113,11 @@ on("chat:message", function(msg) {
 
     //was this a private attack?
     if(msg.type == "whisper"){
-      //report the lowest roll privately
-      sendChat("System",'/w gm <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")
+      //report the highest roll privately
+      sendChat("System",'/w gm <strong>Highest</strong>: [' + highest.toString() + "](!Crit?)")
     } else {
-      //report the lowest roll publicly
-      sendChat("",'/desc <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit)")
+      //report the highest roll publicly
+      sendChat("",'/desc <strong>Highest</strong>: [' + highest.toString() + "](!Crit?)")
     }
 
     //save the damage variables to their maximums as well
@@ -149,8 +149,7 @@ on("chat:message", function(msg) {
     }
 
     //load up the AmmoTracker object to calculate the hit location
-    ammoObj = new AmmoTracker;
-    ammoObj.calculateLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
+    saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
 
     //if the number of successes was positive, add in Unnatural and save it
     if(msg.inlinerolls[0].results.total > 0){

@@ -41,7 +41,7 @@ function Hash(hashString) {
         }
       }
       //remove the last comma
-      output = output.substring(0,output.length-2);
+      output = output.replace(/,\s*$/, "");
       output += "}";
       return output;
   }

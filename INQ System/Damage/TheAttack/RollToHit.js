@@ -3,6 +3,8 @@ INQAttack = INQAttack || {};
 INQAttack.rollToHit = function(){
   //calculate the base roll to hit
   INQAttack.calcToHit();
+  //add in any special rules
+  INQAttack.accountForHitsSpecialRules();
   //determine the weapon's firing mode
   INQAttack.getFiringMode();
   //make the roll
@@ -14,7 +16,7 @@ INQAttack.rollToHit = function(){
   INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
   INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
   INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
-  INQAttack.Reports.toHit += "{{Hits= [[" + INQAttack.hits.toString() + "]]}}"
+  INQAttack.Reports.toHit += "{{Hits= [[" + INQAttack.hits.toString() + "]]}}";
 }
 
 //use the players rate of fire to determine what mode the weapn is firing on
@@ -33,44 +35,40 @@ INQAttack.getFiringMode = function(){
     }
   }
   //add in any modifiers for the RoF
-  switch(INQAttack.options.RoF.toLowerCase()){
-    case "semi":
-      INQAttack.toHit += 0;
-      INQAttack.maxHits = INQAttack.inqweapon.Semi;
-      INQAttack.mode = "Semi";
-      break;
-    case "swift":
-      INQAttack.toHit += 0;
-      INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqweapon.WS/3));
-      INQAttack.mode = "Semi";
-      break;
-    case "full":
-      INQAttack.toHit += -10;
-      INQAttack.maxHits = INQAttack.inqweapon.Full
-      INQAttack.mode = "Full";
-      break;
-    case "lightning":
-      INQAttack.toHit += -10;
-      INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqweapon.WS/2));
-      INQAttack.mode = "Full";
-      break;
-    case "called":
-      INQAttack.toHit += -20;
-      INQAttack.maxHits = 1;
-      INQAttack.mode = "Single";
-      break;
-    default:
-      INQAttack.toHit += 10;
-      INQAttack.maxHits = 1;
-      INQAttack.mode = "Single";
-      break;
+  if(/semi/i.test(INQAttack.options.RoF)){
+    INQAttack.toHit += 0;
+    INQAttack.maxHits = INQAttack.inqweapon.Semi;
+    INQAttack.mode = "Semi";
+  } else if(/swift/i.test(INQAttack.options.RoF)){
+    INQAttack.toHit += 0;
+    INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqweapon.WS/3));
+    INQAttack.mode = "Semi";
+  } else if(/full/i.test(INQAttack.options.RoF)){
+    INQAttack.toHit += -10;
+    INQAttack.maxHits = INQAttack.inqweapon.Full
+    INQAttack.mode = "Full";
+  } else if(/lightning/i.test(INQAttack.options.RoF)){
+    INQAttack.toHit += -10;
+    INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqweapon.WS/2));
+    INQAttack.mode = "Full";
+  } else if(/called/i.test(INQAttack.options.RoF)){
+    INQAttack.toHit += -20;
+    INQAttack.maxHits = 1;
+    INQAttack.mode = "Single";
+  } else { //if(/single/i.test(INQAttack.options.RoF))
+    INQAttack.toHit += 10;
+    INQAttack.maxHits = 1;
+    INQAttack.mode = "Single";
   }
 }
 
 INQAttack.calcToHit = function(){
   //calculate the roll to hit
   INQAttack.toHit = 0;
+  //prepare additional variables for determining total hits
   INQAttack.unnaturalSuccesses = 0;
+  INQAttack.shotsMultiplier = 1;
+  INQAttack.hitsMultiplier = 1;
   //get the stat used to hit
   INQAttack.stat = "BS"
   if(INQAttack.inqweapon.Class == "Melee"){
@@ -88,19 +86,20 @@ INQAttack.calcToHit = function(){
 //calculate the number of hits based on the
 INQAttack.calcHits = function(){
   //determine the successes based on the roll
-  INQAttack.successes = Math.ceil((INQAttack.toHit-INQAttack.d100)/10)+INQAttack.unnaturalSuccesses;
+  INQAttack.successes = Math.floor((INQAttack.toHit-INQAttack.d100)/10) + INQAttack.unnaturalSuccesses;
   //calculate the number of hits based on the firing mode
   INQAttack.hits = 0;
-  if(INQAttack.toHit - INQAttack.d100 >= 0){
+  if(INQAttack.autoHit){
+    //auto hitting weapons always hit
+    INQAttack.hits = INQAttack.maxHits;
+  } else if(INQAttack.toHit - INQAttack.d100 >= 0){
+    INQAttack.hits = 1;
     switch(INQAttack.mode){
-      case "Single":
-        INQAttack.hits = 1;
-      break;
       case "Semi":
-        INQAttack.hits = 1+Math.floor(INQAttack.successes/2);
+        INQAttack.hits += Math.floor(INQAttack.successes/2);
       break;
       case "Full":
-        INQAttack.hits = 1+INQAttack.successes
+        INQAttack.hits += INQAttack.successes
       break;
     }
     //be sure the number of hits is not over the max (and that there is a max)
@@ -108,4 +107,16 @@ INQAttack.calcHits = function(){
       INQAttack.hits = INQAttack.maxHits;
     }
   }
+  //account for any hits bonuses
+  INQAttack.hits *= INQAttack.hitsMultiplier;
+  INQAttack.hits *= INQAttack.shotsMultiplier;
+  //account for any extra ammo this may spend
+  INQAttack.maxHits *= INQAttack.shotsMultiplier;
+}
+
+//a list of all the special rules that affect the toHit calculations
+INQAttack.accountForHitsSpecialRules = function(){
+  INQAttack.accountForStorm();
+  INQAttack.accountForBlast();
+  INQAttack.accountForSpray();
 }

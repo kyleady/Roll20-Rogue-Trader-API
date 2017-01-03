@@ -26,7 +26,7 @@ INQAttack.expendAmmunition = function(){
       Ammo -= INQAttack.maxHits;
       //be sure you can even spend this much ammo
       if(Ammo < 0){
-        whisper("Not enough ammo to fire on " + INQAttack.options.RoF, INQAttack.who);
+        whisper("Not enough ammo to fire on " + INQAttack.options.RoF, INQAttack.msg.playerid);
         return false;
       }
     }
