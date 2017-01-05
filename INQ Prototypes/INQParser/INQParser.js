@@ -24,7 +24,7 @@ function INQParser(object){
   //disect a single line
   this.parseLine = function(line){
     //be sure there is a line to work with
-    if(!line){return;}
+    if(line == undefined || line == "" || line == null){return;}
     //complete any bold tags separated by lines
     line = this.closeBoldTags(line);
     //try each way of parsing the line and quit when it is successful

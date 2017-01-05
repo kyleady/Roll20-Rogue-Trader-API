@@ -94,9 +94,21 @@ function attrValue(name, options){
     });
     //does the character have this attribute?
     if(statObjs.length <= 0){
-      //no stat to work with. report the error and exit.
-      if(options["alert"]){whisper(character.get("name") + " does not have a(n) " + name + " Attribute.");}
-      return undefined;
+      //the attribute does not exist yet, if the user was looking for the value, quit
+      if(options["setTo"] == undefined){
+        //no stat to work with. report the error and exit.
+        if(options["alert"]){whisper(character.get("name") + " does not have a(n) " + name + " Attribute.");}
+        return undefined;
+      } else {
+        //the user is trying to create this value, go ahead and do so
+        statObjs[0] = createObj("attribute", {
+          name: name,
+          current: options["setTo"],
+          max: options["setTo"],
+          characterid: character.id
+        });
+      }
+
     //does the character have too many attributes with this name?
     } else if(statObjs.length >= 2){
       //warn the gm, but continue forward

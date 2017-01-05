@@ -89,4 +89,7 @@ INQAttack.accountForDamageSpecialRules = function(){
   INQAttack.accountForTearingFleshRender();
   INQAttack.accountForForce();
   INQAttack.accountForCrushingBlowMightyShot();
+  INQAttack.accountForDamage();
+  INQAttack.accountForPen();
+  INQAttack.accountForType();
 }

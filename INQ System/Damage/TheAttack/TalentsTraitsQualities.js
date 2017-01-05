@@ -95,3 +95,42 @@ INQAttack.accountForSpray = function(){
     INQAttack.autoHit = true;
   }
 }
+
+//special ammunition will explicitly note stat modifications
+//apply damage modifications
+INQAttack.accountForDamage = function(){
+  var damage = INQAttack.inqweapon.has("Damage");
+  if(damage){
+    _.each(damage.Groups, function(value){
+      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value)){
+        INQAttack.inqweapon.DamageBase += Number(value);
+      }
+    });
+  }
+}
+
+//special ammunition will explicitly note stat modifications
+//apply penetration modifications
+INQAttack.accountForPen = function(){
+  var pen = INQAttack.inqweapon.has("Pen");
+  if(pen){
+    _.each(pen.Groups, function(value){
+      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value)){
+        INQAttack.inqweapon.Penetration += Number(value);
+      } else if(/^\s*=\s*\d+\s*$/.test(value)){
+        INQAttack.inqweapon.Penetration = Number(value.replace("=", ""));
+      }
+    });
+  }
+}
+
+//special ammunition will explicitly note stat modifications
+//apply damage TYPE modifications
+INQAttack.accountForType = function(){
+  var type = INQAttack.inqweapon.has("Type");
+  if(type){
+    _.each(type.Groups, function(value){
+      INQAttack.inqweapon.DamageType = new INQLink(value);
+    });
+  }
+}
