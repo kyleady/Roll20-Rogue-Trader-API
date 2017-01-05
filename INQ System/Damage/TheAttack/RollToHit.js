@@ -7,8 +7,14 @@ INQAttack.rollToHit = function(){
   INQAttack.accountForHitsSpecialRules();
   //determine the weapon's firing mode
   INQAttack.getFiringMode();
-  //make the roll
+  //make the roll to hit
   INQAttack.d100 = randomInteger(100);
+  //was there a crit?
+  if(INQAttack.d100 == 100){
+    INQAttack.Reports.Crit = "[Critical Failure!](!This Isn't Anything Yet)";
+  } else if(INQAttack.d100 == 1) {
+    INQAttack.Reports.Crit = "[Critical Success!](!This Isn't Anything Yet)";
+  }
   //determine the number of hits based on the roll to hit and firing mode
   INQAttack.calcHits();
   //show the roll to hit
@@ -41,7 +47,7 @@ INQAttack.getFiringMode = function(){
     INQAttack.mode = "Semi";
   } else if(/swift/i.test(INQAttack.options.RoF)){
     INQAttack.toHit += 0;
-    INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqweapon.WS/3));
+    INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqcharacter.bonus("WS")/3));
     INQAttack.mode = "Semi";
   } else if(/full/i.test(INQAttack.options.RoF)){
     INQAttack.toHit += -10;
@@ -49,7 +55,7 @@ INQAttack.getFiringMode = function(){
     INQAttack.mode = "Full";
   } else if(/lightning/i.test(INQAttack.options.RoF)){
     INQAttack.toHit += -10;
-    INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqweapon.WS/2));
+    INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqcharacter.bonus("WS")/2));
     INQAttack.mode = "Full";
   } else if(/called/i.test(INQAttack.options.RoF)){
     INQAttack.toHit += -20;
@@ -79,8 +85,8 @@ INQAttack.calcToHit = function(){
   //use the stat
   INQAttack.toHit += Number(INQAttack.inqcharacter.Attributes[INQAttack.stat]);
   INQAttack.unnaturalSuccesses += Math.ceil(Number(INQAttack.inqcharacter.Attributes["Unnatural " + INQAttack.stat])/2);
-  if(INQAttack.options.Modifier){
-    INQAttack.toHit += INQAttack.options.Modifier;
+  if(INQAttack.options.Modifier && Number(INQAttack.options.Modifier)){
+    INQAttack.toHit += Number(INQAttack.options.Modifier);
   }
 }
 //calculate the number of hits based on the

@@ -1,4 +1,5 @@
-
+//be sure the inqattack object exists before we start working with it
+INQAttack = INQAttack || {};
 
 INQAttack.useWeapon = function(matches,msg){
   //clean out any of the previous details
@@ -31,8 +32,14 @@ INQAttack.useWeapon = function(matches,msg){
       //cancel this attack if there isn't enough ammo
       if(!INQAttack.expendAmmunition()){return;}
     }
-    //roll damage
-    INQAttack.rollDamage();
+    //only show the damage if the attack hit
+    if(INQAttack.hits == 0){
+      //offer reroll
+      INQAttack.offerReroll();
+    } else {
+      //roll damage
+      INQAttack.rollDamage();
+    }
     //report the results
     INQAttack.deliverReport();
   });
@@ -58,7 +65,11 @@ INQAttack.getWeapon = function(){
     if(weapons.length >= 2){
       whisper("Which weapon did you intend to fire?", INQAttack.msg.playerid)
       _.each(weapons, function(weapon){
-        whisper("[" + weapon.get("name") + "](!useweapon " + weapon.get("name") + " " + INQAttack.options.toString() + ")", INQAttack.msg.playerid);
+        //use the weapon's exact name
+        var suggestion = "useweapon " + weapon.get("name") + INQAttack.options.toString();
+        //the suggested command must be encoded before it is placed inside the button
+        suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
       });
       //something went wrong
       return false;
@@ -76,12 +87,11 @@ INQAttack.customizeWeapon = function(){
   for(var label in INQAttack.inqweapon){
     //only work with labels that options has
     if(INQAttack.options[label] != undefined){
-      //if label -> array, don't overwrite just add them on
+      //if label -> array, don't overwrite just add each item on as a link
       if(Array.isArray(INQAttack.inqweapon[label])){
-        var array = _.map(INQAttack.options[label].split(";"), function(element){
-          return INQLink(element.trim());
+        _.each(INQAttack.options[label].split(","), function(element){
+          INQAttack.inqweapon[label].push(new INQLink(element.trim()));
         });
-        INQAttack.inqweapon[label].concat(array);
       } else {
         //otherwise simply overwrite the label
         INQAttack.inqweapon[label] = INQAttack.options[label];
@@ -95,14 +105,29 @@ INQAttack.deliverReport = function(){
   if(INQAttack.autoHit){
     INQAttack.Reports.toHit = undefined;
   }
-  //deliver each report that exists
-  _.each(["Weapon", "toHit", "Damage"], function(report){
+  //deliver each report
+  _.each(["Weapon", "toHit", "Crit", "Damage"], function(report){
     if(INQAttack.Reports[report]){
-      sendChat("player|" + INQAttack.msg.playerid, INQAttack.Reports[report]);
+      //is this a private or public roll?
+      if(INQAttack.inqcharacter.controlledby == ""
+      || INQAttack.options.whisper){
+        //only whisper the report to the gm
+        whisper(INQAttack.Reports[report]);
+      } else {
+        //make the character publicly roll
+        sendChat("player|" + INQAttack.msg.playerid, INQAttack.Reports[report]);
+      }
     }
   });
   //record the results of the attack
   INQAttack.recordAttack();
+  //if a player whispered this to the gm, let the player know it was successful
+  if(INQAttack.inqcharacter.controlledby == ""
+  || INQAttack.options.whisper){
+    if(!playerIsGM(INQAttack.msg.playerid)){
+      whisper("Damage rolled.", INQAttack.msg.playerid);
+    }
+  }
 }
 
 //delete every property but leave all of the functions untouched
@@ -129,7 +154,18 @@ INQAttack.recordAttack = function(){
     hitsObj.set("current", INQAttack.hits);
     hitsObj.set("max", INQAttack.hits);
   }
+}
 
+//the attack missed, offer a reroll
+INQAttack.offerReroll = function(){
+  //the reroll will not use up any ammo
+  INQAttack.options.freeShot = "true";
+  //offer a reroll instead of rolling the damage
+  var attack = "useweapon " + INQAttack.inqweapon.Name + INQAttack.options.toString();
+  //encode the attack
+  attack = "!{URIComponent}" + encodeURIComponent(attack);
+  //offer it as a button to the player
+  setTimeout(whisper, 100, "[Reroll](" + attack + ")", INQAttack.msg.playerid);
 }
 
 on("ready", function(){

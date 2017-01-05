@@ -6,7 +6,7 @@ function Hash(hashString) {
   this.itemRegex = function(options){
     //default to no options
     options = options || [];
-    var itemRegexTxt = "([a-zA-Z0-9][a-zA-Z0-9\\s]*):\\s*\"([;a-zA-Z0-9\\s]*)\"";
+    var itemRegexTxt = "(\\w[\\w\\s]*):\\s*\"([,;:-\\w\\s\\(\\)]*)\"";
     if(options["text"]){
       return itemRegexTxt;
     } else {

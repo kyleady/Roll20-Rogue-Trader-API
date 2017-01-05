@@ -102,6 +102,8 @@ function INQCharacterParser(){
       this.GraphicID = graphic.id;
     }
 
+    this.controlledby = character.get("controlledby");
+
     this.parseLists();
     this.parseMovement();
     this.parseSpecialRules();

@@ -1,5 +1,8 @@
 //the prototype for characters
 function INQCharacter(character, graphic){
+  //object details
+  this.controlledby = "";
+
   //default character movement
   this.Movement = {};
   this.Movement.Half = 0;
@@ -79,6 +82,20 @@ function INQCharacter(character, graphic){
     return inqlink;
   }
 
+  //return the attribute bonus Stat/10 + Unnatural Stat
+  this.bonus = function(stat){
+    var bonus = 0;
+    //get the bonus from the stat
+    if(this.Attributes[stat]){
+      bonus += Math.floor(this.Attributes[stat]/10);
+    }
+    //add in the unnatural bonus
+    if(this.Attributes["Unnatural " + stat]){
+      bonus += this.Attributes["Unnatural " + stat];
+    }
+    return bonus;
+  }
+
   //create a character object from the prototype
   this.toCharacterObj = function(isPlayer){
     //create the gmnotes of the character
@@ -152,6 +169,9 @@ function INQCharacter(character, graphic){
         action: weapon.toAbility()
       });
     });
+
+    //note who controlls the character
+    character.set("controlledby", this.controlledby);
 
     //return the resultant character object
     return character;

@@ -36,7 +36,11 @@ CentralInput.addCMD = function(cmdregex, cmdaction, cmdpublic){
 CentralInput.input = function(msg){
   //by default assume that the input was not recognized, until we are told otherwise
   var inputRecognized = false;
-
+  //decode any encoded msgs
+  if(msg.content.indexOf("!{URIComponent}") == 0){
+    msg.content = msg.content.replace("{URIComponent}","");
+    msg.content = decodeURIComponent(msg.content);
+  }
   //step through every Command, testing each one
   for(var i = 0; i < this.Commands.length; i++){
     //is the msg recognized by this command?

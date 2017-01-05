@@ -11,7 +11,7 @@ function INQWeapon(obj){
   this.DiceNumber     = 0;
   this.DiceMultiplier = 1;
   this.DamageBase     = 0;
-  this.DamageType     = "I";
+  this.DamageType     = new INQLink("I");
   this.Penetration    = 0;
   this.Clip           = 0;
   this.Reload         = -1;
@@ -39,6 +39,76 @@ function INQWeapon(obj){
       }
     });
     return inqlink;
+  }
+
+  //functions that take input from the character wielding the weapon
+  this.setSB = function(strBonus){
+    //only add the strength bonus to melee weapons
+    if(this.Class == "Melee"){
+      this.DamageBase += strBonus;
+      //fist weapons add the SB twice
+      if(this.has("Fist")){
+        this.DamageBase += strBonus;
+      }
+    }
+
+    //replace every instance of SB with the strength bonus of the character
+    var strStats = ["Range"];
+    for(var i = 0; i < strStats.length; i++){
+      //these should be strings, waiting to be transformed into integers
+      if(typeof this[strStats[i]] == 'string'){
+        //does this stat rely on the strength bonus?
+        if(/SB/.test(this[strStats[i]])){
+          //find the Strength Bonus coefficient
+          var coefficient = 1;
+          var matches = this[strStats[i]].match(/\d+/);
+          if(matches){
+            coefficient = Number(matches[0]);
+          }
+          //transform the string formula into an integer
+          this[strStats[i]] = coefficient * strBonus;
+        }
+      }
+    }
+  }
+
+  //replace every instance of PR with the effectove psy rating of the character
+  this.setPR = function(effectivePR){
+    //start with the basic stats of the weapon
+    var psyStats = ["Range", "DiceMultiplier", "DamageBase", "Penetration", "Semi", "Full"];
+    for(var i = 0; i < psyStats.length; i++){
+      //these should be strings, waiting to be transformed into integers
+      if(typeof this[psyStats[i]] == 'string'){
+        //does this stat rely on Psy Rating?
+        if(/PR/.test(this[psyStats[i]])){
+          //find the Psy Rating coefficient
+          var coefficient = 1;
+          var matches = this[psyStats[i]].match(/\d+/);
+          if(matches){
+            coefficient = Number(matches[0]);
+          }
+          //transform the string formula into an integer
+          this[psyStats[i]] = coefficient * effectivePR
+        }
+      }
+    }
+    //next check every group value of every special rule
+    this.Special = _.map(this.Special, function(rule){
+      rule.Groups = _.map(rule.Groups, function(group){
+        if(/^\s*\d*\s*PR\s*$/.test(group)){
+          //find the Psy Rating coefficient in this group
+          var coefficient = 1;
+          var matches = group.match(/\d+/);
+          if(matches){
+            coefficient = Number(matches[0]);
+          }
+          //do the multiplication but keep it as a string
+          group = (coefficient * effectivePR).toString();
+        }
+        return group;
+      });
+      return rule;
+    });
   }
 
   //prototype -> text functions

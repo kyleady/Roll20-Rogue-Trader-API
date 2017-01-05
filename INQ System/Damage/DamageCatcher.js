@@ -57,7 +57,6 @@ on("chat:message", function(msg) {
       DamageType = "R";
     } else if(msg.content.indexOf(" Explosive ") !== -1 || msg.content.indexOf(">X<") !== -1){
       DamageType = "X";
-    //
     } else {//if(msg.content.indexOf(" Impact ") !== -1){
       DamageType = "I";
     }
@@ -67,10 +66,10 @@ on("chat:message", function(msg) {
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
 
     //record the highest damage roll
-    var highest = 0
+    var lowest = 10
     for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
-      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v > highest){
-        highest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
+      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
+        lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
       }
     }
 
@@ -114,10 +113,10 @@ on("chat:message", function(msg) {
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
-      sendChat("System",'/w gm <strong>Highest</strong>: [' + highest.toString() + "](!Crit?)")
+      whisper('<strong>Lowest</strong>: [' + lowest.toString() + "](!Crit?)");
     } else {
       //report the highest roll publicly
-      sendChat("",'/desc <strong>Highest</strong>: [' + highest.toString() + "](!Crit?)")
+      sendChat("",'/desc <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit?)")
     }
 
     //save the damage variables to their maximums as well

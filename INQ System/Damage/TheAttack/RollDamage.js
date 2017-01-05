@@ -1,10 +1,13 @@
-
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
 //report the damage roll
 INQAttack.rollDamage = function(){
-  //calculate the strength bonus (in case it is needed in the future)
-  INQAttack.calcSBonus();
+  //make the inqweapon aware of the character's strength bonus
+  if(INQAttack.inqcharacter){
+    INQAttack.inqweapon.setSB(INQAttack.inqcharacter.bonus("S"));
+  }
+  //make the inqweapon aware of the effective rsy rating
+  INQAttack.calcEffectivePsyRating();
   //add in all of the special rules that apply to the damage roll
   INQAttack.accountForDamageSpecialRules();
   //begin constructing the damage report
@@ -24,7 +27,8 @@ INQAttack.damageFormula = function(){
   //write the roll down
   if(INQAttack.inqweapon.DiceNumber != 0){
     formula += INQAttack.inqweapon.DiceNumber.toString();
-    formula += "d" + INQAttack.inqweapon.DiceType.toString();
+    formula += "d";
+    formula += INQAttack.inqweapon.DiceType.toString();
     //if there is a reroll number, add that in
     if(INQAttack.inqweapon.rerollBelow){
       formula += "ro<" + INQAttack.inqweapon.rerollBelow.toString();
@@ -33,14 +37,16 @@ INQAttack.damageFormula = function(){
     if(INQAttack.inqweapon.keepDice){
       formula += "k" + INQAttack.inqweapon.keepDice.toString();
     }
+    //if the dice are multiplied by a number other than one
+    if(INQAttack.inqweapon.DiceMultiplier != 1){
+      formula += "*";
+      formula += INQAttack.inqweapon.DiceMultiplier.toString();
+    }
   }
   //add in the base damage
   if(INQAttack.inqweapon.DamageBase != 0){
-    formula += "+" + INQAttack.inqweapon.DamageBase.toString();
-  }
-  //if this is a melee weapon, add the character's S bonus
-  if(INQAttack.inqweapon.Class == "Melee"){
-    formula += "+" + INQAttack.SBonus.toString();
+    formula += "+";
+    formula += INQAttack.inqweapon.DamageBase.toString();
   }
   //return the damage formula
   return formula;
@@ -55,10 +61,25 @@ INQAttack.weaponNotes = function(){
   return notes.replace(/,\s*$/, "");
 }
 
-//calculate the strength bonus of the weapon
-INQAttack.calcSBonus = function(){
-  INQAttack.SBonus = Math.floor(INQAttack.inqcharacter.Attributes.S / 10);
-  INQAttack.SBonus += INQAttack.inqcharacter.Attributes["Unnatural S"];
+//determine the effective psy rating of the character and make the weapon aware
+INQAttack.calcEffectivePsyRating = function(){
+  //reset the psy rating for each selected character
+  var PsyRating = undefined;
+  //allow the options to superceed the character's psy rating
+  if(INQAttack.options.EffectivePR){
+    PsyRating = Number(INQAttack.options.EffectivePR);
+  }
+  //if no effective psy rating is set, default to the character's psy rating
+  if(PsyRating == undefined
+  && INQAttack.inqcharacter != undefined){
+    PsyRating = INQAttack.inqcharacter.Attributes.PR;
+  }
+  //if the psy rating still has no set value, just default to 0
+  if(PsyRating == undefined){
+    PsyRating = 0;
+  }
+  //apply the psy rating to the weapon
+  INQAttack.inqweapon.setPR(PsyRating);
 }
 
 //a list of all the special rules that affect the damage calculation
