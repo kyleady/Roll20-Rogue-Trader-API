@@ -29,17 +29,17 @@ INQAttack.rollToHit = function(){
 //add in all the respective bonuses for that mode
 INQAttack.getFiringMode = function(){
   //if the RoF was undefined, find the lowest available setting to fire on
-  if(INQAttack.options.RoF == undefined){
-    _.each(["Single", "Semi", "Full"], function(RoF){
-      if(INQAttack.inqweapon[RoF]){
-        INQAttack.options.RoF = RoF;
-      }
-    });
-    //if nothing was valid, go for single
-    if(INQAttack.options.RoF == undefined){
-      INQAttack.options.RoF = "Single";
+  _.each(["Single", "Semi", "Full"], function(RoF){
+    if(INQAttack.options.RoF == undefined
+    && INQAttack.inqweapon[RoF]){
+      INQAttack.options.RoF = RoF;
     }
+  });
+  //if nothing was valid, go for single
+  if(INQAttack.options.RoF == undefined){
+    INQAttack.options.RoF = "Single";
   }
+
   //add in any modifiers for the RoF
   if(/semi/i.test(INQAttack.options.RoF)){
     INQAttack.toHit += 0;

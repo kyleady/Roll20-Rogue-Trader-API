@@ -37,9 +37,9 @@ function INQWeaponParser(){
     var regex = "^\\s*";
     regex += "(S|-)";
     regex += "\\s*\\/\\s*";
-    regex += "(\\d+|-|\\d*\\s*x\\s*PR)";
+    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
     regex += "\\s*\\/\\s*";
-    regex += "(\\d+|-|\\d*\\s*x\\s*PR)";
+    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
     regex += "\\s*$";
     var re = new RegExp(regex, "i");
     var matches = content.match(re);
