@@ -58,6 +58,7 @@ function INQCharacter(character, graphic){
 
   this.Attributes.Fate = 0;
   this.Attributes.Corruption = 0;
+  this.Attributes["Unnatural Corruption"] = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
 

@@ -9,7 +9,9 @@ INQAttack.expendAmmunition = function(){
     INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.inqammo.toLink();
   }
   INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.mode + "(" + INQAttack.maxHits + ")";
-
+  if(INQAttack.inqweapon.Class == "Psychic"){
+    INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
+  }
   //determine how many shots were fired
   if(INQAttack.options.freeShot){
     var shotsFired = 0;

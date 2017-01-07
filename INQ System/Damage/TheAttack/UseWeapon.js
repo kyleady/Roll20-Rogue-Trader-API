@@ -10,22 +10,22 @@ INQAttack.useWeapon = function(matches,msg){
   INQAttack.weaponname = matches[1];
   //save the message for use elsewhere
   INQAttack.msg = msg;
-  //get the weapon specified and be sure nothing went wrong
-  if(!INQAttack.getWeapon()){return;}
-  //get the special ammo specified and be sure nothing went wrong
-  if(!INQAttack.getSpecialAmmo()){return;}
-  //use the options to detail the weapon
-  INQAttack.customizeWeapon();
   //if nothing was selected and the player is the gm, auto hit with no roll
   if(INQAttack.msg.selected == undefined || INQAttack.msg.selected == []){
     INQAttack.msg.selected = [{_type: "unique"}];
   }
   //repeat for each character selected
   eachCharacter(INQAttack.msg, function(character, graphic){
+    //allow the loop to skip over future iterations if something went wrong
+    if(INQAttack.break){return;}
     //reset the report
     INQAttack.Reports = {};
+    //prepare attack variables for each character's attack
+    INQAttack.prepareVariables();
     //detail the character (or make a dummy character)
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
+    //get the weapon specified and be sure nothing went wrong
+    if(!INQAttack.detailTheWeapon()){return;}
     //be sure you are dealing with a specific character
     if(character != undefined){
       //roll to hit
@@ -47,117 +47,7 @@ INQAttack.useWeapon = function(matches,msg){
   });
 }
 
-//find the weapon
-INQAttack.getWeapon = function(){
-  //is this a custom weapon?
-  if(INQAttack.options.custom){
-    INQAttack.inqweapon = new INQWeapon();
-  //or are its stats found in the library?
-  } else {
-    //search for the weapon
-    var weapons = matchingObjs("handout", INQAttack.weaponname.split(" "));
-    //try to trim down to exact weapon matches
-    weapons = trimToPerfectMatches(weapons, INQAttack.weaponname);
-    //did none of the weapons match?
-    if(weapons.length <= 0){
-      whisper("*" + INQAttack.weaponname + "* was not found.", INQAttack.msg.playerid);
-      return false;
-    }
-    //are there too many weapons?
-    if(weapons.length >= 2){
-      whisper("Which weapon did you intend to fire?", INQAttack.msg.playerid)
-      _.each(weapons, function(weapon){
-        //use the weapon's exact name
-        var suggestion = "useweapon " + weapon.get("name") + INQAttack.options.toString();
-        //the suggested command must be encoded before it is placed inside the button
-        suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
-        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
-      });
-      //something went wrong
-      return false;
-    }
-    //detail the one and only weapon that was found
-    INQAttack.inqweapon = new INQWeapon(weapons[0]);
-  }
-  //nothing went wrong
-  return true;
-
-}
-
-//find the special ammunition
-INQAttack.getSpecialAmmo = function(){
-  //be sure the user was actually looking for special ammo
-  if(INQAttack.options.Ammo == undefined){
-    //there was nothing to do so nothing went wrong
-    return true;
-  }
-  //is this a custom ammo type?
-  if(INQAttack.options.customAmmo){
-    //record the name of the special ammo inside a weapon object
-    INQAttack.inqammo = new INQWeapon();
-    INQAttack.inqammo.Name = INQAttack.options.Ammo
-    //exit out with everything being fine
-    return true;
-  }
-  //search for the ammo
-  var clips = matchingObjs("handout", INQAttack.options.Ammo.split(" "));
-  //try to trim down to exact ammo matches
-  clips = trimToPerfectMatches(clips, INQAttack.options.Ammo);
-  //did none of the weapons match?
-  if(clips.length <= 0){
-    whisper("*" + INQAttack.options.Ammo + "* was not found.", INQAttack.msg.playerid);
-    return false;
-  }
-  //are there too many weapons?
-  if(clips.length >= 2){
-    whisper("Which Special Ammunition did you intend to fire?", INQAttack.msg.playerid)
-    _.each(clips, function(clip){
-      //specify the exact ammo name
-      INQAttack.options.Ammo = clip.get("name");
-      //construct the suggested command (without the !)
-      var suggestion = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
-      //the suggested command must be encoded before it is placed inside the button
-      suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
-      whisper("[" + clip.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
-    });
-    //something went wrong
-    return false;
-  }
-  //modify the weapon with the clip
-  INQAttack.useAmmo(clips[0]);
-  //nothing went wrong
-  return true;
-}
-
-//parse the special ammo and use it to customize the inqweaon
-INQAttack.useAmmo = function(ammo){
-  //parse the special ammunition
-  INQAttack.inqammo = new INQWeapon(ammo);
-  //only add the special rules of the ammo to the inqweapon, we want every
-  //modification to be highly visible to the player
-  if(INQAttack.inqammo.Special){
-    INQAttack.inqweapon.Special = INQAttack.inqweapon.Special.concat(INQAttack.inqammo.Special);
-  }
-}
-
-//let the given options temporarily overwrite the details of the weapon
-INQAttack.customizeWeapon = function(){
-  for(var label in INQAttack.inqweapon){
-    //only work with labels that options has
-    if(INQAttack.options[label] != undefined){
-      //if label -> array, don't overwrite just add each item on as a link
-      if(Array.isArray(INQAttack.inqweapon[label])){
-        _.each(INQAttack.options[label].split(","), function(element){
-          INQAttack.inqweapon[label].push(new INQLink(element.trim()));
-        });
-      } else {
-        //otherwise simply overwrite the label
-        INQAttack.inqweapon[label] = INQAttack.options[label];
-      }
-    }
-  }
-}
-
+//display all of the results from the current attack
 INQAttack.deliverReport = function(){
   //auto hitting weapons do not roll to hit
   if(INQAttack.autoHit){
@@ -224,6 +114,15 @@ INQAttack.offerReroll = function(){
   attack = "!{URIComponent}" + encodeURIComponent(attack);
   //offer it as a button to the player
   setTimeout(whisper, 100, "[Reroll](" + attack + ")", INQAttack.msg.playerid);
+}
+
+//prepare attack variables for each attack
+INQAttack.prepareVariables = function(){
+  INQAttack.toHit = 0;
+  INQAttack.unnaturalSuccesses = 0;
+  INQAttack.shotsMultiplier = 1;
+  INQAttack.hitsMultiplier = 1;
+
 }
 
 on("ready", function(){

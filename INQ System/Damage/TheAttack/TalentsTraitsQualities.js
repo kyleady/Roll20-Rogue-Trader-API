@@ -59,18 +59,11 @@ INQAttack.accountForForce = function(){
   }
 }
 
-//fist weapons double the character's strength bonus
-INQAttack.accountForFist = function(){
-  if(INQAttack.inqweapon.has("Fist")){
-    INQAttack.SBonus *= 2;
-  }
-}
-
 //storm weapons double the max hits and double the hits per success
 //however, they also double the ammo expended
 INQAttack.accountForStorm = function(){
   if(INQAttack.inqweapon.has("Storm")){
-    INQAttack.shotsMultiplier++;
+    INQAttack.shotsMultiplier *= 2;
   }
 }
 

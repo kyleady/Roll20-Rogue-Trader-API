@@ -3,8 +3,6 @@ INQAttack = INQAttack || {};
 INQAttack.rollToHit = function(){
   //calculate the base roll to hit
   INQAttack.calcToHit();
-  //add in any special rules
-  INQAttack.accountForHitsSpecialRules();
   //determine the weapon's firing mode
   INQAttack.getFiringMode();
   //make the roll to hit
@@ -50,37 +48,43 @@ INQAttack.getFiringMode = function(){
     INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqcharacter.bonus("WS")/3));
     INQAttack.mode = "Semi";
   } else if(/full/i.test(INQAttack.options.RoF)){
-    INQAttack.toHit += -10;
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.toHit += -10;
+    }
     INQAttack.maxHits = INQAttack.inqweapon.Full
     INQAttack.mode = "Full";
   } else if(/lightning/i.test(INQAttack.options.RoF)){
-    INQAttack.toHit += -10;
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.toHit += -10;
+    }
     INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqcharacter.bonus("WS")/2));
     INQAttack.mode = "Full";
   } else if(/called/i.test(INQAttack.options.RoF)){
-    INQAttack.toHit += -20;
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.toHit += -20;
+    }
     INQAttack.maxHits = 1;
     INQAttack.mode = "Single";
   } else { //if(/single/i.test(INQAttack.options.RoF))
-    INQAttack.toHit += 10;
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.toHit += 10;
+    }
     INQAttack.maxHits = 1;
     INQAttack.mode = "Single";
   }
 }
 
 INQAttack.calcToHit = function(){
-  //calculate the roll to hit
-  INQAttack.toHit = 0;
-  //prepare additional variables for determining total hits
-  INQAttack.unnaturalSuccesses = 0;
-  INQAttack.shotsMultiplier = 1;
-  INQAttack.hitsMultiplier = 1;
   //get the stat used to hit
   INQAttack.stat = "BS"
   if(INQAttack.inqweapon.Class == "Melee"){
     INQAttack.stat = "WS";
   } else if(INQAttack.inqweapon.Class == "Psychic"){
-    INQAttack.stat = "Wp";
+    INQAttack.stat = INQAttack.inqweapon.FocusStat;
+    //some psychic attacks have a base modifier
+    INQAttack.toHit += INQAttack.inqweapon.FocusModifier;
+    //psychic attacks get a bonus for the psy rating it was cast at
+    INQAttack.toHit += INQAttack.PsyRating * 5;
   }
   //use the stat
   INQAttack.toHit += Number(INQAttack.inqcharacter.Attributes[INQAttack.stat]);

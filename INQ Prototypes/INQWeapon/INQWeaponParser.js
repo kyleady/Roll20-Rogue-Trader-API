@@ -16,6 +16,8 @@ function INQWeaponParser(){
     regex += "(?:SB|Strength\\s*Bonus)\\s*x?\\s*(\\d*)\s*k?(?:|m|metres|meters)";
     regex += "|";
     regex += "(\\d*)\\s*k?(?:|m|metres|meters)\\s*x?\\s*(?:PR|Psy\\s*Rating)\\s*x?\\s*(\\d*)";
+    regex += "|"
+    regex += "Self"
     regex += ")\\s*$";
     var re = new RegExp(regex, "i");
     var matches = content.match(re);
@@ -28,6 +30,9 @@ function INQWeaponParser(){
       }
       if(matches[3] != null){
         this.Range = matches[3] + "PR";
+      }
+      if(matches[4] != null){
+        this.Range = 0;
       }
     } else {
       whisper("Invalid Range");
@@ -208,6 +213,71 @@ function INQWeaponParser(){
       whisper("Invalid Availability")
     }
   }
+  this.parseFocusPower = function(content){
+    var regex = "^\\s*"
+    regex += "(Opposed)?\\s*"
+    regex += "\\w+\\s*"
+    regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
+
+    regex += "("
+    regex += "Weapon\\s+Skill|";
+    regex += "Ballistic\\s+Skill|";
+    regex += "Strength|";
+    regex += "Toughness|";
+    regex += "Agility|";
+    regex += "Intelligence|";
+    regex += "Perception|";
+    regex += "Willpower|";
+    regex += "Fellowship|";
+    regex += "Corruption|";
+    regex += "Psyniscience";
+    regex += ")"
+
+    regex += "\\s*Test\\s*$"
+    var re = RegExp(regex, "i");
+    var matches = content.match(re);
+    if(matches){
+      this.Class = "Psychic";
+      if(matches[1]){
+        this.Opposed = true;
+      }
+      this.FocusModifier = Number(matches[2].replace("–","-") + matches[3]);
+      if(/Weapon\s+Skill/i.test(matches[4])){
+        this.FocusStat = "WS";
+      } else if(/Ballistic\s+Skill/i.test(matches[4])){
+        this.FocusStat = "BS";
+      } else if(/Strength/i.test(matches[4])){
+        this.FocusStat = "S";
+      } else if(/Toughness/i.test(matches[4])){
+        this.FocusStat = "T";
+      } else if(/Agility/i.test(matches[4])){
+        this.FocusStat = "Ag";
+      } else if(/Intelligence/i.test(matches[4])){
+        this.FocusStat = "It";
+      } else if(/Perception/i.test(matches[4])){
+        this.FocusStat = "Per";
+      } else if(/Willpower/i.test(matches[4])){
+        this.FocusStat = "Wp";
+      } else if(/Fellowship/i.test(matches[4])){
+        this.FocusStat = "Fe";
+      } else if(/Corruption/i.test(matches[4])){
+        this.FocusStat = "Corruption";
+      } else if(/Psyniscience/i.test(matches[4])){
+        this.FocusStat = "Per";
+      }
+    } else {
+      whisper("Invalid Focus Power")
+    }
+  }
+  this.parseOpposed = function(content){
+    var matches = content.match(/^\s*(Yes|No)\s*$/i);
+    if(matches){
+      this.Opposed = matches[1].toLowerCase() == "yes";
+      this.Class = "Psychic";
+    } else {
+      whisper("Invalid Opposed")
+    }
+  }
   //use all of the above parsing functions to transform text into the INQWeapon prototype
   this.parse = function(obj){
     //parse out the content of a handout
@@ -245,6 +315,10 @@ function INQWeaponParser(){
         this.parseRenown(content);
       } else if(/^\s*availability/i.test(name)){
         this.parseAvailability(content);
+      } else if(/^\s*focus\s*power\s*$/i.test(name)){
+        this.parseFocusPower(content);
+      } else if(/^\s*Opposed\s*$/i.test(name)){
+        this.parseOpposed(content);
       }
     }
 

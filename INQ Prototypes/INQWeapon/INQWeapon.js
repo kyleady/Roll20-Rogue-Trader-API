@@ -20,6 +20,8 @@ function INQWeapon(obj){
   this.Requisition    = 0;
   this.Renown         = "";
   this.Availability   = "";
+  this.FocusModifier  = 0;
+  this.FocusStat      = "Wp";
 
   //allow the user to immediately parse a weapon in the constructor
   if(obj != undefined){
