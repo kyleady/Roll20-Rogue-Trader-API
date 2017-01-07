@@ -64,7 +64,7 @@ INQAttack.getWeapon = function(){
 //find the special ammunition
 INQAttack.getSpecialAmmo = function(){
   //be sure the user was actually looking for special ammo
-  if(INQAttack.options.Ammo == undefined){
+  if(!INQAttack.options.Ammo){
     //there was nothing to do so nothing went wrong
     return true;
   }

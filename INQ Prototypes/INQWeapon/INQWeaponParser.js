@@ -2,7 +2,7 @@
 function INQWeaponParser(){
   //the individual rule parsing functions
   this.parseClass = function(content){
-    var matches = content.match(/^\s*(melee|pistol|basic|heavy|psychic)\s*$/i);
+    var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic)\s*$/i);
     if(matches){
       this.Class = matches[1].toTitleCase();
     } else {

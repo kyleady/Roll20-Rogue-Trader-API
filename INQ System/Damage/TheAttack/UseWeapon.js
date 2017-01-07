@@ -12,7 +12,9 @@ INQAttack.useWeapon = function(matches,msg){
   INQAttack.msg = msg;
   //if nothing was selected and the player is the gm, auto hit with no roll
   if(INQAttack.msg.selected == undefined || INQAttack.msg.selected == []){
-    INQAttack.msg.selected = [{_type: "unique"}];
+    if(playerIsGM(INQAttack.msg.playerid)){
+      INQAttack.msg.selected = [{_type: "unique"}];
+    }
   }
   //repeat for each character selected
   eachCharacter(INQAttack.msg, function(character, graphic){
