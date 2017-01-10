@@ -194,18 +194,26 @@ function INQParser(object){
   //extract the text out of an object
   this.objectToText = function(obj){
     var Notes = "";
+    var GMNotes = "";
     //compile the notes based on the object type
     switch(obj.get("_type")){
       case "handout":
-        obj.get("notes", function(notes){Notes += notes;});
+        obj.get("notes", function(notes){Notes = notes;});
         break;
       case "character":
-        obj.get("bio", function(bio){Notes += bio;});
+        obj.get("bio", function(bio){Notes = bio;});
         break;
     }
-    obj.get("gmnotes", function(gmnotes){Notes += "<br>" + gmnotes;});
+    obj.get("gmnotes", function(gmnotes){GMNotes = gmnotes;});
+    //be sure a null result was not given
+    if(Notes == "null"){
+      Notes = "";
+    }
+    if(GMNotes == "null"){
+      GMNotes = "";
+    }
     //save the result
-    this.Text = Notes;
+    this.Text = Notes + "<br>" + GMNotes;
   }
 
   //allow the user to specify the object to parse in the constructor

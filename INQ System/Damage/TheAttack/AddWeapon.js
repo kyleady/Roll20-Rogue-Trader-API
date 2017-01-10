@@ -88,13 +88,16 @@ INQAttack.addWeapon = function(matches, msg){
     var inqcharacter = new INQCharacter(character, graphic);
     //try to insert the link before continuing
     if(!INQAttack.insertWeaponLink(inqweapon, character)){return;}
-    //add the token action to the character
-    createObj("ability", {
-      characterid: character.id,
-      name: inqweapon.Name,
-      action: inqweapon.toAbility(inqcharacter, ammoNames),
-      istokenaction: true
-    });
+    //only add an ability if it isn't gear
+    if(inqweapon.Class != "Gear"){
+      //add the token action to the character
+      createObj("ability", {
+        characterid: character.id,
+        name: inqweapon.Name,
+        action: inqweapon.toAbility(inqcharacter, ammoNames),
+        istokenaction: true
+      });
+    }
     //report the success
     whisper("*" + inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*");
   });

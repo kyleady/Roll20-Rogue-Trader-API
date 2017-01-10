@@ -26,6 +26,8 @@ INQAttack.insertWeaponLink = function(inqweapon, character){
     //determine where we want to place the weapon
     if(inqweapon.Class == "Psychic"){
       var titleRe = /Psychic\s*Powers/i;
+    } else if(inqweapon.Class == "Gear"){
+      var titleRe = /Gear/i;
     } else {
       var titleRe = /Weapons/i;
     }
@@ -84,28 +86,31 @@ INQAttack.insertWeaponLink = function(inqweapon, character){
         //just insert the psychic ability into the first group found
         insertHere = groups[0].LastIndex;
       } else {
-        //prioritize Weapons(Requisitioned) first
+        //prioritize Weapons/Gear(Requisitioned) first
         _.each(groups, function(group){
-          //if a place for the weapon was found, quit
+          //if a place for the weapon/gear was found, quit
           if(insertHere){return;}
           //is this the title we want?
-          if(/^\s*weapons\s*\(\s*requisitioned\s*\)\s*$/i.test(group.Name)){
+          if(/^\s*\w+\s*\(\s*requisitioned\s*\)\s*$/i.test(group.Name)){
             insertHere = group.LastIndex;
           }
         });
-        //if Weapons(Standard Issue) is found, create Weapons(Requisitioned)
+        //if Weapons|Gear(Standard Issue) is found, create Weapons|Gear(Requisitioned)
         _.each(groups, function(group){
-          //if the weappon already has a place for itself, don't try to create one
+          //if the weappon/gear already has a place for itself, don't try to create one
           if(insertHere){return;}
           //is this the title we want?
-          if(/^\s*weapons\s*\(\s*standard\s*issue\s*\)\s*$/i.test(group.Name)){
-            //insert a new group, Weapons(Requisitioned), here
+          if(/^\s*\w+\s*\(\s*standard\s*issue\s*\)\s*$/i.test(group.Name)){
+            //insert a new group, with (Requisitioned), here
+            var newTitle = "<strong>";
+            newTitle += group.Name.replace(/standard\s*issue/i, "Requisitioned");
+            newTitle += "</strong>";
             //add an extra line for spacing
-            lines.splice(group.LastIndex+1, 0, "<strong>Weapons(Requisitioned)</strong>", "");
+            lines.splice(group.LastIndex+1, 0, newTitle, "");
             insertHere = group.LastIndex+2;
           }
         });
-        //otherwise just insert the weapon into the first group found
+        //otherwise just insert the weapon/gear into the first group found
         if(!insertHere){
           insertHere = groups[0].LastIndex;
         }

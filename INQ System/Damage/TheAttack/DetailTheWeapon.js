@@ -56,6 +56,11 @@ INQAttack.getWeapon = function(){
     }
     //detail the one and only weapon that was found
     INQAttack.inqweapon = new INQWeapon(weapons[0]);
+    //be sure that the player is not attempting to fire a piece of gear
+    if(INQAttack.inqweapon.Class == "Gear"){
+      whisper("!useWeapon is unable to handle the item *" + INQAttack.inqweapon.toLink() + "*.")
+      return;
+    }
   }
   //nothing went wrong
   return true;

@@ -321,6 +321,10 @@ function INQWeaponParser(){
         this.parseOpposed(content);
       }
     }
+    //if the weapon still has no damage and it isn't a psychic power, it is gear
+    if(this.DamageBase == 0 && this.DiceNumber == 0 && this.Class != "Psychic"){
+      this.Class = "Gear";
+    }
 
     delete this.Content;
   }
