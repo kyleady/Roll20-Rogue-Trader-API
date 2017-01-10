@@ -1,9 +1,12 @@
+//be sure the inqattack object exists before we start working with it
+INQAttack = INQAttack || {};
+
 //gives the listed weapon to the character, adding it to their character sheet
 //and adding a token action to the character
 //you can specify the special ammunition options for the weapon
   //matches[1] - weapon to give to the characters
   //matches[2] - list of special Ammunition
-function addWeapon(matches, msg){
+INQAttack.addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
@@ -83,6 +86,8 @@ function addWeapon(matches, msg){
   eachCharacter(msg, function(character, graphic){
     //parse the character
     var inqcharacter = new INQCharacter(character, graphic);
+    //try to insert the link before continuing
+    if(!INQAttack.insertWeaponLink(inqweapon, character)){return;}
     //add the token action to the character
     createObj("ability", {
       characterid: character.id,
@@ -103,5 +108,5 @@ on("ready", function(){
   regex += ")?";
   regex += "\\s*$";
   var re = RegExp(regex, "i");
-  CentralInput.addCMD(re, addWeapon, true);
+  CentralInput.addCMD(re, INQAttack.addWeapon, true);
 });
