@@ -24,11 +24,12 @@ function eachCharacter(msg, func){
     //are we defaulting to selecting everying on the player page?
     //gm only
     if(playerIsGM(msg.playerid)){
-      //just select every token on the player's map that is not simply a
+      //just select every token on the gm's page that is not simply a
       //drawing and is on the object layer (the layer players can see and
       //interact with)
+      var gmObj = getObj("player", msg.playerid)
       msg.selected = findObjs({
-          _pageid: Campaign().get("playerpageid"),
+          _pageid: gmObj.get("_lastpage"),
           _type: "graphic",
           _subtype: "token",
           isdrawing: false,

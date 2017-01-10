@@ -3,7 +3,7 @@
 function fateHandler(matches,msg){
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
-      var Fate = attrValue("Fate",{characterid: character.id});
+      var Fate = attrValue("Fate",{characterid: character.id, graphicid: graphic.id});
       var name = character.get("name");
 
       //exit if the character does not have Fate Points
@@ -19,7 +19,7 @@ function fateHandler(matches,msg){
         //announce that the player is spending a fate point
         sendChat("System", "/desc - " + name + " spends a Fate Point!");
         //reduce the number of fate points by one
-        attrValue("Fate",{setTo: Fate - 1, characterid: character.id});
+        attrValue("Fate",{setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
         //report what remains
         var finalReport = name + " has [[" + Fate + "-1]] Fate Point";
         if(Fate-1 != 1){
