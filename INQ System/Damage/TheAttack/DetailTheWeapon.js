@@ -48,7 +48,7 @@ INQAttack.getWeapon = function(){
         //use the weapon's exact name
         var suggestion = "useweapon " + weapon.get("name") + INQAttack.options.toString();
         //the suggested command must be encoded before it is placed inside the button
-        suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+        suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
         whisper("[" + weapon.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
       });
       //don't continue unless you are certain what the user wants
@@ -99,7 +99,7 @@ INQAttack.getSpecialAmmo = function(){
       //construct the suggested command (without the !)
       var suggestion = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
       //the suggested command must be encoded before it is placed inside the button
-      suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+      suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
       whisper("[" + clip.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
     });
     //something went wrong

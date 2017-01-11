@@ -113,7 +113,7 @@ INQAttack.offerReroll = function(){
   //offer a reroll instead of rolling the damage
   var attack = "useweapon " + INQAttack.inqweapon.Name + INQAttack.options.toString();
   //encode the attack
-  attack = "!{URIComponent}" + encodeURIComponent(attack);
+  attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
   setTimeout(whisper, 100, "[Reroll](" + attack + ")", INQAttack.msg.playerid);
 }

@@ -23,7 +23,7 @@ function reloadWeapon(matches, msg){
         var name = ammoObj.get("name").replace(/^Ammo - /, "");
         var suggestion = "reload " + name;
         //the suggested command must be encoded before it is placed inside the button
-        suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+        suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
         whisper("[" + name + "](" + suggestion  + ")", msg.playerid);
       });
       return;

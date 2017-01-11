@@ -39,7 +39,7 @@ INQAttack.addWeapon = function(matches, msg){
         suggestion += "(" + ammoStr + ")";
       }
       //the suggested command must be encoded before it is placed inside the button
-      suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+      suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
       whisper("[" + weapon.get("name") + "](" + suggestion  + ")", msg.playerid);
     });
     //don't continue unless you are certain what the user wants
@@ -72,7 +72,7 @@ INQAttack.addWeapon = function(matches, msg){
           //construct the suggested command (without the !)
           var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
           //the suggested command must be encoded before it is placed inside the button
-          suggestion = "!{URIComponent}" + encodeURIComponent(suggestion);
+          suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
           whisper("[" + clip.get("name") + "](" + suggestion  + ")", msg.playerid);
         });
         //something went wrong
