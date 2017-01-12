@@ -23,7 +23,7 @@ INQAttack.useWeapon = function(matches,msg){
     //reset the report
     INQAttack.Reports = {};
     //prepare attack variables for each character's attack
-    INQAttack.prepareVariables();
+    INQAttack.prepareVariables();4
     //detail the character (or make a dummy character)
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
     //get the weapon specified and be sure nothing went wrong
@@ -111,7 +111,7 @@ INQAttack.offerReroll = function(){
   //the reroll will not use up any ammo
   INQAttack.options.freeShot = "true";
   //offer a reroll instead of rolling the damage
-  var attack = "useweapon " + INQAttack.inqweapon.Name + INQAttack.options.toString();
+  var attack = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
   //encode the attack
   attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
