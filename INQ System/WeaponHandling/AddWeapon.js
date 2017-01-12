@@ -6,6 +6,9 @@ INQAttack = INQAttack || {};
 //you can specify the special ammunition options for the weapon
   //matches[1] - weapon to give to the characters
   //matches[2] - list of special Ammunition
+  //matches[3] - the clip size of the weapon. If it didn't already have a clip,
+               //it will make the assumption that it is the quantity of
+               //consumable items and add the note on the player sheet.
 INQAttack.addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
@@ -19,6 +22,9 @@ INQAttack.addWeapon = function(matches, msg){
   if(matches[2]){
     var ammoStr = matches[2];
     var ammoNames = matches[2].split(",");
+  }
+  if(matches[3]){
+    var quantity =matches[3];
   }
   //search for the weapon first
   var weapons = matchingObjs("handout", name.split(" "));
@@ -87,14 +93,14 @@ INQAttack.addWeapon = function(matches, msg){
     //parse the character
     var inqcharacter = new INQCharacter(character, graphic);
     //try to insert the link before continuing
-    if(!INQAttack.insertWeaponLink(inqweapon, character)){return;}
+    if(!INQAttack.insertWeaponLink(inqweapon, character, quantity)){return;}
     //only add an ability if it isn't gear
     if(inqweapon.Class != "Gear"){
       //add the token action to the character
       createObj("ability", {
         characterid: character.id,
         name: inqweapon.Name,
-        action: inqweapon.toAbility(inqcharacter, ammoNames),
+        action: inqweapon.toAbility(inqcharacter, ammoNames, quantity),
         istokenaction: true
       });
     }
@@ -105,9 +111,12 @@ INQAttack.addWeapon = function(matches, msg){
 
 on("ready", function(){
   var regex = "^!\\s*add\\s*weapon";
-  regex += "\\s+(\\S[^\\(\\)]*)";
+  regex += "\\s+(\\S[^\\(\\)\\[\\]]*)";
   regex += "(?:";
   regex += "\\(([^\\(\\)]+)\\)";
+  regex += ")?";
+  regex += "(?:";
+  regex += "\\[\\s*x\\s*(\\d+)\\s*\\]";
   regex += ")?";
   regex += "\\s*$";
   var re = RegExp(regex, "i");

@@ -3,7 +3,7 @@ INQAttack = INQAttack || {};
 
 //insert the given weapon into the list of character Requisitioned Weapons
 //if it is a Psychic Power, it will instead be listed under Psychic Powers
-INQAttack.insertWeaponLink = function(inqweapon, character){
+INQAttack.insertWeaponLink = function(inqweapon, character, quantity){
   //get the character bio and gmnotes
   var charBio = "";
   character.get("bio", function(bio){
@@ -120,7 +120,7 @@ INQAttack.insertWeaponLink = function(inqweapon, character){
         insertHere--;
       }
       //insert the inqweapon link where you are told
-      lines.splice(insertHere+1, 0, inqweapon.toLink());
+      lines.splice(insertHere+1, 0, inqweapon.toLink(quantity));
       //reconstruct the bio/gmnotes
       notes = lines.join("<br>");
       //note that the weapon was inserted

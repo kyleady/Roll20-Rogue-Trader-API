@@ -116,7 +116,7 @@ function INQWeapon(obj){
   //prototype -> text functions
 
   //turns the weapon prototype into text for use within a character's macros
-  this.toAbility = function(inqcharacter, ammo){
+  this.toAbility = function(inqcharacter, ammo, quantity){
     var output = "!useWeapon ";
     //start with the weapon's exact name
     output += this.Name;
@@ -185,6 +185,10 @@ function INQWeapon(obj){
         options.Ammo = options.Ammo.replace(/\|$/,"");
         options.Ammo += "}";
       }
+    }
+    //overwrites the clip with the specified quantity
+    if(quantity != undefined){
+      options.Clip = quantity;
     }
     output += options.toString();
     return output;
