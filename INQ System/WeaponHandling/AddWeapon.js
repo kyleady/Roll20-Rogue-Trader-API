@@ -88,12 +88,17 @@ INQAttack.addWeapon = function(matches, msg){
       ammoNames[i] = clips[0].get("name");
     }
   }
+  //only weapons that have a clip of 0 are assumed to be consumable
+  //weapons that have an alternate clip size do not need a note on the character bio
+  if(quantity != undefined && inqweapon.Clip == 0){
+    var quantityNote = quantity;
+  }
   //add this weapon to each of the selected characters
   eachCharacter(msg, function(character, graphic){
     //parse the character
     var inqcharacter = new INQCharacter(character, graphic);
     //try to insert the link before continuing
-    if(!INQAttack.insertWeaponLink(inqweapon, character, quantity)){return;}
+    if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
     //only add an ability if it isn't gear
     if(inqweapon.Class != "Gear"){
       //add the token action to the character
