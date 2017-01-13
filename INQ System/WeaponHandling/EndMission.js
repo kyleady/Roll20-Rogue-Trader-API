@@ -2,7 +2,7 @@
   //reset all of the attributes of each character
   //clean out the pile up of ammo notes
   //take away all of the requisitioned items and weapons
-  //delete any of the abilities associated with the removed weapons
+  //BUT DOES NOT delete any of the abilities associated with the removed weapons
 function endMission(matches, msg){
   eachCharacter(msg, function(character, graphic){
     //get every attribute the character has
@@ -16,8 +16,6 @@ function endMission(matches, msg){
         attrObj.set("current", attrObj.get("max"));
       }
     });
-    //create a list of the weapons that were removed
-    var removedWeapons = [];
     //remove all of the requisitioned weapons and gear
     //get the character bio and gmnotes
     var charBio = "";
@@ -64,12 +62,6 @@ function endMission(matches, msg){
         //work with each link that is within a requisitioned list
         } else if(withinSection
                && linkRe.test(lines[i])){
-          //we only need to save the weapons
-          if(withinSection == "weapons"){
-            //save the exact name of the weapon
-            var inqlink = new INQLink(lines[i]);
-            removedWeapons.push(inqlink.Name);
-          }
           //delete this line
           lines.splice(i,1);
           //move back up one line to account for the deleted line
@@ -87,24 +79,6 @@ function endMission(matches, msg){
     //save the modifications to the bio/gmnotes
     character.set("bio",     charNotes[0]);
     character.set("gmnotes", charNotes[1]);
-    //check each ability for the removed weapons
-    var abilityObjs = findObjs({_type: "ability", characterid: character.id});
-    _.each(abilityObjs, function(abilityObj){
-      var name   = abilityObj.get("name");
-      var action = abilityObj.get("action");
-      //check every weapon link we removed
-      _.each(removedWeapons, function(removedWeapon){
-        //if the ability obj still exists
-        //AND the ability is the !useWeapon api command for this exact weapon
-        if(abilityObj
-        && action.indexOf("!useWeapon " + removedWeapon + "{") == 0){
-          //delete this ability
-          abilityObj.remove();
-          //we don't need to point to this deleted ability any more
-          abilityObj = undefined;
-        }
-      });
-    });
     whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
   });
 }

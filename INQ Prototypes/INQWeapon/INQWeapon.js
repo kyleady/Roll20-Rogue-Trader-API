@@ -116,12 +116,12 @@ function INQWeapon(obj){
   //prototype -> text functions
 
   //turns the weapon prototype into text for use within a character's macros
-  this.toAbility = function(inqcharacter, ammo, quantity){
+  this.toAbility = function(inqcharacter, ammo, options){
     var output = "!useWeapon ";
     //start with the weapon's exact name
     output += this.Name;
     //create the options hash
-    var options = new Hash();
+    var options = options || new Hash();
     //include a toHit modifier unless the weapon auto hits
     //include RoF options unless it auto hits
     if(!this.has("Spray")){
@@ -185,10 +185,6 @@ function INQWeapon(obj){
         options.Ammo = options.Ammo.replace(/\|$/,"");
         options.Ammo += "}";
       }
-    }
-    //overwrites the clip with the specified quantity
-    if(quantity != undefined){
-      options.Clip = quantity;
     }
     output += options.toString();
     return output;
