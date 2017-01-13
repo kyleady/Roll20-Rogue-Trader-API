@@ -110,13 +110,19 @@ on("chat:message", function(msg) {
       whisper("Dam: " + DamObj.get("current") + " " + DamTypeObj.get("current") + ", Pen: " +  PenObj.get("current") + ", Felling: " + FellObj.get("current"));
     }
 
+    //create a button to report the lowest damage roll
+    var lowestButton = "<strong>Lowest</strong>: "
+    lowestButton += "[" + lowest.toString() + "]";
+    lowestButton += "("
+    lowestButton += "!{URIFixed}" + encodeURIFixed("Crit?");
+    lowestButton += ")";
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
-      whisper('<strong>Lowest</strong>: [' + lowest.toString() + "](!Crit?)");
+      whisper(lowestButton);
     } else {
       //report the highest roll publicly
-      sendChat("",'/desc <strong>Lowest</strong>: [' + lowest.toString() + "](!Crit?)")
+      sendChat("","/desc " + lowestButton)
     }
 
     //save the damage variables to their maximums as well
