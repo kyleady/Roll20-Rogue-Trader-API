@@ -1,73 +1,89 @@
 //takes the handout object of a weapon and turns it into the INQWeapon Prototype
 function INQWeaponParser(){
-  //the text that will be parsed
-  this.Text = "";
-
-  //parse out the weapon stats
-  this.parseClass = function(){
-    var regex = "<(?:strong|em)>\\s*Class\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(Melee|Pistol|Basic|Heavy)";
-    regex += "\\s*(?:<br>|\n|$)";
-    var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+  //the individual rule parsing functions
+  this.parseClass = function(content){
+    var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic)\s*$/i);
     if(matches){
       this.Class = matches[1].toTitleCase();
+    } else {
+      whisper("Invalid Class");
     }
   }
-  this.parseRange = function(){
-    var regex = "<(?:strong|em)>\\s*Range\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(?:"
-    regex += "(\\d+)k?m";
+  this.parseRange = function(content){
+    var regex = "^\\s*(?:"
+    regex += "(\\d+)\\s*k?(?:|m|metres|meters)";
     regex += "|";
-    regex += "(?:SB|Strength\\s*Bonus)\\s*x\\s*(\\d+)"
-    regex += ")";
-    regex += "\\s*(?:<br>|\n|$)";
+    regex += "(?:SB|Strength\\s*Bonus)\\s*x?\\s*(\\d*)\s*k?(?:|m|metres|meters)";
+    regex += "|";
+    regex += "(\\d*)\\s*k?(?:|m|metres|meters)\\s*x?\\s*(?:PR|Psy\\s*Rating)\\s*x?\\s*(\\d*)";
+    regex += "|"
+    regex += "Self"
+    regex += ")\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
-      if(matches[1]){
+      if(matches[1] != null){
         this.Range = Number(matches[1]);
       }
-      if(matches[2]){
-        this.Range = Number("-" + matches[2])
+      if(matches[2] != null){
+        this.Range = matches[2] + "SB";
       }
+      if(matches[3] != null){
+        this.Range = matches[3] + "PR";
+      }
+      if(matches[4] != null){
+        this.Range = 0;
+      }
+    } else {
+      whisper("Invalid Range");
     }
   }
-  this.parseRoF = function(){
-    var matches = this.Text.match(/<(?:strong|em)>\s*(RoF|Rate of Fire)\s*<\/(?:strong|em)>\s*:\s*(S|-)\s*\/\s*(\d+|-)\s*\/(\d+|-)\s*(<br>|\n\$)/i);
-    var regex = "<(?:strong|em)>\\s*(?:RoF|Rate of Fire)\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(S|-)\\s*";
-    regex += "\\/\\s*(\\d+|-)\\s*";
-    regex += "\\s*\\/\\s*(\\d+|-)";
-    regex += "\\s*(?:<br>|\n|$)";
+  this.parseRoF = function(content){
+    var regex = "^\\s*";
+    regex += "(S|-)";
+    regex += "\\s*\\/\\s*";
+    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
+    regex += "\\s*\\/\\s*";
+    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
+    regex += "\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
-      this.Single = matches[1].toLowerCase() == "s";
-      if(matches[2] != "-"){
+      this.Single = matches[1].toUpperCase() == "S";
+      if(matches[2] == "-"){
+        this.Semi = 0;
+      } else if(Number(matches[2])){
         this.Semi = Number(matches[2]);
+      } else {
+        this.Semi = matches[2].replace(/[ x]/gi,"");
       }
-      if(matches[3] != "-"){
+      if(matches[3] == "-"){
+        this.Full = 0;
+      } else if(Number(matches[3])){
         this.Full = Number(matches[3]);
+      } else {
+        this.Full = matches[3].replace(/[ x]/gi,"");
       }
+    } else {
+      whisper("Invalid RoF");
     }
   }
-  this.parseDamage = function(){
+  this.parseDamage = function(content){
     var link = new INQLinkParser();
-    var regex = "<(?:strong|em)>\\s*(?:Dam|Damage)\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(?:(PR|\\d+)\\s*x\\s*)?";
-    regex += "(\\d+|)\\s*D\\s*(\\d+)";
-    regex += "(?:\\s*(\\+|-)\\s*(\\d+|PR))?";
-    regex += link.regex();
-    regex += "\\s*(?:<br>|\n|$)";
+    var regex = "^\\s*";
+    regex += "(?:(\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?";
+    regex += "(\\d*)\\s*D\\s*(\\d+)";
+    regex += "(?:\\s*(\\+|-)\\s*(\\d+|\\d*\\s*x?\\s*PR))?";
+    regex += "(" + link.regex() + ")";
+    regex += "\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
       if(matches[1]){
-        if(matches[1].toLowerCase() == "pr"){
-          this.DiceMultiplier = "PR";
-        } else {
+        if(Number(matches[1])){
           this.DiceMultiplier = Number(matches[1]);
+        } else {
+          this.DiceMultiplier = matches[1].replace(/[ x]/gi,"");
         }
       }
       if(matches[2] == ""){
@@ -77,47 +93,45 @@ function INQWeaponParser(){
       }
       this.DiceType = Number(matches[3]);
       if(matches[4] && matches[5]){
-        if(matches[5].toLowerCase() == "pr"){
-          this.DamageBase = "PR"
-        } else {
+        if(Number(matches[5])){
           this.DamageBase = Number(matches[4] + matches[5]);
+        } else {
+          this.DamageBase = matches[5].replace(/[ x]/gi,"");
         }
       }
       if(matches[6]){
-        this.DamageType = matches[6].toUpperCase();
+        this.DamageType = new INQLink(matches[6]);
       }
+    } else {
+      whisper("Invalid Damage");
     }
   }
-  this.parsePenetration = function(){
-    var regex = "<(?:strong|em)>\\s*(?:Pen|Penetration)\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(PR|\\d+)";
-    regex += "\\s*(?:<br>|\n|$)";
+  this.parsePenetration = function(content){
+    var regex = "^\\s*";
+    regex += "(\\d*\\s*x?\\s*PR|\\d+)";
+    regex += "\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
-      if(matches[1].toLowerCase() == "pr"){
-        this.Penetration = "PR";
-      } else {
+      if(Number(matches[1])){
         this.Penetration = Number(matches[1]);
+      } else {
+        this.Penetration = matches[1].replace(/[ x]/gi,"");
       }
+    } else {
+      whisper("Invalid Penetration");
     }
   }
-  this.parseClip = function(){
-    var regex = "<(?:strong|em)>\\s*Clip\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(\\d+)";
-    regex += "\\s*(?:<br>|\n|$)";
-    var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+  this.parseClip = function(content){
+    var matches = content.match(/^\s*(\d+)\s*$/);
     if(matches){
       this.Clip = Number(matches[1]);
+    } else {
+      whisper("Invalid Clip")
     }
   }
-  this.parseReload = function(){
-    var regex = "<(?:strong|em)>\\s*(?:Reload|Rld)\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(Free|Half|Full|d+\s+Full)";
-    regex += "\\s*(?:<br>|\n|$)";
-    var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+  this.parseReload = function(content){
+    var matches = content.match(/^\s*(Free|Half|Full|\d+\s+Full)\s*$/i);
     if(matches){
       if(matches[1].toLowerCase() == "free"){
         this.Reload = 0;
@@ -126,104 +140,192 @@ function INQWeaponParser(){
       } else if(matches[1].toLowerCase() == "full"){
         this.Reload = 1;
       } else {
-        matches = matches[1].match(/d+/i);
+        matches = matches[1].match(/\d+/i);
         this.Reload = Number(matches[0]);
       }
+    } else {
+      whisper("Invalid Reload");
     }
   }
-  this.parseSpecialRules = function(){
+  this.parseSpecialRules = function(content){
     var link = new INQLinkParser();
-    var regex = "<(?:strong|em)>\\s*Special\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "\\s*(?:-|((?:" + link.regex() + "\\s*,?\\s*)+))";
-    regex += "\\s*(?:<br>|\n|$)";
+    var regex = "^\\s*(?:-|((?:" + link.regex() + ",)*" + link.regex()  + "))$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
-    if(matches && matches[1]){
-      var rules = [];
-      this.Special = _.map(matches[1].split(","), function(rule){
-        return new INQLink(rule);
-      });
+    var matches = content.match(re);
+    if(matches){
+      if(matches[1]){
+        this.Special = _.map(matches[1].split(","), function(rule){
+          return new INQLink(rule);
+        });
+      }
+    } else {
+      whisper("Invalid Special Rules")
     }
   }
-  this.parseWeight = function(){
-    var regex = "<(?:strong|em)>\\s*Weight\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(\\d+)\\s*kgs?";
-    regex += "\\s*(?:<br>|\n|$)";
-    var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+  this.parseWeight = function(content){
+    var matches = content.match(/^\s*(\d+)(?:\.(\d+))?\s*(?:kg)?s?\s*$/i);
     if(matches){
       this.Weight = Number(matches[1]);
+      if(matches[2]){
+        var fraction = Number(matches[2]);
+        while(fraction > 1){
+          fraction /= 10;
+        }
+        this.Weight += fraction;
+      }
+    } else {
+      whisper("Invalid Weight")
     }
   }
-  this.parseRequisition = function(){
-    var regex = "<(?:strong|em)>\\s*Requisition\\s*<\\/(?:strong|em)>\\s*:\\s*";
-    regex += "(\\d+)";
-    regex += "\\s*(?:<br>|\n|$)";
-    var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+  this.parseRequisition = function(content){
+    var matches = content.match(/^\s*(\d+)\s*$/);
     if(matches){
       this.Requisition = Number(matches[1]);
+    } else {
+      whisper("Invalid Requisition")
     }
   }
-  this.parseRenown = function(){
-    var regex = "<(?:strong|em)>\\s*Renown\\s*<\\/(?:strong|em)>\\s*:\\s*";
+  this.parseRenown = function(content){
+    var regex = "^\\s*";
     regex += "(-|Initiate|Respected|Distinguished|Famed|Hero)";
-    regex += "\\s*(?:<br>|\n|$)";
+    regex += "\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
       if(matches[1] == "-"){
         this.Renown = "Initiate";
       } else {
         this.Renown = matches[1].toTitleCase();
       }
+    } else {
+      whisper("Invalid Renown")
     }
   }
-  this.parseAvailability = function(){
-    var regex = "<(?:strong|em)>\\s*Availability\\s*<\\/(?:strong|em)>\\s*:\\s*";
+  this.parseAvailability = function(content){
+    var regex = "^\\s*";
     regex += "(Ubiquitous|Abundant|Plentiful|Common|Average|Scarce|Rare|Very\s*Rare|Extremely\s*Rare|Near\s*Unique|Unique)";
-    regex += "\\s*(?:<br>|\n|$)";
+    regex += "\\s*$";
     var re = new RegExp(regex, "i");
-    var matches = this.Text.match(re);
+    var matches = content.match(re);
     if(matches){
       this.Availability = matches[1].toTitleCase();
+    } else {
+      whisper("Invalid Availability")
+    }
+  }
+  this.parseFocusPower = function(content){
+    var regex = "^\\s*"
+    regex += "(Opposed)?\\s*"
+    regex += "\\w+\\s*"
+    regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
+
+    regex += "("
+    regex += "Weapon\\s+Skill|";
+    regex += "Ballistic\\s+Skill|";
+    regex += "Strength|";
+    regex += "Toughness|";
+    regex += "Agility|";
+    regex += "Intelligence|";
+    regex += "Perception|";
+    regex += "Willpower|";
+    regex += "Fellowship|";
+    regex += "Corruption|";
+    regex += "Psyniscience";
+    regex += ")"
+
+    regex += "\\s*Test\\s*$"
+    var re = RegExp(regex, "i");
+    var matches = content.match(re);
+    if(matches){
+      this.Class = "Psychic";
+      if(matches[1]){
+        this.Opposed = true;
+      }
+      this.FocusModifier = Number(matches[2].replace("–","-") + matches[3]);
+      if(/Weapon\s+Skill/i.test(matches[4])){
+        this.FocusStat = "WS";
+      } else if(/Ballistic\s+Skill/i.test(matches[4])){
+        this.FocusStat = "BS";
+      } else if(/Strength/i.test(matches[4])){
+        this.FocusStat = "S";
+      } else if(/Toughness/i.test(matches[4])){
+        this.FocusStat = "T";
+      } else if(/Agility/i.test(matches[4])){
+        this.FocusStat = "Ag";
+      } else if(/Intelligence/i.test(matches[4])){
+        this.FocusStat = "It";
+      } else if(/Perception/i.test(matches[4])){
+        this.FocusStat = "Per";
+      } else if(/Willpower/i.test(matches[4])){
+        this.FocusStat = "Wp";
+      } else if(/Fellowship/i.test(matches[4])){
+        this.FocusStat = "Fe";
+      } else if(/Corruption/i.test(matches[4])){
+        this.FocusStat = "Corruption";
+      } else if(/Psyniscience/i.test(matches[4])){
+        this.FocusStat = "Per";
+      }
+    } else {
+      whisper("Invalid Focus Power")
+    }
+  }
+  this.parseOpposed = function(content){
+    var matches = content.match(/^\s*(Yes|No)\s*$/i);
+    if(matches){
+      this.Opposed = matches[1].toLowerCase() == "yes";
+      this.Class = "Psychic";
+    } else {
+      whisper("Invalid Opposed")
     }
   }
   //use all of the above parsing functions to transform text into the INQWeapon prototype
   this.parse = function(obj){
-    //save the object details
-    this.ObjType = obj.get("_type");
-    this.ObjID   = obj.id;
-
-    //save the weapon's name
+    //parse out the content of a handout
+    this.Content = new INQParser(obj);
+    //save the non-text details of the handout
     this.Name = obj.get("name");
+    this.ObjID = obj.id;
+    this.ObjType = obj.get("_type");
 
-    //get the weapon text that will be parsed for details
-    var WeaponNotes = "";
-    obj.get("notes", function(notes){
-      WeaponNotes = notes;
-    });
-
-    //skip the bio of the weapon and only save the details
-    var matches = WeaponNotes.match(/(<(?:em|strong)>.*)$/i);
-    if(matches){
-      this.Text = matches[1];
+    //parse all the rules of the weapon based on the rule name
+    for(var i = 0; i < this.Content.Rules.length; i++){
+      var name = this.Content.Rules[i].Name;
+      var content = this.Content.Rules[i].Content;
+      if(/class/i.test(name)){
+        this.parseClass(content);
+      } else if(/^\s*range\s*$/i.test(name)){
+        this.parseRange(content);
+      } else if(/^\s*(rof|rate\s+of\s+fire)\s*$/i.test(name)){
+        this.parseRoF(content);
+      } else if(/^\s*dam(age)?\s*$/i.test(name)){
+        this.parseDamage(content);
+      } else if(/^\s*pen(etration)?\s*$/i.test(name)){
+        this.parsePenetration(content);
+      } else if(/^\s*clip\s*$/i.test(name)){
+        this.parseClip(content);
+      } else if(/^\s*reload\s*$/i.test(name)){
+        this.parseReload(content);
+      } else if(/^\s*special\s*(rules)?\s*$/i.test(name)){
+        this.parseSpecialRules(content);
+      } else if(/^\s*weight\s*$/i.test(name)){
+        this.parseWeight(content);
+      } else if(/^\s*req(uisition)?\s*$/i.test(name)){
+        this.parseRequisition(content);
+      } else if(/^\s*renown/i.test(name)){
+        this.parseRenown(content);
+      } else if(/^\s*availability/i.test(name)){
+        this.parseAvailability(content);
+      } else if(/^\s*focus\s*power\s*$/i.test(name)){
+        this.parseFocusPower(content);
+      } else if(/^\s*Opposed\s*$/i.test(name)){
+        this.parseOpposed(content);
+      }
+    }
+    //if the weapon still has no damage and it isn't a psychic power, it is gear
+    if(this.DamageBase == 0 && this.DiceNumber == 0 && this.Class != "Psychic"){
+      this.Class = "Gear";
     }
 
-    //parse all the details of the weapon
-    this.parseClass();
-    this.parseRange();
-    this.parseRoF();
-    this.parseDamage();
-    this.parsePenetration();
-    this.parseClip();
-    this.parseReload();
-    this.parseSpecialRules();
-    this.parseWeight();
-    this.parseRequisition();
-    this.parseRenown();
-    this.parseAvailability();
-
-    this.Text = "";
+    delete this.Content;
   }
 }

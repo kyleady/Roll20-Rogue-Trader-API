@@ -45,35 +45,11 @@ function sendToPage(matches,msg){
     return whisper("No matching players were found.")
   }
 
-  //if multiple maps were found, see if we can trim down the results to just exact matches
-  if(mapResults.length >= 2){
-    var exactMapMatches = [];
-    //exact matches are case sensitive
-    _.each(mapResults, function(map){
-      if(map.get("name") == mapPhrase){
-        exactMapMatches.push(map);
-      }
-    });
-    //was there at least one exact match?
-    if(exactMapMatches.length >= 1){
-      mapResults = exactMapMatches;
-    }
-  }
+  //see if we can trim down the results to just exact matches
+  mapResults = trimToPerfectMatches(mapResults, playerPhrase);
 
-  //if multiple players were found, see if we can trim down the results to just exact matches
-  if(playerResults.length >= 2){
-    var exactPlayerMatches = [];
-    //exact matches are case sensitive
-    _.each(playerResults, function(player){
-      if(player.get("_displayname") == playerPhrase){
-        exactPlayerMatches.push(player);
-      }
-    });
-    //was there at least one exact match?
-    if(exactPlayerMatches.length >= 1){
-      playerResults = exactPlayerMatches;
-    }
-  }
+  //see if we can trim down the results to just exact matches
+  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
 
   //if there are still too many map results, make the user specify
   if(mapResults.length >= 2){
@@ -186,19 +162,7 @@ function returnPlayers(matches, msg){
   }
 
   //trim down the results to exact matches if exact matches are found
-  if(playerResults.length >= 2){
-    var exactPlayerMatches = [];
-    //exact matches are case sensitive
-    _.each(playerResults, function(player){
-      if(player.get("_displayname") == playerPhrase){
-        exactPlayerMatches.push(player);
-      }
-    });
-    //was there at least one exact match?
-    if(exactPlayerMatches.length >= 1){
-      playerResults = exactPlayerMatches;
-    }
-  }
+  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
 
   //trim down the results based on who there is to return
   var returningPlayers = [];

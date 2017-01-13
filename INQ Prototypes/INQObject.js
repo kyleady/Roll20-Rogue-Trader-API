@@ -7,12 +7,17 @@ function INQObject(){
   this.Name = "";
 
   //turns the prototype into an html hyperlink
-  this.toLink = function(){
+  this.toLink = function(quantity){
+    var output = "";
     //only return a link if it will go somewhere
     if(this.ObjID != ""){
-      return "<a href=\"http://journal.roll20.net/" + this.ObjType + "/" + this.ObjID + "\">" + this.Name + "</a>";
+      output = "<a href=\"http://journal.roll20.net/" + this.ObjType + "/" + this.ObjID + "\">" + this.Name + "</a>";
     } else {
-      return this.Name;
+      output = this.Name;
     }
+    if(quantity != undefined){
+      output += "(x" + quantity + ")";
+    }
+    return output;
   }
 }

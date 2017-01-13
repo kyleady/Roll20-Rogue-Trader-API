@@ -39,12 +39,9 @@ function statHandler(matches,msg,options){
       var currentAttr = attrValue(statName,{max: false});
       var maxAttr     = attrValue(statName,{max: true, alert: false});
       var name = "";
-    //normally msg.selected is just a list of object ids and types of the
-    //objects you have selected. If this is the case, find the corresponding
-    //character objects.
     } else {
-      var currentAttr = attrValue(statName,{characterid: character.id, max: false});
-      var maxAttr     = attrValue(statName,{characterid: character.id, max: true, alert: false});
+      var currentAttr = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: false});
+      var maxAttr     = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: true, alert: false});
       var name = character.get("name");
     }
 
@@ -109,7 +106,7 @@ function statHandler(matches,msg,options){
       //objects you have selected. If this is the case, find the corresponding
       //character objects.
       } else {
-        attrValue(statName,{setTo: stat, characterid: character.id, max: isMax});
+        attrValue(statName,{setTo: stat, characterid: character.id, graphicid: graphic.id, max: isMax});
       }
 
       //are we showing the result?

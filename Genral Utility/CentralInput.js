@@ -31,12 +31,23 @@ CentralInput.addCMD = function(cmdregex, cmdaction, cmdpublic){
     this.Commands.push(Command);
 }
 
+//encoding function that extends URICompotent to include parenthesies, asterisk, and apostrophe
+function encodeURIFixed(str){
+  return encodeURIComponent(str).replace(/['()*]/g, function(c) {
+    return '%' + c.charCodeAt(0).toString(16);
+  });
+}
+
 //takes the player input and tests each regex to to see if the input is recognized
 //if the input is recognized, the corresponding function is called
 CentralInput.input = function(msg){
   //by default assume that the input was not recognized, until we are told otherwise
   var inputRecognized = false;
-
+  //decode any encoded msgs
+  if(msg.content.indexOf("!{URIFixed}") == 0){
+    msg.content = msg.content.replace("{URIFixed}","");
+    msg.content = decodeURIComponent(msg.content);
+  }
   //step through every Command, testing each one
   for(var i = 0; i < this.Commands.length; i++){
     //is the msg recognized by this command?

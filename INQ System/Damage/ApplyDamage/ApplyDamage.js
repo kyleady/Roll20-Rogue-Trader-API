@@ -102,8 +102,7 @@ function applyDamage (matches,msg){
 
     //Reroll Location after each hit
     if(this.targetType == "character"){
-      var ammoObj = new AmmoTracker;
-      ammoObj.calculateLocation(randomInteger(100));
+      saveHitLocation(randomInteger(100));
     }
 
     //report an exact amount to the gm

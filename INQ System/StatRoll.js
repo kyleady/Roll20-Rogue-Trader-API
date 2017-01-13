@@ -46,10 +46,10 @@ function statRoll(matches, msg, options){
       var name = "";
     } else {
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName,{characterid: character.id});
+      var stat = attrValue(statName,{characterid: character.id, graphicid: graphic.id});
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
-      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, alert: false});
+      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
       //retrive the name of the character that owns the stat
       //and add a bit a formatting for later
       var name = ": " + character.get("name");

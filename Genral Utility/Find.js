@@ -54,6 +54,31 @@ function matchingObjs(types, keywords, additionalCriteria){
   });
 }
 
+//sometimes you need to limit down an array of objects (likely obtained from
+//matchingObjs()) to only results that perfectly match. BUT only trim the array
+//down if there is at least one exact match
+function trimToPerfectMatches(objs, phrase){
+  //exact matches are case sensitive
+  var exactMatches = [];
+  _.each(objs, function(obj){
+    if(obj.get("_type") == "player"){
+      var name = obj.get("_displayname");
+    } else {
+      var name = obj.get("name");
+    }
+    if(name == phrase){
+      exactMatches.push(obj);
+    }
+  });
+  //was there at least one exact match?
+  if(exactMatches.length >= 1){
+    return exactMatches;
+  } else {
+    //otherwise just return what you had in the first place
+    return objs;
+  }
+}
+
 //searches every handout and character sheet for titles that meet the search criteria
 //whispers the first five results to the user and saves the rest to be accessed with !More
 //matches[0] is the same as msg.content

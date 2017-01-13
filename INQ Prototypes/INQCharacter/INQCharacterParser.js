@@ -6,115 +6,107 @@ function INQCharacterParser(){
   //take apart this.Text to find all of the lists
   //currently it assumes that weapons will be in the form of a link
   this.parseLists = function(){
-    var link = new INQLinkParser();
-    var regex = "(?:\\s*(?:<br>|<em>|<strong>|<u>)\\s*){3,}";
-    regex += "(Psychic Powers|Gear|Weapons|Skills|Talents|Traits)";
-    regex += "(?:\\s*(?:<br>|<\\/em>|<\\/strong>|<\\/u>)\\s*){3,}";
-    regex += "((?:"
-    regex += link.regex();
-    regex += "(?:<br>|\n|$)"
-    regex += ")*)";
-    var re = RegExp(regex, "gi");
-    var matches = this.Text.match(re);
+    //empty the previous lists
     var Lists = {};
-    _.each(matches, function(list){
-      re = RegExp(regex, "i");
-      listMatches = list.match(re);
-      if(listMatches){
-        Lists[listMatches[1].toTitleCase()] = [];
-        itemMatches = listMatches[2].split("<br>");
-        _.each(itemMatches, function(item){
-          var inqitem = new INQLinkParser();
-          inqitem.parse(item);
-          if(inqitem.Name && inqitem.Name != ""){
-            Lists[listMatches[1].toTitleCase()].push(inqitem);
-          }
-        });
+    //work through the parsed lists
+    _.each(this.Content.Lists, function(list){
+      var name = list.Name;
+      //be sure the list name is recognized and in the standard format
+      if(/weapon/i.test(name)){
+        name = "Weapons";
+      } else if(/skill/i.test(name)){
+        name = "Skills";
+      } else if(/talent/i.test(name)){
+        name = "Talents";
+      } else if(/trait/i.test(name)){
+        name = "Traits";
+      } else if(/gear/i.test(name)){
+        name = "Gear";
+      } else if(/psychic\s*power/i.test(name)){
+        name = "Psychic Powers";
+      } else {
+        //quit if the name is not approved
+        return false;
       }
+      //save the name of the list
+      Lists[name] = Lists[name] || [];
+      _.each(list.Content, function(item){
+        //make the assumption that each item is a link (or just a simple phrase)
+        var inqitem = new INQLink(item);
+        //only add the item if it was succesfully parsed
+        if(inqitem.Name && inqitem.Name != ""){
+          Lists[name].push(inqitem);
+        }
+      });
     });
     this.List = Lists;
   }
   //parse out the movement of the character
   //assumes movement will be in the form of a table and in a specific order
   this.parseMovement = function(){
-    var regex = "\\s*<table>";
-    regex += "\\s*<tr>";
-    regex += "\\s*<th>\\s*<em>\\s*half\\s*<\\/em>\\s*<\\/th>";
-    regex += "\\s*<th>\\s*<em>\\s*full\\s*<\\/em>\\s*<\\/th>";
-    regex += "\\s*<th>\\s*<em>\\s*charge\\s*<\\/em>\\s*<\\/th>";
-    regex += "\\s*<th>\\s*<em>\\s*run\\s*<\\/em>\\s*<\\/th>";
-    regex += "\\s*<\\/tr>";
-    regex += "\\s*<tr>";
-    regex += "\\s*<th>\\s*(\\d+)\\s*<\\/th>";
-    regex += "\\s*<th>\\s*(\\d+)\\s*<\\/th>";
-    regex += "\\s*<th>\\s*(\\d+)\\s*<\\/th>";
-    regex += "\\s*<th>\\s*(\\d+)\\s*<\\/th>";
-    regex += "\\s*<\\/tr>";
-    regex += "\\s*<\\/table>";
-
-    var re = RegExp(regex, "i");
-    var matches = this.Text.match(re);
-
-    if(matches){
-      this.Movement.Half = Number(matches[1]);
-      this.Movement.Full = Number(matches[2]);
-      this.Movement.Charge = Number(matches[3]);
-      this.Movement.Run = Number(matches[4]);
-    }
+    var Movement = {};
+    //search the parsed tables for movement
+    _.each(this.Content.Tables, function(table){
+      //be sure the name doesn't exist or that it's about movement
+      if(/Move/i.test(table.Name) || table.Name == ""){
+        _.each(table.Content, function(column){
+          //be sure the column is the expected length of 2. Label + value
+          if(column.length == 2){
+            //trim out any bold tags
+            column[0] = column[0].replace(/<\/?(?:strong|em)>/g, "");
+            Movement[column[0]] = column[1];
+          }
+        });
+      }
+    });
+    this.Movement = Movement;
   }
   //saves any notes on the character
   this.parseSpecialRules = function(){
-    var link = new INQLinkParser();
-    var regex = "\\s*(?:<strong>|<em>)";
-    regex += "([^<>]+)";
-    regex += "(?:<\\/strong>|<\\/em>)\\s*:\\s*";
-    regex += "(\\S(?:[^<>$]|"
-    regex += link.regex();
-    regex += ")+)";
-    regex += "(?:<br>|\n|$)";
-    var re = RegExp(regex, "gi");
-    var matches = this.Text.match(re);
-    var Rules = [];
-    _.each(matches, function(rule){
-      re = RegExp(regex, "i");
-      ruleMatches = rule.match(re);
-      var inqrule = {
-        Name: ruleMatches[1],
-        Rule: ruleMatches[2]
-      }
-      Rules.push(inqrule);
-    });
-    this.SpecialRules = Rules;
+    this.SpecialRules = this.Content.Rules;
   }
-  //the full parsing of the character
-  this.parse = function(character){
-    var notes = "";
-    character.get("bio", function(bio){
-      notes += bio;
-    });
-    notes += "<br>";
-    character.get("gmnotes", function(gmnotes){
-      notes += gmnotes;
-    });
-    this.Text = notes;
-
-    this.Name = character.get("name");
-    this.ObjID = character.id;
-    this.ObjType = character.get("_type");
-
-    this.parseLists();
-    this.parseMovement();
-    this.parseSpecialRules();
-
+  //saves every attribute the character has
+  this.parseAttributes = function(graphic){
+    //start with the character sheet attributes
     var attributes = findObjs({
       _type: "attribute",
       characterid: this.ObjID
     });
-
     for(var i = 0; i < attributes.length; i++){
-      this.Attributes[attributes[i].get("name")] = attributes[i].get("max");
+      this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
+    }
+    //when working with a generic enemy's current stats, we need to check for temporary values
+    //generic enemies are those who represent a character, yet none of their stats are linked
+    if(graphic != undefined
+    && graphic.get("bar1_link") == ""
+    && graphic.get("bar2_link") == ""
+    && graphic.get("bar3_link") == ""){
+      //roll20 stores token gmnotes in URI component
+      var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
+      //create a hash of the temporary attributes
+      var tempAttrs = new Hash(gmnotes);
+      //overwrite any values detailed here
+      for(var k in tempAttrs){
+        this.Attributes[k] = Number(tempAttrs[k]);
+      }
+    }
+  }
+  //the full parsing of the character
+  this.parse = function(character, graphic){
+    this.Content = new INQParser(character);
+    this.Name = character.get("name");
+    this.ObjID = character.id;
+    this.ObjType = character.get("_type");
+
+    if(graphic){
+      this.GraphicID = graphic.id;
     }
 
-    this.Text = "";
+    this.controlledby = character.get("controlledby");
+
+    this.parseLists();
+    this.parseMovement();
+    this.parseSpecialRules();
+    this.parseAttributes(graphic);
   }
 }

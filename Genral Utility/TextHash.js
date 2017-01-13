@@ -6,7 +6,7 @@ function Hash(hashString) {
   this.itemRegex = function(options){
     //default to no options
     options = options || [];
-    var itemRegexTxt = "([a-zA-Z0-9][a-zA-Z0-9\\s]*):\\s*\"([a-zA-Z0-9\\s]*)\"";
+    var itemRegexTxt = "(\\w[-\\(\\)\\w\\s]*):\\s*\"([,;:-\\w\\s\\(\\)]*)\"";
     if(options["text"]){
       return itemRegexTxt;
     } else {
@@ -15,7 +15,7 @@ function Hash(hashString) {
   }
 
   //allow users to access a regex for recognized hashes
-  this.hashRegex = function(options){
+  this.regex = function(options){
     //default to no options
     options = options || [];
     //being with curly braces
@@ -41,7 +41,7 @@ function Hash(hashString) {
         }
       }
       //remove the last comma
-      output = output.substring(0,output.length-2);
+      output = output.replace(/,\s*$/, "");
       output += "}";
       return output;
   }
@@ -50,8 +50,8 @@ function Hash(hashString) {
   hashString = hashString || "{}";
 
   //find the valid part of the hashString
-  if(this.hashRegex().test(hashString)){
-    hashString = hashString.match(this.hashRegex())[0];
+  if(this.regex().test(hashString)){
+    hashString = hashString.match(this.regex())[0];
   } else {
     return;
   }

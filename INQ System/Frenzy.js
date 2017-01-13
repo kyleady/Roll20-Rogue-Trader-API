@@ -23,13 +23,13 @@ function getFrenzied(matches,msg){
       graphic.set("status_red",false);
       whisper(graphic.get("name") + " is no longer frenzied.",msg.playerid);
       //add this character to the list of characters to have their stats modified
-      toBeModified.push(character);
+      toBeModified.push(graphic);
     //if we are frenzying the token, be sure it wasn't already frenzied
     } else if(frenzyTokens && !graphic.get("status_red")) {
       graphic.set("status_red",true);
       whisper(graphic.get("name") + " is frenzied!",msg.playerid);
       //add this character to the list of characters to have their stats modified
-      toBeModified.push(character);
+      toBeModified.push(graphic);
     }
   });
 

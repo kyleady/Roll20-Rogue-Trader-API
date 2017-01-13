@@ -1,5 +1,8 @@
 //the prototype for characters
-function INQCharacter(obj){
+function INQCharacter(character, graphic){
+  //object details
+  this.controlledby = "";
+
   //default character movement
   this.Movement = {};
   this.Movement.Half = 0;
@@ -55,14 +58,43 @@ function INQCharacter(obj){
 
   this.Attributes.Fate = 0;
   this.Attributes.Corruption = 0;
+  this.Attributes["Unnatural Corruption"] = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
 
   //allow the user to immediately parse a character in the constructor
-  if(obj != undefined){
+  if(character != undefined){
     Object.setPrototypeOf(this, new INQCharacterParser());
-    this.parse(obj);
+    this.parse(character, graphic);
     Object.setPrototypeOf(this, new INQCharacter());
+  }
+
+  //check if the weapon has an inqlink with the given name
+  //and within the given list
+  //return the inqlink if found
+  //if nothing was found, return undefined
+  this.has = function(ability, list){
+    var inqlink = undefined;
+    _.each(this.List[list], function(rule){
+      if(rule.Name == ability){
+        inqlink = rule;
+      }
+    });
+    return inqlink;
+  }
+
+  //return the attribute bonus Stat/10 + Unnatural Stat
+  this.bonus = function(stat){
+    var bonus = 0;
+    //get the bonus from the stat
+    if(this.Attributes[stat]){
+      bonus += Math.floor(this.Attributes[stat]/10);
+    }
+    //add in the unnatural bonus
+    if(this.Attributes["Unnatural " + stat]){
+      bonus += this.Attributes["Unnatural " + stat];
+    }
+    return bonus;
   }
 
   //create a character object from the prototype
@@ -139,6 +171,9 @@ function INQCharacter(obj){
       });
     });
 
+    //note who controlls the character
+    character.set("controlledby", this.controlledby);
+
     //return the resultant character object
     return character;
   }
@@ -166,7 +201,18 @@ on("ready", function(){
       whisper("Too many matches. Please specify.")
     } else {
       var obj = new INQCharacter(objs[0]);
-      log(obj)
+      log("===Movement===")
+      log(obj.Movement)
+      for(var k in obj.List){
+        log("===" + k + "===")
+        _.each(obj.List[k], function(item){
+          log(item)
+        });
+      }
+      log("===Special Rules===")
+      _.each(obj.SpecialRules, function(rule){
+        log(rule)
+      });
       whisper("See log")
     }
   });
