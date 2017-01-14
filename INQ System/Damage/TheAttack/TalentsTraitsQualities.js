@@ -19,9 +19,9 @@ INQAttack.accountForProven = function(){
     //by default, reroll all 1's
     INQAttack.inqweapon.rerollBelow = 1;
     //find the proven value
-    _.each(proven.Groups, function(value){
-      if(Number(value)){
-        INQAttack.inqweapon.rerollBelow = Number(value)-1;
+    _.each(proven, function(value){
+      if(Number(value.Name)){
+        INQAttack.inqweapon.rerollBelow = Number(value.Name)-1;
       }
     });
   }
@@ -72,9 +72,9 @@ INQAttack.accountForBlast = function(){
   var blast = INQAttack.inqweapon.has("Blast");
   if(blast){
     //find the proven value
-    _.each(blast.Groups, function(value){
-      if(Number(value)){
-        INQAttack.hitsMultiplier *= Number(value);
+    _.each(blast, function(value){
+      if(Number(value.Name)){
+        INQAttack.hitsMultiplier *= Number(value.Name);
       }
     });
   }
@@ -94,9 +94,9 @@ INQAttack.accountForSpray = function(){
 INQAttack.accountForDamage = function(){
   var damage = INQAttack.inqweapon.has("Damage");
   if(damage){
-    _.each(damage.Groups, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value)){
-        INQAttack.inqweapon.DamageBase += Number(value);
+    _.each(damage, function(value){
+      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+        INQAttack.inqweapon.DamageBase += Number(value.Name);
       }
     });
   }
@@ -107,11 +107,11 @@ INQAttack.accountForDamage = function(){
 INQAttack.accountForPen = function(){
   var pen = INQAttack.inqweapon.has("Pen");
   if(pen){
-    _.each(pen.Groups, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value)){
-        INQAttack.inqweapon.Penetration += Number(value);
-      } else if(/^\s*=\s*\d+\s*$/.test(value)){
-        INQAttack.inqweapon.Penetration = Number(value.replace("=", ""));
+    _.each(pen, function(value){
+      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+        INQAttack.inqweapon.Penetration += Number(value.Name);
+      } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
+        INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
       }
     });
   }
@@ -122,8 +122,8 @@ INQAttack.accountForPen = function(){
 INQAttack.accountForType = function(){
   var type = INQAttack.inqweapon.has("Type");
   if(type){
-    _.each(type.Groups, function(value){
-      INQAttack.inqweapon.DamageType = new INQLink(value);
+    _.each(type, function(value){
+      INQAttack.inqweapon.DamageType = new INQLink(value.Name);
     });
   }
 }

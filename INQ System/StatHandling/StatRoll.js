@@ -78,7 +78,16 @@ function statRoll(matches, msg, options){
       var whisperGM = "";
     }
     //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
-    sendChat("player|" + msg.playerid , whisperGM + "&{template:default} {{name=<strong>" + statName +  "</strong>" + name + "}} {{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} "  + unnatural_bonus);
+    var output = "&{template:default} ";
+    output += "{{name=<strong>" + statName +  "</strong>" + name + "}} ";
+    if(options["display"]){
+      _.each(options["display"], function(line){
+        output += "{{" + line.Title  + "=" + line.Content + "}}";
+      });
+    }
+    output += "{{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} ";
+    output += unnatural_bonus;
+    sendChat("player|" + msg.playerid , whisperGM + output);
   });
 }
 
