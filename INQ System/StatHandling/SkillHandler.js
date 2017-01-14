@@ -54,19 +54,17 @@ INQSkill.skillHandler = function(matches, msg){
         regex += "\\s*$";
         var re = RegExp(regex, "i");
         var matchingSubgroup = false;
+        var subgroupModifier = -20;
         _.each(skill, function(subgroup){
-          if(re.test(subgroup.Name)){
-            //not that there was at least one match (there should only be one)
-            matchingSubgroup = true;
-            //apply the subgroup's modifier
-            modifier += subgroup.Bonus;
+          if(re.test(subgroup.Name) || /^\s*all\s*$/i.test(subgroup.Name)){
+            //overwrite the subgroup's modifier if it is better
+            if(subgroup.Bonus > subgroupModifier){
+              subgroupModifier = subgroup.Bonus;
+            }
           }
         });
         //if the character does not have a matching subgroup, give them a flat -20 modifier
-        //the same for not even having the group
-        if(!matchingSubgroup){
-          modifier += -20;
-        }
+        modifier += subgroupModifier;
       } else {
         //the skill needs a subgroup but the user didn't supply one
         whisper("Please specify a subgroup for *" + GetLink(skillName) + "*", msg.playerid)
