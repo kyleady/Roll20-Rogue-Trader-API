@@ -150,7 +150,7 @@ function statHandler(matches,msg,options){
         //can everyone see the sheet?
         if(viewers.indexOf("all") != -1){
           //publicly announce the change to everyone
-          sendChat("player|" + msg.playerid, name + attrTable);
+          announce(name + attrTable);
         } else {
           if(viewers[0] != ""){
             //inform each player that can view the attribute of the change

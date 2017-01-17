@@ -87,7 +87,7 @@ function statRoll(matches, msg, options){
     }
     output += "{{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} ";
     output += unnatural_bonus;
-    sendChat("player|" + msg.playerid , whisperGM + output);
+    announce(whisperGM + output);
   });
 }
 

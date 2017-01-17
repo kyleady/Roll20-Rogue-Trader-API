@@ -65,7 +65,7 @@ INQAttack.deliverReport = function(){
         whisper(INQAttack.Reports[report]);
       } else {
         //make the character publicly roll
-        sendChat("player|" + INQAttack.msg.playerid, INQAttack.Reports[report]);
+        announce(INQAttack.Reports[report]);
       }
     }
   });

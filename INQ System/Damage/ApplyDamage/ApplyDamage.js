@@ -108,7 +108,7 @@ function applyDamage (matches,msg){
     //report an exact amount to the gm
     whisper(graphic.get("name") + " took " + damage + " damage.");
     //report an estimate to everyone
-    sendChat("","/desc " + graphic.get("name") + ": [[" +  Math.round(damage * 100 / graphic.get("bar3_max")) + "]]% lost.");
+    announce(graphic.get("name") + ": [[" +  Math.round(damage * 100 / graphic.get("bar3_max")) + "]]% lost.");
   });
   //reset starship damage
   //starship damage is a running tally and needs to be reset when used
