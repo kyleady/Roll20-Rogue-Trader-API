@@ -122,7 +122,7 @@ on("chat:message", function(msg) {
       whisper(lowestButton);
     } else {
       //report the highest roll publicly
-      sendChat("","/desc " + lowestButton)
+      announce(lowestButton)
     }
 
     //save the damage variables to their maximums as well
@@ -172,7 +172,7 @@ on("chat:message", function(msg) {
     if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the one's place a 9?
       if((msg.inlinerolls[0].results.rolls[1].results[0].v - 10*Math.floor(msg.inlinerolls[0].results.rolls[1].results[0].v/10)) == 9){
-          sendChat("The warp","/em makes an unexpected twist. (" + GetLink("Psychic Phenomena") + ")")
+        announce("/em makes an unexpected twist. (" + GetLink("Psychic Phenomena") + ")", "The warp");
       }
     } else if(/^\s*{{\s*name\s*=\s*<strong>\s*BS\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the roll >= 96?

@@ -87,7 +87,7 @@ function initiativeHandler(matches,msg,secondAttempt){
               //report the resultant initiative roll
               //report the result to everyone if it is controlled by someone
               if(character.get("controlledby") != ""){
-                  sendChat("System",graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
+                  announce(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
               } else {
                   //report the result to the gm alone if it is an NPC.
                   whisper(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
@@ -130,7 +130,7 @@ function initiativeHandler(matches,msg,secondAttempt){
     //report the resultant initiative roll
     //report the result to everyone if it is controlled by someone
     if(character.get("controlledby") != ""){
-        sendChat("System",graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
+        announce(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
     } else {
         //report the result to the gm alone if it is an NPC.
         whisper(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");

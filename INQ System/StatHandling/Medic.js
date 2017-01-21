@@ -69,7 +69,7 @@ only heal up to that point until you receive proper care.
     //now that all the healing has been done, set the character's wounds wounds equal to the NewWounds
     Woundsobjs[0].set("current",NewWounds);
     //report the total healing
-    sendChat("", "/desc " + character.get("name") + " has been healed to [[" + NewWounds.toString() + "]]/" + Woundsobjs[0].get("max") + " Wounds.");
+    announce(character.get("name") + " has been healed to [[" + NewWounds.toString() + "]]/" + Woundsobjs[0].get("max") + " Wounds.");
   });
 }
 

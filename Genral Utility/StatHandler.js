@@ -150,7 +150,7 @@ function statHandler(matches,msg,options){
         //can everyone see the sheet?
         if(viewers.indexOf("all") != -1){
           //publicly announce the change to everyone
-          sendChat("player|" + msg.playerid, name + attrTable);
+          announce(name + attrTable);
         } else {
           if(viewers[0] != ""){
             //inform each player that can view the attribute of the change
@@ -171,3 +171,36 @@ function statHandler(matches,msg,options){
     }
   });
 }
+
+//enforce the correct spelling, capitalization, and spelling for your attributes
+function correctAttributeName(name){
+  return name.trim();
+}
+
+on("ready", function(){
+  var yourAttributes = [
+    //list any attributes you want to restrict your access to here
+  ];
+  var regex = "!\\s*";
+  regex += "(|max)\\s*";
+  regex += "attr\\s+";
+  if(yourAttributes.length <= 0){
+    regex += "(\\S[^-\\+=/\\?\\*]*)\\s*";
+  } else {
+    regex += "("
+    _.each(yourAttributes, function(yourAttribute){
+      regex += yourAttribute + "|";
+    });
+    regex = regex.replace(/\|$/, "");
+    regex += ")";
+  }
+  regex += "\\s*" + numModifier.regexStr();
+  regex += "\\s*(\d*|max|current)";
+  regex += "\\s*$";
+
+  var re = RegExp(regex, "i");
+  CentralInput.addCMD(re, function(matches, msg){
+    matches[2] = correctAttributeName(matches[2]);
+    statHandler(matches, msg);
+  }, true);
+});
