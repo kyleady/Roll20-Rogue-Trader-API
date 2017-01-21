@@ -19,5 +19,5 @@ numModifier.calc = function(stat, operator, modifier){
 }
 
 numModifier.regexStr = function(){
-  return '(\\?\\s*=|\\?\\s*\\+|\\?\\s*-|\\?\\s*\\*|\\?\\s*\\/|=|\\+\\s*=|-\\s*=|\\*\\s*=|\\/\\s*=)\s*(|\\+|-)'
+  return '(\\?\\s*\\+|\\?\\s*-|\\?\\s*\\*|\\?\\s*\\/|\\?|=|\\+\\s*=|-\\s*=|\\*\\s*=|\\/\\s*=)\s*(|\\+|-)'
 }
