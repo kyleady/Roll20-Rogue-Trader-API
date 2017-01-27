@@ -50,11 +50,11 @@ function initiativeHandler(matches,msg,secondAttempt){
     //is the user just making a querry?
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
-      var initBonus = calcInitBonus(character);
+      var initBonus = calcInitBonus(character, graphic);
 
       //warn the user and exit if the bonus does not exist
       if(initBonus == undefined){
-        return whisper(character.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.",msg.playerid);
+        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", msg.playerid);
       }
 
       //modify the Initiative Bonus based on the text operator
@@ -62,37 +62,35 @@ function initiativeHandler(matches,msg,secondAttempt){
 
       //report the initiative bonus for the character to just the user
       //exit out now that you have made this report
-      return whisper(character.get("name") + "\'s Initiative: " + initBonus + " + D10",msg.playerid);
+      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", msg.playerid);
     }
 
     //is the gm trying to directly edit a previous initiative roll?
     if(operator.indexOf("=") != -1){
       //search for the selected graphic in the turn order
       var graphicListed = false;
-
       //step through the turn order
       for(var index = 0; index < turnorder.length; index++){
+        //is the token listed here?
+        if(graphic.id == turnorder[index].id){
+          //note that a graphic was found
+          graphicListed = true;
 
-          //is the token listed here?
-          if(graphic.id == turnorder[index].id){
-              //note that a graphic was found
-              graphicListed = true;
+          //note that this turn may no longer be in sequential order
+          turnorder[index].modified = true;
+          //edit the previous initiative roll as instructed
+          //go by the text modifier
+          turnorder[index].pr = numModifier.calc(turnorder[index].pr, operator, modifier).toString();
 
-              //note that this turn may no longer be in sequential order
-              turnorder[index].modified = true;
-              //edit the previous initiative roll as instructed
-              //go by the text modifier
-              turnorder[index].pr = numModifier.calc(turnorder[index].pr, operator, modifier).toString();
-
-              //report the resultant initiative roll
-              //report the result to everyone if it is controlled by someone
-              if(character.get("controlledby") != ""){
-                  announce(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
-              } else {
-                  //report the result to the gm alone if it is an NPC.
-                  whisper(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
-              }
+          //report the resultant initiative roll
+          //report the result to everyone if it is controlled by someone
+          if(character.get("controlledby") != ""){
+              announce(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
+          } else {
+              //report the result to the gm alone if it is an NPC.
+              whisper(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
           }
+        }
       }
 
       //as long as we found the character token listed at least once, we can
@@ -118,7 +116,7 @@ function initiativeHandler(matches,msg,secondAttempt){
 
     }else{
       //otherwise calculate the bonus as normal.
-      var initBonus = calcInitBonus(character);
+      var initBonus = calcInitBonus(character, graphic);
       //randomize the roll
       var roll = randomInteger(10);
 
@@ -201,52 +199,31 @@ function initiativeHandler(matches,msg,secondAttempt){
           var championAg = undefined;
           var challengerCharacter = undefined;
           var championCharacter = undefined;
-          var challengerGraphic = getObj("graphic",turnorder[index].id);
-          var championGraphic = getObj("graphic",finalturnorder[index2].id);
-          //only search for the linked characters if the tokens exist
-          if(challengerGraphic != undefined && championGraphic != undefined){
-            challengerCharacter = getObj("character",challengerGraphic.get("represents"));;
-            championCharacter = getObj("character",championGraphic.get("represents"));
-          }
+          var challengerID = turnorder[index].id;
+          var championID = finalturnorder[index2].id;
           //only load up the Ag/Detection if the characters exist
-          if(challengerGraphic != undefined && championGraphic != undefined){
-            challengerAg = findObjs({
-              _type: "attribute",
-              _characterid: challengerGraphic.get("represents"),
-              name: "Ag"
-            })[0];
-            championAg = findObjs({
-              _type: "attribute",
-              _characterid: championGraphic.get("represents"),
-              name: "Ag"
-            })[0];
+          if(challengerID != undefined && championID != undefined){
+            challengerAg = attrValue("Ag", {graphicid: challengerID});
+            championAg = attrValue("Ag", {graphicid: championID});
             //the character may not have an Agility attribute, try Detection
             if(challengerAg == undefined){
-              challengerAg = findObjs({
-                _type: "attribute",
-                _characterid: challengerGraphic.get("represents"),
-                name: "Detection"
-              })[0];
+              challengerAg = attrValue("Detection", {graphicid: challengerID});
             }
             //the character may not have an Agility attribute, try Detection
             if(championAg == undefined){
-              championAg = findObjs({
-                _type: "attribute",
-                _characterid: championGraphic.get("represents"),
-                name: "Detection"
-              })[0];
+              championAg = attrValue("Ag", {graphicid: championID});
             }
           }
           //if actual values were found for Ag/Detection for both of them, compare the two
           if(championAg != undefined && challengerAg != undefined){
             //if the challenger has greater agility (or == and rolling a 2 on a D2)
-            if(challengerAg.get("current") > championAg.get("current")
-            || challengerAg.get("current") == championAg.get("current") && randomInteger(2) == 1){
+            if(challengerAg > championAg
+            || challengerAg == championAg && randomInteger(2) == 1){
               //the challenger has just barely edged ahead in initiative order
               //note that we are adding the turn
               turnAdded = true;
               //insert the modified turn here
-              finalturnorder.splice(index2,0,turnorder[index]);
+              finalturnorder.splice(index2, 0, turnorder[index]);
               //the turn has been inserted, break out of the search for a place to insert it
               break;
             }
@@ -265,7 +242,7 @@ function initiativeHandler(matches,msg,secondAttempt){
 
 //used inside initiativeHandler() multiple times, this calculates the bonus
 //added to the D10 when rolling Initiative for the character/starship
-function calcInitBonus(charObj){
+function calcInitBonus(charObj, graphicObj){
   //if this character sheet has Detection, then it is a starship
   if(findObjs({
     _type: "attribute",
@@ -273,7 +250,8 @@ function calcInitBonus(charObj){
     _characterid: charObj.id
   })[0] != undefined){
     //report the detection bonus for starships
-    return Math.floor(Number(getAttrByName(charObj.id, "Detection"))/10);
+    var Detection = Number(attrValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
+    return Math.floor(Detection/10);
 
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
@@ -284,35 +262,34 @@ function calcInitBonus(charObj){
     })[0] != undefined
   ) {
       //load up all the notes on the character
-      var charNotes = "";
-      var charGMNotes = "";
-      charObj.get("bio",function(notes){charNotes = notes;});
-      charObj.get("gmnotes",function(notes){charGMNotes = notes;});
+      var inqcharacter = new INQCharacter(charObj, graphicObj);
+      var Agility = Number(attrValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       //add the agility bonus and unnatural agility
-      var initiativeBonus = Math.floor(Number(getAttrByName(charObj.id, "Ag"))/10);
+      var initiativeBonus = Math.floor(Agility/10);
       //only add the Unnatural Ag attribute, if it exists
-      if(getAttrByName(charObj.id, "Unnatural Ag")){
-        initiativeBonus += Number(getAttrByName(charObj.id, "Unnatural Ag"));
+      var UnnaturalAgility = Number(attrValue("Unnatural Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
+      if(UnnaturalAgility){
+        initiativeBonus += UnnaturalAgility;
       }
 
       //does this character have lightning reflexes?
-      if(charNotes.indexOf(">Lightning Reflexes<") != -1 || charGMNotes.indexOf(">Lightning Reflexes<") != -1){
+      if(inqcharacter.has("Lightning Reflexes", "Talents")){
           //double their Agility Bonus
           initiativeBonus *= 2;
       }
 
       //is this character paranoid?
-      if(charNotes.indexOf(">Paranoia<") != -1 || charGMNotes.indexOf(">Paranoia<") != -1){
+      if(inqcharacter.has("Paranoia", "Talents")){
           //add two to the final result
           initiativeBonus += 2;
       }
 
-      //return the final
+      //return the final result
       return initiativeBonus;
 
   //neither Ag nor Detection were found. Warn the gm and exit.
   } else {
-    whisper( charObj.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.");
+    whisper( graphicObj.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.");
     return undefined;
   }
 }

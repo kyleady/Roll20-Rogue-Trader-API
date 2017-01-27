@@ -59,6 +59,8 @@ function applyDamage (matches,msg){
   eachCharacter(msg,function(character, graphic){
     //record the target
     INQAttack.character = character;
+    //allow targets to use temporary variables from the graphic
+    INQAttack.graphic = graphic;
 
     //record the target type
     INQAttack.targetType = characterType(character);
