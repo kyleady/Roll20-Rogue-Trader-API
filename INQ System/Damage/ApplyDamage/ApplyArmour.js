@@ -101,18 +101,20 @@ function getHitLocation(tensLoc, onesLoc, targetType){
 on("ready",function(){
   //reduce the attack's damage by the armour of the target
   INQAttack.applyArmour = function(damage){
-    //get the armor of the target
-    var armour = 0;
 
     //find the hit location
     var hitLocation = getHitLocation(this.TensLoc.get("current"), this.OnesLoc.get("current"), this.targetType);
-    //find the armour at this location
-    var ArmourObj = findObjs({_type: "attribute", _characterid: this.character.id, name: "Armour_" + hitLocation })[0];
-    if(ArmourObj == undefined){
-      whisper(this.character.get("name") + " has no attribute named Armour_" + hitLocation + ".");
+    //get the armor of the target
+    var armour = attrValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
+
+    //turn armour into a valid number
+    if(!armour){
+      armour = 0;
     } else {
-      armour = Number(ArmourObj.get("current"));
+      armour = Number(armour);
     }
+
+
 
     //is the attack primitive?
     if(Number(this.Prim.get("current")) > 0){

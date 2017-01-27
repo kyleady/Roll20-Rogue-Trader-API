@@ -76,7 +76,7 @@ CentralInput.input = function(msg){
 on("chat:message", function(msg) {
     //be sure the msg was an api command
     //be sure the message came from a user
-    if(msg.type == "api" && msg.playerid && getObj("player",msg.playerid)){
-        CentralInput.input(msg);
-   }
+    if(msg.type == "api" && msg.playerid && getObj("player", msg.playerid)){
+      CentralInput.input(msg);
+    }
 });
