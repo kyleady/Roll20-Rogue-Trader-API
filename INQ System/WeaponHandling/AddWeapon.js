@@ -13,7 +13,7 @@ INQAttack.addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper("Please carefully select who we are giving these weapns to.")
+      whisper("Please carefully select who we are giving these weapns to.", msg.playerid);
       return;
     }
   }
@@ -105,7 +105,7 @@ INQAttack.addWeapon = function(matches, msg){
       INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
     }
     //report the success
-    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*");
+    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", msg.playerid);
   });
 }
 
