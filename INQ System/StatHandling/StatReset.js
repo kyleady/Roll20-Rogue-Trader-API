@@ -24,6 +24,9 @@ function statReset(matches,msg){
     //clear all status markers
     graphic.set("statusmarkers", "");
 
+    //remove any local attributes or notes
+    graphic.set("gmnotes", "");
+
     //add the character to the list of characters that were reset
     resetAnnounce += graphic.get("name") + ", ";
   });
