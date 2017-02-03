@@ -1,11 +1,11 @@
-    //Generates a random Xenos to complicate a planet or adventure. Saves it into a handout.    
+    //Generates a random Xenos to complicate a planet or adventure. Saves it into a handout.
     RandomCreature  = function(input,location) {
         input = input || "";
-        
+
         input = input.toLowerCase();
-        
+
         location = location || "";
-        
+
         var CreatureNumber = 1;
         var XenosType = "";
         var XenosBase;
@@ -17,7 +17,7 @@
         var Mutations = 0;
         var Xenos = {WS: 0, BS:0, S:0, T:0, Ag:0, Wp:0, It:0, Pr:0, Fe:0,
                     Wounds: 0, Fatigue: 0,
-                    Arms: 2, Legs: 2, 
+                    Arms: 2, Legs: 2,
                     Armour_H: 0, Armour_RA: 0, Armour_LA: 0, Armour_B: 0, Armour_RL: 0, Armour_LL:0,
                     Unnatural_WS: 0, Unnatural_BS:0, Unnatural_S:0, Unnatural_T:0, Unnatural_Ag:0, Unnatural_Wp:0, Unnatural_It:0, Unnatural_Pr:0, Unnatural_Fe:0,
                     HalfMove: 0, FullMove: 0, Charge: 0, Run: 0,
@@ -29,8 +29,8 @@
                     Burrower: 0, Civilization: "",
                     isApex: false, isResilient: false, isDeadly: false, isFlexible: 0, isMighty:false,
                     Climb: -1, Swim: -1, Concealment: -1, SilentMove: -1, Shadowing: -1, Dodge: -1, Awareness: -1};
-                    
-        //create a function to quickly add armour to every location           
+
+        //create a function to quickly add armour to every location
         Xenos.ArmourAll = function (increase){
             Xenos.Armour_H  += increase;
             Xenos.Armour_B  += increase;
@@ -120,7 +120,7 @@
                 }
             } else {
                 if(Xenos.Traits.indexOf("Unnatural Senses") == -1){
-                    Xenos.Traits += GetLink("Unnatural Senses") + "<br>";    
+                    Xenos.Traits += GetLink("Unnatural Senses") + "<br>";
                 }
             }
             Xenos.Awareness++;
@@ -162,11 +162,11 @@
             Xenos.Traits += "Flexible<br>";
             //apply a different benefit depending on how many times this result was achieved
             switch(Xenos.isFlexible){
-                case 0: 
-                    Xenos.Skills += GetLink("Dodge") + "+10<br>"; 
+                case 0:
+                    Xenos.Skills += GetLink("Dodge") + "+10<br>";
                     Xenos.Qualities += GetLink("Flexible") + ", ";
                 break;
-                case 1: 
+                case 1:
                     Xenos.Qualities += GetLink("Snare") + ", ";
                 break;
                 default:
@@ -208,13 +208,13 @@
                 Xenos.BS = 30;
                 Xenos.RDamage = 3;
                 switch(randomInteger(3)){
-                    case 1: Xenos.RDamageType = "Impact"; 
+                    case 1: Xenos.RDamageType = "Impact";
                     Xenos.RWeaponName = "Weighted Projectile";
                     break;
-                    case 2: Xenos.RDamageType = "Rending"; 
+                    case 2: Xenos.RDamageType = "Rending";
                     Xenos.RWeaponName = "Arial Spines";
                     break;
-                    case 3: Xenos.RDamageType = "Energy"; 
+                    case 3: Xenos.RDamageType = "Energy";
                     Xenos.RWeaponName = "Acid Spittle";
                     break;
                 }
@@ -240,7 +240,7 @@
             }
         }
         Xenos.Silicate = function(){
-            Xenos.Traits += GetLink("Silicate") + "<br>"; 
+            Xenos.Traits += GetLink("Silicate") + "<br>";
             Xenos.Ag -= 10;
             Xenos.ArmourAll(1+randomInteger(5));
             Xenos.Unnatural_S += Math.floor(Xenos.S/10);
@@ -284,7 +284,7 @@
             Xenos.Burrower++;
         }
         Xenos.Unkillable = function(){
-            Xenos.Traits += GetLink("Regeneration") + "(1)<br>"; 
+            Xenos.Traits += GetLink("Regeneration") + "(1)<br>";
             Xenos.Wounds += 5;
         }
         Xenos.UprootedMovement = function(){
@@ -305,7 +305,7 @@
                 case 16: case 17: case 18: case 19: case 20: Xenos.Traits += "Feels No Pain"; Xenos.Wounds += 5; Xenos.Talents += "<br>" + GetLink("Iron Jaw"); break;
                 case 21: case 22: case 23: case 24: case 25: Xenos.Traits += "Brute"; Xenos.S += 10; Xenos.T += 10; break;
                 case 26: case 27: case 28: case 29: case 30: Xenos.Traits += "Nightsider"; Xenos.Traits += "<br>" + GetLink("Dark Sight"); break;
-                case 31: case 32: case 33: case 34: case 35: Xenos.Traits += "Mental Regressive"; 
+                case 31: case 32: case 33: case 34: case 35: Xenos.Traits += "Mental Regressive";
                 switch(randomInteger(10)){
                     case 6: case 7: Xenos.It = Math.round(Xenos.It / 2); break; //halve the characteristic
                     case 8: case 9: break; //do nothing
@@ -337,7 +337,7 @@
                 case 51: case 52: case 53: case 54: case 55: Xenos.Traits += "Wyrdling"; Xenos.Traits += "<br>" + GetLink("Psy Rating") + "(2)<br>Psychic Technique<br>Psychic Technique"; break;
                 case 56: case 57: case 58: case 59:          Xenos.Traits += "Vile Deformity"; Xenos.Traits += "<br>" + GetLink("Fear"); break;
                 case 60: case 61: case 62: case 63:          Xenos.Traits += "Aberration"; Xenos.S += 10; Xenos.Ag += 10; Xenos.Fe -= 10; Xenos.It -= randomInteger(10); break;
-                case 64: case 65: case 66: case 67:          Xenos.Traits += "Degenerate Mind"; 
+                case 64: case 65: case 66: case 67:          Xenos.Traits += "Degenerate Mind";
                 Xenos.It -= randomInteger(10);
                 Xenos.Fe -= randomInteger(10);
                 switch(randomInteger(3)){
@@ -347,7 +347,7 @@
                 }
                 break;
                 case 68: case 69: case 70: case 71:          Xenos.Traits += "Ravaged Body"; Die = randomInteger(5); Mutations += Die; ExoticTraits += Die; break;
-                case 72: case 73: case 74:                   Xenos.Traits += "Clawed/Fanged"; 
+                case 72: case 73: case 74:                   Xenos.Traits += "Clawed/Fanged";
                 Xenos.WS += 10;
                 if(Xenos.Deadly && Xenos.Qualities.indexOf("Razor Sharp") == -1){
                     Xenos.Qualities += GetLink("Razor Sharp") + ", ";
@@ -376,7 +376,7 @@
             }
             Xenos.Traits += "<br>" + GetLink("Mutation") + " - ?<br>";
         }
-        
+
         //creatures of the hadex anomely have a strong chance to grow one mutation
         if(this.Sector == 'H' || input.indexOf('hadex') != -1){
             Mutations += randomInteger(2)-1;
@@ -387,7 +387,7 @@
         }
         //Mutations are an Exotic Trait, and thus we need to give the creature access to the exotic traits
         ExoticTraits += Mutations;
-    
+
         //record the xenos type, can be planet, animal, or sentient
         if(input.indexOf('flora') != -1){
             XenosType = "Flora";
@@ -411,7 +411,7 @@
                 case 2: case 3: XenosType = "Fauna"; break;
             }
         }
-        
+
         //determine civilization type of native species
         if(input.indexOf('native') != -1){
             if(input.indexOf('primitive clans') != -1){
@@ -438,15 +438,15 @@
                 }
             }
         }
-        
+
         var UniqueName = XenosType + " ";
         if(location != ""){
             UniqueName += location + "-";
         }
         UniqueName += CreatureNumber.toString();
-        
-        var OldCreatures = findObjs({ type: 'character', name: UniqueName });      
-        
+
+        var OldCreatures = findObjs({ type: 'character', name: UniqueName });
+
         while(OldCreatures.length > 0){
             CreatureNumber++;
             UniqueName = XenosType + " ";
@@ -456,10 +456,10 @@
             UniqueName += CreatureNumber.toString();
             OldCreatures = findObjs({ type: 'character', name: UniqueName });
         }
-        
+
         //there is little overlap between the three types, proceed based on the type
         switch(XenosType) {
-            case 'Flora': 
+            case 'Flora':
                 //record the plant's size
                 if(input.indexOf('diffuse') != -1){
                     XenosSize = 'diffuse';
@@ -478,7 +478,7 @@
                         case 9: case 10: XenosSize = "massive"; break;
                     }
                 }
-                
+
                 //record the type of plant
                 if(input.indexOf('passive') != -1) {
                     XenosBase = 'passive-trap';
@@ -493,10 +493,10 @@
                         case 3: XenosBase = 'combatant'; break;
                     }
                 }
-                
+
                 //record the habitat of the plant
                 if(input.indexOf("death") != -1) {
-                    XenosWorld = 'deathworld'; 
+                    XenosWorld = 'deathworld';
                 } else if(input.indexOf("jungle") != -1) {
                     XenosWorld = "jungle";
                 } else if(input.indexOf("temperate") != -1) {
@@ -516,12 +516,12 @@
                         //case 5: XenosWorld = "exotic"; break;
                     }
                 }
-                
+
                 //generate the creature
-                
+
                 //its base stats are determined by its size
                 switch(XenosSize){
-                    case 'diffuse': 
+                    case 'diffuse':
                         Xenos.WS = 30;
                         Xenos.S = 10;
                         Xenos.T = 10;
@@ -588,7 +588,7 @@
                         }
                         Xenos.WeaponName = "Tendrils";
                     break;
-                    case 'massive': 
+                    case 'massive':
                         Xenos.WS = 45;
                         Xenos.S = 65;
                         Xenos.T = 75;
@@ -613,11 +613,11 @@
                         Xenos.WeaponName = "Tendrils";
                     break;
                 }
-                
+
                 //genereate two random traits based on type
                 for(var i = 0; i < 2; i++){
                     switch(XenosBase){
-                        case 'passive-trap': 
+                        case 'passive-trap':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Armoured(); break;
                                 case 2: Xenos.Deterrent(); break;
@@ -628,8 +628,8 @@
                                 case 9: Xenos.Resilient(); break;
                                 case 10: ExoticTraits++; break; //we will roll on the exotic traits later
                             }
-                        break; 
-                        case 'active-trap': 
+                        break;
+                        case 'active-trap':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Armoured(); break;
                                 case 2: Xenos.Deadly(); break;
@@ -639,10 +639,10 @@
                                 case 6: Xenos.Paralytic(); break;
                                 case 7: Xenos.Resilient(); break;
                                 case 8: case 9: Xenos.Venomous(); break;
-                                case 10: ExoticTraits++; break; //we will roll on the exotic traits later 
+                                case 10: ExoticTraits++; break; //we will roll on the exotic traits later
                             }
                         break;
-                        case 'combatant': 
+                        case 'combatant':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Armoured(); break;
                                 case 2: Xenos.Deadly(); break;
@@ -658,11 +658,11 @@
                         break;
                     }
                 }
-                
+
                 //generate one random trait based on location
                 var Die;
                 switch(XenosWorld){
-                    case 'deathworld': 
+                    case 'deathworld':
                     if(XenosBase == 'passive-trap') {
                         Die = randomInteger(7); //passive trap plants cannot generate aggressive traits
                     } else if(XenosBase == 'active-trap'){
@@ -717,7 +717,7 @@
                         case 10: Xenos.Venomous(); break;
                     }
                     break;
-                    case 'temperate': 
+                    case 'temperate':
                     switch(randomInteger(10)){
                         case 1: Xenos.Armoured(); break;
                         case 2: Xenos.Venomous(); break;
@@ -729,7 +729,7 @@
                         case 9: case 10: Xenos.Venomous(); break;
                     }
                     break;
-                    case 'ocean': 
+                    case 'ocean':
                     if(XenosBase == 'passive-trap') {
                         Die = randomInteger(5); //passive trap plants cannot generate aggressive traits
                     } else if(XenosBase == 'active-trap'){
@@ -747,7 +747,7 @@
                     }
                     break;
                 }
-                
+
                 //generate final traits with Exotic
                 while(ExoticTraits > 0){
                     //If this Exotic Trait should be a Mutation, preset the roll to 10
@@ -768,8 +768,8 @@
                     ExoticTraits--;
                 }
                 break;
-                
-            case 'Fauna': 
+
+            case 'Fauna':
                 //record the type of animal
                 if(input.indexOf('avian') != -1) {
                     XenosBase = 'avian';
@@ -790,13 +790,13 @@
                         case 10: XenosBase = 'swarm'; break;
                     }
                 }
-                
+
                 //record the animal's size
                 if(input.indexOf('miniscule') != -1){
                     XenosSize = 'miniscule';
                 } else if(input.indexOf('puny') != -1) {
                     XenosSize = 'puny';
-                } else if(input.indexOf('scawny') != -1) {
+                } else if(input.indexOf('scrawny') != -1) {
                     XenosSize = 'scrawny';
                 } else if(input.indexOf('average') != -1) {
                     XenosSize = 'average';
@@ -831,10 +831,10 @@
                     }
                     }
                 }
-                
+
                 //record the habitat of the plant
                 if(input.indexOf("death") != -1) {
-                    XenosWorld = 'deathworld'; 
+                    XenosWorld = 'deathworld';
                 } else if(input.indexOf("jungle") != -1) {
                     XenosWorld = "jungle";
                 } else if(input.indexOf("temperate") != -1) {
@@ -863,7 +863,7 @@
                         //default: XenosWorld = "exotic"; break;
                     }
                 }
-                
+
                 //generate the creature
                 //The Size of the Creauture influences its stats
                 if(XenosBase != 'swarm'){
@@ -878,7 +878,7 @@
                     }
                 }
                 Xenos.Traits += GetLink("Size") + "(" + XenosSize + ")<br>";
-                
+
                 //each creature has a chance to generate extra arms
                 while(randomInteger(5) == 1){
                     Xenos.Arms += 2;
@@ -886,7 +886,7 @@
                 if(Xenos.Arms > 2){
                     Xenos.Traits += GetLink("Multiple Arms") + "(" + Xenos.Arms + ")<br>";
                 }
-                
+
                 //each creature has a chance to generate extra legs
                 if(XenosBase == 'herd'){
                     Xenos.Legs += 2; //herd beasts are atleast four legged
@@ -897,10 +897,10 @@
                 if(Xenos.Legs > 2){
                     Xenos.Traits += GetLink("Multiple Legs") + "(" + Xenos.Legs + ")<br>";
                 }
-                
+
                 //add in the base profile
                 switch(XenosBase){
-                    case 'avian': 
+                    case 'avian':
                         Xenos.WS += 35;
                         Xenos.S  += 30;
                         Xenos.T  += 30;
@@ -916,7 +916,7 @@
                         Xenos.WeaponName = "Talons";
                         Xenos.DamageType = "Rending";
                     break;
-                    case 'herd': 
+                    case 'herd':
                         Xenos.WS += 25;
                         Xenos.S  += 40;
                         Xenos.T  += 45;
@@ -932,7 +932,7 @@
                         Xenos.WeaponName = "Hooves";
                         Xenos.DamageType = "Impact";
                     break;
-                    case 'predator': 
+                    case 'predator':
                         Xenos.WS += 50;
                         Xenos.S  += 45;
                         Xenos.T  += 40;
@@ -950,7 +950,7 @@
                         Xenos.WeaponName = "Claws";
                         Xenos.DamageType = "Rending";
                     break;
-                    case 'scavenger': 
+                    case 'scavenger':
                         Xenos.WS += 40;
                         Xenos.S  += 35;
                         Xenos.T  += 35;
@@ -966,7 +966,7 @@
                         Xenos.WeaponName = "Fangs";
                         Xenos.DamageType = "Rending";
                     break;
-                    case 'swarm': 
+                    case 'swarm':
                         Xenos.WS += 30;
                         Xenos.S  +=  5;
                         Xenos.T  += 10;
@@ -983,11 +983,11 @@
                         Xenos.DamageType = "Rending";
                     break;
                 }
-                
+
                 //add in random traits due to the Xenos Base
                 for(var i = 0; i < 2; i++){
                     switch(XenosBase){
-                        case 'avian': 
+                        case 'avian':
                             switch(randomInteger(10)){
                                 case 1: case 2: case 3: Xenos.Deadly(); break;
                                 case 4: Xenos.Flexible(); break;
@@ -997,8 +997,8 @@
                                 case 9: Xenos.Swift(); break;
                                 case 10: ExoticTraits++; break;
                             }
-                        break; 
-                        case 'herd': 
+                        break;
+                        case 'herd':
                             switch(randomInteger(10)){
                                 case 1: case 2:  Xenos.Armoured(); break;
                                 case 3: Xenos.Deterrent(); break;
@@ -1009,7 +1009,7 @@
                                 case 10: ExoticTraits++; break;
                             }
                         break;
-                        case 'predator': 
+                        case 'predator':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Apex(); break;
                                 case 2: Xenos.Armoured(); break;
@@ -1022,7 +1022,7 @@
                                 case 10: ExoticTraits++; break;
                             }
                         break;
-                        case 'scavenger': 
+                        case 'scavenger':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Crawler(); break;
                                 case 2: Xenos.Darkling(); break;
@@ -1035,7 +1035,7 @@
                                 case 10: ExoticTraits++; break;
                             }
                         break;
-                        case 'swarm': 
+                        case 'swarm':
                             switch(randomInteger(10)){
                                 case 1: Xenos.Crawler(); break;
                                 case 2: Xenos.Darkling(); break;
@@ -1048,9 +1048,9 @@
                         break;
                     }
                 }
-                
+
                 switch(XenosWorld){
-                    case 'deathworld': 
+                    case 'deathworld':
                     switch(randomInteger(10)){
                         case 1: Xenos.Apex(); break;
                         case 2: Xenos.Armoured(); break;
@@ -1077,7 +1077,7 @@
                         case 10: Xenos.Unkillable(); break;
                     }
                     break;
-                    case 'desert': 
+                    case 'desert':
                     switch(randomInteger(10)){
                         case 1: Xenos.Crawler(); break;
                         case 2: Xenos.ThermalAdaptation("Cold"); break;
@@ -1086,7 +1086,7 @@
                         default: Xenos.ThermalAdaptation("Heat"); break;
                     }
                     break;
-                    case 'ice': 
+                    case 'ice':
                     switch(randomInteger(10)){
                         case 1: Xenos.Darkling(); break;
                         case 2: case 3: Xenos.Deathdweller(); break;
@@ -1095,7 +1095,7 @@
                         default: Xenos.ThermalAdaptation("Cold");
                     }
                     break;
-                    case 'jungle': 
+                    case 'jungle':
                     switch(randomInteger(10)){
                         case 1: case 2: Xenos.Amphibious(); break;
                         case 3: case 4: case 5: Xenos.Arboreal(); break;
@@ -1105,13 +1105,13 @@
                         case 10: Xenos.Venomous(); break;
                     }
                     break;
-                    case 'ocean': 
+                    case 'ocean':
                     switch(randomInteger(10)){
                         case 1: case 2: case 3: case 4: Xenos.Amphibious(); break;
                         default: Xenos.Aquatic(); break;
                     }
                     break;
-                    case 'temperate': 
+                    case 'temperate':
                     switch(randomInteger(10)){
                         case 1: Xenos.Amphibious(); break;
                         case 2: Xenos.Aquatic(); break;
@@ -1125,7 +1125,7 @@
                         case 10: ExoticTraits++; break;
                     }
                     break;
-                    case 'volcanic': 
+                    case 'volcanic':
                     switch(randomInteger(10)){
                         case 1: Xenos.Armoured(); break;
                         case 2: case 3: Xenos.Deathdweller(); break;
@@ -1135,7 +1135,7 @@
                     }
                     break;
                 }
-                
+
                 //generate final traits with any Exotic points that have built up
                 while(ExoticTraits > 0){
                     //If this Exotic Trait should be a Mutation, preset the roll to 10
@@ -1159,11 +1159,11 @@
                     }
                     ExoticTraits--;
                 }
-                
+
                 break;
             //case 'Native': break;  at base a native will be a flora or fauna
         }
-        
+
         //add in benefits if the creature is sentient
         if(input.indexOf('native') != -1){
             //first add mind related benefits available to all sentient beings
@@ -1215,7 +1215,7 @@
                 if(randomInteger(100) <= 5){
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = this.RandomWeapon("heavy",-3);
                 }
-                
+
             }else{
                 //determine the tech level
                 switch(Xenos.Civilization){
@@ -1232,7 +1232,7 @@
                         Xenos.WeaponTech = 1;
                         break;
                 }
-                
+
                 //do they have melee weapons?
                 if(randomInteger(100) <= 50){
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = this.RandomWeapon("melee",Xenos.WeaponTech);
@@ -1260,7 +1260,7 @@
             //however the more advanced the civilization's general technology is, the mroe advanced the weapons tend to be
             Xenos.WeaponTech = 0;
             switch(Xenos.Civilization){
-                case 'primitive clans': 
+                case 'primitive clans':
                     switch(randomInteger(31)){
                         //pre industry weapons 8/31 ~ 26%
                         case 17: case 18: case 19: case 20:
@@ -1276,7 +1276,7 @@
                             Xenos.WeaponTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/31 ~ 3%
-                        case 31: 
+                        case 31:
                             Xenos.WeaponTech = 40 + randomInteger(10);
                         break;
                          //primitive weapons 16/31 ~ 52%
@@ -1285,7 +1285,7 @@
                         break;
                     }
                     break;
-                case 'pre-industrial': 
+                case 'pre-industrial':
                     switch(randomInteger(19)){
                         //primitive weapons 4/19 ~ 21%
                         case 9: case 10: case 11: case 12:
@@ -1300,7 +1300,7 @@
                             Xenos.WeaponTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/19 ~ 5%
-                        case 19: 
+                        case 19:
                             Xenos.WeaponTech = 40 + randomInteger(10);
                         break;
                          //pre-industrial weapons 8/19 ~ 42%
@@ -1309,7 +1309,7 @@
                         break;
                     }
                     break;
-                case 'basic industry': 
+                case 'basic industry':
                     switch(randomInteger(10)){
                         //primitive weapons 1/10 ~ 10%
                         case 1:
@@ -1328,12 +1328,12 @@
                             Xenos.WeaponTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/10 ~ 10%
-                        case 10: 
+                        case 10:
                             Xenos.WeaponTech = 40 + randomInteger(10);
                         break;
                     }
                 break;
-                case 'advanced industry': 
+                case 'advanced industry':
                     switch(randomInteger(19)){
                         //voidfarer weapons 4/19 ~ 21%
                         case 9: case 10: case 11: case 12:
@@ -1348,7 +1348,7 @@
                             Xenos.WeaponTech = 10 + randomInteger(10);
                         break;
                         //primitive weapons 1/19 ~ 5%
-                        case 19: 
+                        case 19:
                             Xenos.WeaponTech =  randomInteger(10);
                         break;
                          //advanced industrial weapons 8/19 ~ 42%
@@ -1357,8 +1357,8 @@
                         break;
                     }
                     break;
-                case 'voidfarers': 
-                    switch(randomInteger(31)){    
+                case 'voidfarers':
+                    switch(randomInteger(31)){
                         //advanced industry weapons 8/31 ~ 26%
                         case 17: case 18: case 19: case 20:
                         case 21: case 22: case 23: case 24:
@@ -1373,7 +1373,7 @@
                             Xenos.WeaponTech = 10 + randomInteger(10);
                         break;
                         //primitive weapons 1/31 ~ 3%
-                        case 31: 
+                        case 31:
                             Xenos.WeaponTech =  randomInteger(10);
                         break;
                          //voidfarer weapons 16/31 ~ 52%
@@ -1389,7 +1389,7 @@
             //though, those of a more advanced civilization are generally going to have more advanced armour
             Xenos.ArmourTech = 0;
             switch(Xenos.Civilization){
-                case 'primitive clans': 
+                case 'primitive clans':
                     switch(randomInteger(31)){
                         //pre industry weapons 8/31 ~ 26%
                         case 17: case 18: case 19: case 20:
@@ -1405,7 +1405,7 @@
                             Xenos.ArmourTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/31 ~ 3%
-                        case 31: 
+                        case 31:
                             Xenos.ArmourTech = 40 + randomInteger(10);
                         break;
                          //primitive weapons 16/31 ~ 52%
@@ -1414,7 +1414,7 @@
                         break;
                     }
                     break;
-                case 'pre-industrial': 
+                case 'pre-industrial':
                     switch(randomInteger(19)){
                         //primitive weapons 4/19 ~ 21%
                         case 9: case 10: case 11: case 12:
@@ -1429,7 +1429,7 @@
                             Xenos.ArmourTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/19 ~ 5%
-                        case 19: 
+                        case 19:
                             Xenos.ArmourTech = 40 + randomInteger(10);
                         break;
                          //pre-industrial weapons 8/19 ~ 42%
@@ -1438,7 +1438,7 @@
                         break;
                     }
                     break;
-                case 'basic industry': 
+                case 'basic industry':
                     switch(randomInteger(10)){
                         //primitive weapons 1/10 ~ 10%
                         case 1:
@@ -1457,12 +1457,12 @@
                             Xenos.ArmourTech = 30 + randomInteger(10);
                         break;
                         //voidfarer weapons 1/10 ~ 10%
-                        case 10: 
+                        case 10:
                             Xenos.ArmourTech = 40 + randomInteger(10);
                         break;
                     }
                 break;
-                case 'advanced industry': 
+                case 'advanced industry':
                     switch(randomInteger(19)){
                         //voidfarer weapons 4/19 ~ 21%
                         case 9: case 10: case 11: case 12:
@@ -1477,7 +1477,7 @@
                             Xenos.ArmourTech = 10 + randomInteger(10);
                         break;
                         //primitive weapons 1/19 ~ 5%
-                        case 19: 
+                        case 19:
                             Xenos.ArmourTech =  randomInteger(10);
                         break;
                          //advanced industrial weapons 8/19 ~ 42%
@@ -1486,8 +1486,8 @@
                         break;
                     }
                     break;
-                case 'voidfarers': 
-                    switch(randomInteger(31)){    
+                case 'voidfarers':
+                    switch(randomInteger(31)){
                         //advanced industry weapons 8/31 ~ 26%
                         case 17: case 18: case 19: case 20:
                         case 21: case 22: case 23: case 24:
@@ -1502,7 +1502,7 @@
                             Xenos.ArmourTech = 10 + randomInteger(10);
                         break;
                         //primitive weapons 1/31 ~ 3%
-                        case 31: 
+                        case 31:
                             Xenos.ArmourTech =  randomInteger(10);
                         break;
                          //voidfarer weapons 16/31 ~ 52%
@@ -1513,16 +1513,16 @@
                 break;
             }
             /*
-            //add the weapons based on technology level 
+            //add the weapons based on technology level
             switch(Xenos.WeaponTech){
                 //=================
                 //PRIMITIVE WEAPONS - Primitive Quality
                 //=================
                 case 1:  case 2:  break; //even tool use is beyond them, no weapons at all
-                case 3:  case 4:  
+                case 3:  case 4:
                     //small rocks and branches
                     //thrown rocks
-                    
+
                     //stick
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Stick";
@@ -1531,7 +1531,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", ";
-                break; 
+                break;
                 case 5:  case 6:
                     //bigger is better: large weapons and rock
                     //thrown large rocks
@@ -1550,8 +1550,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Unwieldy");
-                break; 
-                case 7:  
+                break;
+                case 7:
                     //sharper rocks and sticks
                     //thrown large rocks
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1570,7 +1570,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
                 break;
-                case 8:  
+                case 8:
                     //bow and arrow
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Bow and Stick";
@@ -1581,7 +1581,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 10;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Reliable") + ", " + GetLink("Inaccurate");
                 break;
-                case 9:  
+                case 9:
                     //sticks with sharpened rock head, (spear)
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Spear";
@@ -1591,7 +1591,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
                 break;
-                case 10: 
+                case 10:
                     //arrows with arrowheads
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Bow";
@@ -1601,11 +1601,11 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 20;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
-                break; 
+                break;
                 //======================
                 //PRE-INDUSTRIAL WEAPONS - Primitive Quality
                 //======================
-                case 12: case 11: 
+                case 12: case 11:
                     //bronze sword
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Bronze Sword";
@@ -1615,7 +1615,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Balanced");
                 break;
-                case 14: case 13: 
+                case 14: case 13:
                     //iron sword
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Iron Sword";
@@ -1633,7 +1633,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Balanced");
-                break; 
+                break;
                 case 17:
                     //long bow
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1644,8 +1644,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 30;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
-                break; 
-                case 18: 
+                break;
+                case 18:
                     //crossbow
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Crossbow";
@@ -1655,7 +1655,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 10;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
-                break; //crossbow                
+                break; //crossbow
                 case 19:
                     //guns, pistols
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1666,7 +1666,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 15;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
-                break; 
+                break;
                 case 20:
                     //cannon
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1692,7 +1692,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 4;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 50;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
-                break; 
+                break;
                 case 22:
                     //multi-shot guns - primitive
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1704,8 +1704,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 3;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 30;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
-                break; 
-                case 23: 
+                break;
+                case 23:
                     //grenades
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Grenade";
@@ -1715,7 +1715,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 3 * (Math.floor(Xenos.S/10) + Xenos.Unnatural_S);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Blast") + "(" + randomInteger(5) + ")";
                 break; //grenades
-                case 24: 
+                case 24:
                     //bombs
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Bomb";
@@ -1736,8 +1736,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
-                break; 
-                case 26: 
+                break;
+                case 26:
                     //flame weapon
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Flamer";
@@ -1748,7 +1748,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Spray") + ", " + GetLink("Flame");
                 break;
-                case 27: 
+                case 27:
                     //chemical weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Acid Spray";
@@ -1757,9 +1757,9 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(20);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Spray") + ", " + GetLink("Toxic");    
-                break; 
-                case 28: 
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Spray") + ", " + GetLink("Toxic");
+                break;
+                case 28:
                     //advanced single shot guns!
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Rifle";
@@ -1769,8 +1769,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = "";
-                break; 
-                case 29: 
+                break;
+                case 29:
                     //advanced machine guns - not primitive!
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Autogun";
@@ -1781,8 +1781,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = "";
-                break; 
-                case 30: 
+                break;
+                case 30:
                     //radioactive weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Radbeam";
@@ -1792,11 +1792,11 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Irradiated");
-                break; 
+                break;
                 //=========================
                 //ADVANCED INDUSTRY WEAPONS
                 //=========================
-                case 31: 
+                case 31:
                     //autogun with motion predictor
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Autogun Motion Predictor";
@@ -1819,8 +1819,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = "";
-                break; 
-                case 33: 
+                break;
+                case 33:
                     //sniper rifles
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Sniper Rifle";
@@ -1830,7 +1830,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*10;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Accurate") + ", " + GetLink("Reliable") + GetLink("Silencer");
-                break; 
+                break;
                 case 34:
                     //full auto hand held weaponry
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1843,8 +1843,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Full = 4+randomInteger(6);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = "";
-                break; 
-                case 35: 
+                break;
+                case 35:
                     //single fire las weaponry
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Lasrifle";
@@ -1855,7 +1855,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Reliable");
                 break;
-                case 36: 
+                case 36:
                     //rapid fire las weaponry
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Lasgun";
@@ -1877,7 +1877,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing") + ", " + GetLink("Unwieldy");
                 break;
-                case 38: 
+                case 38:
                     //balanced chain weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Chain Sword";
@@ -1896,7 +1896,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Shocking") + ", " + GetLink("Unwieldy");
-                break; 
+                break;
                 case 40:
                     //Balanced Shock Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1906,11 +1906,11 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Shocking") + ", " + GetLink("Balanced");
-                break; 
+                break;
                 //==================
                 //VOID FARER WEAPONS
                 //==================
-                case 41: 
+                case 41:
                     //Single Shot Bolter
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Boltrifle";
@@ -1920,7 +1920,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "X";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing");
-                break; 
+                break;
                 case 42:
                     //Rapid Fire Bolter Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1932,7 +1932,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing");
-                break; 
+                break;
                 case 43:
                     //Unbalanced Power Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1942,7 +1942,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Power Field") + ", " + GetLink("Unwieldy");
-                break; 
+                break;
                 case 44:
                     //Balanced Power Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1952,7 +1952,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Power Field") + ", " + GetLink("Balanced");
-                break; 
+                break;
                 case 45:
                     //Single Shot Plasma Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1963,8 +1963,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Overheats") + ", " + GetLink("Blast") + "(" + randomInteger(3) + ")";
-                break; 
-                case 46: 
+                break;
+                case 46:
                     //Rapid Fire Plasma Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Plasmarifle";
@@ -1975,7 +1975,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1 + randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Overheats") + ", " + GetLink("Blast") + "(" + randomInteger(3) + ")";
-                break; 
+                break;
                 case 47:
                     //Single Shop Melta Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -1986,8 +1986,8 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(5)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Melta");
-                break; 
-                case 48: 
+                break;
+                case 48:
                     //Rapid Fire Melta Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Meltagun";
@@ -1998,7 +1998,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1 + randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(5)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Melta");
-                break; 
+                break;
                 case 49:
                     //Unbalanced Force Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -2008,7 +2008,7 @@
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Force") + ", " + GetLink("Unwieldy");
-                break; 
+                break;
                 case 50:
                     //Balanced Force Weapons
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -2027,14 +2027,14 @@
                 //=====================
                 //PRIMITIVE CLAN ARMOUR
                 //=====================
-                case 1: case 2: case 3: case 4: case 5:  
+                case 1: case 2: case 3: case 4: case 5:
                     //still running around naked
-                    Xenos.ArmourName = "Warpaints";        
-                break; 
+                    Xenos.ArmourName = "Warpaints";
+                break;
                 case 6: case 7: case 8: case 9: case 10:
                     Xenos.ArmourName = "Hides";
                     ArmourBase = 1;
-                break; 
+                break;
                 //===================
                 //PRE-INDUSTRY ARMOUR
                 //===================
@@ -2056,7 +2056,7 @@
                     //doesn't slow the native down as much
                     Xenos.Ag -= 5;
                 break;
-                case 17: case 18: case 19: case 20: 
+                case 17: case 18: case 19: case 20:
                     //native wear's colourful clothing that offers no combat benefit
                     Xenos.ArmourName = "Colourful Cloth";
                 break;
@@ -2227,7 +2227,7 @@
                 case 10: Xenos.Culture = "Cannibal"; break;
             }
         }
-        
+
         //Calcuate Burrower
         if(Xenos.Burrower > 0){
             Die = Xenos.Unnatural_S + Math.floor(Xenos.S/10); //start with the creature's strength bonus
@@ -2304,7 +2304,7 @@
             //Multiple Legs
             Xenos.HalfMove *= Xenos.Legs;
             Xenos.HalfMove /= 2;
-            
+
             //Calculate the other movement rates from this base move
             Xenos.FullMove = 2*Xenos.HalfMove;
             Xenos.Charge   = 3*Xenos.HalfMove;
@@ -2313,12 +2313,12 @@
             //potted plants don't move!
             Xenos.HalfMove = 0;
         }
-        
+
         //create the character sheet
         NewXenos = createObj("character", {
             name: UniqueName
         });
-        
+
         //Compile the Weapons Stats
         //Check to see if the weapon is primitive
         if(Xenos.Traits.indexOf("Improved Natural Weapons") == -1){
@@ -2342,7 +2342,7 @@
             Xenos.Weapons += "; "  + Xenos.Qualities.substring(0,Xenos.Qualities.length-2);
         }
         Xenos.Weapons += ")<br>";
-        
+
         //convert to ability
         var AbilityText = "/w gm - @{character_name} deals [[";
         if(Xenos.Qualities.indexOf("Tearing") != -1){
@@ -2369,7 +2369,7 @@
             istokenaction: true,
             characterid: NewXenos.id
         });
-        
+
         //be sure there is a ranged attack to detail
         if(Xenos.RRange != 0){
             //convert to text
@@ -2391,7 +2391,7 @@
                 Xenos.Weapons += "; "  + Xenos.RQualities.substring(0,Xenos.RQualities.length-2);
             }
             Xenos.Weapons += ")<br>";
-            
+
             //convert to ability
             AbilityText = "/w gm - @{character_name} deals [[";
             if(Xenos.RQualities.indexOf("Tearing") != -1){
@@ -2418,8 +2418,8 @@
                 istokenaction: true,
                 characterid: NewXenos.id
             });
-        }        
-        
+        }
+
         //step through all the native weapons
         for(weaponIndex = 0; weaponIndex < Xenos.NativeWeapons.length; weaponIndex++){
             //write out the details of the weapon
@@ -2434,7 +2434,7 @@
                 }else{
                     Xenos.Weapons += "-";
                 }
-                
+
                 Xenos.Weapons += "/";
                 //detail the number of semi auto shots
                 if(Xenos.NativeWeapons[weaponIndex].Semi > 0){
@@ -2464,9 +2464,9 @@
                 Xenos.Weapons +=  "D10";
             //otherwise, show how many D10s the wepaon is using
             }else{
-                Xenos.Weapons += Xenos.NativeWeapons[weaponIndex].DiceNum.toString() + "D10";    
+                Xenos.Weapons += Xenos.NativeWeapons[weaponIndex].DiceNum.toString() + "D10";
             }
-            
+
             var totalDamage = Xenos.NativeWeapons[weaponIndex].Damage;
             //melee weapons have S bonus added to their damage
             if(Xenos.NativeWeapons[weaponIndex].Range == 0){
@@ -2477,7 +2477,7 @@
             } else if(totalDamage < 0){
                 Xenos.Weapons += totalDamage.toString();
             }
-            
+
             //detail the damage type
             Xenos.Weapons += " " + GetLink(Xenos.NativeWeapons[weaponIndex].DamageType);
             Xenos.Weapons += "; Pen " + Xenos.NativeWeapons[weaponIndex].Pen.toString();
@@ -2485,7 +2485,7 @@
                 Xenos.Weapons += "; " + Xenos.NativeWeapons[weaponIndex].Qualities;
             }
             Xenos.Weapons += ")<br>";
-            
+
             //create a token ability for this weapon
             //convert to ability
             AbilityText = "/w gm - @{character_name} deals [[";
@@ -2497,7 +2497,7 @@
                     AbilityText +=  "2D5k1";
                 //otherwise, show how many D10s the wepaon is using
                 }else{
-                    AbilityText += (1+Xenos.NativeWeapons[weaponIndex].DiceNum).toString() + "D10";    
+                    AbilityText += (1+Xenos.NativeWeapons[weaponIndex].DiceNum).toString() + "D10";
                 }
             } else{
                 //detail the damage
@@ -2506,7 +2506,7 @@
                     AbilityText +=  "D5";
                 //otherwise, show how many D10s the wepaon is using
                 }else{
-                    AbilityText += Xenos.NativeWeapons[weaponIndex].DiceNum.toString() + "D10";    
+                    AbilityText += Xenos.NativeWeapons[weaponIndex].DiceNum.toString() + "D10";
                 }
             }
             AbilityText += "+" + totalDamage.toString() + "]] ";
@@ -2529,7 +2529,7 @@
                 characterid: NewXenos.id
             });
         }
-        
+
         //Compile the GM Notes
         //start with the classifications of this xenos
         Xenos.gmnotes += "<strong>Type</strong>: " + XenosType + "<br>";
@@ -2542,9 +2542,9 @@
             Xenos.gmnotes += "<strong>Culture</strong>: " + Xenos.Culture + "<br>";
             Xenos.gmnotes += "<strong>Language</strong>: " + Xenos.Language + "<br>";
         }
-        
-        
-        
+
+
+
         //Movement
         //setup the title row
         Xenos.gmnotes += "<br><table><tbody><tr><td><strong>Half</strong></td><td><strong>Full</strong></td><td><strong>Charge</strong></td><td><strong>Run</strong></td></tr>";
@@ -2558,27 +2558,27 @@
         Xenos.gmnotes += "<td>" + Xenos.Run + "</td>";
         //close up the table
         Xenos.gmnotes += "</tbody></table>";
-        
+
         //Weapons
         Xenos.gmnotes += "<br><strong><u>Weapons</u></strong><br>" + Xenos.Weapons;
-        
+
         //Gear
         Xenos.gmnotes += "<br><strong><u>Gear</u></strong><br>";
         //if this creature is civilized, list their armour (however insignificant it may be)
         if(Xenos.Civilization != ""){
             Xenos.gmnotes += Xenos.ArmourName + "<br>";
         }
-        
+
         //Talents
         Xenos.gmnotes += "<br><strong><u>Talents</u></strong><br>" + Xenos.Talents;
         //Traits
         Xenos.gmnotes += "<br><strong><u>Traits</u></strong><br>" + Xenos.Traits;
         //Skills
         Xenos.gmnotes += "<br><strong><u>Skills</u></strong><br>" + Xenos.Skills;
-        
+
         //record the GM Notes
         NewXenos.set('gmnotes',Xenos.gmnotes);
-        
+
         //Bring stats to their minimum, and if they are already past that, add D5-1 for a bit of uncertainty
         if(Xenos.WS <= 0){Xenos.WS = 0}else{Xenos.WS += randomInteger(5)-1;}
         if(Xenos.BS <= 0){Xenos.BS = 0}else{Xenos.BS += randomInteger(5)-1;}
@@ -2589,23 +2589,23 @@
         if(Xenos.Pr <= 0){Xenos.Pr = 0}else{Xenos.Pr += randomInteger(5)-1;}
         if(Xenos.It <= 0){Xenos.It = 0}else{Xenos.It += randomInteger(5)-1;}
         if(Xenos.Fe <= 0){Xenos.Fe = 0}else{Xenos.Fe += randomInteger(5)-1;}
-        
+
         if(Xenos.Wounds <= 3){Xenos.Wounds = 3}else{Xenos.Wounds += randomInteger(5)-1;}
-        
+
         //calculate the total toughness bonus and save it as the Fatigue cap
         Xenos.Fatigue = Math.floor(Xenos.T/10) + Xenos.Unnatural_T;
-//=========================================================================================        
+//=========================================================================================
         //Feature not available yet :(
         //create the default token for the Xenos from the 'Ahh! A Monster Blueprint!' Character Sheet
         //var Blueprint = findObjs({type: 'character', name: "Ahh! A Monster Blueprint!"})[0];
         //var Token = JSON.parse(Blueprint._defaulttoken);
-        
+
         //Link the token to the sheet
         //Token.represents = NewXenos.id;
-        
+
         //Record the Xenos' name
         //Token.name = UniqueName;
-        
+
         //setup the token bars that are seen by the players
         //Token.bar1_vaule = 0;
         //Token.bar1_max = Xenos.Fatigue.toString();
@@ -2613,11 +2613,11 @@
         //Token.bar2_max   = 0;
         //Token.bar3_vaule = Xenos.Wounds.toString();
         //Token.bar3_max   = Xenos.Wounds.toString();
-        
+
         //record the default token
         //NewXenos.set("defaulttoken", JSON.stringify(Token));
-//=========================================================================================        
-        
+//=========================================================================================
+
         //Potential work around, create an object to use as the default token
         //start out by finding the creature creation room
         var WaitingRooms = findObjs({type: "page", name: "Creature Creation"});
@@ -2628,7 +2628,7 @@
             //if the room does not exist, make it exist
             WaitingRoom = createObj("page", {name: "Creature Creation"});
         }
-        
+
         //create the token in the room
         var Token = createObj("graphic", {pageid: WaitingRoom.id, name: UniqueName, height: 70, width:70, left: 35, top: 35, layer: "objects", imgsrc: "https://s3.amazonaws.com/files.d20.io/images/3360725/NFy-FPDogVUZbxiRowb2Ag/thumb.png?1394439373"});
         //Fatigue
@@ -2665,7 +2665,7 @@
         createObj("attribute", {name: "It", current: Xenos.It, max: Xenos.It, characterid: NewXenos.id});
         createObj("attribute", {name: "Per",current: Xenos.Pr, max: Xenos.Pr, characterid: NewXenos.id});
         createObj("attribute", {name: "Fe", current: Xenos.Fe, max: Xenos.Fe, characterid: NewXenos.id});
-        
+
         //Stats: Wounds, Fatigue, Fate
         createObj("attribute", {name: "Wounds",  current: Xenos.Wounds, max: Xenos.Wounds, characterid: NewXenos.id});
         createObj("attribute", {name: "Fatigue", current: 0, max: Xenos.Fatigue, characterid: NewXenos.id});
@@ -2689,13 +2689,13 @@
         createObj("attribute", {name: "Unnatural It", current: Xenos.Unnatural_It, max: Xenos.Unnatural_It, characterid: NewXenos.id});
         createObj("attribute", {name: "Unnatural Per",current: Xenos.Unnatural_Pr, max: Xenos.Unnatural_Pr, characterid: NewXenos.id});
         createObj("attribute", {name: "Unnatural Fe", current: Xenos.Unnatural_Fe, max: Xenos.Unnatural_Fe, characterid: NewXenos.id});
-        
+
         //alert the gm
         sendChat("System","/w gm Created " + GetLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id));
-        
+
         return GetLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id);
     }
-	
+
 on("chat:message", function(msg) {
 if(msg.type == 'api' && msg.content.indexOf('!NewXenos') == 0 && playerIsGM(msg.playerid)){
     mySystem = new System();
