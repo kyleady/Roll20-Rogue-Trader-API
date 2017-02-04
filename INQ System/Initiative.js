@@ -21,16 +21,9 @@
 //attempt. In the past I just asked the user to "Try Again". However, this
 //work around will have the function silently attempt to read the notes
 //a second time. If this second attempt does not work, it will warn the user.
-
 function initiativeHandler(matches,msg,secondAttempt){
-  //get the JSON string of the turn order and make it into an array
-  if(Campaign().get("turnorder") == ""){
-    //We check to make sure that the turnorder isn't just an empty string first. If it is treat it like an empty array.
-    var turnorder = [];
-  } else{
-    //otherwise turn the turn order into an array
-    var turnorder = JSON.parse(Campaign().get("turnorder"));
-  }
+  //get the Roll20 turn order
+  var turns = new INQTurns();
 
   var operator = matches[1];
   var modifier = matches[2] + matches[3];
@@ -51,7 +44,6 @@ function initiativeHandler(matches,msg,secondAttempt){
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
       var initBonus = calcInitBonus(character, graphic);
-
       //warn the user and exit if the bonus does not exist
       if(initBonus == undefined){
         return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", msg.playerid);
@@ -67,61 +59,28 @@ function initiativeHandler(matches,msg,secondAttempt){
 
     //is the gm trying to directly edit a previous initiative roll?
     if(operator.indexOf("=") != -1){
-      //search for the selected graphic in the turn order
-      var graphicListed = false;
-      //step through the turn order
-      for(var index = 0; index < turnorder.length; index++){
-        //is the token listed here?
-        if(graphic.id == turnorder[index].id){
-          //note that a graphic was found
-          graphicListed = true;
-
-          //note that this turn may no longer be in sequential order
-          turnorder[index].modified = true;
-          //edit the previous initiative roll as instructed
-          //go by the text modifier
-          turnorder[index].pr = numModifier.calc(turnorder[index].pr, operator, modifier).toString();
-
-          //report the resultant initiative roll
-          //report the result to everyone if it is controlled by someone
-          if(character.get("controlledby") != ""){
-              announce(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
-          } else {
-              //report the result to the gm alone if it is an NPC.
-              whisper(graphic.get("name") + " rolls a [[" + turnorder[index].pr + "]] for Initiative.");
-          }
-        }
+      //get the initiative of the previous roll to edit, or find that it doesn't exist
+      var initBonus = turns.getInit(graphic.id);
+      if(initBonus != undefined){
+        //calculate the modified initiative
+        var roll = numModifier.calc(initBonus, operator, modifier) - initBonus;
       }
-
-      //as long as we found the character token listed at least once, we can
-      //safely exit here.
-      if(graphicListed){
-        return;
-      }
-      //if the graphic was not listed, we will need to continue on and
-      //create an entry with the intended modifications
     }
 
-    //If we have made it to this point the user either wants to randomly
-    //roll for the character's initiative, or the there was no initiative
-    //value for them to edit. Therefore the system will need to randomly
-    //roll a value for them to edit.
-
-    //is the gm overwriting the initiative roll with a specific value?
+    //is the gm deciding what the initiative is?
     if(operator == "="){
-      //the bonus is equal to the modifier
+      //the total roll is equal to the modifier
       var initBonus = Number(modifier);
-      //the roll is equal to 0, to preserve "!Init = modifier"
       var roll = 0;
+    }
 
-    }else{
+    //roll initiative with modifiers
+    if(initBonus == undefined){
       //otherwise calculate the bonus as normal.
       var initBonus = calcInitBonus(character, graphic);
       //randomize the roll
       var roll = randomInteger(10);
-
-      //remove "=" from the text operator so we can see how to modify the
-      //initBonus
+      //see how to modify the initBonus
       initBonus = numModifier.calc(initBonus, operator, modifier);
     }
 
@@ -135,109 +94,13 @@ function initiativeHandler(matches,msg,secondAttempt){
     }
 
     //create a turn object
-    var turnObj = {};
-    //default to no custom text
-    turnObj.custom = "";
-    //record the id of the token
-    turnObj.id = graphic.id;
-    //record the total initiative roll
-    turnObj.pr = initBonus + roll;
-    //record it as a string (as that is what it normally is)
-    turnObj.pr = turnObj.pr.toString();
-    //note that this turn might not be in sequential order yet
-    turnObj.modified = true;
-    //record the page id
-    turnObj._pageid = graphic.get("_pageid");
-    //step through the turn order and delete any previous initiative rolls
-    for(index = 0; index < turnorder.length; index++){
-      //has this token already been included?
-      if(turnObj.id == turnorder[index].id){
-        //remove this entry
-        turnorder.splice(index,1);
-        //the array has shrunken, take a step back
-        index--;
-      }
-    }
-    //Add the turnObj to the turn order. We will care about sequential order later
-    turnorder.push(turnObj);
+    var turnObj = turns.toTurnObj(graphic, initBonus + roll);
+    //add the turn
+    turns.addTurn(turnObj);
   });
 
-  //make a turn order that is in sequential order
-  var finalturnorder = [];
-
-  //start by adding every trun that was not modified
-  for(var index = 0; index < turnorder.length; index++){
-    //if no modified attribute was added to the turn, then it was not modified
-    if(turnorder[index].modified == undefined){
-      //keep adding them one after the other, this will retain their original order
-      finalturnorder.push(turnorder[index]);
-    }
-  }
-
-  //next, add the turns that were modified, but be sure to place them in order
-  for(var index = 0; index < turnorder.length; index++){
-    //if no modified attribute was added to the turn, then it was not modified
-    if(turnorder[index].modified){
-      //remove modified note from this turn, we no longer need it
-      turnorder[index].modified = undefined;
-      //create a flag to determine if we added the turn in the for loop
-      var turnAdded = false;
-      //step through the sequential turn order
-      for(var index2 = 0; index2 < finalturnorder.length; index2++){
-        //does the turn we are inserting (turnorder[index]) have greater initiative than the currently examined turn (finalturnorder[index2])?
-        if(Number(turnorder[index].pr) > Number(finalturnorder[index2].pr)){
-          //note that we are adding the turn
-          turnAdded = true;
-          //insert the modified turn here
-          finalturnorder.splice(index2,0,turnorder[index]);
-          //the turn has been inserted, break out of the search for a place to insert it
-          break;
-        //is their initiative the same?
-        } else if(Number(turnorder[index].pr) == Number(finalturnorder[index2].pr)){
-          //be sure the tokens represent characters
-          var challengerAg = undefined;
-          var championAg = undefined;
-          var challengerCharacter = undefined;
-          var championCharacter = undefined;
-          var challengerID = turnorder[index].id;
-          var championID = finalturnorder[index2].id;
-          //only load up the Ag/Detection if the characters exist
-          if(challengerID != undefined && championID != undefined){
-            challengerAg = attrValue("Ag", {graphicid: challengerID});
-            championAg = attrValue("Ag", {graphicid: championID});
-            //the character may not have an Agility attribute, try Detection
-            if(challengerAg == undefined){
-              challengerAg = attrValue("Detection", {graphicid: challengerID});
-            }
-            //the character may not have an Agility attribute, try Detection
-            if(championAg == undefined){
-              championAg = attrValue("Ag", {graphicid: championID});
-            }
-          }
-          //if actual values were found for Ag/Detection for both of them, compare the two
-          if(championAg != undefined && challengerAg != undefined){
-            //if the challenger has greater agility (or == and rolling a 2 on a D2)
-            if(challengerAg > championAg
-            || challengerAg == championAg && randomInteger(2) == 1){
-              //the challenger has just barely edged ahead in initiative order
-              //note that we are adding the turn
-              turnAdded = true;
-              //insert the modified turn here
-              finalturnorder.splice(index2, 0, turnorder[index]);
-              //the turn has been inserted, break out of the search for a place to insert it
-              break;
-            }
-          }
-        }
-      }
-      //if the turn wasn't added anywhere, just throw it on the end
-      if(turnAdded == false){
-        //just throw them onto the end
-        finalturnorder.push(turnorder[index]);
-      }
-    }
-  }
-  Campaign().set("turnorder", JSON.stringify(finalturnorder));
+  //save the resulting turn order
+  turns.save();
 }
 
 //used inside initiativeHandler() multiple times, this calculates the bonus
@@ -294,6 +157,191 @@ function calcInitBonus(charObj, graphicObj){
   }
 }
 
+function INQTurns(){
+
+  //determine if the turn order is in descending order, but treat it as a loop
+  this.isDescending = function(){
+    var prev = undefined;
+    var first = undefined;
+    var LargestIndex = this.largestIndex();
+    for(var i = 0; i < this.turnorder.length; i++){
+      if(!(prev == undefined ||
+        Number(this.turnorder[i].pr) <= prev ||
+        i == LargestIndex)){
+        return false;
+      }
+      if(first == undefined){
+        first = Number(this.turnorder[i].pr);
+      }
+      prev = Number(this.turnorder[i].pr);
+    }
+    if(LargestIndex == 0 || first <= prev || this.turnorder.length == 0){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  //delete any turns that share the given graphic id
+  this.removeTurn = function(graphicid){
+    //step through the turn order and delete any previous initiative rolls
+    for(var i = 0; i < this.turnorder.length; i++){
+      //has this token already been included?
+      if(graphicid == this.turnorder[i].id){
+        //remove this entry
+        this.turnorder.splice(i, 1);
+        //the array has shrunken, take a step back
+        i--;
+      }
+    }
+  }
+
+  //return the index of the largest turn value
+  this.largestIndex = function(){
+    var largestIndex = undefined;
+    var largest = undefined;
+
+    for(var i = 0; i < this.turnorder.length; i++){
+      if(largest == undefined || Number(this.turnorder[i].pr) > largest){
+        largest = Number(this.turnorder[i].pr);
+        largestIndex = i;
+      }
+    }
+
+    return largestIndex;
+  }
+
+  //add or replace a turn
+  this.addTurn = function(turnobj){
+    //delete any previous instances of this character
+    this.removeTurn(turnobj.id);
+    //be sure the turns are properly ordered
+    if(this.isDescending()){
+      //determine where a new turn starts
+      var startIndex = this.largestIndex();
+      //if the array is empty, just add the turn
+      if(startIndex == undefined){
+        return this.turnorder.push(turnobj);
+      }
+      var turnAdded = false;
+      for(var i = startIndex; i < this.turnorder.length; i++){
+        if(this.higherInit(turnobj, this.turnorder[i])){
+          //insert the turn here
+          this.turnorder.splice(i, 0, turnobj);
+          turnAdded = true;
+          break;
+        }
+      }
+
+      if(!turnAdded){
+        for(var i = 0; i < startIndex; i++){
+          if(this.higherInit(turnobj, this.turnorder[i])){
+            //insert the turn here
+            this.turnorder.splice(i, 0, turnobj);
+            turnAdded = true;
+            break;
+          }
+        }
+      }
+      if(!turnAdded){
+        if(startIndex == 0){
+          this.turnorder.push(turnobj);
+        } else {
+          this.turnorder.splice(startIndex, 0, turnobj);
+        }
+      }
+    } else {
+      //just add the turn on the end
+      this.turnorder.push(turnobj);
+    }
+  }
+
+  this.higherInit = function(newTurn, turn){
+    //does the turn we are inserting (newTurn) have greater initiative than the currently examined turn (turn)?
+    if(Number(newTurn.pr) > Number(turn.pr)){
+      return true;
+    //is their initiative the same?
+    } else if(Number(newTurn.pr) == Number(turn.pr)){
+      //be sure the tokens represent characters
+      var challengerAg = undefined;
+      var championAg = undefined;
+      var challengerCharacter = undefined;
+      var championCharacter = undefined;
+      var challengerID = newTurn.id;
+      var championID = turn.id;
+      //only load up the Ag/Detection if the characters exist
+      if(challengerID != undefined && championID != undefined){
+        challengerAg = attrValue("Ag", {graphicid: challengerID});
+        championAg = attrValue("Ag", {graphicid: championID});
+        //the character may not have an Agility attribute, try Detection
+        if(challengerAg == undefined){
+          challengerAg = attrValue("Detection", {graphicid: challengerID});
+        }
+        //the character may not have an Agility attribute, try Detection
+        if(championAg == undefined){
+          championAg = attrValue("Ag", {graphicid: championID});
+        }
+      }
+      //if actual values were found for Ag/Detection for both of them, compare the two
+      if(championAg != undefined && challengerAg != undefined){
+        //if the challenger has greater agility (or == and rolling a 2 on a D2)
+        if(challengerAg > championAg
+        || challengerAg == championAg && randomInteger(2) == 1){
+          return true;
+        }
+      }
+    }
+
+    //if it has not returned true yet, return false
+    return false;
+  }
+
+  //creates a turn object for the listed graphic and initiative roll
+  this.toTurnObj = function(graphic, initiative, custom){
+    //create a turn object
+    var turnObj = {};
+    //default to no custom text
+    turnObj.custom = custom || "";
+    //record the id of the token
+    turnObj.id = graphic.id;
+    //record the total initiative roll
+    turnObj.pr = initiative;
+    if(typeof turnObj.pr == "number"){
+      //record it as a string (as that is what it normally is)
+      turnObj.pr = turnObj.pr.toString();
+    }
+    //record the page id
+    turnObj._pageid = graphic.get("_pageid");
+
+    return turnObj;
+  }
+
+  //get the initiative roll of a turn already in the turn order
+  this.getInit = function(graphicid){
+    for(var i = 0; i < this.turnorder.length; i++){
+      if(graphicid == this.turnorder[i].id){
+        return Number(this.turnorder[i].pr);
+      }
+    }
+    //nothing was found, return undefined
+    return undefined;
+  }
+
+  //save the turn order in the Campaign
+  this.save = function(){
+    Campaign().set("turnorder", JSON.stringify(this.turnorder));
+  }
+
+  //get the JSON string of the turn order and make it into an array
+  if(Campaign().get("turnorder") == ""){
+    //We check to make sure that the turnorder isn't just an empty string first. If it is treat it like an empty array.
+    this.turnorder = [];
+  } else{
+    //otherwise turn the turn order into an array
+    this.turnorder = JSON.parse(Campaign().get("turnorder"));
+  }
+}
+
 //adds the commands after CentralInput has been initialized
 on("ready",function(){
   //matches[0] is the same as msg.content
@@ -310,4 +358,9 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
   //similar to above, but allows the gm to roll and edit initiative without modifiers
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler);
+  //allow the gm to clear the turn tracker
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s+(clear|reset)$/, function(){
+    Campaign().set("turnorder", "");
+    whisper("Initiative cleared.")
+  });
 });
