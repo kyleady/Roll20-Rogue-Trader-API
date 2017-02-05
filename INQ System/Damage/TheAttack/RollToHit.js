@@ -18,6 +18,9 @@ INQAttack.rollToHit = function(){
   //show the roll to hit
   INQAttack.Reports.toHit = "&{template:default} ";
   INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
+  if(INQAttack.inqweapon.FocusSkill){
+    INQAttack.Reports.toHit += "{{Skill=" + GetLink(INQAttack.inqweapon.FocusSkill) + "}} ";
+  }
   INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
   INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
   INQAttack.Reports.toHit += "{{Hits= [[" + INQAttack.hits.toString() + "]]}}";
@@ -74,15 +77,35 @@ INQAttack.getFiringMode = function(){
   }
 }
 
+INQAttack.skillBonus = function(){
+  var bonus = 0;
+  //is there a skill to search for?
+  if(INQAttack.inqweapon.FocusSkill){
+    //check the character for the skill
+    var skill = INQAttack.inqcharacter.has(INQAttack.inqweapon.FocusSkill, "Skills");
+    if(skill){
+      bonus = skill.Bonus;
+    } else {
+      //the skill was not found
+      bonus = -20;
+    }
+  }
+  return bonus;
+}
+
 INQAttack.calcToHit = function(){
   //get the stat used to hit
   INQAttack.stat = "BS"
   if(INQAttack.inqweapon.Class == "Melee"){
     INQAttack.stat = "WS";
   } else if(INQAttack.inqweapon.Class == "Psychic"){
+    //not all psychic attacks use Willpower
     INQAttack.stat = INQAttack.inqweapon.FocusStat;
+    //some psychic attacks are based off of a skill
+    INQAttack.toHit += INQAttack.skillBonus();
     //some psychic attacks have a base modifier
     INQAttack.toHit += INQAttack.inqweapon.FocusModifier;
+
     //psychic attacks get a bonus for the psy rating it was cast at
     INQAttack.toHit += INQAttack.PsyRating * 5;
   }
