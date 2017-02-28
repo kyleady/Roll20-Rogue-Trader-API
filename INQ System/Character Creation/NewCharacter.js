@@ -39,7 +39,7 @@ function newCharacter(matches, msg){
      _type: "character",
      name: characterName
    });
-  } while(duplicateCharacters > 0);
+ } while(duplicateCharacters.length > 0);
 
   //save the unique name
   character.Name = characterName;
