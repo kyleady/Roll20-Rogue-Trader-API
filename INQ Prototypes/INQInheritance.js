@@ -4,6 +4,12 @@ on("ready",function(){
   INQCharacter.prototype = new INQObject();
   INQCharacter.prototype.constructor = INQCharacter;
 
+  INQVehicle.prototype = new INQObject();
+  INQVehicle.prototype.constructor = INQVehicle;
+
+  INQStarship.prototype = new INQObject();
+  INQStarship.prototype.constructor = INQStarship;
+
   INQWeapon.prototype = new INQObject();
   INQWeapon.prototype.constructor = INQWeapon;
 

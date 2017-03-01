@@ -2,13 +2,14 @@
 function INQCharacter(character, graphic){
   //object details
   this.controlledby = "";
+  this.ObjType = "character";
 
   //default character movement
   this.Movement = {};
-  this.Movement.Half = 0;
-  this.Movement.Full = 0;
-  this.Movement.Charge = 0;
-  this.Movement.Run = 0;
+  this.Movement.Half = 1;
+  this.Movement.Full = 2;
+  this.Movement.Charge = 3;
+  this.Movement.Run = 6;
 
   //default character skills and items
   this.List = {};
@@ -134,23 +135,24 @@ function INQCharacter(character, graphic){
 
     //Movement
     //present movement in the form of a table
-    gmnotes += "<table>";
+    gmnotes += "<table><tbody>";
     gmnotes += "<tr>"
     for(var move in this.Movement){
-      gmnotes += "<th><em>" + move + "</em></th>";
+      gmnotes += "<td><strong>" + move + "</strong></td>";
     }
     gmnotes += "</tr>"
     gmnotes += "<tr>"
     for(var move in this.Movement){
-      gmnotes += "<th>" + this.Movement[move] + "</th>";
+      gmnotes += "<td>" + this.Movement[move] + "</td>";
     }
-    gmnotes += "</tr>"
+    gmnotes += "</tr>";
+    gmnotes += "</tbody></table>";
 
     //display every list
     for(var list in this.List){
       //starting with the name of the list
       gmnotes += "<br>";
-      gmnotes += "<u><em>" + list + "</em></u>";
+      gmnotes += "<u><strong>" + list + "</strong></u>";
       gmnotes += "<br>";
       //make a note for each item in the list
       _.each(this.List[list], function(item){
@@ -161,7 +163,7 @@ function INQCharacter(character, graphic){
     //tack on any Special Rules
     _.each(this.SpecialRules, function(rule){
       gmnotes += "<br>";
-      gmnotes += "<em>" + rule.Name + "</em>: ";
+      gmnotes += "<strong>" + rule.Name + "</strong>: ";
       gmnotes += rule.Rule;
       gmnotes += "<br>";
     });
@@ -230,20 +232,9 @@ on("ready", function(){
     } else if(objs.length > 1){
       whisper("Too many matches. Please specify.")
     } else {
-      var obj = new INQCharacter(objs[0]);
-      log("===Movement===")
-      log(obj.Movement)
-      for(var k in obj.List){
-        log("===" + k + "===")
-        _.each(obj.List[k], function(item){
-          log(item)
-        });
-      }
-      log("===Special Rules===")
-      _.each(obj.SpecialRules, function(rule){
-        log(rule)
+      objs[0].get("bio", function(bio){
+        log(bio)
       });
-      whisper("See log")
     }
   });
 });
