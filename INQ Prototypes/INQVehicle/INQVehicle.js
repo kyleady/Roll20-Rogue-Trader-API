@@ -6,8 +6,8 @@ function INQVehicle(){
 
   //default character bio details
   this.Type = "Ground Vehicle"
-  this.TacticalSpeed = 0;
-  this.CruisingSpeed = 0;
+  this.TacticalSpeed = "0 m";
+  this.CruisingSpeed = "0 kph";
   this.Size = "Massive";
   this.Crew = "Driver";
   this.CarryingCapacity = "-";
@@ -57,11 +57,11 @@ function INQVehicle(){
     gmnotes += "<br>";
 
     gmnotes += "<strong>Tactical Speed</strong>: ";
-    gmnotes += this.TacticalSpeed.toString() + " m";
+    gmnotes += this.TacticalSpeed;
     gmnotes += "<br>";
 
     gmnotes += "<strong>Cruising Speed</strong>: ";
-    gmnotes += this.CruisingSpeed.toString() + " kph";
+    gmnotes += this.CruisingSpeed;
     gmnotes += "<br>";
 
     gmnotes += "<strong>";
