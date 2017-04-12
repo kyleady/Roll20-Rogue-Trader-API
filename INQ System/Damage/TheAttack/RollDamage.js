@@ -11,7 +11,12 @@ INQAttack.rollDamage = function(){
   //calculate the damage
   INQAttack.Reports.Damage +=  "{{Damage= [[" + INQAttack.damageFormula() + "]]}} ";
   //note the damage type
-  INQAttack.Reports.Damage +=  "{{Type=  " + INQAttack.inqweapon.DamageType.toNote() + "}} ";
+  if(typeof INQAttack.inqweapon.DamageType == 'string'){
+    var DamageType = GetLink(INQAttack.inqweapon.DamageType);
+  } else {
+    var DamageType = INQAttack.inqweapon.DamageType.toNote();
+  }
+  INQAttack.Reports.Damage +=  "{{Type=  " + DamageType + "}} ";
   //calculate the penetration
   INQAttack.Reports.Damage +=  "{{Pen=  [[" + INQAttack.inqweapon.Penetration.toString() + "]]}} ";
   //add on any special notes

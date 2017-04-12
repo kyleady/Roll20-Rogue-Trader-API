@@ -263,7 +263,8 @@ function INQWeaponParser(){
       } else if(/Corruption/i.test(matches[4])){
         this.FocusStat = "Corruption";
       } else if(/Psyniscience/i.test(matches[4])){
-        this.FocusStat = "Per";
+        this.FocusStat  = "Per";
+        this.FocusSkill = "Psyniscience"; 
       }
     } else {
       whisper("Invalid Focus Power")
