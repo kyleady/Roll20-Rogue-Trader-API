@@ -18,6 +18,9 @@ INQAttack.rollToHit = function(){
   //show the roll to hit
   INQAttack.Reports.toHit = "&{template:default} ";
   INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
+  if(INQAttack.inqweapon.FocusSkill){
+    INQAttack.Reports.toHit += "{{Skill=" + GetLink(INQAttack.inqweapon.FocusSkill) + "}} ";
+  }
   INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
   INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
   INQAttack.Reports.toHit += "{{Hits= [[" + INQAttack.hits.toString() + "]]}}";
@@ -74,15 +77,60 @@ INQAttack.getFiringMode = function(){
   }
 }
 
+INQAttack.skillBonus = function(){
+  var bonus = 0;
+  //is there a skill to search for?
+  if(INQAttack.inqweapon.FocusSkill){
+    //check the character for the skill
+    var skill = INQAttack.inqcharacter.has(INQAttack.inqweapon.FocusSkill, "Skills");
+    if(!skill){
+      bonus = -20;
+    } else if(skill.length > 0){
+      //did the user provide a subgroup?
+      if(INQAttack.inqweapon.FocusSkillGroup){
+        //does the character have the given subgroup?
+        var regex = "^\\s*";
+        regex += INQAttack.inqweapon.FocusSkillGroup.replace(/(-|\s+)/g,"(-|\\s+)");
+        regex += "\\s*$";
+        var re = RegExp(regex, "i");
+        var matchingSubgroup = false;
+        var subgroupModifier = -20;
+        _.each(skill, function(subgroup){
+          if(re.test(subgroup.Name) || /^\s*all\s*$/i.test(subgroup.Name)){
+            //overwrite the subgroup's modifier if it is better
+            if(subgroup.Bonus > subgroupModifier){
+              subgroupModifier = subgroup.Bonus;
+            }
+          }
+        });
+        //if the character does not have a matching subgroup, give them a flat -20 modifier
+        bonus = subgroupModifier;
+      } else {
+        whisper("Psychic Power did not provide a skill group.");
+        bonus = -20;
+      }
+    //the skill was found, and there is no need to match subgroups
+    } else {
+      //the skill was not found
+      bonus = skill.Bonus;
+    }
+  }
+  return bonus;
+}
+
 INQAttack.calcToHit = function(){
   //get the stat used to hit
   INQAttack.stat = "BS"
   if(INQAttack.inqweapon.Class == "Melee"){
     INQAttack.stat = "WS";
   } else if(INQAttack.inqweapon.Class == "Psychic"){
+    //not all psychic attacks use Willpower
     INQAttack.stat = INQAttack.inqweapon.FocusStat;
+    //some psychic attacks are based off of a skill
+    INQAttack.toHit += INQAttack.skillBonus();
     //some psychic attacks have a base modifier
     INQAttack.toHit += INQAttack.inqweapon.FocusModifier;
+
     //psychic attacks get a bonus for the psy rating it was cast at
     INQAttack.toHit += INQAttack.PsyRating * 5;
   }
