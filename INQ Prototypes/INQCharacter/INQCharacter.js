@@ -48,6 +48,8 @@ function INQCharacter(character, graphic){
 
   this.Attributes.Wounds = 1;
   this.Attributes["Unnatural Wounds"] = 0;
+  this.Attributes.Fatigue = 0;
+
   this.Attributes.Armour_H = 0;
   this.Attributes.Armour_RA = 0;
   this.Attributes.Armour_LA = 0;

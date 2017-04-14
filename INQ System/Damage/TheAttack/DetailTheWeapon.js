@@ -132,11 +132,20 @@ INQAttack.customizeWeapon = function(){
         _.each(INQAttack.options[label].split(","), function(element){
           INQAttack.inqweapon[label].push(new INQLink(element.trim()));
         });
+        //check if the value we are overwriting is a number
+      } else if(typeof INQAttack.inqweapon[label] == 'number'){
+        INQAttack.inqweapon[label] = Number(INQAttack.options[label]);
       } else {
         //otherwise simply overwrite the label
         INQAttack.inqweapon[label] = INQAttack.options[label];
       }
     }
+  }
+
+  if(typeof INQAttack.inqweapon.Special == 'string'){
+    INQAttack.inqweapon.Special = _.map(INQAttack.inqweapon.split(","), function(rule){
+      return new INQLink(rule);
+    });
   }
 }
 
