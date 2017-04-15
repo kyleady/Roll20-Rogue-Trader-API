@@ -8,7 +8,7 @@ INQAttack.expendAmmunition = function(){
   if(INQAttack.inqammo){
     INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.inqammo.toLink();
   }
-  INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.mode + "(" + INQAttack.maxHits + ")";
+  INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.options.RoF.toTitleCase();
   if(INQAttack.inqweapon.Class == "Psychic"){
     INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
   }

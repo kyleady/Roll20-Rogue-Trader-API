@@ -33,7 +33,7 @@ INQAttack.getFiringMode = function(){
   _.each(["Single", "Semi", "Full"], function(RoF){
     if(INQAttack.options.RoF == undefined
     && INQAttack.inqweapon[RoF]){
-      INQAttack.options.RoF = RoF;
+      INQAttack.options.RoF = RoF + "(" + INQAttack.inqweapon[RoF] + ")";
     }
   });
   //if nothing was valid, go for single
@@ -65,6 +65,12 @@ INQAttack.getFiringMode = function(){
   } else if(/called/i.test(INQAttack.options.RoF)){
     if(INQAttack.inqweapon.Class != "Psychic"){
       INQAttack.toHit += -20;
+    }
+    INQAttack.maxHits = 1;
+    INQAttack.mode = "Single";
+  } else if(/all\s*out/i.test(INQAttack.options.RoF)){
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.toHit += 30;
     }
     INQAttack.maxHits = 1;
     INQAttack.mode = "Single";

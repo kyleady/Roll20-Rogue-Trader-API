@@ -158,25 +158,19 @@ function INQWeapon(obj){
       options.Modifier = "?{Modifier|0}";
 
       var rates = [];
-      //if single, add Called Shot as well
-      if(this.Single){
-        rates.push("Single");
-        //psychic attacks cannot make called shots
-        if(this.Class != "Psychic"){
-          rates.push("Called Shot");
-        }
-      }
       if(this.Semi){
         rates.push("Semi Auto(" + this.Semi.toString() + ")");
       }
       if(this.Full){
         rates.push("Full Auto(" + this.Full.toString() + ")");
       }
-      if(rates.length == 0){
+      //if single, add Called Shot as well
+      if(this.Single || rates.length == 0){
         rates.push("Single");
         //psychic attacks cannot make called shots
         if(this.Class != "Psychic"){
           rates.push("Called Shot");
+          rates.push("All Out Attack");
         }
       }
       if(this.Class == "Melee"){
