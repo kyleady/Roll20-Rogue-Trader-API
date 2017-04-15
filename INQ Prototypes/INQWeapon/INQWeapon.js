@@ -170,7 +170,9 @@ function INQWeapon(obj){
         //psychic attacks cannot make called shots
         if(this.Class != "Psychic"){
           rates.push("Called Shot");
-          rates.push("All Out Attack");
+          if(this.Class == "Melee"){
+            rates.push("All Out Attack");
+          }
         }
       }
       if(this.Class == "Melee"){

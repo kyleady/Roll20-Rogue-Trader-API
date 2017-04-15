@@ -81,6 +81,8 @@ INQAttack.getFiringMode = function(){
     INQAttack.maxHits = 1;
     INQAttack.mode = "Single";
   }
+
+  INQAttack.shotsFired = INQAttack.maxHits;
 }
 
 INQAttack.skillBonus = function(){

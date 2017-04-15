@@ -20,10 +20,10 @@ INQAttack.expendAmmunition = function(){
   }
   //determine how many shots were fired
   if(INQAttack.options.freeShot){
-    var shotsFired = 0;
-  } else {
-    var shotsFired = INQAttack.maxHits;
+    INQAttack.shotsFired = 0;
   }
+
+  INQAttack.shotsFired *= INQAttack.shotsMultiplier;
 
   //be sure this weapon uses ammunition
   if(INQAttack.inqweapon.Clip > 0){
@@ -48,10 +48,10 @@ INQAttack.expendAmmunition = function(){
         alert: false}
       );
       //minus the shots fired from the max
-      Ammo = INQAttack.inqweapon.Clip - shotsFired;
+      Ammo = INQAttack.inqweapon.Clip - INQAttack.shotsFired;
     } else {
       //minus the shots fired from the clip
-      Ammo -= shotsFired;
+      Ammo -= INQAttack.shotsFired;
     }
     //be sure you can even spend this much ammo
     if(Ammo < 0){
