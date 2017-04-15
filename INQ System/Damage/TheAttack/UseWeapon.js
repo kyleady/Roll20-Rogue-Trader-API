@@ -23,7 +23,7 @@ INQAttack.useWeapon = function(matches,msg){
     //reset the report
     INQAttack.Reports = {};
     //prepare attack variables for each character's attack
-    INQAttack.prepareVariables();4
+    INQAttack.prepareVariables();
     //detail the character (or make a dummy character)
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
     //get the weapon specified and be sure nothing went wrong
@@ -124,6 +124,7 @@ INQAttack.prepareVariables = function(){
   INQAttack.unnaturalSuccesses = 0;
   INQAttack.shotsMultiplier = 1;
   INQAttack.hitsMultiplier = 1;
+  INQAttack.maxHitsMultiplier = 1;
 
 }
 

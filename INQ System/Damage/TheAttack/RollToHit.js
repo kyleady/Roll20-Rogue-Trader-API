@@ -143,6 +143,8 @@ INQAttack.calcToHit = function(){
 }
 //calculate the number of hits based on the
 INQAttack.calcHits = function(){
+  //account for any extra ammo this may spend
+  INQAttack.maxHits *= INQAttack.maxHitsMultiplier;
   //determine the successes based on the roll
   INQAttack.successes = Math.floor((INQAttack.toHit-INQAttack.d100)/10) + INQAttack.unnaturalSuccesses;
   //calculate the number of hits based on the firing mode
@@ -153,11 +155,11 @@ INQAttack.calcHits = function(){
   } else if(INQAttack.toHit - INQAttack.d100 >= 0){
     INQAttack.hits = 1;
     switch(INQAttack.mode){
-      case "Semi":
-        INQAttack.hits += Math.floor(INQAttack.successes/2);
-      break;
       case "Full":
         INQAttack.hits += INQAttack.successes
+      break;
+      default: //"Semi"
+        INQAttack.hits += Math.floor(INQAttack.successes/2);
       break;
     }
     //be sure the number of hits is not over the max (and that there is a max)
@@ -167,9 +169,6 @@ INQAttack.calcHits = function(){
   }
   //account for any hits bonuses
   INQAttack.hits *= INQAttack.hitsMultiplier;
-  INQAttack.hits *= INQAttack.shotsMultiplier;
-  //account for any extra ammo this may spend
-  INQAttack.maxHits *= INQAttack.shotsMultiplier;
 }
 
 //a list of all the special rules that affect the toHit calculations
@@ -177,4 +176,5 @@ INQAttack.accountForHitsSpecialRules = function(){
   INQAttack.accountForStorm();
   INQAttack.accountForBlast();
   INQAttack.accountForSpray();
+  INQAttack.accountForTwinLinked();
 }

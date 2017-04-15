@@ -64,6 +64,7 @@ INQAttack.accountForForce = function(){
 INQAttack.accountForStorm = function(){
   if(INQAttack.inqweapon.has("Storm")){
     INQAttack.shotsMultiplier *= 2;
+    INQAttack.hitsMultiplier *= 2;
   }
 }
 
@@ -75,7 +76,7 @@ INQAttack.accountForBlast = function(){
     _.each(blast, function(value){
       if(Number(value.Name)){
         INQAttack.hitsMultiplier *= Number(value.Name);
-      }
+      }d
     });
   }
 }
@@ -86,6 +87,17 @@ INQAttack.accountForSpray = function(){
   if(INQAttack.inqweapon.has("Spray")){
     INQAttack.hitsMultiplier *= Math.ceil(INQAttack.inqweapon.Range/4) + randomInteger(5);
     INQAttack.autoHit = true;
+  }
+}
+
+//Twin-linked weapons have +20 to hit
+//Twin-linked weapons can hit twice as much
+//Twin-linked, single shots can hit twice if they roll 2+ successes
+INQAttack.accountForTwinLinked = function(){
+  if(INQAttack.inqweapon.has("Twin-linked")){
+    INQAttack.toHit += 20;
+    INQAttack.shotsMultiplier *= 2;
+    INQAttack.maxHitsMultiplier *= 2;
   }
 }
 
