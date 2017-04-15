@@ -101,6 +101,18 @@ INQAttack.accountForTwinLinked = function(){
   }
 }
 
+//Crushing blow + All Out Attack => Pen += StrB/2
+//Crushing blow + All Out Attack => Concussive(2)
+INQAttack.accountForHammerBlow = function(){
+  if(/all\s*out/i.test(INQAttack.options.RoF)){
+    if(INQAttack.inqcharacter != undefined){
+      INQAttack.inqweapon.Penetration += Math.ceil(INQAttack.inqcharacter.bonus("S")/2);
+    }
+    var concussive2 = new INQLink("Concussive(2)");
+    INQAttack.inqweapon.Special.push(concussive2);
+  }
+}
+
 //special ammunition will explicitly note stat modifications
 //apply damage modifications
 INQAttack.accountForDamage = function(){
