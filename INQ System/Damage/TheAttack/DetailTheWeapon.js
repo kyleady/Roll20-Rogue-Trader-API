@@ -130,7 +130,9 @@ INQAttack.customizeWeapon = function(){
       //if label -> array, don't overwrite just add each item on as a link
       if(Array.isArray(INQAttack.inqweapon[label])){
         _.each(INQAttack.options[label].split(","), function(element){
-          INQAttack.inqweapon[label].push(new INQLink(element.trim()));
+          if(element.trim() != ""){
+            INQAttack.inqweapon[label].push(new INQLink(element.trim()));
+          }
         });
         //check if the value we are overwriting is a number
       } else if(typeof INQAttack.inqweapon[label] == 'number'){
