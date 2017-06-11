@@ -121,9 +121,10 @@ function eachCharacter(msg, func){
       }
 
       //if there is still no token, warn the user and gm, then exit
-      whisper(character.get("name") + " does not have a token on any map in the entire campaign.", msg.playerid);
-      return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
-
+      if(graphic == undefined){
+        whisper(character.get("name") + " does not have a token on any map in the entire campaign.", msg.playerid);
+        return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
+      }
     //if the gm just grabbed every single token on the map, you will already
     //have the graphic objects, and will need to find the character objects.
     } else if(typeof obj.get === "function" && obj.get("_type") == "graphic") {
