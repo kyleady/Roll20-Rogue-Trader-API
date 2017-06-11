@@ -154,7 +154,7 @@ function INQWeapon(obj){
     var options = options || new Hash();
     //include a toHit modifier unless the weapon auto hits
     //include RoF options unless it auto hits
-    if(!this.has("Spray")){
+    if(!this.has("Spray") || this.Class == "Psychic"){
       options.Modifier = "?{Modifier|0}";
 
       var rates = [];
