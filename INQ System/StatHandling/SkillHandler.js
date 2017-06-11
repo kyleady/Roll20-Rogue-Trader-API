@@ -9,14 +9,15 @@ INQSkill = {};
   //matches[5] - alternate characteristic
 INQSkill.skillHandler = function(matches, msg){
   //store the input variables
-  var skillName = matches[1];
-  var skillSubgroup = matches[2];
+  var gmwhisper = matches[1];
+  var skillName = matches[2];
+  var skillSubgroup = matches[3];
   if(matches[4]){
-    var modifier = Number(matches[3] + matches[4]);
+    var modifier = Number(matches[4] + matches[5]);
   } else {
     var modifier = 0;
   }
-  var stat = matches[5];
+  var stat = matches[6];
 
   //determine the actual name of the skill
   //and use its defaultStat
@@ -103,7 +104,7 @@ INQSkill.skillHandler = function(matches, msg){
       });
     }
     //call upon the stat handler to make the actual roll
-    statRoll(["", "", stat, modifierSign, modifierAbsValue], fakeMsg, options);
+    statRoll(["", gmwhisper, stat, modifierSign, modifierAbsValue], fakeMsg, options);
   });
 }
 
@@ -211,6 +212,7 @@ INQSkill.regex = function(group){
 
 on("ready", function(){
   var regex = "^!\\s*";
+  regex += "(gm|)\\s*";
   regex += INQSkill.regex("skills") + "\\s*";
   regex += "(?:\\(([^\\(\\)]+)\\))?\\s*";
   regex += "(?:(\\+|-)\\s*(\\d+))?\\s*";

@@ -76,7 +76,7 @@ INQAttack.accountForBlast = function(){
     _.each(blast, function(value){
       if(Number(value.Name)){
         INQAttack.hitsMultiplier *= Number(value.Name);
-      }d
+      }
     });
   }
 }
@@ -104,10 +104,10 @@ INQAttack.accountForTwinLinked = function(){
 //Crushing blow + All Out Attack => Pen += StrB/2
 //Crushing blow + All Out Attack => Concussive(2)
 INQAttack.accountForHammerBlow = function(){
-  if(/all\s*out/i.test(INQAttack.options.RoF)){
-    if(INQAttack.inqcharacter != undefined){
-      INQAttack.inqweapon.Penetration += Math.ceil(INQAttack.inqcharacter.bonus("S")/2);
-    }
+  if(INQAttack.inqcharacter == undefined){return;}
+  if(/all\s*out/i.test(INQAttack.options.RoF)
+  && INQAttack.inqcharacter.has("Hammer Blow", "Talents")){
+    INQAttack.inqweapon.Penetration += Math.ceil(INQAttack.inqcharacter.bonus("S")/2);
     var concussive2 = new INQLink("Concussive(2)");
     INQAttack.inqweapon.Special.push(concussive2);
   }

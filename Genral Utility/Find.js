@@ -12,7 +12,7 @@ function journalSearch(matches, msg){
     //the gm can view any handout or character
     if(playerIsGM(msg.playerid)){return true;}
     //be sure the current player can view this handout/character
-    var permissions = result.get("inplayerjournals").split(",");
+    var permissions = obj.get("inplayerjournals").split(",");
     return permissions.indexOf("all") != -1 || permissions.indexOf(msg.playerid)
   });
 

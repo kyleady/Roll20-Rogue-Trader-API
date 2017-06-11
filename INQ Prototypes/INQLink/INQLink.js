@@ -13,10 +13,10 @@ function INQLink(text){
   }
 
   //display the handout as a link with details
-  this.toNote = function(){
+  this.toNote = function(justText){
     var output = "";
     //do we already know the link?
-    if(this.ObjID != ""){
+    if(this.ObjID != "" || justText){
       output += this.toLink();
     } else {
       output += GetLink(this.Name);

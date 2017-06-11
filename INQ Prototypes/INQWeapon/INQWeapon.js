@@ -158,14 +158,8 @@ function INQWeapon(obj){
       options.Modifier = "?{Modifier|0}";
 
       var rates = [];
-      if(this.Semi){
-        rates.push("Semi Auto(" + this.Semi.toString() + ")");
-      }
-      if(this.Full){
-        rates.push("Full Auto(" + this.Full.toString() + ")");
-      }
       //if single, add Called Shot as well
-      if(this.Single || rates.length == 0){
+      if(this.Single || !(this.Semi || this.Full) ){
         rates.push("Single");
         //psychic attacks cannot make called shots
         if(this.Class != "Psychic"){
@@ -174,6 +168,12 @@ function INQWeapon(obj){
             rates.push("All Out Attack");
           }
         }
+      }
+      if(this.Semi){
+        rates.push("Semi Auto(" + this.Semi.toString() + ")");
+      }
+      if(this.Full){
+        rates.push("Full Auto(" + this.Full.toString() + ")");
       }
       if(this.Class == "Melee"){
         if(inqcharacter.has("Swift Attack")){
@@ -191,6 +191,8 @@ function INQWeapon(obj){
         });
         options.RoF = options.RoF.replace(/\|$/,"");
         options.RoF += "}";
+      } else if(rates.length == 1){
+        options.RoF = rates[0];
       }
     }
     //allow the player to specify their effective psy rating
@@ -212,6 +214,29 @@ function INQWeapon(obj){
         options.Ammo += "}";
       }
     }
+
+    //custom weapons need all of their details stored in the ability
+    if(options.custom){
+      for(var k in this){
+        if(typeof this[k] != 'function'){
+          if(typeof this[k] == 'object'){
+            if(Array.isArray(this[k])){
+              var specialRules = "";
+              _.each(this[k], function(rule){
+                specialRules += rule.toNote(true) + ", ";
+              });
+              specialRules = specialRules.replace(/, $/,"");
+              options[k] = specialRules;
+            } else {
+              options[k] = this[k].toNote(true);
+            }
+          } else {
+            options[k] = this[k].toString();
+          }
+        }
+      }
+    }
+
     output += options.toString();
     return output;
   }

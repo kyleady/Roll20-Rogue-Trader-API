@@ -542,7 +542,7 @@ charImport.makeCharacter = function(){
 }
 
 on("ready",function(){
-  CentralInput.addCMD(/^!\s*import\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacter(matches[1])){
       charImport.convert();
     }
@@ -1834,7 +1834,7 @@ function GetLink (Name,Link){
 */
 //accept the command
 on("chat:message", function(msg) {
-if(msg.type == 'api' && msg.content.indexOf('!Import ') == 0 && playerIsGM(msg.playerid)){
-    XenosImport(msg.content.substring(8));
+if(msg.type == 'api' && msg.content.indexOf('!Import character ') == 0 && playerIsGM(msg.playerid)){
+    XenosImport(msg.content.substring(17));
 }
 });
