@@ -98,11 +98,15 @@ INQAttack.addWeapon = function(matches, msg){
     //parse the character
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
     //try to insert the link before continuing
+    /*
     if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
+    */
     //only add an ability if it isn't gear
     if(inqweapon.Class != "Gear"){
       //add the token action to the character
       INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
+    } else {
+      whisper("Add Weapon is not prepared to create an Ability for Gear.");
     }
     //report the success
     whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", msg.playerid);

@@ -86,7 +86,9 @@ INQAttack.accountForBlast = function(){
 INQAttack.accountForSpray = function(){
   if(INQAttack.inqweapon.has("Spray")){
     INQAttack.hitsMultiplier *= Math.ceil(INQAttack.inqweapon.Range/4) + randomInteger(5);
-    INQAttack.autoHit = true;
+    if(INQAttack.inqweapon.Class != "Psychic"){
+      INQAttack.autoHit = true;
+    }
   }
 }
 

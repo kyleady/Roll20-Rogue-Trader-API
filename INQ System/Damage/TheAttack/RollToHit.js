@@ -33,7 +33,10 @@ INQAttack.getFiringMode = function(){
   _.each(["Single", "Semi", "Full"], function(RoF){
     if(INQAttack.options.RoF == undefined
     && INQAttack.inqweapon[RoF]){
-      INQAttack.options.RoF = RoF + "(" + INQAttack.inqweapon[RoF] + ")";
+      INQAttack.options.RoF = RoF;
+      if(RoF != "Single"){
+        INQAttack.options.RoF += "(" + INQAttack.inqweapon[RoF] + ")";
+      }
     }
   });
   //if nothing was valid, go for single
