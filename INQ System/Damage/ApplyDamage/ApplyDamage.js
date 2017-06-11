@@ -71,6 +71,7 @@ function applyDamage (matches,msg){
 
     //reset the damage
     var damage = Number(INQAttack.Dam.get("current"));
+    log("damage: " + damage)
 
     //be sure the damage type matches the targetType
     if(!INQAttack.appropriateDamageType()){return;}

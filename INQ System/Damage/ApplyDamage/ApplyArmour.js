@@ -104,8 +104,10 @@ on("ready",function(){
 
     //find the hit location
     var hitLocation = getHitLocation(this.TensLoc.get("current"), this.OnesLoc.get("current"), this.targetType);
+    log("Hit Location: " + hitLocation)
     //get the armor of the target
     var armour = attrValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
+    log("Armour: " + armour)
 
     //turn armour into a valid number
     if(!armour){
@@ -118,12 +120,14 @@ on("ready",function(){
 
     //is the attack primitive?
     if(Number(this.Prim.get("current")) > 0){
+      log("Primitive Attack")
       //the armour is twice as protective against primitive attacks
       armour *= 2;
     }
 
     //is the armour primitive?
     if(this.primArmour){
+      log("Primitive Armour")
       //the primitive armour is half as effective
       armour /= 2;
     }
@@ -139,11 +143,13 @@ on("ready",function(){
       }
     }else {
       //all other targets treat penetration normally
+      log("Penetration: " + this.Pen.get("current"))
       armour -= this.Pen.get("current");
       //be sure the penetration doesn't overshoot the armour
       if(armour < 0){
         armour = 0;
       }
+      log("Armour after Pen: " + armour)
     }
 
     //apply the armour to the damage
@@ -153,6 +159,8 @@ on("ready",function(){
     if(damage < 0){
       damage = 0;
     }
+
+    log("Damage after Armour: " + damage)
 
     //report the reduced damage
     return damage;
