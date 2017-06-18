@@ -29,7 +29,7 @@ function saveHitLocation(roll){
       } Location += "Leg"; break;
   }
   //send the total Damage at a 1 second delay
-  setTimeout(sendChat,100,"System","/w gm <strong>Location</strong>: " + Location)
+  setTimeout(whisper,100,"<strong>Location</strong>: " + Location);
 }
 
 
