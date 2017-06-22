@@ -26,13 +26,13 @@ function importWeapon(matches, msg){
       inqweapon.Range = Number(detail.match(/^(\d+)\s*k?m$/)[1]);
 
     //Rate of Fire
-    } else if(/^(S|-)\s*\/\s*(\d+|-)\s*\/\s*(\d+|-)$/.test(detail)){
-      var RoFmatches = detail.match(/^(S|-)\s*\/\s*(\d+|-)\s*\/\s*(\d+|-)$/);
+    } else if(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/.test(detail)){
+      var RoFmatches = detail.match(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/);
       inqweapon.Single = RoFmatches[1] == "S";
-      if(RoFmatches[2] != "-"){
+      if(Number(RoFmatches[2])){
         inqweapon.Semi = Number(RoFmatches[2]);
       }
-      if(RoFmatches[3] != "-"){
+      if(Number(RoFmatches[3])){
         inqweapon.Full = Number(RoFmatches[3]);
       }
 
