@@ -9,34 +9,66 @@ function getCritLink(matches, msg, options){
   if(options["show"] == undefined){
     options["show"] = true;
   }
-  //the link to the crit table
-  var critLink = "";
   //what is the type of damage being used? Or is the target not a character?
   var damageType = matches[1].toLowerCase();
   //what is the hit location
   var hitLocation = matches[2];
 
-  //if no damage type was given, search for the Damage Type attribute in the
-  //campaign
   if(damageType == ""){
     var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
     if(DamTypeObj == undefined){
-      if(options["show"]){
+      if(!playerIsGM(msg.playerid)){
         whisper("There is no Damage Type attribute in the campaign.",msg.playerid);
-        whisper("There is no Damage Type attribute in the campaign.");
       }
+      whisper("There is no Damage Type attribute in the campaign.");
       return critLink;
     }
     damageType = DamTypeObj.get("current").toLowerCase();
   }
 
+  if(hitLocation == ""){
+    //retrieve the hit location attributes in the campaign
+    onesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
+    tensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
+    //be sure they were found
+    var successfulLoad = true;
+    if(onesLocObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named OnesLocation was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(tensLocObj == undefined){
+      successfulLoad = false;
+      whisper("No attribute named TensLocation was found anywhere in the campaign. Damage was not recorded.");
+    }
+    if(successfulLoad){
+      if(damageType[0] == "v"){
+        switch(Number(onesLocObj.get("current"))){
+          case 1: case 2:
+            damageType = "Motive Systems";
+          break;
+          case 7: case 8:
+            damageType = "Weapon";
+          break;
+          case 9: case 0:
+            damageType = "Turret";
+          break;
+          default:
+            damageType = "Hull";
+          break;
+        }
+      } else {
+        hitLocation = getHitLocation(tensLocObj.get("current"), onesLocObj.get("current"));
+      }
+    }
+  }
+
   //determine table type based on user input
   switch (damageType){
     case "v": case "vehicle":
-      critLink = GetLink("Vehicle Critical Effects");
+      damageType = "Vehicle";
     break;
     case "s": case "starship":
-      critLink = GetLink("Starship Critical Effects");
+      damageType = "Starship";
     break;
     case "i": case "impact":
       damageType = "Impact";
@@ -52,27 +84,6 @@ function getCritLink(matches, msg, options){
     break;
   }
 
-  //if no hit location was input, default to the stored hit location
-  //unless the link was already found
-  if(hitLocation == "" && critLink == ""){
-    //retrieve the hit location attributes in the campaign
-    onesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
-    tensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
-    //be sure they were found
-    var successfulLoad = true;
-    if(onesLocObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named OnesLocation was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(tensLocObj == undefined){
-      successfulLoad = false;
-      whisper("No attribute named TensLocation was found anywhere in the campaign. Damage was not recorded.");
-    }
-    if(successfulLoad){
-      hitLocation = getHitLocation(tensLocObj.get("current"), onesLocObj.get("current"));
-    }
-  }
-
   //determine hit location based on user input
   if(/^(h|head)$/i.test(hitLocation)){
     hitLocation = "Head";
@@ -82,21 +93,34 @@ function getCritLink(matches, msg, options){
     hitLocation = "Body";
   } else if(/^((|l|r)\s*l|(|left|right)\s*legs?)$/i.test(hitLocation)){
     hitLocation = "Leg";
-  //invalid location
-  } else {
+  } else if(/^motive\s*(systems)?$/i.test(hitLocation)){
+    damageType = "Motive Systems";
+    hitLocation = "";
+  } else if(/^hull$/i.test(hitLocation)){
+    damageType = "Hull";
+    hitLocation = "";
+  } else if(/^weapon$/i.test(hitLocation)){
+    damageType = "Weapon";
+    hitLocation = "";
+  } else if(/^turret$/i.test(hitLocation)){
+    damageType = "Turret";
     hitLocation = "";
   }
 
   //get the link to the Crit table
-  //unless we have already found the link
-  if(critLink == ""){
-    critLink = GetLink(damageType + " Critical Effects - " + hitLocation);
+  var critTitle = damageType + " Critical Effects";
+  if(hitLocation){
+    critTitle += " - " + hitLocation;
   }
+  var critLink = GetLink(critTitle);
+
+  //report the link
   if(options["show"]){
     //now that damage type and location have been determined, return the link to
     //the gm
     whisper("**Critical Hit**: " + critLink, msg.playerid);
   }
+
   //return the crit link for use in other functions
   return critLink;
 }
@@ -105,5 +129,5 @@ function getCritLink(matches, msg, options){
 on("ready",function(){
   //Lets anyone get a quick link to critical effects table based on user input
   //or based on the damage type and hit location stored in the damage variables
-  CentralInput.addCMD(/^!\s*crit\s*\?\s*(|v|vehicle|s|starship|i|impact|e|energy|r|rending|x|explosive)\s*(|h|head|(?:|l|r)\s*(?:a|l)|(?:|left|right)\s*(?:arm|leg)s?|b|body)\s*$/i,getCritLink,true);
+  CentralInput.addCMD(/^!\s*crit\s*\?\s*(|v|vehicle|s|starship|i|impact|e|energy|r|rending|x|explosive)\s*(|h|head|(?:|l|r)\s*(?:a|l)|(?:|left|right)\s*(?:arm|leg)s?|b|body|motive(?: systems)?|hull|weapon|turret)\s*$/i,getCritLink,true);
 });

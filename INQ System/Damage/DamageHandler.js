@@ -165,7 +165,7 @@ function hitlocationHandler(matches,msg){
       targeting += "Leg";
     break;
 
-    //vehicles and starships
+    //vehicle and starship armour facings
     case "front": case "f": case "fore":
       tensLocObj.set('current', "0");
       targeting = "Front";
@@ -185,6 +185,24 @@ function hitlocationHandler(matches,msg){
     case "port": case "p":
       tensLocObj.set('current', "-3");
       targeting = "Port";
+    break;
+
+    //vehicle hit locations
+    case "motive": case "motive systems":
+      onesLocObj.set('current', "1");
+      targeting = "Motive Systems";
+    break;
+    case "hull":
+      onesLocObj.set('current', "3");
+      targeting = "Hull";
+    break;
+    case "weapon":
+      onesLocObj.set('current', "7");
+      targeting = "Weapon";
+    break;
+    case "turret":
+      onesLocObj.set('current', "9");
+      targeting = "Turret";
     break;
   }
 
@@ -216,5 +234,5 @@ on("ready",function(){
   //Lets the gm view the attack variables in a susinct format
   CentralInput.addCMD(/^!\s*(|max)\s*attack\s*\?\s*$/i,attackShow);
   //Lets the gm specify the hit location
-  CentralInput.addCMD(/^!\s*target\s*=\s*(|l|r|left|right)\s*(h|head|a|arm|b|body|l|leg|f|front|s|side|starboard|p|port|r|rear|aft)\s*$/i,hitlocationHandler);
+  CentralInput.addCMD(/^!\s*target\s*=\s*(|l|r|left|right)\s*(h|head|a|arm|b|body|l|leg|f|front|s|side|starboard|p|port|r|rear|aft|hull|weapon|turret|motive(?: systems)?)\s*$/i,hitlocationHandler);
 });

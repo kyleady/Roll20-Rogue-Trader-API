@@ -1,3 +1,21 @@
+function attrTable(name, current, max, options){
+  options = options || {};
+  if(options["color"] == undefined){
+    options["color"] = "00E518";
+  }
+  var attrTable = "<table border = \"2\" width = \"100%\">";
+  //title
+  attrTable += "<caption>" + name + "</caption>";
+  //label row - Current, Max
+  attrTable += "<tr bgcolor = \"" + options["color"] + "\"><th>Current</th><th>Max</th></tr>";
+  //temporary attribute row (current, max)
+  attrTable += "<tr bgcolor = \"White\"><td>" + current + "</td><td>" + max + "</td></tr>";
+  //end table
+  attrTable += "</table>";
+
+  return attrTable;
+}
+
 //general use stat modifier/reporter
 //matches[0] is the same as msg.context
 //matches[1] is whether or not the user is editting the max attribute (if == "max")
@@ -91,12 +109,14 @@ function statHandler(matches,msg,options){
         //end here before showing any results
         return;
       }
-      //add some formating to name if it isn't empty
-      if(name != ""){
-        name = name + "'s ";
+      //show the change
+      if(isMax){
+        maxAttr = stat;
+      } else {
+        currentAttr = stat;
       }
       //whisper the result of the querry to just the user
-      whisper(name + "<strong>" + statName + "</strong> " + operator + " " + sign + modifier + ": [[" + stat.toString() + "]]", msg.playerid);
+      whisper(name + attrTable(statName, currentAttr, maxAttr), msg.playerid);
     //otherwise the user is editing the attribute
     } else if(operator.indexOf("=") != -1){
       //save the result
@@ -115,15 +135,7 @@ function statHandler(matches,msg,options){
         return;
       }
 
-      var attrTable = "<table border = \"2\" width = \"100%\">";
-      //title
-      attrTable += "<caption>" + statName + "</caption>";
-      //label row - Current, Max
-      attrTable += "<tr bgcolor = \"00E518\"><th>Current</th><th>Max</th></tr>";
-      //temporary attribute row (current, max)
-      attrTable += "<tr bgcolor = \"White\"><td>" + currentAttr + "</td><td>" + maxAttr + "</td></tr>";
-      //end table
-      attrTable += "</table>";
+      var output = attrTable(statName, currentAttr, maxAttr);
 
       //show the change
       if(isMax){
@@ -132,17 +144,7 @@ function statHandler(matches,msg,options){
         currentAttr = stat;
       }
 
-      attrTable += "<table border = \"2\" width = \"100%\">";
-      //title (an arrow pointing to the result)
-      attrTable += "<caption>|</caption>";
-      attrTable += "<caption>V</caption>";
-      //label row - Current, Max
-      attrTable += "<tr bgcolor = \"Yellow\"><th>Current</th><th>Max</th></tr>";
-      //modified attribute row (current, max)
-      attrTable += "<tr bgcolor = \"White\"><td>" + currentAttr + "</td><td>" + maxAttr  + "</td></tr>";
-      //end table
-      attrTable += "</table>";
-
+      output += attrTable("|\nV", currentAttr, maxAttr, "Yellow");
 
       if(options["partyStat"]){
         //get the list of people who can view the host character sheet
@@ -150,22 +152,22 @@ function statHandler(matches,msg,options){
         //can everyone see the sheet?
         if(viewers.indexOf("all") != -1){
           //publicly announce the change to everyone
-          announce(name + attrTable);
+          announce(name + output);
         } else {
           if(viewers[0] != ""){
             //inform each player that can view the attribute of the change
             _.each(viewers, function(viewer){
-              whisper(name + attrTable,viewer);
+              whisper(name + output,viewer);
             });
           }
           //also inform the gm
-          whisper(name + attrTable);
+          whisper(name + output);
         }
       } else {
         //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
-        whisper(name + attrTable,msg.playerid);
+        whisper(name + output, msg.playerid);
         if(playerIsGM(msg.playerid) == false){
-          whisper(name + attrTable);
+          whisper(name + output);
         }
       }
     }

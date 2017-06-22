@@ -113,6 +113,8 @@ function getProperStatName(statName){
       return "Primitive";
     case "fell":
       return "Felling";
+    case "damtype":
+      return "Damage Type";
     default:
       //most Attributes begin each word with a capital letter (also known as TitleCase)
       statName = statName.toTitleCase();
