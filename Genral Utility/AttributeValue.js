@@ -68,6 +68,23 @@ function attrValue(name, options){
         gmnotes = encodeURIComponent(gmnotes);
         graphic.set("gmnotes",gmnotes);
       }
+
+      if(options["delete"]){
+        delete tempAttrs[name];
+        //record the change (while leaving any other notes in tact)
+        if(tempAttrs.regex().test(gmnotes)){
+            gmnotes = gmnotes.replace(tempAttrs.regex(),tempAttrs.toString());
+        } else {
+            gmnotes = gmnotes + "<br>" + tempAttrs.toString();
+        }
+        //return the gmnotes back into their URI Component form
+        gmnotes = encodeURIComponent(gmnotes);
+        graphic.set("gmnotes",gmnotes);
+        if(options["show"]){
+          whisper(name + " has been deleted.", msg.playerid);
+        }
+        return true;
+      }
       //if the temporary attribute exists, report it.
       if(tempAttrs[name] != undefined){
         return tempAttrs[name];

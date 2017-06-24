@@ -75,7 +75,11 @@ function statHandler(matches,msg,options){
     if(maxAttr == undefined){
       //if the user is trying to edit the maximum stat, inform them that this is
       //impossible and quit
-      if(isMax || modifier == "max"){
+      if(modifier == "max" && operator == "="){
+        attrValue(statName,{characterid: character.id, graphicid: graphic.id, delete: true, alert: false});
+        whisper(statName + " has been reset.")
+        return;
+      } else if(isMax || modifier == "max"){
         whisper("Temporary attributes do not have maximums to work with.");
         return;
       } else {
@@ -144,7 +148,7 @@ function statHandler(matches,msg,options){
         currentAttr = stat;
       }
 
-      output += attrTable("|\nV", currentAttr, maxAttr, "Yellow");
+      output += attrTable("|</caption><caption>V", currentAttr, maxAttr, "Yellow");
 
       if(options["partyStat"]){
         //get the list of people who can view the host character sheet

@@ -4,23 +4,18 @@ function reloadWeapon(matches, msg){
   //save the input variables
   var ammoPhrase = "Ammo - " + matches[1];
   eachCharacter(msg, function(character, graphic){
-    //get a list of all of the ammo attributes that match and belong to the
-    //selected character
-    var ammoObjs = matchingObjs("attribute", ammoPhrase.split(" "), function(attr){
-      return attr.get("characterid") == character.id;
-    });
-    //trim down the list to exact matches if possible
-    ammoObjs = trimToPerfectMatches(ammoObjs, ammoPhrase);
+    //get a list of all of the ammo attribute names that match
+    var ammoNames = matchingAttrNames(graphic.id, ammoPhrase);
     //warn the player that that clip does not exist yet if nothing was found
-    if(ammoObjs.length <= 0){
-      return whisper("A clip for *" + ammoPhrase.repalce(/^Ammo - /, "") + "* does not exist yet.");
+    if(ammoNames.length <= 0){
+      return whisper("A clip for *" + ammoPhrase.replace(/^Ammo - /, "") + "* does not exist yet.");
     }
     //determine which clip the player wants to reload before proceeding
-    if(ammoObjs.length >= 2){
+    if(ammoNames.length >= 2){
       whisper("Which clip did you want to reload?");
-      _.each(ammoObjs, function(ammoObj){
+      _.each(ammoNames, function(ammo){
         //use the clip's exact name
-        var name = ammoObj.get("name").replace(/^Ammo - /, "");
+        var name = ammo.replace(/^Ammo - /, "");
         var suggestion = "reload " + name;
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
@@ -34,7 +29,7 @@ function reloadWeapon(matches, msg){
       playerid: msg.playerid,
       selected: [graphic]
     };
-    statHandler(["","",ammoObjs[0].get("name"),"=","","max"], fakeMsg);
+    statHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
   });
 }
 

@@ -13,7 +13,7 @@ function journalSearch(matches, msg){
     if(playerIsGM(msg.playerid)){return true;}
     //be sure the current player can view this handout/character
     var permissions = obj.get("inplayerjournals").split(",");
-    return permissions.indexOf("all") != -1 || permissions.indexOf(msg.playerid)
+    return permissions.indexOf("all") != -1 || permissions.indexOf(msg.playerid) != -1
   });
 
   //erase any old search results for the specific player
