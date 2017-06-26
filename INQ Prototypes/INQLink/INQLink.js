@@ -33,4 +33,6 @@ function INQLink(text){
     }
     return output;
   }
+
+  this.valueOf = this.toNote;
 }

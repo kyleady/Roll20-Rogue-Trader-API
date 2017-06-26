@@ -17,9 +17,18 @@ on("ready",function(){
   INQLink.prototype.constructor = INQLink;
 
   //the parser prototypes inherit from their respective INQ prototypes
+  INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
+  INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
+
+  INQCharacterParser.prototype = new INQCharacter();
+  INQCharacterParser.prototype.constructor = INQCharacterParser;
+
+  INQWeaponNoteParser.prototype = new INQWeapon();
+  INQWeaponNoteParser.prototype.constructor = INQWeaponNoteParser;
+
   INQWeaponParser.prototype = new INQWeapon();
   INQWeaponParser.prototype.constructor = INQWeaponParser;
 
-  INQWeaponParser.prototype = new INQLink();
-  INQWeaponParser.prototype.constructor = INQLinkParser;
+  INQLinkParser.prototype = new INQLink();
+  INQLinkParser.prototype.constructor = INQLinkParser;
 });

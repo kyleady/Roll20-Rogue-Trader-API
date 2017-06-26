@@ -13,11 +13,16 @@ function GetLink (Name,Link){
     Link = Link || "";
     if(Link == ""){
         var Handouts = findObjs({ type: 'handout', name: Name });
-        var Characters = findObjs({ type: 'handout', name: Name });
-        if(Handouts.length > 0){
-            return "<a href=\"http://journal.roll20.net/handout/" + Handouts[0].id + "\">" + Name + "</a>";
-        } else if(Characters.length > 0){
-            return "<a href=\"http://journal.roll20.net/character/" + Characters[0].id + "\">" + Name + "</a>";
+        var objs = filterObjs(function(obj) {
+          if(obj.get("_type") == "handout" || obj.get("_type") == "character"){
+            var regex = "^" + Name.replace(/[\.\+\*\[\]\(\)\{\}\^\$\?]/g, function(match){return "\\" + match}).replace(/(-|–|\s)/, "(-|–|\\s)") + "$";
+            var re = RegExp(regex, "i");
+            return re.test(obj.get("name"));
+          } else {return false;}
+        });
+        objs = trimToPerfectMatches(objs, Name);
+        if(objs.length > 0){
+          return "<a href=\"http://journal.roll20.net/" + objs[0].get("_type") + "/" + objs[0].id + "\">" + objs[0].get("name") + "</a>";
         } else {
             return Name;
         }

@@ -13,6 +13,8 @@ function INQWeapon(obj){
   this.DamageBase     = 0;
   this.DamageType     = new INQLink("I");
   this.Penetration    = 0;
+  this.PenDiceNumber  = 0;
+  this.PenDiceType    = 0;
   this.Clip           = 0;
   this.Reload         = -1;
   this.Special        = [];
@@ -25,7 +27,11 @@ function INQWeapon(obj){
 
   //allow the user to immediately parse a weapon in the constructor
   if(obj != undefined){
-    Object.setPrototypeOf(this, new INQWeaponParser());
+    if(typeof obj == "string"){
+      Object.setPrototypeOf(this, new INQWeaponNoteParser());
+    } else {
+      Object.setPrototypeOf(this, new INQWeaponParser());
+    }
     this.parse(obj);
     Object.setPrototypeOf(this, new INQWeapon());
   }
@@ -215,10 +221,11 @@ function INQWeapon(obj){
       }
     }
 
-    //custom weapons need all of their details stored in the ability
+    //custom weapons need all of their unique details stored in the ability
     if(options.custom){
       for(var k in this){
         if(typeof this[k] != 'function'){
+          if(this[k] == this.__proto__[k]){continue;}
           if(typeof this[k] == 'object'){
             if(Array.isArray(this[k])){
               var specialRules = "";
@@ -265,7 +272,7 @@ function INQWeapon(obj){
       output += "SB x " + (this.Range*-1).toString() + "; ";
     }
     //does this weapon have a Rate of Fire?
-    if(this.Single > 0 || this.Semi > 0 || this.Full > 0){
+    if(this.Class != "Melee" && (this.Single > 0 || this.Semi > 0 || this.Full > 0)){
       if(this.Single){
         output += "S";
       } else {
@@ -292,7 +299,9 @@ function INQWeapon(obj){
     }
     //damage roll
     if(this.DiceNumber > 0){
-      output += this.DiceNumber.toString();
+      if(this.DiceNumber != 1){
+        output += this.DiceNumber.toString();
+      }
       output += "D" + this.DiceType.toString();
     }
     //damage base
@@ -302,9 +311,9 @@ function INQWeapon(obj){
       output += this.DamageBase.toString();
     }
     //damage type
-    output += " " + GetLink(this.DamageType) + "; ";
+    output += " " + this.DamageType + "; ";
     //Penetration
-    output += "Pen " + this.Penetration.toString();
+    output += "Pen " + this.Penetration.toString() + "; ";
     //Clip
     if(this.Clip > 0){
       output += "Clip " + this.Clip.toString() + "; ";
@@ -316,7 +325,7 @@ function INQWeapon(obj){
       output += "Reload Half; ";
     } else if(this.Reload == 1){
       output += "Reload Full; ";
-    } else {
+    } else if(this.Reload > 1) {
       output += "Reload " + Math.floor(this.Reload).toString() + " Full; ";
     }
     //Special Rules
@@ -334,4 +343,6 @@ function INQWeapon(obj){
     //return the note in text form
     return output;
   }
+
+  this.valueOf = this.toNote;
 };

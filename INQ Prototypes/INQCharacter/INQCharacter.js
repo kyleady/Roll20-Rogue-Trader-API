@@ -65,13 +65,6 @@ function INQCharacter(character, graphic){
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
 
-  //allow the user to immediately parse a character in the constructor
-  if(character != undefined){
-    Object.setPrototypeOf(this, new INQCharacterParser());
-    this.parse(character, graphic);
-    Object.setPrototypeOf(this, new INQCharacter());
-  }
-
   //check if the character has an inqlink with the given name
   //and within the given list
   //if there are no subgroups for the inqlink, just return {Bonus}
@@ -130,8 +123,7 @@ function INQCharacter(character, graphic){
     return bonus;
   }
 
-  //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer){
+  this.getCharacterBio = function(){
     //create the gmnotes of the character
     var gmnotes = "";
 
@@ -170,15 +162,43 @@ function INQCharacter(character, graphic){
       gmnotes += "<br>";
     });
 
-    //create the character
-    var character = createObj("character", {
-      name: this.Name
+    return gmnotes;
+  }
+
+  //create a character object from the prototype
+  this.toCharacterObj = function(isPlayer, characterid){
+    //get the character
+    var character = undefined;
+    if(characterid){
+      character = getObj("character", characterid);
+    }
+    if(character == undefined){
+      //create the character
+      var character = createObj("character", {});
+    }
+    var oldAttributes = findObjs({
+      _characterid: character.id,
+      _type: "attribute"
     });
+    _.each(oldAttributes, function(attr){
+      attr.remove();
+    });
+    var oldAbilities = findObjs({
+      _characterid: character.id,
+      _type: "ability"
+    });
+    _.each(oldAbilities, function(ability){
+      ability.remove();
+    });
+    //save the character name
+    character.set("name", this.Name);
+
 
     //save the object ID
     this.ObjID = character.id;
 
     //write the character's notes down
+    var gmnotes = this.getCharacterBio();
     if(isPlayer){
       character.set("bio", gmnotes);
     } else {
@@ -196,20 +216,35 @@ function INQCharacter(character, graphic){
     }
 
     //create all of the character's abilities
-    _.each(this.List.Weapons, function(weapon){
+    var customWeapon = new Hash();
+    customWeapon.custom = "true";
+    for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
-        name: weapon.Name,
+        name: this.List.Weapons[i].Name,
         characterid: this.ObjID,
         istokenaction: true,
-        action: weapon.toAbility()
+        action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
       });
-    });
+    }
 
     //note who controlls the character
     character.set("controlledby", this.controlledby);
 
     //return the resultant character object
     return character;
+  }
+
+  //allow the user to immediately parse a character in the constructor
+  if(character != undefined){
+    if(typeof character == "string"){
+      Object.setPrototypeOf(this, new INQCharacterImportParser());
+      this.parse(character)
+    } else {
+      Object.setPrototypeOf(this, new INQCharacterParser());
+      this.parse(character, graphic);
+    }
+
+    Object.setPrototypeOf(this, new INQCharacter());
   }
 }
 
