@@ -330,14 +330,10 @@ function INQWeapon(obj){
     }
     //Special Rules
     _.each(this.Special, function(rule){
-      output += GetLink(rule.Name);
-      if(rule.Value >= 0){
-        output += "[" + rule.Value + "]";
-      }
-      output += "; ";
+      output += rule + ", ";
     });
-    //get rid of the last separator "; "
-    output = output.replace(/;\s*$/,"");
+    //get rid of the last separator
+    output = output.replace(/(;|,)\s*$/, "");
     //close up the notes
     output += ")";
     //return the note in text form
