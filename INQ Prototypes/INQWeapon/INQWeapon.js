@@ -181,7 +181,7 @@ function INQWeapon(obj){
       if(this.Full){
         rates.push("Full Auto(" + this.Full.toString() + ")");
       }
-      if(this.Class == "Melee"){
+      if(inqcharacter && this.Class == "Melee"){
         if(inqcharacter.has("Swift Attack")){
           rates.push("Swift Attack");
         }
@@ -203,7 +203,7 @@ function INQWeapon(obj){
     }
     //allow the player to specify their effective psy rating
     //but only for psychic powers
-    if(this.Class == "Psychic"){
+    if(inqcharacter && this.Class == "Psychic"){
       //by default offer their base PsyRating
       options.EffectivePR = "?{Effective PsyRating|@{" + inqcharacter.Name + "|PR}}";
     }

@@ -15,7 +15,11 @@ function GetLink (Name,Link){
         var Handouts = findObjs({ type: 'handout', name: Name });
         var objs = filterObjs(function(obj) {
           if(obj.get("_type") == "handout" || obj.get("_type") == "character"){
-            var regex = "^" + Name.replace(/[\.\+\*\[\]\(\)\{\}\^\$\?]/g, function(match){return "\\" + match}).replace(/(-|–|\s)/, "(-|–|\\s)") + "$";
+            var regex = Name;
+            regex = regex.replace(/[\.\+\*\[\]\(\)\{\}\^\$\?]/g, function(match){return "\\" + match});
+            regex = regex.replace(/\s*(-|–|\s)\s*/, "\\s*(-|–|\\s)\\s*");
+            regex = regex.replace(/s?$/, "s?");
+            regex = "^" + regex + "$";
             var re = RegExp(regex, "i");
             return re.test(obj.get("name"));
           } else {return false;}

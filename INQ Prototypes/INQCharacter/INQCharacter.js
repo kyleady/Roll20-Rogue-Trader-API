@@ -243,35 +243,6 @@ function INQCharacter(character, graphic){
       Object.setPrototypeOf(this, new INQCharacterParser());
       this.parse(character, graphic);
     }
-
     Object.setPrototypeOf(this, new INQCharacter());
   }
 }
-
-on("ready", function(){
-  CentralInput.addCMD(/^!\s*weapontest\s+(\S.*)$/i,function(matches, msg){
-    var objs = matchingObjs("handout", matches[1].split(" "));
-    if(objs.length < 1){
-      whisper("No matches")
-    } else if(objs.length > 1){
-      whisper("Too many matches. Please specify.")
-    } else {
-      var obj = new INQWeapon(objs[0]);
-      log(obj)
-      whisper("See log")
-    }
-  });
-
-  CentralInput.addCMD(/^!\s*charactertest\s+(\S.*)$/i,function(matches, msg){
-    var objs = matchingObjs("character", matches[1].split(" "));
-    if(objs.length < 1){
-      whisper("No matches")
-    } else if(objs.length > 1){
-      whisper("Too many matches. Please specify.")
-    } else {
-      objs[0].get("bio", function(bio){
-        log(bio)
-      });
-    }
-  });
-});

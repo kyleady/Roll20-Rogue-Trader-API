@@ -46,10 +46,23 @@ charImport.makeCharacter = function(){
   this.character.toCharacterObj(false, this.CharObj.id);
 }
 
+//convert text into character
+charImport.makeVehicle = function(){
+  this.character = new INQVehicle(this.charText);
+  this.character.Name = this.charName;
+  this.character.toCharacterObj(false, this.CharObj.id);
+}
+
 on("ready",function(){
   CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacterBio(matches[1])){
       charImport.makeCharacter();
+      whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+    }
+  });
+  CentralInput.addCMD(/^!\s*import\s*vehicle\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
+    if(charImport.getCharacterBio(matches[1])){
+      charImport.makeVehicle();
       whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
     }
   });

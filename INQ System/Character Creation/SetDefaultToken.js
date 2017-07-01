@@ -37,9 +37,19 @@ function setDefaultToken(matches, msg){
   var character = characters[0];
 
   //get the Fate, Fatigue, and Wounds of the character
-  var Fate = getAttrByName(character.id, "Fate", "max");
-  var Fatigue = getAttrByName(character.id, "Fate", "max");
-  var Wounds = getAttrByName(character.id, "Wounds", "max");
+  switch(characterType(character)){
+    case "character":
+      var bar1 = getAttrByName(character.id, "Fatigue", "max");
+      var bar2 = getAttrByName(character.id, "Fate", "max");
+      var bar3 = getAttrByName(character.id, "Wounds", "max");
+    break;
+    case "vehicle":
+      var bar1 = getAttrByName(character.id, "Tactical Speed", "max");
+      var bar2 = 0;
+      var bar3 = getAttrByName(character.id, "Structural Integrity", "max");
+    break;
+  }
+
 
   //detail the graphic
   graphic.set("bar1_link", "");
@@ -49,13 +59,13 @@ function setDefaultToken(matches, msg){
   graphic.set("represents", character.id);
   graphic.set("name", character.get("name"));
 
-  graphic.set("bar1_value", Fatigue);
-  graphic.set("bar2_value", Fate);
-  graphic.set("bar3_value", Wounds);
+  graphic.set("bar1_value", bar1);
+  graphic.set("bar2_value", bar2);
+  graphic.set("bar3_value", bar3);
 
-  graphic.set("bar1_max", Fatigue);
-  graphic.set("bar2_max", Fate);
-  graphic.set("bar3_max", Wounds);
+  graphic.set("bar1_max", bar1);
+  graphic.set("bar2_max", bar2);
+  graphic.set("bar3_max", bar3);
 
   graphic.set("showname", true);
   graphic.set("showplayers_name", true);
