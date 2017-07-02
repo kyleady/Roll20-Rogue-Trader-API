@@ -115,6 +115,14 @@ INQAttack.accountForHammerBlow = function(){
   }
 }
 
+//Lance Weapons multiply their Pen by their to Hit Successes + 1
+INQAttack.accountForLance = function(){
+  if(INQAttack.inqweapon.has("Lance")){
+    log("Has Lance")
+    INQAttack.penSuccessesMultiplier = 1;
+  }
+}
+
 //special ammunition will explicitly note stat modifications
 //apply damage modifications
 INQAttack.accountForDamage = function(){

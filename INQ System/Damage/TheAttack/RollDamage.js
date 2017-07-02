@@ -18,7 +18,7 @@ INQAttack.rollDamage = function(){
   }
   INQAttack.Reports.Damage +=  "{{Type=  " + DamageType + "}} ";
   //calculate the penetration
-  INQAttack.Reports.Damage +=  "{{Pen=  [[" + INQAttack.inqweapon.Penetration.toString() + "]]}} ";
+  INQAttack.Reports.Damage +=  "{{Pen=  [[" + INQAttack.penetrationFormula() + "]]}} ";
   //add on any special notes
   INQAttack.Reports.Damage += "{{Notes= " + INQAttack.weaponNotes() + "}}";
 }
@@ -52,6 +52,25 @@ INQAttack.damageFormula = function(){
   //return the damage formula
   return formula;
 }
+//calculate the penetration formula
+INQAttack.penetrationFormula = function(){
+  var formula = "";
+  if(INQAttack.penSuccessesMultiplier){
+    formula += "("
+  }
+  if(INQAttack.inqweapon.PenDiceNumber > 0 && INQAttack.inqweapon.PenDiceType > 0){
+    formula += INQAttack.inqweapon.PenDiceNumber + "d" + INQAttack.inqweapon.PenDicType;
+  }
+  formula += "+" + INQAttack.inqweapon.Penetration;
+  if(INQAttack.penSuccessesMultiplier){
+    var penMultiplier = 1;
+    penMultiplier += INQAttack.successes;
+    penMultiplier *= INQAttack.penSuccessesMultiplier
+    formula += ")*";
+    formula += penMultiplier;
+  }
+  return formula;
+}
 //make a list of all of the weapon special abilities
 INQAttack.weaponNotes = function(){
   var notes = "";
@@ -73,4 +92,5 @@ INQAttack.accountForDamageSpecialRules = function(){
   INQAttack.accountForDamage();
   INQAttack.accountForPen();
   INQAttack.accountForType();
+  INQAttack.accountForLance();
 }
