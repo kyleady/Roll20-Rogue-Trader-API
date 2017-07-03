@@ -118,8 +118,14 @@ INQAttack.accountForHammerBlow = function(){
 //Lance Weapons multiply their Pen by their to Hit Successes + 1
 INQAttack.accountForLance = function(){
   if(INQAttack.inqweapon.has("Lance")){
-    log("Has Lance")
     INQAttack.penSuccessesMultiplier = 1;
+  }
+}
+
+//Razorsharp weapons double their pen if they earn two or more successes
+INQAttack.accountForRazorSharp = function(){
+  if(INQAttack.inqweapon.has("Razor Sharp")){
+    INQAttack.penDoubleAt = 2;
   }
 }
 
