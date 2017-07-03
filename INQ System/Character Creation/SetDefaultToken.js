@@ -77,9 +77,14 @@ function setDefaultToken(matches, msg){
 
   setDefaultTokenForCharacter(character, graphic);
 
+  //set the character's avatar as the token if they don't already have something
+  if(character.get("avatar") == ""){
+    character.set("avatar", graphic.get("imgsrc").replace("/thumb.png?", "/med.png?"));
+  }
+
   whisper("Default Token set for *" + GetLink(character.get("name")) + "*.");
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*give\s*token\s*to\s+(.+)$/, setDefaultToken);
+  CentralInput.addCMD(/^!\s*give\s*token\s*to\s+(.+)$/i, setDefaultToken);
 });
