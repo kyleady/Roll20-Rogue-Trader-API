@@ -71,6 +71,10 @@ function INQCharacter(character, graphic){
   //if there are, return the inqlink's subgroups with a bonus for each
   //if nothing was found, return undefined
   this.has = function(ability, list){
+    if(list == undefined){
+      whisper("Which List are you searching?");
+      return undefined;
+    }
     var info = undefined;
     _.each(this.List[list], function(rule){
       if(rule.Name == ability){

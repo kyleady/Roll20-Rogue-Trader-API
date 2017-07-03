@@ -182,10 +182,10 @@ function INQWeapon(obj){
         rates.push("Full Auto(" + this.Full.toString() + ")");
       }
       if(inqcharacter && this.Class == "Melee"){
-        if(inqcharacter.has("Swift Attack")){
+        if(inqcharacter.has("Swift Attack", "Talents")){
           rates.push("Swift Attack");
         }
-        if(inqcharacter.has("Lightning Attack")){
+        if(inqcharacter.has("Lightning Attack", "Talents")){
           rates.push("Lightning Attack");
         }
       }

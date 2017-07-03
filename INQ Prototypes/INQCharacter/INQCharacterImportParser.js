@@ -75,10 +75,10 @@ function INQCharacterImportParser(){
         if(weapon.has("Fist")){
           weapon.DamageBase -= this.bonus("S");
         }
-        if(this.has("Crushing Blow")){
+        if(this.has("Crushing Blow", "Talents")){
           weapon.DamageBase -= 2;
         }
-      } else if(this.has("Mighty Shot")){
+      } else if(this.has("Mighty Shot", "Talents")){
         weapon.DamageBase -= 2;
       }
       weapon.Name = weapon.Name.toTitleCase();
