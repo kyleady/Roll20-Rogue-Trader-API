@@ -37,7 +37,7 @@ function INQWeaponNoteParser(){
   }
 
   this.parseDamage = function(detail){
-    var DamageMatches = detail.match(/^(\d*)\s*(?:d|D)\s*(\d+)\s*\+?\s*(\d*)\s*(I|R|E|X|)$/);
+    var DamageMatches = detail.match(/^(\d*)\s*(?:d|D)\s*(\d+)\s*\+?\s*(\d*)/);
     if(DamageMatches[1] != ""){
       this.DiceNumber = Number(DamageMatches[1]);
     } else {
@@ -47,8 +47,9 @@ function INQWeaponNoteParser(){
     if(DamageMatches[3] != ""){
       this.DamageBase = Number(DamageMatches[3]);
     }
-    if(DamageMatches[4] != ""){
-      this.DamageType = new INQLink(DamageMatches[4]);
+    var damType = detail.replace(DamageMatches[0], "");
+    if(damType != ""){
+      this.DamageType = new INQLink(damType.trim());
     }
   }
 
@@ -102,7 +103,7 @@ function INQWeaponNoteParser(){
       } else if(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/.test(detail)){
         this.parseRoF(detail);
       //Damage
-      } else if(/^\d*\s*(d|D)\s*\d+\s*\+?\s*\d*\s*(I|R|E|X|)$/.test(detail)) {
+      } else if(/^\d*\s*(d|D)\s*\d+\s*\+?\s*\d*/.test(detail)) {
         this.parseDamage(detail);
       //Penetration
       } else if(/^Pen(etration)?:?\s*(?:\d*\s*(?:d|D)\s*\d+\s*\+?)?\s*\d*$/.test(detail)){

@@ -25,6 +25,22 @@ function INQParser(object){
   this.parseLine = function(line){
     //be sure there is a line to work with
     if(line == undefined || line == "" || line == null){return;}
+    var parenthesiesDepth = 0;
+    line = line.split('');
+    for(var i = 0; i < line.length; i++){
+      if(line[i] == "("){
+        if(parenthesiesDepth > 0){
+          line[i] = "[";
+        }
+        parenthesiesDepth++;
+      } else if(line[i] == ")"){
+        parenthesiesDepth--;
+        if(parenthesiesDepth > 0){
+          line[i] = "]";
+        }
+      }
+    }
+    line = line.join('');
     //complete any bold tags separated by lines
     line = this.closeBoldTags(line);
     //try each way of parsing the line and quit when it is successful
@@ -109,7 +125,7 @@ function INQParser(object){
   }
   //if this is the beginning of a new list, start a new list
   this.parseBeginningOfList = function(line){
-    var re = /^\s*<(?:strong|em)>([^:]+)<\/(?:strong|em)>\s*$/;
+    var re = /^\s*(?:<(?:strong|em|u)>)+([^:]+)(?:<\/(?:strong|em|u)>)+\s*$/;
     var matches = line.match(re);
     if(matches){
       //tidy up the last list first
