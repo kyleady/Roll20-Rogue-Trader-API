@@ -44,8 +44,8 @@ function setDefaultToken(matches, msg){
       var bar3 = getAttrByName(character.id, "Wounds", "max");
     break;
     case "vehicle":
-      var bar1 = getAttrByName(character.id, "Tactical Speed", "max");
-      var bar2 = 0;
+      var bar1 = getAttrByName(character.id, "Tactical Speed", "max") || 0;
+      var bar2 = getAttrByName(character.id, "Aerial Speed", "max")   || 0;
       var bar3 = getAttrByName(character.id, "Structural Integrity", "max");
     break;
   }

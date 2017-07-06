@@ -91,27 +91,27 @@ function INQVehicleParser(){
   }
 
   this.parseTacticalSpeed = function(content){
-    this.TacticalSpeed = content.trim();
+    this.Bio.TacticalSpeed = content.trim();
   }
 
   this.parseCruisingSpeed = function(content){
-    this.CruisingSpeed = content.trim();
+    this.Bio.CruisingSpeed = content.trim();
   }
 
   this.parseSize = function(content){
-    this.Size = content.trim();
+    this.Bio.Size = content.trim();
   }
 
   this.parseCrew = function(content){
-    this.Crew = content.trim();
+    this.Bio.Crew = content.trim();
   }
 
   this.parseCarryingCapacity = function(content){
-    this.CarryingCapacity = content.trim();
+    this.Bio.CarryingCapacity = content.trim();
   }
 
   this.parseRenown = function(content){
-    this.Renown = content.trim();
+    this.Bio.Renown = content.trim();
   }
 
   //the full parsing of the character

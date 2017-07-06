@@ -5,14 +5,14 @@ function INQVehicle(vehicle, graphic){
   this.ObjType = "character";
 
   //default character bio details
-  this.Content = {};
-  this.Content.Type = "Ground Vehicle";
-  this.Content["Tactical Speed"] = "0 m";
-  this.Content["Cruising Speed"] = "0 kph";
-  this.Content.Size = "Massive";
-  this.Content.Crew = "Driver";
-  this.Content["Carry Capacity"] = "-";
-  this.Content.Renown = "-";
+  this.Bio = {};
+  this.Bio.Type = "Ground Vehicle";
+  this.Bio["Tactical Speed"] = "0 m";
+  this.Bio["Cruising Speed"] = "0 kph";
+  this.Bio.Size = "Massive";
+  this.Bio.Crew = "Driver";
+  this.Bio["Carry Capacity"] = "-";
+  this.Bio.Renown = "-";
 
   //default character skills and items
   this.List = {};
@@ -28,6 +28,7 @@ function INQVehicle(vehicle, graphic){
   this.Attributes["Structural Integrity"] = 1;
   this.Attributes["Unnatural Structural Integrity"] = 0;
   this.Attributes["Tactical Speed"] = 0;
+  this.Attributes["Aerial Speed"] = 0;
 
   this.Attributes.Armour_F = 0;
   this.Attributes.Armour_S = 0;
@@ -102,9 +103,9 @@ function INQVehicle(vehicle, graphic){
     var gmnotes = "";
 
     //write down the vehicle details
-    for(var k in this.Content){
+    for(var k in this.Bio){
       gmnotes += "<strong>" + k + "</strong>: ";
-      gmnotes += this.Content[k] + "<br>";
+      gmnotes += this.Bio[k] + "<br>";
     }
 
     //display every list

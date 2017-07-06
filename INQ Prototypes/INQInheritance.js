@@ -16,7 +16,12 @@ on("ready",function(){
   INQLink.prototype = new INQObject();
   INQLink.prototype.constructor = INQLink;
 
-  //the parser prototypes inherit from their respective INQ prototypes
+  INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
+  INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
+
+  INQVehicleParser.prototype = new INQVehicle();
+  INQVehicleParser.prototype.constructor = INQVehicleParser;
+
   INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
   INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
 
