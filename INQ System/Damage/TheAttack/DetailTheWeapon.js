@@ -56,11 +56,6 @@ INQAttack.getWeapon = function(){
     }
     //detail the one and only weapon that was found
     INQAttack.inqweapon = new INQWeapon(weapons[0]);
-    //be sure that the player is not attempting to fire a piece of gear
-    if(INQAttack.inqweapon.Class == "Gear"){
-      whisper("!useWeapon is unable to handle the item *" + INQAttack.inqweapon.toLink() + "*.")
-      return;
-    }
   }
   //nothing went wrong
   return true;
@@ -117,8 +112,16 @@ INQAttack.useAmmo = function(ammo){
   INQAttack.inqammo = new INQWeapon(ammo);
   //only add the special rules of the ammo to the inqweapon, we want every
   //modification to be highly visible to the player
-  if(INQAttack.inqammo.Special){
-    INQAttack.inqweapon.Special = INQAttack.inqweapon.Special.concat(INQAttack.inqammo.Special);
+  for(var k in INQAttack.inqammo){
+    if(k == "Name"){continue;}
+    if(k == "ObjID"){continue;}
+    if(k == "ObjType"){continue;}
+    if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
+    if(Array.isArray(INQAttack.inqammo[k])){
+      INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
+    } else {
+      INQAttack.inqweapon[k] = INQAttack.inqammo[k];
+    }
   }
 }
 
