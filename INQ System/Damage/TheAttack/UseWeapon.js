@@ -25,7 +25,7 @@ INQAttack.useWeapon = function(matches,msg){
     //prepare attack variables for each character's attack
     INQAttack.prepareVariables();
     //detail the character (or make a dummy character)
-    INQAttack.inqcharacter = new INQCharacter(character, graphic);
+    INQAttack.detailTheCharacter(character, graphic);
     //get the weapon specified and be sure nothing went wrong
     if(!INQAttack.detailTheWeapon()){return;}
     //be sure you are dealing with a specific character

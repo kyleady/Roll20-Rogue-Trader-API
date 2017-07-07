@@ -77,7 +77,8 @@ function statHandler(matches,msg,options){
       //impossible and quit
       if(modifier == "max" && operator == "="){
         attrValue(statName,{characterid: character.id, graphicid: graphic.id, delete: true, alert: false});
-        whisper(statName + " has been reset.")
+        whisper(statName + " has been reset.", msg.playerid);
+        if(!playerIsGM(msg.playerid)){whisper(statName + " has been reset.");}
         return;
       } else if(isMax || modifier == "max"){
         whisper("Temporary attributes do not have maximums to work with.");
