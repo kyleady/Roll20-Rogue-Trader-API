@@ -35,22 +35,6 @@ function addPilot(matches, msg){
     return;
   }
 
-  //get the pilot's bio
-  var pilotBio = "";
-  pilotResults[0].get("bio", function(bio){
-    if(bio != "null"){
-      pilotBio += bio;
-    }
-  });
-  pilotResults[0].get("gmnotes", function(gmnotes){
-    if(gmnotes != "null"){
-      if(pilotBio != ""){
-        pilotBio += "<br>";
-      }
-      pilotBio += gmnotes;
-    }
-  });
-
   //copy the pilot's Attributes
   var pilotAttributes = [];
   var attributes = findObjs({
@@ -65,26 +49,8 @@ function addPilot(matches, msg){
     pilotAttributes.push(attributeCopy);
   });
 
-
-
   //add the single pilot to each selected roll20 character(vehicle)
   eachCharacter(msg, function(vehicle, graphic){
-
-    //get the vehicle gmnotes
-    var notes = "";
-    vehicle.get("gmnotes", function(gmnotes){
-      if(gmnotes != "null"){
-        notes = gmnotes;
-      }
-    });
-
-    //add the pilot to the vehicle notes
-    notes += "<hr><div style=\"text-align: center\"><strong>Pilot</strong></div><br><br>";
-    notes += pilotBio;
-
-    //save the addition
-    vehicle.set("gmnotes", notes);
-
     //add each of the pilot attributes
     _.each(pilotAttributes, function(attribute){
       createObj("attribute", {
