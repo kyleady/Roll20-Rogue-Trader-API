@@ -21,6 +21,8 @@ INQAttack.rollDamage = function(){
   INQAttack.Reports.Damage +=  "{{Pen=  [[" + INQAttack.penetrationFormula() + "]]}} ";
   //add on any special notes
   INQAttack.Reports.Damage += "{{Notes= " + INQAttack.weaponNotes() + "}}";
+
+  INQAttack.calcHordeDamage();
 }
 //calculate the damage formula
 INQAttack.damageFormula = function(){

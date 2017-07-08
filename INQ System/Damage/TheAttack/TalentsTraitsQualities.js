@@ -68,27 +68,40 @@ INQAttack.accountForStorm = function(){
   }
 }
 
-//blast weapons multiply the number of hits by the given number
+//blast weapons multiply the horde damage by a given number
 INQAttack.accountForBlast = function(){
   var blast = INQAttack.inqweapon.has("Blast");
   if(blast){
     //find the proven value
     _.each(blast, function(value){
       if(Number(value.Name)){
-        INQAttack.hitsMultiplier *= Number(value.Name);
+        INQAttack.hordeDamageMultiplier *= Number(value.Name);
       }
     });
   }
 }
 
-//spray weapons multiply the number of hits by (Range/4) + D5
+//spray weapons multiply the horde damage by (Range/4) + D5
 //spray weapons do not roll to hit
 INQAttack.accountForSpray = function(){
   if(INQAttack.inqweapon.has("Spray")){
-    INQAttack.hitsMultiplier *= Math.ceil(INQAttack.inqweapon.Range/4) + randomInteger(5);
+    INQAttack.hordeDamageMultiplier *= Math.ceil(INQAttack.inqweapon.Range/4) + randomInteger(5);
     if(INQAttack.inqweapon.Class != "Psychic"){
       INQAttack.autoHit = true;
     }
+  }
+}
+
+//devastating weapons add to the total horde damage
+INQAttack.accountForDevastating = function(){
+  var devastating = INQAttack.inqweapon.has("Devastating");
+  if(devastating){
+    //find the proven value
+    _.each(devastating, function(value){
+      if(Number(value.Name)){
+        INQAttack.hordeDamage += Number(value.Name);
+      }
+    });
   }
 }
 
@@ -126,6 +139,62 @@ INQAttack.accountForLance = function(){
 INQAttack.accountForRazorSharp = function(){
   if(INQAttack.inqweapon.has("Razor Sharp")){
     INQAttack.penDoubleAt = 2;
+  }
+}
+
+//Maximal Weapons can fire on Maximal
+//uses 3x the ammo
+//increases range by 1/3
+//increases damage dice by 1/2
+//increases base damage by 1/4
+//increases penetration multiplier by 1/5
+//increases blast quality by 1/2
+//grants the recharge quality
+INQAttack.accountForMaximal = function(){
+  if(INQAttack.inqweapon.has("Use Maximal")){
+    INQAttack.shotsMultiplier *= 3;
+    INQAttack.inqweapon.Range       += Math.round(INQAttack.inqweapon.Range / 3);
+    INQAttack.inqweapon.DiceNumber  += Math.round(INQAttack.inqweapon.DiceNumber / 2);
+    INQAttack.inqweapon.DamageBase  += Math.round(INQAttack.inqweapon.DamageBase / 4);
+    INQAttack.inqweapon.Penetration += Math.round(INQAttack.inqweapon.Penetration / 5);
+    var recharge = new INQLink("Recharge");
+    INQAttack.inqweapon.Special.push(recharge);
+    //remove the useMaximal special rule from the displayed abilities
+    var maximal = -1;
+    for(var i = 0; i < INQAttack.inqweapon.Special.length; i++){
+      if(INQAttack.inqweapon.Special[i].Name == "Use Maximal"){
+        INQAttack.inqweapon.Special.splice(i, 1);
+        i--
+      } else if(INQAttack.inqweapon.Special[i].Name == "Blast"){
+        for(var j = 0; j < INQAttack.inqweapon.Special[i].Groups.length; j++){
+          if(Number(INQAttack.inqweapon.Special[i].Groups[j])){
+            INQAttack.inqweapon.Special[i].Groups[j] = Number(INQAttack.inqweapon.Special[i].Groups[j]);
+            INQAttack.inqweapon.Special[i].Groups[j] += Math.round(INQAttack.inqweapon.Special[i].Groups[j] / 2);
+          }
+        }
+      }
+    }
+  } else {
+    //remove the maximal special rule from the displayed abilities
+    var maximal = -1;
+    for(var i = 0; i < INQAttack.inqweapon.Special.length; i++){
+      if(INQAttack.inqweapon.Special[i].Name == "Maximal"){
+        INQAttack.inqweapon.Special.splice(i, 1);
+        i--
+      }
+    }
+  }
+}
+
+INQAttack.accountForHordeDmg = function(){
+  var hordeDmg = INQAttack.inqweapon.has("HordeDmg");
+  if(hordeDmg){
+    //find the proven value
+    _.each(hordeDmg, function(value){
+      if(Number(value.Name)){
+        INQAttack.hordeDamageMultiplier += Number(value.Name);
+      }
+    });
   }
 }
 

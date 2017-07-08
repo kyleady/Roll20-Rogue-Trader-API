@@ -243,7 +243,14 @@ function INQWeapon(obj){
         }
       }
     }
-
+    //allow the player to specify if they are firing on Maximal
+    if(this.has("Maximal")){
+      if(!options.Special){
+        options.Special = "?{Fire on Maximal?|Use Maximal|}";
+      } else {
+        options.Special += ", ?{Fire on Maximal?|Use Maximal|}";
+      }
+    }
     output += options.toString();
     return output;
   }

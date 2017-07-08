@@ -5,7 +5,7 @@ INQAttack.expendAmmunition = function(){
   INQAttack.calcAmmo();
   //be sure this weapon uses ammunition
   if(INQAttack.inqweapon.Clip > 0){
-    INQAttack.recordAmmo();
+    if(!INQAttack.recordAmmo()){return false;}
   }
   INQAttack.reportAmmo();
   //we made it this far, nothing went wrong
@@ -82,4 +82,6 @@ INQAttack.recordAmmo = function(){
     graphicid: INQAttack.inqcharacter.GraphicID,
     alert: false}
   );
+
+  return true;
 }
