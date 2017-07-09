@@ -23,5 +23,5 @@ function where(matches, msg){
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*where\s*\?\s*$/, where);
+  CentralInput.addCMD(/^!\s*where\s*\?\s*$/i, where);
 });

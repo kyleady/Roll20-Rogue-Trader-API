@@ -68,5 +68,5 @@ function addPilot(matches, msg){
 
 //waits until CentralInput has been initialized
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*add\s*pilot\s+(.+)$/, addPilot);
+  CentralInput.addCMD(/^!\s*add\s*pilot\s+(.+)$/i, addPilot);
 });

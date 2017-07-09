@@ -34,5 +34,5 @@ function reloadWeapon(matches, msg){
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/!\s*reload\s+(\S.*)$/, reloadWeapon, true);
+  CentralInput.addCMD(/!\s*reload\s+(\S.*)$/i, reloadWeapon, true);
 });

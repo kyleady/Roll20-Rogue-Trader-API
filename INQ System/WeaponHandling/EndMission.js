@@ -84,5 +84,5 @@ function endMission(matches, msg){
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*end\s*mission\s*$/, endMission);
+  CentralInput.addCMD(/^!\s*end\s*mission\s*$/i, endMission);
 });

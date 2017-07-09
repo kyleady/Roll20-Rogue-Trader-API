@@ -40,5 +40,5 @@ function importWeapon(matches, msg){
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*import\s*weapon\s+(.*?)\((.*?)\)\s*$/, importWeapon);
+  CentralInput.addCMD(/^!\s*import\s*weapon\s+(.*?)\((.*?)\)\s*$/i, importWeapon);
 });

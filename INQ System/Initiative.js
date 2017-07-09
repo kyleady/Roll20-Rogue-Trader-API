@@ -359,7 +359,7 @@ on("ready",function(){
   //similar to above, but allows the gm to roll and edit initiative without modifiers
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler);
   //allow the gm to clear the turn tracker
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s+(clear|reset)$/, function(){
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s+(clear|reset)$/i, function(){
     Campaign().set("turnorder", "");
     whisper("Initiative cleared.")
   });
