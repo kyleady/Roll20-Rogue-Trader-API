@@ -45,6 +45,17 @@ function attrValue(name, options){
       return undefined;
     }
 
+    //if this attribute is represented by a bar, work with the bar instead
+    if(options["bar"]){
+      if(workingWith == "current"){
+        workingWith = "value";
+      }
+      if(options["setTo"] != undefined){
+        graphic.set(options["bar"] + "_" + workingWith, options["setTo"]);
+      }
+      var barValue = graphic.get(options["bar"] + "_" + workingWith) || 0;
+      return barValue;
+    }
     //when working with a generic enemy's current stats, we need to check for temporary values
     //generic enemies are those who represent a character, yet none of their stats are linked
     if(workingWith == "current"

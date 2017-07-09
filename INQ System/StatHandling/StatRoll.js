@@ -46,7 +46,7 @@ function statRoll(matches, msg, options){
       var name = "";
     } else {
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName,{characterid: character.id, graphicid: graphic.id});
+      var stat = attrValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
       var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
@@ -127,25 +127,48 @@ function getProperStatName(statName){
   return statName;
 }
 
+//returns bar1, if the given stat is represented by bar1 on a token
+//if it isn't represented by any bar, it returns undefined
+function defaultToTokenBars(name){
+  switch(name.toTitleCase()){
+    case "Fatigue":
+    case "Population":
+    case "Tactical Speed":
+      return "bar1";
+    case "Fate":
+    case "Moral":
+    case "Aerial Speed":
+      return "bar2";
+    case "Wounds":
+    case "Structural Integrity":
+    case "Hull":
+      return "bar3";
+  }
+  return undefined;
+}
+
 //adds the commands after CentralInput has been initialized
 on("ready", function() {
   //add the stat roller function to the Central Input list as a public command
   //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
   CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statRoll(matches,msg);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    statRoll(matches,msg,{bar: tokenBar});
   },true);
 
   //lets the user quickly view their stats with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|In|It|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|In|It|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Structural Integrity|Tactical Speed|Aerial Speed|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    statHandler(matches,msg,{bar: tokenBar});
   },true);
 
   //similar to above, but shows the attribute without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|In|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|In|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Structural Integrity|Tactical Speed|Aerial Speed|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    statHandler(matches,msg,{bar: tokenBar});
   },true);
 
   //Lets players make a Profit Factor Test

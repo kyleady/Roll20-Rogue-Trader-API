@@ -58,8 +58,8 @@ function statHandler(matches,msg,options){
       var maxAttr     = attrValue(statName,{max: true, alert: false});
       var name = "";
     } else {
-      var currentAttr = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: false});
-      var maxAttr     = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: true, alert: false});
+      var currentAttr = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: false, bar: options["bar"]});
+      var maxAttr     = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: true, alert: false, bar: options["bar"]});
       var name = character.get("name");
     }
 
@@ -76,7 +76,7 @@ function statHandler(matches,msg,options){
       //if the user is trying to edit the maximum stat, inform them that this is
       //impossible and quit
       if(modifier == "max" && operator == "="){
-        attrValue(statName,{characterid: character.id, graphicid: graphic.id, delete: true, alert: false});
+        attrValue(statName,{characterid: character.id, graphicid: graphic.id, delete: true, alert: false, bar: options["bar"]});
         whisper(statName + " has been reset.", msg.playerid);
         if(!playerIsGM(msg.playerid)){whisper(statName + " has been reset.");}
         return;
@@ -131,7 +131,7 @@ function statHandler(matches,msg,options){
       //objects you have selected. If this is the case, find the corresponding
       //character objects.
       } else {
-        attrValue(statName,{setTo: stat, characterid: character.id, graphicid: graphic.id, max: isMax});
+        attrValue(statName,{setTo: stat, characterid: character.id, graphicid: graphic.id, max: isMax, bar: options["bar"]});
       }
 
       //are we showing the result?
