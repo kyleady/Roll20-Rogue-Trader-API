@@ -36,6 +36,8 @@ INQAttack.useWeapon = function(matches,msg){
       //cancel this attack if there isn't enough ammo
       if(!INQAttack.expendAmmunition()){return;}
     }
+    //check if the weapon jammed
+    INQAttack.checkJammed();
     //only show the damage if the attack hit
     if(INQAttack.hits == 0){
       //offer reroll
