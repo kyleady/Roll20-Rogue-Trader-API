@@ -102,6 +102,9 @@ function applyDamage (matches,msg){
 
     //record the damage
     graphic.set("bar3_value", remainingWounds);
+    if(damage > 0){
+      damageFx(graphic, attrValue("Damage Type"));
+    }
 
     //Reroll Location after each hit
     if(this.targetType == "character"){
