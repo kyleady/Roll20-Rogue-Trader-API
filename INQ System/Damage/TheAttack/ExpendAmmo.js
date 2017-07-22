@@ -22,6 +22,7 @@ INQAttack.reportAmmo = function(){
   INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.options.RoF.toTitleCase();
   if(INQAttack.inqweapon.Class == "Psychic"){
     INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
+    INQAttack.Reports.Weapon += "<br><strong>" + GetLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
   }
   if(INQAttack.AmmoLeft != undefined){
     INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.AmmoLeft + "/" + INQAttack.inqweapon.Clip;

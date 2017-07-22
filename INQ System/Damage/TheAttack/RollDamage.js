@@ -29,6 +29,8 @@ INQAttack.damageFormula = function(){
   var formula = "";
   //write the roll down
   if(INQAttack.inqweapon.DiceNumber != 0){
+    //if the dice are multiplied by a number other than one
+    INQAttack.inqweapon.DiceNumber *= INQAttack.inqweapon.DiceMultiplier;
     formula += INQAttack.inqweapon.DiceNumber.toString();
     formula += "d";
     formula += INQAttack.inqweapon.DiceType.toString();
@@ -39,11 +41,6 @@ INQAttack.damageFormula = function(){
     //if there are any keep dice, add them
     if(INQAttack.inqweapon.keepDice){
       formula += "k" + INQAttack.inqweapon.keepDice.toString();
-    }
-    //if the dice are multiplied by a number other than one
-    if(INQAttack.inqweapon.DiceMultiplier != 1){
-      formula += "*";
-      formula += INQAttack.inqweapon.DiceMultiplier.toString();
     }
   }
   //add in the base damage

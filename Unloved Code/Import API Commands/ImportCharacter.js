@@ -3,7 +3,6 @@ charImport = {}
 
 //save the content of the character bio
 charImport.getCharacterBio = function(charName){
-  //reset the character data
   //create a list of charactersheets that have the given name
   this.charName = charName;
   var charList = findObjs({_type: "character", name: charName});

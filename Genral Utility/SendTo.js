@@ -7,7 +7,6 @@ function sendToPage(matches,msg){
   var mapPhrase    = matches[1] || "";
   var playerPhrase = matches[2] || "";
 
-  //turn the user input into data
   var mapKeywords    = mapPhrase.split(" ");
   var playerKeywords = playerPhrase.split(" ");
 
