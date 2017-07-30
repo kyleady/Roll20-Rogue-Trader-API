@@ -65,13 +65,13 @@ function attrValue(name, options){
       //roll20 stores token gmnotes in URI component
       var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
       //create a hash of the temporary attributes
-      var tempAttrs = new Hash(gmnotes);
+      var tempAttrs = new Hash(gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, '$1'));
       //are we editting the temporary attribute?
       if(options["setTo"] != undefined){
         tempAttrs[name] = options["setTo"];
         //record the change (while leaving any other notes in tact)
-        if(tempAttrs.regex().test(gmnotes)){
-            gmnotes = gmnotes.replace(tempAttrs.regex(),tempAttrs.toString());
+        if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(gmnotes)){
+            gmnotes = gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/,tempAttrs.toString());
         } else {
             gmnotes = gmnotes + "<br>" + tempAttrs.toString();
         }

@@ -94,40 +94,60 @@ function statRoll(matches, msg, options){
 //trims down and properly capitalizes any alternate stat names that the user
 //enters
 function getProperStatName(statName){
+  var isUnnatural = /^unnatural /i.test(statName);
+  if(isUnnatural){
+    statName = statName.replace(/^unnatural /i,"");
+  }
   switch(statName.toLowerCase()){
     case "pr": case "pe":
       //replace pr with Per (due to conflicts with PsyRating(PR))
-      return "Per";
+      statName = "Per";
+      break;
+    case "psy rating":
+      statName = "PR";
+      break;
     case "ws": case "bs":
       //capitalize every letter
-      return statName.toUpperCase();
+      statName = statName.toUpperCase();
+      break;
     case "int": case "in":
-      return "It";
+      statName = "It";
+      break;
     case "fel":
-      return "Fe";
+      statName = "Fe";
+      break;
+    case "cor":
+      statName = "Corruption";
+      break;
     case "dam":
-      return "Damage";
+      statName = "Damage";
+      break;
     case "pen":
-      return "Penetration";
+      statName = "Penetration";
+      break;
     case "prim":
-      return "Primitive";
+      statName = "Primitive";
+      break;
     case "fell":
-      return "Felling";
+      statName = "Felling";
+      break;
     case "damtype":
-      return "Damage Type";
+      statName = "Damage Type";
+      break;
     default:
       //most Attributes begin each word with a capital letter (also known as TitleCase)
       statName = statName.toTitleCase();
   }
-  if(/^armour(\s*|_)\w\w?$/i.test(statName)){
-      statName = statName.replace(/^Armour\s*/,"Armour_");
-      return statName.replace(/_\w\w?$/, function(txt){return txt.toUpperCase();});
+  statName = statName.replace(/^armour(?:_|\s*)(\w\w?)$/i, function(match, p1){
+    return "Armour_" + p1.toUpperCase();
+  });
+  if(isUnnatural){
+    statName = "Unnatural " + statName;
   }
-
   return statName;
 }
 
-//returns bar1, if the given stat is represented by bar1 on a token
+//returns barX, if the given stat is represented by barX on a token
 //if it isn't represented by any bar, it returns undefined
 function defaultToTokenBars(name){
   switch(name.toTitleCase()){
@@ -158,32 +178,39 @@ on("ready", function() {
   },true);
 
   //lets the user quickly view their stats with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|In|It|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Structural Integrity|Tactical Speed|Aerial Speed|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d*|max|current)\s*$/i,function(matches,msg){
-    matches[2] = getProperStatName(matches[2]);
-    var tokenBar = defaultToTokenBars(matches[2]);
-    statHandler(matches,msg,{bar: tokenBar});
-  },true);
-
-  //similar to above, but shows the attribute without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(WS|BS|S|T|Ag|It|In|Int|Wp|Pr|Pe|Per|Fe|Fel|Fate|Insanity|Corruption|Renown|Crew|Wounds|Fatigue|Population|Moral|Hull|Void Shields|Turret|Manoeuvrability|Detection|Structural Integrity|Tactical Speed|Aerial Speed|Armour(?:\s*|_)(?:H|RA|LA|B|RL|LR|F|S|R|P|A))\s*(\?)\s*$/i,function(matches,msg){
+  var inqStats = ["WS", "BS", "S", "T", "Ag", "I(?:n|t|nt)", "Wp", "P(?:r|e|er)", "Fel?", "Cor", "Corruption", "Wounds", "Structural Integrity"];
+  var inqLocations = ["H", "RA", "LA", "B", "RL", "LR", "F", "S", "R", "P", "A"];
+  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Moral", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
+  var inqUnnatural = "Unnatural (?:";
+  for(var inqStat of inqStats){
+    inqAttributes.push(inqStat);
+    inqUnnatural += inqStat + "|";
+  }
+  inqUnnatural = inqUnnatural.replace(/|$/,"");
+  inqUnnatural += ")";
+  inqAttributes.push(inqUnnatural);
+  var inqArmour = "Armour_(?:";
+  for(var inqLocation of inqLocations){
+    inqArmour += inqLocation + "|";
+  }
+  inqArmour = inqArmour.replace(/|$/,"");
+  inqArmour += ")";
+  inqAttributes.push(inqArmour);
+  var re = makeStatHandlerRegex(inqAttributes);
+  CentralInput.addCMD(re, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     var tokenBar = defaultToTokenBars(matches[2]);
     statHandler(matches,msg,{bar: tokenBar});
   },true);
 
   //Lets players make a Profit Factor Test
-  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit\s*Factor|P\s*F)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit Factor)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     matches[2] = "Profit Factor";
     statRoll(matches,msg,{partyStat: true});
   },true);
-
+  var profitFactorRe = makeStatHandlerRegex("Profit Factor");
   //Lets players freely view and edit profit factor with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max)\s*$/i, function(matches,msg){
-    matches[2] = "Profit Factor";
-    statHandler(matches,msg,{partyStat: true});
-  }, true);
-  //Lets players view profit factor without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(Profit\s*Factor|P\s*F)\s*(\?)()()\s*$/i, function(matches,msg){
+  CentralInput.addCMD(profitFactorRe, function(matches,msg){
     matches[2] = "Profit Factor";
     statHandler(matches,msg,{partyStat: true});
   }, true);

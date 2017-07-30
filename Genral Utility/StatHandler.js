@@ -36,8 +36,18 @@ function statHandler(matches,msg,options){
   var operator = matches[3].replace("/\s/g","");
   var sign = matches[4] || "";
   //check if the modifier was randomly rolled
-  if(matches[5] == "$[[0]]"){
-    var modifier = msg.inlinerolls[0].results.total.toString();
+  if(/\$\[\[\d+\]\]/.test(matches[5])){
+    var inlineMatch = matches[5].match(/\$\[\[(\d+)\]\]/);
+    if(inlineMatch && inlineMatch[1]){
+      var inlineIndex = Number(inlineMatch[1]);
+    }
+    if(inlineIndex && msg.inlinerolls[inlineIndex]
+      && msg.inlinerolls[inlineIndex].results && msg.inlinerolls[inlineIndex].results.total){
+      var modifier = msg.inlinerolls[inlineIndex].results.total.toString();
+    } else {
+      whisper('Invalid Inline');
+      return;
+    }
   } else {
     //otherwise save the modifier without transforming it into a number yet
     var modifier = matches[5] || "";
@@ -98,7 +108,7 @@ function statHandler(matches,msg,options){
     //is the modifier the max or current attribute?
     if(modifier.toLowerCase() == "max"){
       var tempModifier = maxAttr;
-    } else if(modifier.toLowerCase == "current"){
+    } else if(modifier.toLowerCase() == "current"){
       var tempModifier = currentAttr;
     } else {
       var tempModifier = modifier;
@@ -184,28 +194,34 @@ function correctAttributeName(name){
   return name.trim();
 }
 
-on("ready", function(){
-  var yourAttributes = [
-    //list any attributes you want to restrict your access to here
-  ];
+function makeStatHandlerRegex(yourAttributes){
   var regex = "!\\s*";
   regex += "(|max)\\s*";
-  regex += "attr\\s+";
-  if(yourAttributes.length <= 0){
+  if(typeof yourAttributes == 'string'){
+    yourAttributes = [yourAttributes];
+  }
+  if(yourAttributes == undefined){
+    regex += "attr\\s+";
     regex += "(\\S[^-\\+=/\\?\\*]*)\\s*";
-  } else {
+  } else if(Array.isArray(yourAttributes)){
     regex += "("
-    _.each(yourAttributes, function(yourAttribute){
+    for(var yourAttribute of yourAttributes){
       regex += yourAttribute + "|";
-    });
+    }
     regex = regex.replace(/\|$/, "");
     regex += ")";
+  } else {
+    whisper('invalid yourAttributes');
+    return;
   }
   regex += "\\s*" + numModifier.regexStr();
-  regex += "\\s*(\d*|max|current)";
+  regex += "\\s*(\\d*|max|current|\\$\\[\\[\\d\\]\\])";
   regex += "\\s*$";
+  return RegExp(regex, "i");
+};
 
-  var re = RegExp(regex, "i");
+on("ready", function(){
+  var re = makeStatHandlerRegex();
   CentralInput.addCMD(re, function(matches, msg){
     matches[2] = correctAttributeName(matches[2]);
     statHandler(matches, msg);

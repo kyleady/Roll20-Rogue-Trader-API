@@ -84,10 +84,12 @@ function INQCharacter(character, graphic){
           if(rule.Groups.length > 0){
             //the inklink has subgroups and each will need their own bonus
             info = [];
-            _.each(rule.Groups, function(subgroup){
-              info.push({
-                Name:  subgroup,
-                Bonus: rule.Bonus
+            _.each(rule.Groups, function(subgroups){
+              _.each(subgroups.split(/\s*,\s*/), function(subgroup){
+                info.push({
+                  Name:  subgroup,
+                  Bonus: rule.Bonus
+                });
               });
             });
           } else {
@@ -101,15 +103,18 @@ function INQCharacter(character, graphic){
         //AND the previously found rule had subgroups
         } else if(rule.Groups.length > 0 && info.length > 0){
           //add the new found subgroups in with their own bonuses
-          _.each(rule.Groups, function(){
-            info.push({
-              Name:  subgroup,
-              Bonus: rule.Bonus
+          _.each(rule.Groups, function(subgroups){
+            _.each(subgroups.split(/\s*,\s*/), function(subgroup){
+              info.push({
+                Name:  subgroup,
+                Bonus: rule.Bonus
+              });
             });
           });
         }
       }
     });
+
     return info;
   }
 
