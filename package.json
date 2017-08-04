@@ -1,0 +1,26 @@
+{
+  "name": "roll20-rogue-trader-api",
+  "version": "1.0.0",
+  "description": "Collection of Roll20 API Scripts for a FFG Rogue Trader Campaign.",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "mock20": "^1.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kyleady/Roll20-Rogue-Trader-API.git"
+  },
+  "keywords": [
+    "Roll20"
+  ],
+  "author": "Kyle Smith <kyledavidady@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kyleady/Roll20-Rogue-Trader-API/issues"
+  },
+  "homepage": "https://github.com/kyleady/Roll20-Rogue-Trader-API#readme"
+}
