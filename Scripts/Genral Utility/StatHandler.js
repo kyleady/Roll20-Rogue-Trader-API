@@ -41,7 +41,7 @@ function statHandler(matches,msg,options){
     if(inlineMatch && inlineMatch[1]){
       var inlineIndex = Number(inlineMatch[1]);
     }
-    if(inlineIndex && msg.inlinerolls[inlineIndex]
+    if(inlineIndex != undefined && msg.inlinerolls[inlineIndex]
       && msg.inlinerolls[inlineIndex].results && msg.inlinerolls[inlineIndex].results.total){
       var modifier = msg.inlinerolls[inlineIndex].results.total.toString();
     } else {

@@ -5,10 +5,13 @@
   "main": "index.js",
   "dependencies": {},
   "devDependencies": {
+    "chai": "^4.1.1",
+    "mocha": "^3.5.0",
     "mock20": "^1.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --recursive",
+    "compile": "echo \"require('mock20');\" > INQTotal.js && find ./Scripts -type f -exec cat {} + >> INQTotal.js && echo \"MOCK20endOfLastScript();\" >> INQTotal.js"
   },
   "repository": {
     "type": "git",
