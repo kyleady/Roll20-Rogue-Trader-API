@@ -38,18 +38,18 @@ INQAttack.getWeapon = function(){
     weapons = trimToPerfectMatches(weapons, INQAttack.weaponname);
     //did none of the weapons match?
     if(weapons.length <= 0){
-      whisper("*" + INQAttack.weaponname + "* was not found.", INQAttack.msg.playerid);
+      whisper("*" + INQAttack.weaponname + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
       return false;
     }
     //are there too many weapons?
     if(weapons.length >= 2){
-      whisper("Which weapon did you intend to fire?", INQAttack.msg.playerid)
+      whisper("Which weapon did you intend to fire?", {speakingTo: INQAttack.msg.playerid});
       _.each(weapons, function(weapon){
         //use the weapon's exact name
-        var suggestion = "useweapon " + weapon.get("name") + INQAttack.options.toString();
+        var suggestion = "useweapon " + weapon.get("name") + JSON.stringify(INQAttack.options);
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
+        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
       });
       //don't continue unless you are certain what the user wants
       return false;
@@ -82,20 +82,20 @@ INQAttack.getSpecialAmmo = function(){
   clips = trimToPerfectMatches(clips, INQAttack.options.Ammo);
   //did none of the weapons match?
   if(clips.length <= 0){
-    whisper("*" + INQAttack.options.Ammo + "* was not found.", INQAttack.msg.playerid);
+    whisper("*" + INQAttack.options.Ammo + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
     return false;
   }
   //are there too many weapons?
   if(clips.length >= 2){
-    whisper("Which Special Ammunition did you intend to fire?", INQAttack.msg.playerid)
+    whisper("Which Special Ammunition did you intend to fire?", {speakingTo: INQAttack.msg.playerid})
     _.each(clips, function(clip){
       //specify the exact ammo name
       INQAttack.options.Ammo = clip.get("name");
       //construct the suggested command (without the !)
-      var suggestion = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
+      var suggestion = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
       //the suggested command must be encoded before it is placed inside the button
       suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + clip.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
+      whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
     });
     //something went wrong
     return false;

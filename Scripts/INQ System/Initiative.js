@@ -46,7 +46,7 @@ function initiativeHandler(matches,msg,secondAttempt){
       var initBonus = calcInitBonus(character, graphic);
       //warn the user and exit if the bonus does not exist
       if(initBonus == undefined){
-        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", msg.playerid);
+        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
       }
 
       //modify the Initiative Bonus based on the text operator
@@ -54,7 +54,7 @@ function initiativeHandler(matches,msg,secondAttempt){
 
       //report the initiative bonus for the character to just the user
       //exit out now that you have made this report
-      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", msg.playerid);
+      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
     }
 
     //is the gm trying to directly edit a previous initiative roll?
@@ -113,7 +113,7 @@ function calcInitBonus(charObj, graphicObj){
     _characterid: charObj.id
   })[0] != undefined){
     //report the detection bonus for starships
-    var Detection = Number(attrValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
+    var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     return Math.floor(Detection/10);
 
   //if this character sheet has Ag, then it rolls initiative like normal.
@@ -126,11 +126,11 @@ function calcInitBonus(charObj, graphicObj){
   ) {
       //load up all the notes on the character
       var inqcharacter = new INQCharacter(charObj, graphicObj);
-      var Agility = Number(attrValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
+      var Agility = Number(attributeValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       //add the agility bonus and unnatural agility
       var initiativeBonus = Math.floor(Agility/10);
       //only add the Unnatural Ag attribute, if it exists
-      var UnnaturalAgility = Number(attrValue("Unnatural Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
+      var UnnaturalAgility = Number(attributeValue("Unnatural Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       if(UnnaturalAgility){
         initiativeBonus += UnnaturalAgility;
       }
@@ -271,15 +271,15 @@ function INQTurns(){
       var championID = turn.id;
       //only load up the Ag/Detection if the characters exist
       if(challengerID != undefined && championID != undefined){
-        challengerAg = attrValue("Ag", {graphicid: challengerID});
-        championAg = attrValue("Ag", {graphicid: championID});
+        challengerAg = attributeValue("Ag", {graphicid: challengerID});
+        championAg = attributeValue("Ag", {graphicid: championID});
         //the character may not have an Agility attribute, try Detection
         if(challengerAg == undefined){
-          challengerAg = attrValue("Detection", {graphicid: challengerID});
+          challengerAg = attributeValue("Detection", {graphicid: challengerID});
         }
         //the character may not have an Agility attribute, try Detection
         if(championAg == undefined){
-          championAg = attrValue("Ag", {graphicid: championID});
+          championAg = attributeValue("Ag", {graphicid: championID});
         }
       }
       //if actual values were found for Ag/Detection for both of them, compare the two

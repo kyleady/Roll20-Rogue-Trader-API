@@ -19,7 +19,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
     if(matches){
       //get the weapon name
       INQAttack.weaponname = matches[1];
-      INQAttack.options = new Hash(matches[2].replace(/\?\{[^\{\}]+\}/g,""));
+      INQAttack.options = JSON.parse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""));
       if(INQAttack.options.Name){
         abilityNames.push(INQAttack.options.Name);
       } else {
@@ -45,8 +45,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
       }
     });
   } while(!nameIsUnique);
-  //create the base options Hash for the weapon ability
-  var options = new Hash();
+  var options = {};
   if(quantity){
     options.Clip = quantity;
   }

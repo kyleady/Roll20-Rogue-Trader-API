@@ -13,8 +13,7 @@ function importWeapon(matches, msg){
   var weapon = new INQWeapon(matches[1] + "(" + details + ")");
 
   //give each selected character a custom weapon
-  var customWeapon = new Hash();
-  customWeapon.custom = "true";
+  var customWeapon = {custom: true};
   eachCharacter(msg, function(character, graphic){
     var inqcharacter = new INQCharacter(character, graphic);
     if(weapon.Class == "Melee"){

@@ -157,7 +157,7 @@ function INQWeapon(obj){
     //start with the weapon's exact name
     output += this.Name;
     //create the options hash
-    var options = options || new Hash();
+    var options = options || {};
     //include a toHit modifier unless the weapon auto hits
     //include RoF options unless it auto hits
     if(!this.has("Spray") || this.Class == "Psychic"){
@@ -251,7 +251,7 @@ function INQWeapon(obj){
         options.Special += ", ?{Fire on Maximal?|Use Maximal|}";
       }
     }
-    output += options.toString();
+    output += JSON.stringify(options);
     return output;
   }
 

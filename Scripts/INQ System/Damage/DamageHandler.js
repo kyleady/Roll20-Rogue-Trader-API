@@ -215,18 +215,18 @@ on("ready",function(){
   //Lets gm  view and edit damage variables with modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|fell|felling|prim|primitive)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets gm view damage variables without modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm set the damage type
   CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
     matches[2] = "Damage Type";
     matches[5] = matches[5].toUpperCase();
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm reset an attack back to how it was first detected, before
   //modifications

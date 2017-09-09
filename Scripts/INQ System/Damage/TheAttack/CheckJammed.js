@@ -19,7 +19,7 @@ INQAttack.checkJammed = function(){
     }
   }
   if(INQAttack.d100 >= JamsAt){
-    var jamReport =  GetLink(INQAttack.inqweapon.Name) + " **" + GetLink(JamResult) + "**";
+    var jamReport =  getLink(INQAttack.inqweapon.Name) + " **" + getLink(JamResult) + "**";
     if(!/s$/.test(JamResult)){
       jamReport += "s";
     }

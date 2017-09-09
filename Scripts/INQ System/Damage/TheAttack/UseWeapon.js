@@ -5,7 +5,7 @@ INQAttack.useWeapon = function(matches,msg){
   //clean out any of the previous details
   INQAttack.clean();
   //get the options
-  INQAttack.options = new Hash(matches[2]);
+  INQAttack.options = JSON.parse(matches[2]);
   //save the weapon name
   INQAttack.weaponname = matches[1];
   //save the message for use elsewhere
@@ -77,7 +77,7 @@ INQAttack.deliverReport = function(){
   if(INQAttack.inqcharacter.controlledby == ""
   || INQAttack.options.whisper){
     if(!playerIsGM(INQAttack.msg.playerid)){
-      whisper("Damage rolled.", INQAttack.msg.playerid);
+      whisper("Damage rolled.", {speakingTo: INQAttack.msg.playerid});
     }
   }
 }
@@ -113,11 +113,11 @@ INQAttack.offerReroll = function(){
   //the reroll will not use up any ammo
   INQAttack.options.freeShot = "true";
   //offer a reroll instead of rolling the damage
-  var attack = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
+  var attack = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
   //encode the attack
   attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
-  setTimeout(whisper, 100, "[Reroll](" + attack + ")", INQAttack.msg.playerid);
+  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack.msg.playerid});
 }
 
 //prepare attack variables for each attack
@@ -133,10 +133,9 @@ INQAttack.prepareVariables = function(){
 }
 
 on("ready", function(){
-  var hash = new Hash();
   var regex = "^!\\s*use\\s*weapon";
   regex += "\\s+(\\S[^\\{\\}]*)"
-  regex += "(" + hash.regex({text: true}) + ")$"
+  regex += "(\\{.*\\})$"
   var re = RegExp(regex, "i");
   CentralInput.addCMD(re, INQAttack.useWeapon, true);
 });

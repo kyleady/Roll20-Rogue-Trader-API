@@ -7,7 +7,7 @@ function hordeKill(matches, msg){
     var toKill = Number(matches[1]);
     var useHits = false;
   } else {
-    var toKill = Number(attrValue("Hits"));
+    var toKill = Number(attributeValue("Hits"));
     var useHits = true;
   }
 
@@ -22,11 +22,11 @@ function hordeKill(matches, msg){
     if(toKill > 0 && graphic.get("status_dead") == false){
       toKill--;
       graphic.set("status_dead", true);
-      damageFx(graphic, attrValue("Damage Type"));
+      damageFx(graphic, attributeValue("Damage Type"));
     }
   });
   if(useHits){
-    attrValue("Hits", {setTo: toKill});
+    attributeValue("Hits", {setTo: toKill});
   }
 
   if(toKill > 0){

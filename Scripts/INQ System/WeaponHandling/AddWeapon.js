@@ -13,7 +13,7 @@ INQAttack.addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper("Please carefully select who we are giving these weapns to.", msg.playerid);
+      whisper("Please carefully select who we are giving these weapns to.", {speakingTo: msg.playerid});
       return;
     }
   }
@@ -32,12 +32,12 @@ INQAttack.addWeapon = function(matches, msg){
   weapons = trimToPerfectMatches(weapons, name);
   //did none of the weapons match?
   if(weapons.length <= 0){
-    whisper("*" + name + "* was not found.", msg.playerid);
+    whisper("*" + name + "* was not found.", {speakingTo: msg.playerid});
     return false;
   }
   //are there too many weapons?
   if(weapons.length >= 2){
-    whisper("Which weapon did you intend to add?", msg.playerid)
+    whisper("Which weapon did you intend to add?", {speakingTo: msg.playerid});
     _.each(weapons, function(weapon){
       //use the weapon's exact name
       var suggestion = "addweapon " + weapon.get("name");
@@ -46,7 +46,7 @@ INQAttack.addWeapon = function(matches, msg){
       }
       //the suggested command must be encoded before it is placed inside the button
       suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + weapon.get("name") + "](" + suggestion  + ")", msg.playerid);
+      whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
     });
     //don't continue unless you are certain what the user wants
     return false;
@@ -66,12 +66,12 @@ INQAttack.addWeapon = function(matches, msg){
       clips = trimToPerfectMatches(clips, ammoNames[i]);
       //did none of the weapons match?
       if(clips.length <= 0){
-        whisper("*" + ammoNames[i] + "* was not found.", msg.playerid);
+        whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
         return false;
       }
       //are there too many weapons?
       if(clips.length >= 2){
-        whisper("Which Special Ammunition did you intend to add?", msg.playerid)
+        whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
         _.each(clips, function(clip){
           //specify the exact ammo name
           ammoNames[i] = clip.get("name");
@@ -79,7 +79,7 @@ INQAttack.addWeapon = function(matches, msg){
           var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
           //the suggested command must be encoded before it is placed inside the button
           suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-          whisper("[" + clip.get("name") + "](" + suggestion  + ")", msg.playerid);
+          whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
         });
         //something went wrong
         return false;
@@ -106,10 +106,10 @@ INQAttack.addWeapon = function(matches, msg){
       //add the token action to the character
       INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
     } else {
-      whisper("Add Weapon is not prepared to create an Ability for Gear.");
+      whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
     }
     //report the success
-    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", msg.playerid);
+    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
   });
 }
 

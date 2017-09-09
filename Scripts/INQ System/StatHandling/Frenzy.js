@@ -1,5 +1,5 @@
 //toggles whether or not each selected graphic is frenzied and modifies their
-//stats accordingly using the statHandler function
+//stats accordingly using the attributeHandler function
 function getFrenzied(matches,msg){
   //are we frenzying everyone we have selected?
   frenzyTokens = matches[1].toLowerCase() != "un"
@@ -21,13 +21,13 @@ function getFrenzied(matches,msg){
     //if we are un-frenzying the token, be sure it was already frenzied
     if(!frenzyTokens && graphic.get("status_red")){
       graphic.set("status_red",false);
-      whisper(graphic.get("name") + " is no longer frenzied.",msg.playerid);
+      whisper(graphic.get("name") + " is no longer frenzied.", {speakingTo: msg.playerid, gmEcho: true});
       //add this character to the list of characters to have their stats modified
       toBeModified.push(graphic);
     //if we are frenzying the token, be sure it wasn't already frenzied
     } else if(frenzyTokens && !graphic.get("status_red")) {
       graphic.set("status_red",true);
-      whisper(graphic.get("name") + " is frenzied!",msg.playerid);
+      whisper(graphic.get("name") + " is frenzied!", {speakingTo: msg.playerid, gmEcho: true});
       //add this character to the list of characters to have their stats modified
       toBeModified.push(graphic);
     }
@@ -36,9 +36,9 @@ function getFrenzied(matches,msg){
   //alert the gm if nothing will happen
   if(toBeModified.length <= 0){
     if(frenzyTokens) {
-      whisper("No tokens were frenzied.");
+      whisper("No tokens were frenzied.", {speakingTo: msg.playerid, gmEcho: true});
     } else {
-      whisper("No tokens were unfrenzied.");
+      whisper("No tokens were unfrenzied", {speakingTo: msg.playerid, gmEcho: true});
     }
     return;
   }
@@ -52,21 +52,21 @@ function getFrenzied(matches,msg){
   matches[2] = "WS";
   matches[3] = "+=";
   matches[5] = "10";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "S";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "T";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "Wp";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
 
   //decreased stats
   matches[2] = "BS";
   matches[3] = "-=";
   matches[5] = "20";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "It";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
 }
 
 //adds the commands after CentralInput has been initialized

@@ -106,7 +106,7 @@ on("ready",function(){
     var hitLocation = getHitLocation(this.TensLoc.get("current"), this.OnesLoc.get("current"), this.targetType);
     log("Hit Location: " + hitLocation)
     //get the armor of the target
-    var armour = attrValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
+    var armour = attributeValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
     log("Armour: " + armour)
 
     //turn armour into a valid number

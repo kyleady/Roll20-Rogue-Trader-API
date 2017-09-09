@@ -14,4 +14,8 @@ INQAttack.detailTheCharacter = function(character, graphic){
   if(INQAttack.inqcharacter == undefined){
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
   }
+  log("INQAttack.inqcharacter.ObjID")
+  log(INQAttack.inqcharacter.ObjID)
+  log("INQAttack.inqcharacter.GraphicID")
+  log(INQAttack.inqcharacter.GraphicID)
 }

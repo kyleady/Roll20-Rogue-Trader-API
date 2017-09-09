@@ -19,30 +19,30 @@ on("chat:message", function(msg){
       //storing the number of hits, this is because all hits are assumed to be
       //Single Shot mode, but later commands such as (!Full and !Semi) will
       //convert these negative numbers into a positive number of hits.
-      attrValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
+      attributeValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
     //otherwise record that there were no hits
     } else {
-      attrValue('Hits', {setTo: 0});
+      attributeValue('Hits', {setTo: 0});
     }
     //check for perils of the warp
     if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the one's place a 9?
       if((msg.inlinerolls[0].results.rolls[1].results[0].v - 10*Math.floor(msg.inlinerolls[0].results.rolls[1].results[0].v/10)) == 9){
-        announce("/em makes an unexpected twist. (" + GetLink("Psychic Phenomena") + ")", "The warp");
+        announce("/em makes an unexpected twist. (" + getLink("Psychic Phenomena") + ")", {speakingAs: "The warp"});
       }
     } else if(/^\s*{{\s*name\s*=\s*<strong>\s*BS\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the roll >= 96?
       if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 96){
         //warn the gm that the weapon jammed
-        announce("/em " + GetLink("Jam") + "s!" , "The weapon");
+        announce("/em " + getLink("Jam") + "s!" , {speakingAs: "The weapon"});
       //Full Auto and Semi Auto attacks jam on a 94+. Warn the gm just in case
       //this is one of them.
       } else if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 94){
         //warn the gm that the weapon may have jammed
-        announce("/em " + GetLink("Jam") + "s!", "The Full/Semi Auto weapon");
+        announce("/em " + getLink("Jam") + "s!", {speakingAs: "The Full/Semi Auto weapon"});
       } else if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 91){
         //warn the gm that the weapon may have jammed
-        announce("/em " + GetLink("Overheats") + "!", "The weapon");
+        announce("/em " + getLink("Overheats") + "!", {speakingAs: "The weapon"});
       }
     }
   }

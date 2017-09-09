@@ -8,12 +8,7 @@ function cohesionHandler(matches,msg){
   //are there no cohesion attributes anywhere?
   if(cohesionObjs.length <= 0){
     //no stat to work with. alert the gm and player
-    whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.",msg.playerid);
-    //but don't alert the gm twice
-    if(playerIsGM(msg.playerid) == false){
-      whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.");
-    }
-    return;
+    return whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.", {speakingTo: msg.playerid, gmEcho: true});
   //were there too many cohesion attributes?
   } else if(cohesionObjs.length >= 2){
     //warn the gm, but continue forward
@@ -23,7 +18,7 @@ function cohesionHandler(matches,msg){
   }
 
   //make a cohesion test
-  sendChat("player|" + msg.playerid,"/r D10<" + cohesionObjs[0].get("current") + " Cohesion Test");
+  sendChat("player|" + msg.playerid, "/r D10<" + cohesionObjs[0].get("current") + " Cohesion Test");
 }
 
 //waits until CentralInput has been initialized
@@ -32,9 +27,9 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*cohesion\s*$/i, cohesionHandler, true);
 
   //Lets players freely view and edit cohesion with modifiers
-  var re = makeStatHandlerRegex('cohesion');
+  var re = makeAttributeHandlerRegex('cohesion');
   CentralInput.addCMD(re, function(matches,msg){
     matches[2] = "Cohesion";
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });

@@ -56,13 +56,13 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacterBio(matches[1])){
       charImport.makeCharacter();
-      whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
     }
   });
   CentralInput.addCMD(/^!\s*import\s*vehicle\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacterBio(matches[1])){
       charImport.makeVehicle();
-      whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
     }
   });
 });

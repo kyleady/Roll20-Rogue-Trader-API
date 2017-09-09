@@ -18,7 +18,7 @@ function getCritLink(matches, msg, options){
     var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
     if(DamTypeObj == undefined){
       if(!playerIsGM(msg.playerid)){
-        whisper("There is no Damage Type attribute in the campaign.",msg.playerid);
+        whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
       }
       whisper("There is no Damage Type attribute in the campaign.");
       return critLink;
@@ -112,13 +112,13 @@ function getCritLink(matches, msg, options){
   if(hitLocation){
     critTitle += " - " + hitLocation;
   }
-  var critLink = GetLink(critTitle);
+  var critLink = getLink(critTitle);
 
   //report the link
   if(options["show"]){
     //now that damage type and location have been determined, return the link to
     //the gm
-    whisper("**Critical Hit**: " + critLink, msg.playerid);
+    whisper("**Critical Hit**: " + critLink, {speakingTo: msg.playerid});
   }
 
   //return the crit link for use in other functions

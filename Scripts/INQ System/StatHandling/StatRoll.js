@@ -38,18 +38,18 @@ function statRoll(matches, msg, options){
     //if working for a group stat, search for the stat anywhere in the campaign
     if(options["partyStat"]){
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName);
+      var stat = attributeValue(statName);
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
-      var unnatural_stat = attrValue("Unnatural " + statName,{alert: false});
+      var unnatural_stat = attributeValue("Unnatural " + statName,{alert: false});
       //ignore the name of the character that owns this stat
       var name = "";
     } else {
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
+      var stat = attributeValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
-      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
+      var unnatural_stat = attributeValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
       //retrive the name of the character that owns the stat
       //and add a bit a formatting for later
       var name = ": " + character.get("name");
@@ -72,7 +72,7 @@ function statRoll(matches, msg, options){
     if(toGM || (isNPC && playerIsGM(msg.playerid))){
       var whisperGM = "/w gm ";
       if(!playerIsGM(msg.playerid)){
-        whisper("Rolling " + statName + " for GM.", msg.playerid);
+        whisper("Rolling " + statName + " for GM.", {speakingTo: msg.playerid});
       }
     } else {
       var whisperGM = "";
@@ -196,11 +196,11 @@ on("ready", function() {
   inqArmour = inqArmour.replace(/|$/,"");
   inqArmour += ")";
   inqAttributes.push(inqArmour);
-  var re = makeStatHandlerRegex(inqAttributes);
+  var re = makeAttributeHandlerRegex(inqAttributes);
   CentralInput.addCMD(re, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     var tokenBar = defaultToTokenBars(matches[2]);
-    statHandler(matches,msg,{bar: tokenBar});
+    attributeHandler(matches,msg,{bar: tokenBar});
   },true);
 
   //Lets players make a Profit Factor Test
@@ -208,10 +208,10 @@ on("ready", function() {
     matches[2] = "Profit Factor";
     statRoll(matches,msg,{partyStat: true});
   },true);
-  var profitFactorRe = makeStatHandlerRegex("Profit Factor");
+  var profitFactorRe = makeAttributeHandlerRegex("Profit Factor");
   //Lets players freely view and edit profit factor with modifiers
   CentralInput.addCMD(profitFactorRe, function(matches,msg){
     matches[2] = "Profit Factor";
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });

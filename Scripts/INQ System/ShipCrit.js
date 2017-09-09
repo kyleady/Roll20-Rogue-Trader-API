@@ -64,7 +64,7 @@ function applyCrit(matches,msg){
       graphic.set(statMarker,false);
     }
     //report which crit was applied and how many times it was applied
-    whisper (graphic.get("name") + ": " + effectName + " (" + critQty + ")");
+    whisper(graphic.get("name") + ": " + effectName + " (" + critQty + ")");
   });
 }
 

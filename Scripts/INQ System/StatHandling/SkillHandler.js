@@ -68,7 +68,7 @@ INQSkill.skillHandler = function(matches, msg){
         modifier += subgroupModifier;
       } else {
         //the skill needs a subgroup but the user didn't supply one
-        whisper("Please specify a subgroup for *" + GetLink(skillName) + "*", msg.playerid)
+        whisper("Please specify a subgroup for *" + getLink(skillName) + "*", {speakingTo: msg.playerid, gmEcho: true});
         //skip to the next character
         return;
       }
@@ -93,7 +93,7 @@ INQSkill.skillHandler = function(matches, msg){
     options = {
       display: [{
         Title: "Skill",
-        Content: GetLink(skillName)
+        Content: getLink(skillName)
       }]
     }
     //show the subgroup as well if it exists

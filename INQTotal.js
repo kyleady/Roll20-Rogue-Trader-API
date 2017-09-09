@@ -1,679 +1,427 @@
-//allows for quick manipulation of character attributes, defaulting to current
-//values.
 
-//If the max value is edited, the current value will be set to the max value.
-
-//If a token that doesn't have any linked attributes is editted, it will make
-//the assumption that the token does not represent a individual character but
-//a generic goon. It will thus not modify the character sheet it is connected to
-//and instead write down the modifications in the gmnotes of the token.
-//StatHandler.js will be able to read and make use of these notes.
-
-//recognized options are
-  //alert = true - should the gm be alerted to attribute changes
-  //max = false - are we editting the max value? otherwise edit the current
-                    //value
-  //graphicid = undefined - what is the id of the token that represents the
-                            //character which holds this attribute?
-  //characterid = undefined - what is the id of the character which holds this
-                              //attribute?
-  //setTo = undefined - what value are we setting the attribute to?
-
-function attrValue(name, options){
-  //default to no options
-  options = options || [];
-
-  //default to alerting the gm
-  if(options["alert"] == undefined){
-    options["alert"] = true;
-  }
-
-  //are we working with the current or max attribute?
-  if(options["max"]){
-    var workingWith = "max";
+function announce(content, options){
+  if(typeof options != 'object') options = {};
+  var speakingAs = options.speakingAs || 'API';
+  var callback = options.callback || null;
+  if(options.noarchive == undefined) options.noarchive = true;
+  if(!content) return whisper('announce() attempted to send an empty message.');
+  sendChat(speakingAs, content, callback, options);
+}
+function attributeTable(name, attribute, options){
+  if(typeof options != 'object') options = {};
+  if(options['color'] == undefined) options['color'] = '00E518';
+  var attrTable = '<table border = \"2\" width = \"100%\">';
+  attrTable += '<caption>' + name + '</caption>';
+  attrTable += '<tr bgcolor = \"' + options['color'] + '\"><th>Current</th><th>Max</th></tr>';
+  attrTable += '<tr bgcolor = \"White\"><td>' + attribute.current + '</td><td>' + attribute.max + '</td></tr>';
+  attrTable += '</table>';
+  return attrTable;
+}
+function attributeValue(name, options){
+  if(typeof options != 'object') options = false;
+  options = options || {};
+  if(options['alert'] == undefined) options['alert'] = true;
+  if(!options['max'] || options['max'] == 'current'){
+    var workingWith = 'current';
   } else {
-    var workingWith = "current";
+    var workingWith = 'max';
   }
 
-  //was a graphic id supplied?
-  if(options["graphicid"]){
-    //get the graphic
-    var graphic = getObj("graphic",options["graphicid"]);
-    //be sure the graphic was found
-    if(graphic == undefined){
-      if(options["alert"]){whisper("Graphic " + options["graphicid"] + " does not exist.");}
+  if(options['graphicid']){
+    var graphic = getObj('graphic',options['graphicid']);
+    if(!graphic){
+      if(options['alert']) whisper('Graphic ' + options['graphicid'] + ' does not exist.');
       return undefined;
     }
 
-    //if this attribute is represented by a bar, work with the bar instead
-    if(options["bar"]){
-      if(workingWith == "current"){
-        workingWith = "value";
-      }
-      if(options["setTo"] != undefined){
-        graphic.set(options["bar"] + "_" + workingWith, options["setTo"]);
-      }
-      var barValue = graphic.get(options["bar"] + "_" + workingWith) || 0;
+    if(options['bar']){
+      if(workingWith == 'current') workingWith = 'value';
+      if(options['setTo']) graphic.set(options['bar'] + '_' + workingWith, options['setTo']);
+      var barValue = graphic.get(options['bar'] + '_' + workingWith) || 0;
       return barValue;
     }
-    //when working with a generic enemy's current stats, we need to check for temporary values
-    //generic enemies are those who represent a character, yet none of their stats are linked
-    if(workingWith == "current"
-    && graphic.get("bar1_link") == ""
-    && graphic.get("bar2_link") == ""
-    && graphic.get("bar3_link") == ""){
-      //roll20 stores token gmnotes in URI component
-      var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
-      //create a hash of the temporary attributes
-      var tempAttrs = new Hash(gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, '$1'));
-      //are we editting the temporary attribute?
-      if(options["setTo"] != undefined){
-        tempAttrs[name] = options["setTo"];
-        //record the change (while leaving any other notes in tact)
-        if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(gmnotes)){
-            gmnotes = gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/,tempAttrs.toString());
-        } else {
-            gmnotes = gmnotes + "<br>" + tempAttrs.toString();
-        }
-        //return the gmnotes back into their URI Component form
-        gmnotes = encodeURIComponent(gmnotes);
-        graphic.set("gmnotes",gmnotes);
+
+    if(workingWith == 'current'
+    && graphic.get('bar1_link') == ''
+    && graphic.get('bar2_link') == ''
+    && graphic.get('bar3_link') == ''){
+      var localAttributes = new LocalAttributes(graphic);
+      if(options['setTo'] != undefined) {
+        localAttributes.set(name, options['setTo']);
       }
 
-      if(options["delete"]){
-        delete tempAttrs[name];
-        //record the change (while leaving any other notes in tact)
-        if(tempAttrs.regex().test(gmnotes)){
-            gmnotes = gmnotes.replace(tempAttrs.regex(),tempAttrs.toString());
-        } else {
-            gmnotes = gmnotes + "<br>" + tempAttrs.toString();
-        }
-        //return the gmnotes back into their URI Component form
-        gmnotes = encodeURIComponent(gmnotes);
-        graphic.set("gmnotes",gmnotes);
-        if(options["show"]){
-          whisper(name + " has been deleted.", msg.playerid);
-        }
+      if(options['delete']){
+        localAttributes.remove(name);
+        if(options['show']) whisper(name + ' has been deleted.');
         return true;
       }
-      //if the temporary attribute exists, report it.
-      if(tempAttrs[name] != undefined){
-        return tempAttrs[name];
-      } //otherwise, we will work with the character sheet's attrubute
-    }
 
-    //otherwise, just save the linked charater id and continue
-    options["characterid"] = graphic.get("represents");
-  }
-
-  //do we have a specific character id at this point?
-  if(options["characterid"]){
-    //be sure the character exists
-    var character = getObj("character",options["characterid"]);
-    if(character == undefined){
-      if(options["alert"]){whisper("Character " + options["characterid"] + " does not exist.");}
-      return undefined;
-    }
-    //limit the attribute search to just this character
-    var statObjs = findObjs({
-      _type: "attribute",
-      _characterid: options["characterid"],
-      name: name
-    });
-    //does the character have this attribute?
-    if(statObjs.length <= 0){
-      //the attribute does not exist yet, if the user was looking for the value, quit
-      if(options["setTo"] == undefined){
-        //no stat to work with. report the error and exit.
-        if(options["alert"]){whisper(character.get("name") + " does not have a(n) " + name + " Attribute.");}
-        return undefined;
-      } else {
-        //the user is trying to create this value, go ahead and do so
-        statObjs[0] = createObj("attribute", {
-          name: name,
-          current: options["setTo"],
-          max: options["setTo"],
-          characterid: character.id
-        });
+      if(localAttributes.get(name) != undefined){
+        return localAttributes.get(name);
       }
-
-    //does the character have too many attributes with this name?
-    } else if(statObjs.length >= 2){
-      //warn the gm, but continue forward
-      if(options["alert"]){whisper("There were multiple " + name + " attributes owned by " + character.get("name") + ". Using the first one found. A log has been posted in the terminal.");}
-      log(character.get("name") + "'s " + name + " Attributes");
-      log(statObjs);
     }
 
-  //otherwise, assume that the user was searching for a unique attribute
-  } else {
-    //these unique attributes are often single attributes shared by the entire party
-    var statObjs = findObjs({
-      _type: "attribute",
-      name: name
-    });
-    //were there no attributes with that name anywhere?
-    if(statObjs.length <= 0){
-      //no stat to work with. report the error and exit.
-      if(options["alert"]){whisper("There is nothing in the campaign with a(n) " + name + " Attribute.");}
-      return undefined;
-    //were there too many attributes that matched the name?
-    } else if(statObjs.length >= 2){
-      //warn the gm, but continue forward
-      if(options["alert"]){whisper("There were multiple " + name + " attributes. Using the first one found. A log has been posted in the terminal.");}
-      log(name + " Attributes")
-      log(statObjs)
+    options['characterid'] = graphic.get('represents');
+  }
+
+  var character = getObj('character', options['characterid']);
+
+  var attribute = getAttribute(name, options);
+  if(!attribute) {
+    if(options['setTo'] != undefined && character){
+      attributes = [createObj('attribute', {
+        name: name,
+        current: options['setTo'],
+        max: options['setTo'],
+        characterid: character.id
+      })];
+      return attributes[0];
     }
-  }
 
-  //are we editting the value?
-  if(options["setTo"] != undefined){
-    statObjs[0].set(workingWith,options["setTo"]);
+    return;
   }
-
-  //report the final value
-  return statObjs[0].get(workingWith);
+  if(options['setTo'] != undefined) attribute.set(workingWith, options['setTo']);
+  return attribute.get(workingWith);
 }
-//returns an array of player ids that can view the character sheet hosting the attribute
-function canViewAttr(name,options){
-  //default to no options
-  options = options || [];
-
-  //default to alerting the gm
-  if(options["alert"] == undefined){
-    options["alert"] = true;
-  }
-
-  //was a graphic id supplied?
-  if(options["graphicid"]){
-    //get the graphic
-    var graphic = getObj("graphic",options["graphicid"]);
-    //be sure the graphic was found
-    if(graphic == undefined){
-      if(options["alert"]){whisper("Graphic " + options["graphicid"] + " does not exist.");}
-      return undefined;
-    }
-
-    //otherwise, just save the linked charater id and continue
-    options["characterid"] = graphic.get("represents");
-  }
-
-  //do we have a specific character id at this point?
-  if(options["characterid"]){
-    //be sure the character exists
-    var character = getObj("character",options["characterid"]);
-    if(character == undefined){
-      if(options["alert"]){whisper("Character " + options["characterid"] + " does not exist.");}
-      return undefined;
-    }
-
-  //otherwise, assume that the user was searching for a unique attribute
-  } else {
-    //these unique attributes are often single attributes shared by the entire party
-    var statObjs = findObjs({
-      _type: "attribute",
-      name: name
-    });
-    //were there no attributes with that name anywhere?
-    if(statObjs.length <= 0){
-      //no stat to work with. report the error and exit.
-      if(options["alert"]){whisper("There is nothing in the campaign with a(n) " + name + " Attribute.");}
-      return undefined;
-    //were there too many attributes that matched the name?
-    } else if(statObjs.length >= 2){
-      //warn the gm, but continue forward
-      if(options["alert"]){whisper("There were multiple " + name + " attributes. Using the first one found. A log has been posted in the terminal.");}
-      log(name + " Attributes")
-      log(statObjs)
-    }
-
-    //get the character object hosting the attribute
-    var character = getObj("character",statObjs[0].get("_characterid"));
-  }
-  //make an array out of the list of players that can view this character sheet
-  return viewerList = character.get("inplayerjournals").split(",");
-}
-//a single object to handle all of the user api inputs. A list of commands
-//and corresponding functions can be added. If an api input (any input starting
-//with an !) is not recognized by this input function, it will warn the user.
-
-//create the CentralInput object
-CentralInput = {};
+var CentralInput = {};
 CentralInput.Commands = [];
-
-//create a function that saves a command (regex, the resulting function, and if
-//players can use the command) in the CentralInput's list of Commands
 CentralInput.addCMD = function(cmdregex, cmdaction, cmdpublic){
-    //cmdRegex is the regex used to detect when this command is being input by the user
-    //there is no default for cmdRegex, if it is not found addCMD will shout
-    //a warning to the gm and quit.
-    if(cmdregex == undefined){return whisper("A command with no regex could not be included in CentralInput.js.");}
-
-    //cmdAction is the function used when the regex is found in an input.
-    //there is no default for cmdAction, if it is not found addCMD will shout a
-    //warning to the gm and quit.
-    if(cmdregex == undefined){return whisper("A command with no function could not be included in CentralInput.js.");}
-
-    //cmdPublic is a boolean dictating if players can use the command (true) or
-    //if only the gm can use the command (false)
-    //by default cmdPublic is false
-    cmdpublic = cmdpublic || false;
-
-    //Create a temporary command
-    var Command = {cmdRegex: cmdregex, cmdAction:cmdaction, cmdPublic: cmdpublic};
-
-    //add the command to the CentralInput Command list
-    this.Commands.push(Command);
+  if(cmdregex == undefined){return whisper('A command with no regex could not be included in CentralInput.js.');}
+  if(cmdregex == undefined){return whisper('A command with no function could not be included in CentralInput.js.');}
+  cmdpublic = cmdpublic || false;
+  var Command = {cmdRegex: cmdregex, cmdAction:cmdaction, cmdPublic: cmdpublic};
+  this.Commands.push(Command);
 }
 
-//encoding function that extends URICompotent to include parenthesies, asterisk, and apostrophe
+CentralInput.input = function(msg){
+  var inputRecognized = false;
+  if(msg.content.indexOf('!{URIFixed}') == 0){
+    msg.content = msg.content.replace('{URIFixed}','');
+    msg.content = decodeURIComponent(msg.content);
+  }
+  for(var i = 0; i < this.Commands.length; i++){
+    if(this.Commands[i].cmdRegex.test(msg.content)
+    && (this.Commands[i].cmdPublic || playerIsGM(msg.playerid)) ){
+      inputRecognized = true;
+      this.Commands[i].cmdAction(msg.content.match(this.Commands[i].cmdRegex), msg);
+    }
+  }
+
+  if(!inputRecognized){
+    whisper('The command ' + msg.content + ' was not recognized. See ' + getLink('!help') + ' for a list of commands.', {speakingTo: msg.playerid});
+  }
+}
+
+on('chat:message', function(msg) {
+  if(msg.type == 'api' && msg.playerid && getObj('player', msg.playerid)){
+    CentralInput.input(msg);
+  }
+});
+
 function encodeURIFixed(str){
   return encodeURIComponent(str).replace(/['()*]/g, function(c) {
     return '%' + c.charCodeAt(0).toString(16);
   });
 }
-
-//takes the player input and tests each regex to to see if the input is recognized
-//if the input is recognized, the corresponding function is called
-CentralInput.input = function(msg){
-  //by default assume that the input was not recognized, until we are told otherwise
-  var inputRecognized = false;
-  //decode any encoded msgs
-  if(msg.content.indexOf("!{URIFixed}") == 0){
-    msg.content = msg.content.replace("{URIFixed}","");
-    msg.content = decodeURIComponent(msg.content);
-  }
-  //step through every Command, testing each one
-  for(var i = 0; i < this.Commands.length; i++){
-    //is the msg recognized by this command?
-    //AND is this a public command || is the user a gm?
-    if(this.Commands[i].cmdRegex.test(msg.content)
-    && (this.Commands[i].cmdPublic || playerIsGM(msg.playerid)) ){
-      //note that the input was recognized by at least one command
-      inputRecognized = true;
-
-      //run the function associated with this command using the regex of the msg as the input
-      this.Commands[i].cmdAction(msg.content.match(this.Commands[i].cmdRegex),msg);
-
-      //I will not stop searching here as multiple commands may be overlapping.
-      //The gm should watch for this and correct for it.
-    }
-  }
-
-  //once we have looked through the commands, warn the user if the input was not
-  //recognized
-  if(inputRecognized == false){
-    whisper("The command " + msg.content + " was not recognized. See " + GetLink("!help") + " for a list of commands.", msg.playerid);
-  }
-}
-
-//check every api input to see if it matches a recorded command
-on("chat:message", function(msg) {
-    //be sure the msg was an api command
-    //be sure the message came from a user
-    if(msg.type == "api" && msg.playerid && getObj("player", msg.playerid)){
-      CentralInput.input(msg);
-    }
-});
-//often times players will forget to select their character when using various
-//api commands. This function searches for a default charactersheet for this
-//player. A charactersheet with a controlledby field that is controlled by that
-//player and no one else is recognized as a potential candidate. If there is
-//exactly one candidate character, that charactersheet is returned as the
-//default charactersheet. Otherwise, a whisper is sent to the gm with a list of
-//the qualifying candidates (even an empty list). The return is then undefined.
-//Therefore, you should have your code check to see if the default character is
-//valid before proceeding.
-
-//If you would like a player to control a character (such as a pet), without it
-//being confused as the default for that player, just add the GM to the list
-//of people that controls that pet/ally/etc.
-
 function defaultCharacter(playerid){
-  //create an array to hold all of the candidate characters
   var candidateCharacters = findObjs({
-    _type: "character",
+    _type: 'character',
     controlledby: playerid
   });
-  //check if there is exactly one candidate
-  if(candidateCharacters.length == 1){
-    //return the default Character
+  if(candidateCharacters && candidateCharacters.length == 1){
     return candidateCharacters[0];
-  } else if(candidateCharacters.length <= 0) {
-    //report that there are no valid candidates for player: playerid
-    whisper("No default character candidates were found for " + getObj("player",playerid).get("_displayname") + ".");
+  } else if(!candidateCharacters || candidateCharacters.length <= 0) {
+    var player = getObj('player', playerid);
+    var playername = '[' + playerid + ']';
+    if(player) playername = player.get('_displayname');
+    whisper('No default character candidates were found for ' + playername + '.');
   } else {
-    //report that there are too many candidates to choose from
-    whisper("Too many default character candidates were found for " + getObj("player",playerid).get("_displayname") + ". Please refer to the api output console for a full listing of those characters");
-    log("Too many default character candidates for "  + getObj("player",playerid).get("_displayname") + ".")
+    var player = getObj('player', playerid);
+    var playername = '[' + playerid + ']';
+    if(player) playername = player.get('_displayname');
+    whisper('Too many default character candidates were found for ' + playername + '. Please refer to the api output console for a full listing of those characters');
+    log('Too many default character candidates for '  + playername + '.');
     for(var i = 0; i < candidateCharacters.length; i++){
-      log("(" + (i+1) + "/" + candidateCharacters.length + ") " + candidateCharacters[i].get("name"))
+      log('(' + (i+1) + '/' + candidateCharacters.length + ') ' + candidateCharacters[i].get('name'))
     }
   }
 }
-/*
-Ease of use function that applies a function to each character in msg.selected
-
-msg is the object associated with each Chat Message. Specifically the function
-is interested in msg.selected and msg.playerid
-
-msg.selected contains the ids of every token selected. This function will
-search for the character sheet associated with each token.
-If no character sheet is associated with a token, that token will be ignored.
-
-In the case that nothing is selected, the function will use the playerid to
-search for a default character sheet. If the player is the gm, it will just
-select every token **on the main player page**.
-
-
-Inputs
-  msg  - the object delivered when the chat:message event occurs
-  func - the function used on each character
-*/
-
-function eachCharacter(msg, func){
-  //was nothing selected?
+function eachCharacter(msg, givenFunction){
   if(msg.selected == undefined || msg.selected.length <= 0){
-    //are we defaulting to selecting everying on the player page?
-    //gm only
     if(playerIsGM(msg.playerid)){
-      //just select every token on the gm's page that is not simply a
-      //drawing and is on the object layer (the layer players can see and
-      //interact with)
-      var gmObj = getObj("player", msg.playerid)
+      var gm = getObj('player', msg.playerid)
+      var pageid = gm.get('_lastpage') || Campaign().get('playerpageid');
       msg.selected = findObjs({
-          _pageid: gmObj.get("_lastpage"),
-          _type: "graphic",
-          _subtype: "token",
-          isdrawing: false,
-          layer: "objects"
+        _pageid: pageid,
+        _type: 'graphic',
+        _subtype: 'token',
+        isdrawing: false,
+        layer: 'objects'
       });
-    //if the player is not a gm, then attempt to find the player's default token
     } else {
-      //make the seleced array include the default character
       msg.selected = [defaultCharacter(msg.playerid)];
-      //if there is no default character for the player, just quit.
-      //the defaultCharacter() function has already warned the gm.
       if(msg.selected[0] == undefined){return;}
     }
   }
 
-  //step through each token in msg.selected and attempt to find the associated
-  //charactersheet
   _.each(msg.selected, function(obj){
-    //normally msg.selected is just a list of objectids and types of the
-    //objects you have selected. If this is the case, find the any
-    //character objects associated with these objects.
-    if(obj._type == "graphic"){
-      var graphic = getObj("graphic", obj._id);
-      //be sure the graphic exists
+    if(obj._type == 'graphic'){
+      var graphic = getObj('graphic', obj._id);
       if(graphic == undefined) {
-        log("graphic undefined")
+        log('graphic undefined')
         log(obj)
-        return whisper("graphic undefined");
+        return whisper('graphic undefined', {speakingTo: msg.playerid, gmEcho: true});
       }
 
-      //be sure the character is valid
-      var character = getObj("character", graphic.get("represents"))
+      var character = getObj('character', graphic.get('represents'))
       if(character == undefined){
-        log("character undefined")
+        log('character undefined')
         log(graphic)
-        return whisper("character undefined");
+        return whisper('character undefined', {speakingTo: msg.playerid, gmEcho: true});
       }
-    //if the object's type is unique, just proceed anyways with an undefined
-    //graphic and character
-    } else if(obj._type == "unique"){
+    } else if(obj._type == 'unique'){
       var graphic = undefined;
       var character = undefined;
-    //if using a default character, just accept the default character as the
-    //the character we are working with, no need to work through tokens to
-    //find this character
-    } else if(typeof obj.get === "function" && obj.get("_type") == "character") {
-      //record the character
+    } else if(typeof obj.get === 'function' && obj.get('_type') == 'character') {
       var character = obj;
       var graphic = undefined;
-
-      //this may not return a valid token if there is no token on any of
-      //the campaign pages, but I will be restricting non-gm's to only
-      //inquire about their initiative and will not allow them to modify the
-      //turn tracker. Thus, they will never need this default token. This
-      //default token code is just here in case a different gm wishes to
-      //allow players to roll their initiative.
-
-      //when searching for a token that represents the character, prioritize
-      //the page the player is currently on, next prioritize the page the main
-      //group is on, lastly just accept any page.
-
-      //is the player on their own page?
-      if(Campaign().get("playerspecificpages") && Campaign().get("playerspecificpages")[msg.playerid]){
-        //attempt to find a token linked to this character on the player's
-        //current page
+      if(Campaign().get('playerspecificpages') && Campaign().get('playerspecificpages')[msg.playerid]){
         graphic = findObjs({
-          _pageid: Campaign().get("playerspecificpages")[msg.playerid],
-          _type: "graphic",
+          _pageid: Campaign().get('playerspecificpages')[msg.playerid],
+          _type: 'graphic',
           represents: character.id
         })[0];
       }
 
-      //if a linked graphic has not been found, try searching for it on the
-      //main player page
       if(graphic == undefined){
         graphic = findObjs({
-          _pageid: Campaign().get("playerpageid"),
-          _type: "graphic",
-          represents: character.id
-        })[0];
-      }
-      //if no token was found on the player page, then search for any token
-      //in the Campaign
-      if(graphic == undefined){
-        graphic = findObjs({
-          _type: "graphic",
+          _pageid: Campaign().get('playerpageid'),
+          _type: 'graphic',
           represents: character.id
         })[0];
       }
 
-      //if there is still no token, warn the user and gm, then exit
       if(graphic == undefined){
-        whisper(character.get("name") + " does not have a token on any map in the entire campaign.", msg.playerid);
-        return whisper(character.get("name") + " does not have a token on any map in the entire campaign.");
+        graphic = findObjs({
+          _type: 'graphic',
+          represents: character.id
+        })[0];
       }
-    //if the gm just grabbed every single token on the map, you will already
-    //have the graphic objects, and will need to find the character objects.
-    } else if(typeof obj.get === "function" && obj.get("_type") == "graphic") {
-      //record the graphic
+
+      if(graphic == undefined){
+        return whisper(character.get('name') + ' does not have a token on any map in the entire campaign.',
+         {speakingTo: msg.playerid, gmEcho: true});
+      }
+    } else if(typeof obj.get === 'function' && obj.get('_type') == 'graphic') {
       var graphic = obj;
-      //be sure the character is valid
-      var character = getObj("character",graphic.get("represents"))
+      var character = getObj('character', graphic.get('represents'));
       if(character == undefined){
-        log("character undefined")
+        log('character undefined')
         log(graphic)
-        return whisper("character undefined");
+        return whisper('character undefined', {speakingTo: msg.playerid, gmEcho: true});
       }
-    //if the selected object met none of the above criteria, alert the gm.
-    } else{
-      log("Selected is neither a graphic nor a character.")
+    } else {
+      log('Selected is neither a graphic nor a character.')
       log(obj)
-      return whisper("Selected is neither a graphic nor a character.");
+      return whisper('Selected is neither a graphic nor a character.', {speakingTo: msg.playerid, gmEcho: true});
     }
 
-    //apply the function to this character and their character token (the graphic)
-    func(character, graphic);
+    givenFunction(character, graphic);
   });
 }
-//searches every handout and character sheet for titles that meet the search criteria
-//whispers the first five results to the user and saves the rest to be accessed with !More
-//matches[0] is the same as msg.content
-//matches[1] is the search criteria
 function journalSearch(matches, msg){
-  //break apart the search criteria by spaces (and change it to lower case)
-  var keywords = matches[1].toLowerCase().split(" ");
-
-  //get a list of all the handouts and characters that have every keyword and
-  //that can be viewed by the current player
-  var searchResults = matchingObjs(["handout", "character"], keywords, function(obj){
-    //the gm can view any handout or character
-    if(playerIsGM(msg.playerid)){return true;}
-    //be sure the current player can view this handout/character
-    var permissions = obj.get("inplayerjournals").split(",");
-    return permissions.indexOf("all") != -1 || permissions.indexOf(msg.playerid) != -1
+  var keywords = matches[1].toLowerCase().split(' ');
+  var searchResults = matchingObjs(['handout', 'character'], keywords, function(obj){
+    if(playerIsGM(msg.playerid)) return true;
+    var permissions = obj.get('inplayerjournals').split(',');
+    return permissions.indexOf('all') != -1 || permissions.indexOf(msg.playerid) != -1
   });
 
-  //erase any old search results for the specific player
   LinkList[msg.playerid] = [];
-  //save the search results for the specific player
   for(var i = 0; i < searchResults.length; i++){
-    LinkList[msg.playerid].push((LinkList[msg.playerid].length + 1).toString() + ". " + GetLink(searchResults[i].get("name"),"http://journal.roll20.net/" + searchResults[i].get("_type") + "/" + searchResults[i].id));
+    LinkList[msg.playerid].push((LinkList[msg.playerid].length + 1).toString() + '. ' +
+    getLink(searchResults[i].get('name'), 'http://journal.roll20.net/' + searchResults[i].get('_type') + '/' + searchResults[i].id));
   }
-  //use the moreSearch() function to privately whisper the search results to the player
-  moreSearch([],msg)
+
+  moreSearch([], msg);
 }
 
-//displays the next five search results from !Find <blah>
-function moreSearch(matches,msg){
-  //is there anything to show?
-  if(LinkList[msg.playerid] == undefined || LinkList[msg.playerid].length <= 0){
-    return whisper("No results.",msg.playerid);
-  }
-
-  //only send out the first five links
-  for(var i = 1; i <= 5 && LinkList[msg.playerid].length > 0; i++){
-    //privately whisper the next link to the user
-    whisper(LinkList[msg.playerid][0],msg.playerid);
-    //this Link has been sent. Remove it.
+function moreSearch(matches, msg){
+  if(!LinkList[msg.playerid]) return whisper('No results.', {speakingTo: msg.playerid});
+  for(var i = 1; i <= 5 && LinkList[msg.playerid].length; i++){
+    whisper(LinkList[msg.playerid][0], {speakingTo: msg.playerid});
     LinkList[msg.playerid].shift();
   }
-  //are there any Links left?
-  if(LinkList[msg.playerid].length > 0){
-    //whisper a button to keep showing more
-    whisper(LinkList[msg.playerid].length.toString() + " [More](!More) search results.",msg.playerid);
+
+  if(LinkList[msg.playerid].length){
+    whisper(LinkList[msg.playerid].length.toString() + ' [More](!More) search results.', {speakingTo: msg.playerid});
   }
 }
 
-on("ready",function(){
+on('ready',function(){
   LinkList = [];
-
-  //matches[0] is the same as msg.content
-  //matches[1] is the search criteria
   CentralInput.addCMD(/^!\s*find\s+(\S.*)$/i,journalSearch,true);
-
-  //matches[0] is the same as msg.content
   CentralInput.addCMD(/^!\s*more\s*$/i,moreSearch,true);
 });
-//A general use function which creates a hyperlink out of a the name (text) and
-//the hyperlink.
-
-//If no link is given, it will instead search your handouts and characters in
-//your journal and create a link to that instead.
-
-//If multiple candidates are found within your journal, it will choose the first
-//one, defaulting to handouts before characters.
-
-//If nothing is found, it will return just the name with no link at all
-
-function GetLink (Name,Link){
-    Link = Link || "";
-    if(Link == ""){
-        var Handouts = findObjs({ type: 'handout', name: Name });
-        var objs = filterObjs(function(obj) {
-          if(obj.get("_type") == "handout" || obj.get("_type") == "character"){
-            var regex = Name;
-            regex = regex.replace(/[\.\+\*\[\]\(\)\{\}\^\$\?]/g, function(match){return "\\" + match});
-            regex = regex.replace(/\s*(-|–|\s)\s*/, "\\s*(-|–|\\s)\\s*");
-            regex = regex.replace(/s?$/, "s?");
-            regex = "^" + regex + "$";
-            var re = RegExp(regex, "i");
-            return re.test(obj.get("name"));
-          } else {return false;}
-        });
-        objs = trimToPerfectMatches(objs, Name);
-        if(objs.length > 0){
-          return "<a href=\"http://journal.roll20.net/" + objs[0].get("_type") + "/" + objs[0].id + "\">" + objs[0].get("name") + "</a>";
-        } else {
-            return Name;
-        }
-    } else {
-        return "<a href=\"" + Link + "\">" + Name + "</a>";
+function getAttribute(name, options) {
+  if(typeof options != 'object') options = false;
+  options = options || {};
+  if(options['alert'] == undefined) options['alert'] = true;
+  if(options['graphicid']) {
+    var graphic = getObj('graphic', options['graphicid']);
+    if(graphic == undefined){
+      if(options['alert']) whisper('Graphic ' + options['graphicid'] + ' does not exist.');
+      return undefined;
     }
+
+    options['characterid'] = graphic.get('represents');
+  }
+
+  if(options['characterid']){
+    var character = getObj('character', options['characterid']);
+    if(character == undefined) {
+      if(options['alert']) whisper('Character ' + options['characterid'] + ' does not exist.');
+      return undefined;
+    }
+
+    var attributes = findObjs({
+      _type: 'attribute',
+      _characterid: options['characterid'],
+      name: name
+    });
+    if(!attributes || attributes.length <= 0){
+      if(options['setTo'] == undefined){
+        if(options['alert']) whisper(character.get('name') + ' does not have a(n) ' + name + ' Attribute.');
+        return undefined;
+      }
+    } else if(attributes.length >= 2){
+      if(options['alert']) whisper('There were multiple ' + name + ' attributes owned by ' + character.get('name')
+       + '. Using the first one found. A log has been posted in the terminal.');
+      log(character.get('name') + '\'s ' + name + ' Attributes');
+      _.each(attributes, function(attribute){ log(attribute)});
+    }
+  } else {
+    var attributes = findObjs({
+      _type: 'attribute',
+      name: name
+    });
+    if(!attributes || attributes.length <= 0){
+      if(options['alert']) whisper('There is nothing in the campaign with a(n) ' + name + ' Attribute.');
+      return undefined;
+    } else if(attributes.length >= 2){
+      if(options['alert']) whisper('There were multiple ' + name + ' attributes. Using the first one found. A log has been posted in the terminal.');
+      log(name + ' Attributes')
+      _.each(attributes, function(attribute){ log(attribute)});
+    }
+  }
+
+  return attributes[0];
 }
-//when searching through a character's attributes, you will sometimes want to
-//include a graphic's local values for attributes. Since these local values work
-//differently than roll20 attribute objects, only an array of matching names
-//will be returned. You are expected to use attrValue() to access this attribute
-//or local value.
+function getLink (Name, Link){
+  Link = Link || '';
+  if(Link == ''){
+    var Handouts = findObjs({ _type: 'handout', name: Name });
+    var objs = filterObjs(function(obj) {
+      if(obj.get('_type') == 'handout' || obj.get('_type') == 'character'){
+        var regex = Name;
+        regex = regex.replace(/[\.\+\*\[\]\(\)\{\}\^\$\?]/g, function(match){return '\\' + match});
+        regex = regex.replace(/\s*(-|–|\s)\s*/, '\\s*(-|–|\\s)\\s*');
+        regex = regex.replace(/s?$/, 's?');
+        regex = '^' + regex + '$';
+        var re = RegExp(regex, 'i');
+        return re.test(obj.get('name'));
+      } else {
+        return false;
+      }
+    });
+    objs = trimToPerfectMatches(objs, Name);
+    if(objs.length > 0){
+      return '<a href=\"http://journal.roll20.net/' + objs[0].get('_type') + '/' + objs[0].id + '\">' + objs[0].get('name') + '</a>';
+    } else {
+        return Name;
+    }
+  } else {
+    return '<a href=\"' + Link + '\">' + Name + '</a>';
+  }
+}
+function LocalAttributes(graphic) {
+  this.graphic = graphic;
+  this.gmnotes = decodeURIComponent(graphic.get('gmnotes'));
+  this.gmnotes = this.gmnotes.replace(/<br>/g, '\n');
+  this.Attributes = {};
+  if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(this.gmnotes)){
+    this.Attributes = this.gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, '$1');
+    this.Attributes = JSON.parse(this.Attributes);
+  }
+
+  this.get = function(attribute) {
+    return this.Attributes[attribute];
+  }
+
+  this.set = function(attribute, value) {
+    var newValue = this.Attributes[attribute] = value;
+    this.save();
+    return newValue;
+  }
+
+  this.remove = function(attribute) {
+    delete this.Attributes[attribute];
+    this.save();
+  }
+
+  this.save = function() {
+    if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(this.gmnotes)){
+      this.gmnotes = this.gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, JSON.stringify(this.Attributes));
+    } else {
+      this.gmnotes = this.gmnotes + '<br>' + JSON.stringify(this.Attributes);
+    }
+
+    this.gmnotes = encodeURIComponent(this.gmnotes);
+    this.graphic.set('gmnotes', this.gmnotes);
+  }
+}
 function matchingAttrNames(graphicid, phrase){
   var matches = [];
-
-  //get the graphic
-  var graphic = getObj("graphic", graphicid);
-  //be sure the graphic was found
-  if(graphic == undefined){
-    whisper("Graphic " + graphicid + " does not exist.");
-    return undefined;
-  }
-  //get the character
-  var characterid = graphic.get("represents");
-  //be sure the character exists
-  var character = getObj("character",characterid);
-  if(character == undefined){
-    whisper("Character " + characterid + " does not exist.");
-    return undefined;
-  }
-
-  //divide the phrase into keywords by spaces
-  var keywords = phrase.split(" ");
-  //ignore any empty keywords
-  for(var i = 0; i < keywords.length; i++){
-    if(keywords[i] == ""){
-      keywords.splice(i,1);
+  var graphic = getObj('graphic', graphicid);
+  if(!graphic) return whisper('Graphic ' + graphicid + ' does not exist.');
+  var characterid = graphic.get('represents');
+  var character = getObj('character',characterid);
+  if(!character) return whisper('Character ' + characterid + ' does not exist.');
+  var keywords = phrase.split(' ');
+  for(var i = 0; i < keywords.length; i++) {
+    if(keywords[i] == ''){
+      keywords.splice(i, 1);
       i--;
     }
   }
-  //be sure at least one keyword was given
-  //otherwise return nothing
-  if(keywords.length <= 0){
-    return [];
-  }
-  //the search is case insensitive
+
+  if(!keywords.length) return [];
   for(var i = 0; i < keywords.length; i++){
     keywords[i] = keywords[i].toLowerCase();
   }
 
-  //get any matching attributes from the character sheet
-  var matchingAttrs = matchingObjs("attribute", keywords, function(attr){
-    return attr.get("characterid") == character.id;
+  var matchingAttrs = matchingObjs('attribute', keywords, function(attr){
+    return attr.get('characterid') == character.id;
   });
 
-  //pull all of the matching names
   _.each(matchingAttrs, function(attr){
-    matches.push(attr.get("name"));
+    matches.push(attr.get('name'));
   });
 
-  //check for any local values on the graphic
-
-  //roll20 stores token gmnotes in URI component
-  var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
-  //create a hash of the temporary attributes
-  var tempAttrs = new Hash(gmnotes);
-  //record all of the matching local attributes
-  for(var clip in tempAttrs){
+  var localAttributes = new LocalAttributes(graphic);
+  for(var attr in localAttributes.Attributes){
     var matching = true;
-    //the search is case insensitive
-    var name = clip.toLowerCase();
-    //the object must have every keyword within it
+    var name = attr.toLowerCase();
     for(var i = 0; i < keywords.length; i++){
       if(name.indexOf(keywords[i]) == -1){
-        //one of the keywords was not found, do not keep this result
         matching = false;
         break;
       }
     }
-    if(matching){
-      matches.push(clip);
-    }
+
+    if(matching) matches.push(attr);
   }
 
-  //trim to exact matches
   for(var i = 0; i < matches.length; i++){
     if(matches[i] == phrase){
       matches = [phrase];
@@ -681,103 +429,108 @@ function matchingAttrNames(graphicid, phrase){
     }
   }
 
-  //return the array of matches
   return matches;
 }
-//a general use function that searches for all of the objects that match at
-//least one of the given types and all of the given keywords
 function matchingObjs(types, keywords, additionalCriteria){
-  //be sure types is an array
-  if(typeof types == 'string'){
-    types = [types];
-  }
-  //ignore any empty keywords
+  if(typeof types == 'string') types = [types];
   for(var i = 0; i < keywords.length; i++){
-    if(keywords[i] == ""){
+    if(keywords[i] == ''){
       keywords.splice(i,1);
       i--;
     }
   }
-  //be sure at least one keyword was given
-  //otherwise return nothing
-  if(keywords.length <= 0){
-    return [];
-  }
-  //the search is case insensitive
+
+  if(!keywords.length) return [];
   for(var i = 0; i < keywords.length; i++){
     keywords[i] = keywords[i].toLowerCase();
   }
-  //get an array of all of the matching objects
+
   return filterObjs(function(obj){
-    //the object must match at least one of the types
-    if(types.indexOf(obj.get("_type")) == -1){
-      return false;
-    }
-
-    //get the object's name
-    if(obj.get("_type") == "player"){
-      var name = obj.get("_displayname");
+    if(types.indexOf(obj.get('_type')) == -1) return false;
+    if(obj.get('_type') == 'player'){
+      var name = obj.get('_displayname');
     } else {
-      var name = obj.get("name");
-    }
-    //the search is case insensitive
-    name = name.toLowerCase();
-    //the object must have every key word within it
-    for(var i = 0; i < keywords.length; i++){
-      if(name.indexOf(keywords[i]) == -1){
-        //one of the keywords was not found, do not keep this result
-        return false;
-      }
+      var name = obj.get('name');
     }
 
-    //allow for additional criteria to be specified
+    name = name.toLowerCase();
+    for(var i = 0; i < keywords.length; i++){
+      if(name.indexOf(keywords[i]) == -1) return false;
+    }
+
     if(typeof additionalCriteria == 'function'){
       return additionalCriteria(obj);
     } else {
-      //every valid check was passed
       return true;
     }
   });
 }
+function modifyAttribute(attribute, options) {
+  if (typeof options != 'object' ) options = {};
+  if(options.workingWith != 'max') options.workingWith = 'current';
+  if(!options.sign) options.sign = '';
+  if(typeof options.modifier == 'number') options.modifier = options.modifier.toString();
 
-//sometimes you need to limit down an array of objects (likely obtained from
-//matchingObjs()) to only results that perfectly match. BUT only trim the array
-//down if there is at least one exact match
-function trimToPerfectMatches(objs, phrase){
-  //exact matches are case sensitive
-  var exactMatches = [];
-  _.each(objs, function(obj){
-    if(obj.get("_type") == "player"){
-      var name = obj.get("_displayname");
-    } else {
-      var name = obj.get("name");
-    }
-    if(name == phrase){
-      exactMatches.push(obj);
-    }
-  });
-  //was there at least one exact match?
-  if(exactMatches.length >= 1){
-    return exactMatches;
-  } else {
-    //otherwise just return what you had in the first place
-    return objs;
+  if(attribute.get) {
+    attribute = {
+      current: attribute.get('current'),
+      max: attribute.get('max')
+    };
   }
-}
-numModifier = {};
 
+  if(/\$\[\[\d+\]\]/.test(options.modifier)){
+    var inlineMatch = options.modifier.match(/\$\[\[(\d+)\]\]/);
+    if(inlineMatch && inlineMatch[1]){
+      var inlineIndex = Number(inlineMatch[1]);
+    }
+    if(inlineIndex != undefined && options.inlinerolls && options.inlinerolls[inlineIndex]
+    && options.inlinerolls[inlineIndex].results
+    && options.inlinerolls[inlineIndex].results.total != undefined){
+      options.modifier = options.inlinerolls[inlineIndex].results.total.toString();
+    } else {
+      log('msg.inlinerolls')
+      log(options.inlinerolls);
+      return whisper('Invalid Inline');
+    }
+  }
+
+  switch(options.modifier.toLowerCase()){
+    case 'max':
+      options.modifier = attribute.max;
+      break;
+    case 'current':
+      options.modifier = attribute.current;
+      break;
+  }
+
+  var modifiedAttribute = {
+    current: attribute.current,
+    max: attribute.max
+  };
+
+  modifiedAttribute[options.workingWith] = numModifier.calc(
+    attribute[options.workingWith],
+    options.operator,
+    options.sign + options.modifier
+  );
+
+  return modifiedAttribute;
+}
+var numModifier = {};
 numModifier.calc = function(stat, operator, modifier){
-  //modify the stat number with the operator
-  if(operator.indexOf("+") != -1){
-    return Number(stat) + Number(modifier);
-  } else if(operator.indexOf("-") != -1){
-    return Number(stat) - Number(modifier);
-  } else if(operator.indexOf("*") != -1){
-    return Number(stat) * Number(modifier);
-  } else if(operator.indexOf("/") != -1){
+  if(operator.indexOf('+') != -1){
+    stat = Number(stat) + Number(modifier);
+    return Math.round(stat);
+  } else if(operator.indexOf('-') != -1){
+    stat = Number(stat) - Number(modifier);
+    return Math.round(stat);
+  } else if(operator.indexOf('*') != -1){
+    stat = Number(stat) * Number(modifier);
+    return Math.round(stat);
+  } else if(operator.indexOf('/') != -1){
     stat = Number(stat) / Number(modifier);
     return Math.round(stat);
-  } else if(operator.indexOf("=") != -1){
+  } else if(operator.indexOf('=') != -1){
     return modifier;
   } else {
     return stat;
@@ -787,178 +540,50 @@ numModifier.calc = function(stat, operator, modifier){
 numModifier.regexStr = function(){
   return '(\\?\\s*\\+|\\?\\s*-|\\?\\s*\\*|\\?\\s*\\/|\\?|=|\\+\\s*=|-\\s*=|\\*\\s*=|\\/\\s*=)\s*(|\\+|-)'
 }
-//Looking at the bio or notes of a handout or character sheet gives you nothing the first time you try
-//This ad hoc function tries every bio and note once, eliminating that annoying first time from user perception
-on("ready", function() {
-    ///gather up all the handouts
+on('ready', function() {
     var Handouts = findObjs({
-        _type: "handout"
+        _type: 'handout'
     });
-    //gather up all the characters
+
     var Characters = findObjs({
-        _type: "character"
+        _type: 'character'
     });
 
-    log("Reading through every handout and character")
-    //step through each handout
+    log('Reading through every handout and character');
+
     _.each(Handouts, function(handout){
-        handout.get("notes",function(notes){notes;});
-        handout.get("gmnotes",function(gmnotes){gmnotes;});
+        handout.get('notes',function(notes){notes;});
+        handout.get('gmnotes',function(gmnotes){gmnotes;});
     });
-    log("...")
-    //step through each character
+
+    log('...');
     _.each(Characters, function(Character){
-        Character.get("bio", function(bio) {bio;});
-        Character.get("gmnotes", function(gmnotes) {gmnotes;});
+        Character.get('bio', function(bio) {bio;});
+        Character.get('gmnotes', function(gmnotes) {gmnotes;});
     });
-    log("Reading complete.")
+
+    log('Reading complete.');
 });
-//general use function that attempts to set the current player page
-//it can also be used to set the current page for specific players
-//matches[1] is a list of key words to determine which map to send the players to
-//matches[2] is a list of key words to determine which players to send
-function sendToPage(matches,msg){
-  //be sure the optional match exist
-  var mapPhrase    = matches[1] || "";
-  var playerPhrase = matches[2] || "";
-
-  var mapKeywords    = mapPhrase.split(" ");
-  var playerKeywords = playerPhrase.split(" ");
-
-  //get arrays of matching maps, players, and default characters
-  var mapResults    = matchingObjs("page", mapKeywords);
-  var playerResults = matchingObjs("player", playerKeywords);
-  var characterResults = matchingObjs("character", playerKeywords, function(obj){
-    //check if this character is controlled by just one non-gm player
-    var owners = obj.get("controlledby").split(",")
-    return !(owners.length != 1 || owners[0] == "" || owners[0] == "all" || playerIsGM(owners[0]))
-  });
-
-  //get the owning players from the default characters and add any unique ones
-  //to the list of players
-  _.each(characterResults, function(character){
-    var newPlayerID = true;
-    var playerID = character.get("controlledby");
-    for(var i = 0; i < playerResults.length; i++){
-      if(playerResults[i].id == playerID){
-        newPlayerID = false;
-        break;
-      }
-    }
-    if(newPlayerID){
-      playerResults.push(getObj("player", playerID));
-    }
-  });
-
-  //rage quit if no maps were found
-  if(mapResults.length <= 0){
-    return whisper("No matching maps were found.");
-  }
-  //rage quit if no players were found WHEN attempting to find a specific player
-  if(playerResults.length <= 0 && playerPhrase != ""){
-    return whisper("No matching players were found.")
-  }
-
-  //see if we can trim down the results to just exact matches
-  mapResults = trimToPerfectMatches(mapResults, playerPhrase);
-
-  //see if we can trim down the results to just exact matches
-  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
-
-  //if there are still too many map results, make the user specify
-  if(mapResults.length >= 2){
-    //let the gm know that multiple maps were found
-    whisper("Which map did you mean?");
-    //determine the player keywords
-    var playerSearch = "";
-    if(playerResults.length == 1){
-      playerSearch = "|" + playerResults[0].get("_displayname");
-    } else if(playerResults.length > 1){
-      playerSearch = "|" + playerPhrase;
-    }
-    //give a suggestion for each possible map match
-    _.each(mapResults, function(map){
-      var suggestion = map.get("name") + playerSearch;
-      whisper("[" + suggestion + "](!sendTo " + suggestion + ")");
-    });
-    //stop here, we have done all we can for now
-    return;
-  }
-
-  //if there are still too many player results, make the user specify
-  if(playerResults.length >= 2){
-    //let the gm know that multiple maps were found
-    whisper("Which player did you mean?");
-    //note the map search
-    var mapSearch = mapResults[0].get("name");
-    //give a suggestion for each possible player match
-    _.each(playerResults, function(player){
-      var suggestion = mapSearch + "|" + player.get("_displayname");
-      whisper("[" + suggestion + "](!sendTo " + suggestion + ")");
-    });
-    //stop here, we have done all we can for now
-    return;
-  }
-
-  //if there is no disambiguation to be done, proceed
-
-  //if no player was specified, move the entire party
-  if(playerResults.length <= 0){
-    //move the party
-    Campaign().set("playerpageid", mapResults[0].id);
-    //tell the gm what happened
-    whisper("The party has been moved to *" + mapResults[0].get("name") + "*");
-  //otherwise set the page for the specific player
-  } else {
-    //get the list of specific pages
-    var playerPages = Campaign().get("playerspecificpages");
-    //be sure the player specific pages object exists
-    playerPages = playerPages || {};
-    //send each named player to the specified map
-    _.each(playerResults, function(player){
-      //specify the page for the player
-      playerPages[player.id] = mapResults[0].id;
-      //tell the gm what happened
-      whisper("*" + player.get("_displayname") + "* was moved to *" + mapResults[0].get("name") + "*");
-    });
-    //record the result
-    Campaign().set("playerspecificpages", playerPages);
-  }
-}
-
-//returns players from their player specific pages
-  //matches[1] the name of the player to return
 function returnPlayers(matches, msg){
-  //get the list of player specific pages
-  var playerPages = Campaign().get("playerspecificpages");
-  //warn the gm if there is no one to return
-  if(!playerPages){
-    return whisper("There are no players to return from their player specific pages.")
-  }
-  //begin by creating a list of players that can be returned
+  var playerPages = Campaign().get('playerspecificpages');
+  if(!playerPages) return whisper('There are no players to return from their player specific pages.');
   var playersToReturn = [];
   for(var player in playerPages){
     playersToReturn.push(player);
   }
 
-  //make the player phrase
-  var playerPhrase = matches[1] || "";
-  //create a list of keywords from the user input
-  var playerKeywords = playerPhrase.split(" ");
+  var playerPhrase = matches[1] || '';
+  var playerKeywords = playerPhrase.split(' ');
 
-  //get arrays of matching players and characters
-  var playerResults = matchingObjs(["player"], playerKeywords);
-  var characterResults = matchingObjs(["character"], playerKeywords, function(obj){
-    //check if this character is controlled by just one non-gm player
-    var owners = obj.get("controlledby").split(",")
-    return !(owners.length != 1 || owners[0] == "all" || playerIsGM(owners[0]))
+  var playerResults = matchingObjs(['player'], playerKeywords);
+  var characterResults = matchingObjs(['character'], playerKeywords, function(obj){
+    var owners = obj.get('controlledby').split(',')
+    return !(owners.length != 1 || owners[0] == 'all' || playerIsGM(owners[0]))
   });
 
-  //get the owning players from the default characters and add any unique ones
-  //to the list of players
   _.each(characterResults, function(character){
     var newPlayerID = true;
-    var playerID = character.get("controlledby");
+    var playerID = character.get('controlledby');
     for(var i = 0; i < playerResults.length; i++){
       if(playerResults[i].id == playerID){
         newPlayerID = false;
@@ -966,280 +591,199 @@ function returnPlayers(matches, msg){
       }
     }
     if(newPlayerID){
-      playerResults.push(getObj("player", playerID));
+      playerResults.push(getObj('player', playerID));
     }
   });
 
-  //rage quit if no players were found WHEN attempting to find a specific player
-  if(playerResults.length <= 0 && playerPhrase != ""){
-    return whisper("No matching players were found.")
-  }
+  if(!playerResults.length && playerPhrase) return whisper('No matching players were found.');
 
-  //trim down the results to exact matches if exact matches are found
   playerResults = trimToPerfectMatches(playerResults, playerPhrase);
 
-  //trim down the results based on who there is to return
   var returningPlayers = [];
   _.each(playerResults, function(player){
     if(playersToReturn.indexOf(player.id) != -1){
       returningPlayers.push(player);
     } else {
-      whisper("*" + player.get("_displayname") + "* is not on a player specific page.");
+      whisper('*' + player.get('_displayname') + '* is not on a player specific page.');
     }
   });
 
-  //if there are still too many player results, make the user specify
   if(playerResults.length >= 2){
-    //let the gm know that multiple maps were found
-    whisper("Which player did you mean?");
-    //give a suggestion for each possible player match
+    whisper('Which player did you mean?');
     _.each(playerResults, function(player){
-      var suggestion = player.get("_displayname");
-      whisper("[" + suggestion + "](!return " + suggestion + ")");
+      var suggestion = player.get('_displayname');
+      whisper('[' + suggestion + '](!return ' + suggestion + ')');
     });
-    //stop here, we have done all we can for now
     return;
   }
 
-  //if no keywords were given, just return everyone
   playerPhrase.trim();
-  if(playerPhrase == ""){
+  if(playerPhrase == ''){
     _.each(playersToReturn, function(playerid){
-      returningPlayers.push(getObj("player", playerid));
+      returningPlayers.push(getObj('player', playerid));
     });
   }
 
-  //return each of the players to the party
   _.each(returningPlayers, function(player){
     delete playerPages[player.id];
-    whisper("*" + player.get("_displayname") + "* has returned to the main party.");
+    whisper('*' + player.get('_displayname') + '* has returned to the main party.');
   });
 
-  //save the result
   if(_.isEmpty(playerPages)){
-    //if there are no player specific pages, set the whole thing to false
-    Campaign().set("playerspecificpages", false);
+    Campaign().set('playerspecificpages', false);
   } else {
-    Campaign().set("playerspecificpages", playerPages);
+    Campaign().set('playerspecificpages', playerPages);
   }
 }
 
-on("ready",function(){
-  //matches[0] is the same as msg.content
-  //matches[1] is the map search criteria
-  //matches[2] is the player search criteria
-  CentralInput.addCMD(/^!\s*send\s*to\s([^\|\[\]]+)\s*(?:\|\s*([^\|\[\]]+)\s*)?$/i,sendToPage);
-
-  //matches[0] is the same as msg.content
-  //matches[1] is the player search criteria
-  CentralInput.addCMD(/^!\s*return(?:\s([^\|\[\]]+))?$/i,returnPlayers);
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*return(?:\s([^\|\[\]]+))?$/i, returnPlayers);
 });
-function attrTable(name, current, max, options){
-  options = options || {};
-  if(options["color"] == undefined){
-    options["color"] = "00E518";
-  }
-  var attrTable = "<table border = \"2\" width = \"100%\">";
-  //title
-  attrTable += "<caption>" + name + "</caption>";
-  //label row - Current, Max
-  attrTable += "<tr bgcolor = \"" + options["color"] + "\"><th>Current</th><th>Max</th></tr>";
-  //temporary attribute row (current, max)
-  attrTable += "<tr bgcolor = \"White\"><td>" + current + "</td><td>" + max + "</td></tr>";
-  //end table
-  attrTable += "</table>";
+function sendToPage(matches,msg){
+  var mapPhrase    = matches[1] || '';
+  var playerPhrase = matches[2] || '';
+  var mapKeywords    = mapPhrase.split(' ');
+  var playerKeywords = playerPhrase.split(' ');
+  var mapResults    = matchingObjs('page', mapKeywords);
+  var playerResults = matchingObjs('player', playerKeywords);
+  var characterResults = matchingObjs('character', playerKeywords, function(obj){
+    var owners = obj.get('controlledby').split(',')
+    return !(owners.length != 1 || owners[0] == '' || owners[0] == 'all' || playerIsGM(owners[0]))
+  });
 
-  return attrTable;
+  _.each(characterResults, function(character){
+    var newPlayerID = true;
+    var playerID = character.get('controlledby');
+    for(var i = 0; i < playerResults.length; i++){
+      if(playerResults[i].id == playerID){
+        newPlayerID = false;
+        break;
+      }
+    }
+
+    if(newPlayerID){
+      playerResults.push(getObj('player', playerID));
+    }
+  });
+
+  if(!mapResults.length) return whisper('No matching maps were found.');
+  if(!playerResults.length && playerPhrase) return whisper('No matching players were found.');
+  mapResults = trimToPerfectMatches(mapResults, playerPhrase);
+  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
+  if(mapResults.length >= 2){
+    whisper('Which map did you mean?');
+    var playerSearch = '';
+    if(playerResults.length == 1){
+      playerSearch = '|' + playerResults[0].get('_displayname');
+    } else if(playerResults.length > 1){
+      playerSearch = '|' + playerPhrase;
+    }
+
+    _.each(mapResults, function(map){
+      var suggestion = map.get('name') + playerSearch;
+      whisper('[' + suggestion + '](!sendTo ' + suggestion + ')');
+    });
+
+    return;
+  }
+
+  if(playerResults.length >= 2){
+    whisper('Which player did you mean?');
+    var mapSearch = mapResults[0].get('name');
+    _.each(playerResults, function(player){
+      var suggestion = mapSearch + '|' + player.get('_displayname');
+      whisper('[' + suggestion + '](!sendTo ' + suggestion + ')');
+    });
+    return;
+  }
+
+  if(!playerResults.length){
+    Campaign().set('playerpageid', mapResults[0].id);
+    whisper('The party has been moved to *' + mapResults[0].get('name') + '*');
+  } else {
+    var playerPages = Campaign().get('playerspecificpages');
+    playerPages = playerPages || {};
+    _.each(playerResults, function(player){
+      playerPages[player.id] = mapResults[0].id;
+      whisper('*' + player.get('_displayname') + '* was moved to *' + mapResults[0].get('name') + '*');
+    });
+    Campaign().set('playerspecificpages', playerPages);
+  }
 }
 
-//general use stat modifier/reporter
-//matches[0] is the same as msg.context
-//matches[1] is whether or not the user is editting the max attribute (if == "max")
-//matches[2] is the name of the Attribute
-//matches[3] is the text operator "=", "?+", "*=", etc
-//matches[4] is the sign of the modifier
-//matches[5] is the modifier (numerical, current, max, or an inline roll)
-function statHandler(matches,msg,options){
-  //default to no options
-  options = options || {};
-  //by default, show the results of the handler
-  if(options["show"] == undefined){
-    options["show"] = true;
-  }
-
-  var isMax = matches[1].toLowerCase() == "max";
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*send\s*to\s([^\|\[\]]+)\s*(?:\|\s*([^\|\[\]]+)\s*)?$/i,sendToPage);
+});
+function attributeHandler(matches,msg,options){
+  if(typeof options != 'object') options = {};
+  if(options['show'] == undefined) options['show'] = true;
+  var workingWith = (matches[1].toLowerCase() == 'max') ? 'max' : 'current';
   var statName = matches[2];
-  var operator = matches[3].replace("/\s/g","");
-  var sign = matches[4] || "";
-  //check if the modifier was randomly rolled
-  if(/\$\[\[\d+\]\]/.test(matches[5])){
-    var inlineMatch = matches[5].match(/\$\[\[(\d+)\]\]/);
-    if(inlineMatch && inlineMatch[1]){
-      var inlineIndex = Number(inlineMatch[1]);
-    }
-    if(inlineIndex != undefined && msg.inlinerolls[inlineIndex]
-      && msg.inlinerolls[inlineIndex].results && msg.inlinerolls[inlineIndex].results.total){
-      var modifier = msg.inlinerolls[inlineIndex].results.total.toString();
-    } else {
-      whisper('Invalid Inline');
-      return;
-    }
-  } else {
-    //otherwise save the modifier without transforming it into a number yet
-    var modifier = matches[5] || "";
-  }
-
-  //is the stat a public stat, shared by the entire party?
-  if(options["partyStat"]){
-    //overwrite msg.selected. Whatever was selected does not matter
-    //we need one item in msg.selected to iterate over
-    msg.selected = [{_type: "unique"}];
-  }
-
-  //work through each selected character
+  var operator = matches[3].replace('/\s/g','');
+  var sign = matches[4] || '';
+  var modifier = matches[5] || '';
+  if(options['partyStat']) msg.selected = [{_type: 'unique'}];
   eachCharacter(msg, function(character, graphic){
-    //first check if the selected characters are being overwritten with the party stat
-    if(options["partyStat"]){
-      var currentAttr = attrValue(statName,{max: false});
-      var maxAttr     = attrValue(statName,{max: true, alert: false});
-      var name = "";
-    } else {
-      var currentAttr = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: false, bar: options["bar"]});
-      var maxAttr     = attrValue(statName,{characterid: character.id, graphicid: graphic.id, max: true, alert: false, bar: options["bar"]});
-      var name = character.get("name");
-    }
-
-    //be sure the attribute we are seeking exists
-    if(currentAttr == undefined){
-      //attrValue should warn if something went wrong
-      return;
-    }
-
-    //if the currentAttr exists but the maxAttr does not then we are likely
-    //dealing with a temporary attribute that does not exist on the represented
-    //character sheet.
-    if(maxAttr == undefined){
-      //if the user is trying to edit the maximum stat, inform them that this is
-      //impossible and quit
-      if(modifier == "max" && operator == "="){
-        attrValue(statName,{characterid: character.id, graphicid: graphic.id, delete: true, alert: false, bar: options["bar"]});
-        whisper(statName + " has been reset.", msg.playerid);
-        if(!playerIsGM(msg.playerid)){whisper(statName + " has been reset.");}
-        return;
-      } else if(isMax || modifier == "max"){
-        whisper("Temporary attributes do not have maximums to work with.");
-        return;
+    graphic = graphic || {};
+    character = character || {};
+    var attribute = {
+      current: attributeValue(statName, {graphicid: graphic.id, max: false, bar: options['bar']}),
+      max: attributeValue(statName, {graphicid: graphic.id, max: true, alert: false, bar: options['bar']})
+    };
+    var name = (options.partyStat) ? '' : character.get('name');
+    if(attribute.current == undefined) return;
+    if(attribute.max == undefined){
+      if(modifier == 'max' && operator == '='){
+        attributeValue(statName, {graphicid: graphic.id, delete: true, alert: false, bar: options['bar']});
+        return whisper(statName + ' has been reset.', {speakingTo: msg.playerid, gmEcho: true});
+      } else if(workingWith == 'max' || modifier == 'max') {
+        return whisper('Local attributes do not have maximums to work with.', {speakingTo: msg.playerid, gmEcho: true});
       } else {
-        maxAttr = "-";
+        attribute.max = '-';
       }
     }
 
-    //which stat are we editing?
-    if(isMax){
-      var stat = maxAttr;
-    } else {
-      var stat = currentAttr;
-    }
-
-    //is the modifier the max or current attribute?
-    if(modifier.toLowerCase() == "max"){
-      var tempModifier = maxAttr;
-    } else if(modifier.toLowerCase() == "current"){
-      var tempModifier = currentAttr;
-    } else {
-      var tempModifier = modifier;
-    }
-
-    //modify the stat number with the operator
-    stat = numModifier.calc(stat, operator, sign+tempModifier);
-
-    //is the user making a querry?
-    if(operator.indexOf("?") != -1) {
-      //are we showing the result?
-      if(options["show"] == false){
-        //end here before showing any results
-        return;
-      }
-      //show the change
-      if(isMax){
-        maxAttr = stat;
+    var modifiedAttribute = modifyAttribute(attribute, {
+      workingWith: workingWith,
+      operator: operator,
+      sign: sign,
+      modifier: modifier,
+      inlinerolls: msg.inlinerolls
+    });
+    if(!modifiedAttribute) return;
+    if(operator.indexOf('?') != -1) {
+      if(options['show'] == false) return;
+      whisper(name + attributeTable(statName, modifiedAttribute), {speakingTo: msg.playerid});
+    } else if(operator.indexOf('=') != -1) {
+      attributeValue(statName, {setTo: modifiedAttribute[workingWith], graphicid: graphic.id, max: workingWith, bar: options['bar']});
+      if(options['show'] == false) return;
+      var output = attributeTable(statName, attribute);
+      output += attributeTable('|</caption><caption>V', modifiedAttribute, 'Yellow');
+      if(options['partyStat']){
+        var players = canViewAttribute(statName, {alert: false});
+        whisper(name + output, {speakingTo: players, gmEcho: true});
       } else {
-        currentAttr = stat;
-      }
-      //whisper the result of the querry to just the user
-      whisper(name + attrTable(statName, currentAttr, maxAttr), msg.playerid);
-    //otherwise the user is editing the attribute
-    } else if(operator.indexOf("=") != -1){
-      //save the result
-      if(options["partyStat"]){
-        attrValue(statName,{setTo: stat, max: isMax});
-      //normally msg.selected is just a list of object ids and types of the
-      //objects you have selected. If this is the case, find the corresponding
-      //character objects.
-      } else {
-        attrValue(statName,{setTo: stat, characterid: character.id, graphicid: graphic.id, max: isMax, bar: options["bar"]});
-      }
-
-      //are we showing the result?
-      if(options["show"] == false){
-        //end here before showing any results
-        return;
-      }
-
-      var output = attrTable(statName, currentAttr, maxAttr);
-
-      //show the change
-      if(isMax){
-        maxAttr = stat;
-      } else {
-        currentAttr = stat;
-      }
-
-      output += attrTable("|</caption><caption>V", currentAttr, maxAttr, "Yellow");
-
-      if(options["partyStat"]){
-        //get the list of people who can view the host character sheet
-        var viewers = canViewAttr(statName,{alert: false});
-        //can everyone see the sheet?
-        if(viewers.indexOf("all") != -1){
-          //publicly announce the change to everyone
-          announce(name + output);
-        } else {
-          if(viewers[0] != ""){
-            //inform each player that can view the attribute of the change
-            _.each(viewers, function(viewer){
-              whisper(name + output,viewer);
-            });
-          }
-          //also inform the gm
-          whisper(name + output);
-        }
-      } else {
-        //whisper the stat change to the user and gm (but do not whisper it to the gm twice)
-        whisper(name + output, msg.playerid);
-        if(playerIsGM(msg.playerid) == false){
-          whisper(name + output);
-        }
+        whisper(name + output, {speakingTo: msg.playerid, gmEcho: true});
       }
     }
   });
 }
 
-//enforce the correct spelling, capitalization, and spelling for your attributes
 function correctAttributeName(name){
   return name.trim();
 }
 
-function makeStatHandlerRegex(yourAttributes){
+function makeAttributeHandlerRegex(yourAttributes){
   var regex = "!\\s*";
-  regex += "(|max)\\s*";
   if(typeof yourAttributes == 'string'){
     yourAttributes = [yourAttributes];
   }
   if(yourAttributes == undefined){
     regex += "attr\\s+";
+    regex += "(max|)\\s*";
     regex += "(\\S[^-\\+=/\\?\\*]*)\\s*";
   } else if(Array.isArray(yourAttributes)){
+    regex += "(|max)\\s*";
     regex += "("
     for(var yourAttribute of yourAttributes){
       regex += yourAttribute + "|";
@@ -1251,172 +795,110 @@ function makeStatHandlerRegex(yourAttributes){
     return;
   }
   regex += "\\s*" + numModifier.regexStr();
-  regex += "\\s*(\\d*|max|current|\\$\\[\\[\\d\\]\\])";
+  regex += "\\s*(|\\d+\\.?\\d*|max|current|\\$\\[\\[\\d\\]\\])";
   regex += "\\s*$";
   return RegExp(regex, "i");
 };
 
 on("ready", function(){
-  var re = makeStatHandlerRegex();
+  var re = makeAttributeHandlerRegex();
   CentralInput.addCMD(re, function(matches, msg){
     matches[2] = correctAttributeName(matches[2]);
-    statHandler(matches, msg);
+    attributeHandler(matches, msg);
   }, true);
 });
-//transforms a hash into a string and can turn a string into a hash
-
-//it also contains a regex to find a hash within a string
-function Hash(hashString) {
-  //allow users to access a regex for recognized items within the hash
-  this.itemRegex = function(options){
-    //default to no options
-    options = options || [];
-    var itemRegexTxt = "(\\w[^:]*):\\s*\"([^\"]*)\"";
-    if(options["text"]){
-      return itemRegexTxt;
-    } else {
-      return new RegExp(itemRegexTxt,options["flags"]);
-    }
-  }
-
-  //allow users to access a regex for recognized hashes
-  this.regex = function(options){
-    //default to no options
-    options = options || [];
-    //being with curly braces
-    var hashRegexTxt = "(?:\\s|<br>)*\\{";
-    //within the curly braces, allow for multiple text entries preceeded by a label
-    hashRegexTxt += "(?:\\s|<br>)*(?:" + this.itemRegex({text: true}) + "(?:\\s|<br>)*,(?:\\s|<br>)*)*(?:" + this.itemRegex({text: true}) + ")?(?:\\s|<br>)*";
-    //end with curly braces
-    hashRegexTxt += "\\}(?:\\s|<br>)*";
-    if(options["text"]){
-      return hashRegexTxt;
-    } else {
-      return new RegExp(hashRegexTxt, options["flags"]);
-    }
-  }
-
-  //outputs the hash as a string
-  this.toString = function(){
-      var output = "{";
-      for(var k in this){
-        //ignore any utility functions included in the hash
-        if(!(typeof this[k] === 'function')){
-            output += k + ": \"" + this[k] + "\", ";
-        }
-      }
-      //remove the last comma
-      output = output.replace(/,\s*$/, "");
-      output += "}";
-      return output;
-  }
-
-  //default the hashString to something empty
-  hashString = hashString || "{}";
-
-  //find the valid part of the hashString
-  if(this.regex().test(hashString)){
-    hashString = hashString.match(this.regex())[0];
-  } else {
-    return;
-  }
-
-  //get a list of the items in the hash
-  var itemList = hashString.match(this.itemRegex({flags: "g"}));
-  //default to an empty list
-  itemList = itemList || [];
-  var itemRegex = this.itemRegex();
-  //record each value with their associated key
-  for(var i = 0; i < itemList.length; i++){
-    var matches = itemList[i].match(itemRegex);
-    this[matches[1]] = matches[2];
-  }
-}
-//create a general use function which converts text to title case (capitalize
-//the first letter of each word.)
 String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
-//tells the gm which map the players are currently on
-//if players are on their own maps, it will report which maps they are on as well
-function where(matches, msg){
-  var output = "";
-  //get the page where the players are by default
-  if(Campaign().get("playerpageid")){
-    var page = getObj("page", Campaign().get("playerpageid"));
-    output = "<strong>Party</strong>: " + page.get("name");
+function trimToPerfectMatches(objs, phrase){
+  var exactMatches = [];
+  _.each(objs, function(obj){
+    if(obj.get('_type') == 'player'){
+      var name = obj.get('_displayname');
+    } else {
+      var name = obj.get('name');
+    }
+    if(name == phrase){
+      exactMatches.push(obj);
+    }
+  });
+  if(exactMatches.length >= 1){
+    return exactMatches;
   } else {
-    output = "Player Page has not been set.";
+    return objs;
   }
-  //get the pages where individual players may have been sent
-  if(Campaign().get("playerspecificpages")){
-    for(var k in Campaign().get("playerspecificpages")){
-      var player = getObj("player", k);
-      var page = getObj("page", Campaign().get("playerspecificpages")[k]);
-      output += "<br>";
-      output += "<strong>" + player.get("_displayname") + "</strong>: ";
-      output += page.get("name");
+}
+function where(matches, msg){
+  var output = '';
+  if(Campaign().get('playerpageid')){
+    var page = getObj('page', Campaign().get('playerpageid'));
+    output = '<strong>Party</strong>: ' + page.get('name');
+  } else {
+    output = 'Player Page has not been set.';
+  }
+
+  if(Campaign().get('playerspecificpages')){
+    for(var k in Campaign().get('playerspecificpages')){
+      var player = getObj('player', k);
+      var page = getObj('page', Campaign().get('playerspecificpages')[k]);
+      output += '<br>';
+      output += '<strong>' + player.get('_displayname') + '</strong>: ';
+      output += page.get('name');
     }
   }
+
   whisper(output);
 }
 
-on("ready", function(){
+on('ready', function(){
   CentralInput.addCMD(/^!\s*where\s*\?\s*$/i, where);
 });
-//create a general use function to whisper a reply to a playerid
-function whisper(content, speakingTo, speakingAs, options){
-  //speakingAs is the character sending this message, by default this is
-  //"System"
-  speakingAs = speakingAs || "INQ";
+function whisper(content, options){
+  if(typeof options != 'object') options = {};
+  var speakingAs = options.speakingAs || 'API';
+  if(options.noarchive == undefined) options.noarchive = true;
+  if(!content) return whisper('whisper() attempted to send an empty message.');
+  var new_options = {};
+  for(var k in options) new_options[k] = options[k];
+  delete new_options.speakingTo;
+  if (Array.isArray(options.speakingTo)) {
+    if (options.speakingTo.indexOf('all') != -1) return announce(content, new_options);
+    if (options.gmEcho) {
+      var gmIncluded = false;
+      _.each(options.speakingTo, function(target) {
+        if (playerIsGM(target)) gmIncluded = true;
+      });
+      if(!gmIncluded) whisper(content, new_options);
+      delete options.gmEcho;
+    }
 
-  //the content is the message being sent. This function will not execute if it
-  //is empty. Send a warning to the gm
-  if(content == undefined || content == ""){
-    return whisper("whisper() attempted to send an empty message.");
+    _.each(options.speakingTo, function(target) {
+      new_options.speakingTo = target;
+      whisper(content, new_options);
+    });
+    return;
   }
 
-  //be sure the extra options exist
-  options = options || {};
-  //default the noarchive option to true
-  if(options.noarchive == undefined){
-    options.noarchive = true;
-  }
-
-  //speakingTo - the player we are whispering to. If the player is not included,
-  //sendReply will send the message to the gm
-  if(speakingTo){
-    //be sure the player exists
-    if(getObj("player",speakingTo)){
-      return sendChat(speakingAs, "/w \"" + getObj("player",speakingTo).get("_displayname") + "\" " + content, null, options );
+  if(options.speakingTo == 'all') {
+    return announce(content, new_options);
+  } else if(options.speakingTo) {
+    if(getObj('player', options.speakingTo)){
+      if(options.gmEcho && !playerIsGM(options.speakingTo)) whisper(content, new_options);
+      return sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options );
     } else {
-      return whisper("The playerid " + speakingTo + " was not recognized and the following msg failed to be delivered: " + content);
+      return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
   } else {
-    return sendChat(speakingAs, "/w gm " + content, null, options);
+    return sendChat(speakingAs, '/w gm ' + content, options.callback, options);
   }
 }
-
-//create a general use function for having the system make a public announcement
-function announce(content, speakingAs, options){
-  //speakingAs is the character sending this message, by default this is
-  //"System"
-  speakingAs = speakingAs || "INQ";
-
-  //the content is the message being sent. This function will not execute if it
-  //is empty. Send a warning to the gm
-  if(content == undefined || content == ""){
-    return whisper("whisper() attempted to send an empty message.");
-  }
-
-  //be sure the extra options exist
+function canViewAttribute(name, options){
+  if(typeof options != 'object') options = false;
   options = options || {};
-  //default the noarchive option to true
-  if(options.noarchive == undefined){
-    options.noarchive = true;
-  }
-
-  sendChat(speakingAs, content, null, options);
+  var attribute = getAttribute(name, options);
+  if(!attribute) return;
+  var character = getObj('character', attribute.get('_characterid'));
+  return viewerList = character.get('inplayerjournals').split(',');
 }
 //the prototype for characters
 function INQCharacter(character, graphic){
@@ -1645,8 +1127,7 @@ function INQCharacter(character, graphic){
     }
 
     //create all of the character's abilities
-    var customWeapon = new Hash();
-    customWeapon.custom = "true";
+    var customWeapon = {custom: true};
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
@@ -1890,13 +1371,9 @@ function INQCharacterParser(){
     && graphic.get("bar1_link") == ""
     && graphic.get("bar2_link") == ""
     && graphic.get("bar3_link") == ""){
-      //roll20 stores token gmnotes in URI component
-      var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
-      //create a hash of the temporary attributes
-      var tempAttrs = new Hash(gmnotes);
-      //overwrite any values detailed here
-      for(var k in tempAttrs){
-        this.Attributes[k] = Number(tempAttrs[k]);
+      var localAttributes = new LocalAttributes(graphic);
+      for(var attr in localAttributes.Attributes){
+        this.Attributes[attr] = Number(localAttributes.Attributes[attr]);
       }
     }
   }
@@ -1979,7 +1456,7 @@ function INQLink(text){
     if(this.ObjID != "" || justText){
       output += this.toLink();
     } else {
-      output += GetLink(this.Name);
+      output += getLink(this.Name);
     }
     _.each(this.Groups,function(group){
       output += "(" + group + ")";
@@ -2839,8 +2316,7 @@ function INQVehicle(vehicle, graphic){
     }
 
     //create all of the character's abilities
-    var customWeapon = new Hash();
-    customWeapon.custom = "true";
+    var customWeapon = {custom: true};
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
@@ -2982,12 +2458,9 @@ function INQVehicleParser(){
     && graphic.get("bar2_link") == ""
     && graphic.get("bar3_link") == ""){
       //roll20 stores token gmnotes in URI component
-      var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
-      //create a hash of the temporary attributes
-      var tempAttrs = new Hash(gmnotes);
-      //overwrite any values detailed here
-      for(var k in tempAttrs){
-        this.Attributes[k] = Number(tempAttrs[k]);
+      var localAttributes = new LocalAttributes(graphic);
+      for(var k in localAttributes.Attributes){
+        this.Attributes[k] = Number(localAttributes.Attributes[k]);
       }
     }
   }
@@ -3197,7 +2670,7 @@ function INQWeapon(obj){
     //start with the weapon's exact name
     output += this.Name;
     //create the options hash
-    var options = options || new Hash();
+    var options = options || {};
     //include a toHit modifier unless the weapon auto hits
     //include RoF options unless it auto hits
     if(!this.has("Spray") || this.Class == "Psychic"){
@@ -3291,7 +2764,7 @@ function INQWeapon(obj){
         options.Special += ", ?{Fire on Maximal?|Use Maximal|}";
       }
     }
-    output += options.toString();
+    output += JSON.stringify(options);
     return output;
   }
 
@@ -4057,7 +3530,7 @@ function setDefaultToken(matches, msg){
     character.set("avatar", graphic.get("imgsrc").replace("/thumb.png?", "/med.png?"));
   }
 
-  whisper("Default Token set for *" + GetLink(character.get("name")) + "*.");
+  whisper("Default Token set for *" + getLink(character.get("name")) + "*.");
 }
 
 on("ready", function(){
@@ -4083,7 +3556,7 @@ function getCritLink(matches, msg, options){
     var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
     if(DamTypeObj == undefined){
       if(!playerIsGM(msg.playerid)){
-        whisper("There is no Damage Type attribute in the campaign.",msg.playerid);
+        whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
       }
       whisper("There is no Damage Type attribute in the campaign.");
       return critLink;
@@ -4177,13 +3650,13 @@ function getCritLink(matches, msg, options){
   if(hitLocation){
     critTitle += " - " + hitLocation;
   }
-  var critLink = GetLink(critTitle);
+  var critLink = getLink(critTitle);
 
   //report the link
   if(options["show"]){
     //now that damage type and location have been determined, return the link to
     //the gm
-    whisper("**Critical Hit**: " + critLink, msg.playerid);
+    whisper("**Critical Hit**: " + critLink, {speakingTo: msg.playerid});
   }
 
   //return the crit link for use in other functions
@@ -4304,7 +3777,7 @@ on("ready",function(){
     var hitLocation = getHitLocation(this.TensLoc.get("current"), this.OnesLoc.get("current"), this.targetType);
     log("Hit Location: " + hitLocation)
     //get the armor of the target
-    var armour = attrValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
+    var armour = attributeValue("Armour_" + hitLocation, {characterid: this.character.id, graphicid: this.graphic.id});
     log("Armour: " + armour)
 
     //turn armour into a valid number
@@ -4469,7 +3942,7 @@ function applyDamage (matches,msg){
     //record the damage
     graphic.set("bar3_value", remainingWounds);
     if(damage > 0){
-      damageFx(graphic, attrValue("Damage Type"));
+      damageFx(graphic, attributeValue("Damage Type"));
     }
 
     //Reroll Location after each hit
@@ -4501,7 +3974,7 @@ on("ready",function(){
   INQAttack.applyToughness = function(damage){
     if(this.targetType == "character"){
       //get the target's toughness
-      var Toughness = attrValue("T", {characterid: this.character.id, graphicid: this.graphic.id});
+      var Toughness = attributeValue("T", {characterid: this.character.id, graphicid: this.graphic.id});
       //be sure that the Toughness was found
       if(Toughness){
         Toughness = Number(Toughness);
@@ -4512,7 +3985,7 @@ on("ready",function(){
       log("Felling: " + Number(this.Fell.get("current")))
 
       //get the target's toughness
-      var UnnaturalToughness = attrValue("Unnatural T", {characterid: this.character.id, graphicid: this.graphic.id});
+      var UnnaturalToughness = attributeValue("Unnatural T", {characterid: this.character.id, graphicid: this.graphic.id});
       //be sure that the Toughness was found
       if(UnnaturalToughness){
         log("Unnatural Toughness: " + UnnaturalToughness)
@@ -4546,14 +4019,14 @@ on("ready",function(){
           //Load up the Wounds and Unnatural Wounds attributes. Warn the gm if
           //they are not found.
           var WBonus = 1;
-          var Wounds = attrValue("Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
+          var Wounds = attributeValue("Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
           if(Wounds != undefined){
             //Calculate the Wounds Bonus of the Character
             Wounds = Number(Wounds);
             WBonus = Math.floor(Wounds/10);
           }
 
-          var UnnaturalWounds = attrValue("Unnatural Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
+          var UnnaturalWounds = attributeValue("Unnatural Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
           if(UnnaturalWounds != undefined){
             //Add in Unnatural Wounds to the Wounds Bonus
             UnnaturalWounds = Number(UnnaturalWounds);
@@ -4571,13 +4044,13 @@ on("ready",function(){
           //Load up the Structural Integrity and Unnatural Structural Integrity
           //Attributes. Warn the gm if they are not found.
           var SIBonus = 1;
-          var StrucInt = attrValue("Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
+          var StrucInt = attributeValue("Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
           if(StrucInt != undefined){
             //Calculate the Structural Integrity Bonus of the Vehicle
             StrucInt = Number(StrucInt);
             SIBonus = Math.floor(StrucInt/10);
           }
-          var UnnaturalStrucInt = attrValue("Unnatural Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
+          var UnnaturalStrucInt = attributeValue("Unnatural Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
           if(UnnaturalStrucInt != undefined){
             //Add in any Unnatural Structural Integrity to the Bonus
             UnnaturalStrucInt = Number(UnnaturalStrucInt);
@@ -4627,79 +4100,38 @@ on("ready",function(){
     return damage;
   }
 });
-//a function which reduces the penetration and then damage of an attack with
-//Primitive cover.
-
-//matches[0] is the same as msg.content
-//matches[1] is the positive numerical value of the cover's AP
-//matches[2] is a flag to determine if the cover is primitive
 function applyCover(matches,msg){
-  //load up the relavant damage variables
   var details = damDetails();
   if(details == undefined){return;}
-
-  //get the cover from the user
   var cover = Number(matches[1]) || 0;
-  //determine if the the cover is primitive
-  var primitiveCover = matches[2] != "" || false;
+  var primitiveCover = matches[2] != '' || false;
+  var dam = Number(details.Dam.get('current'));
+  var pen = Number(details.Pen.get('current'));
+  var primitiveAttack = Number(details.Prim.get('current'));
 
-  //determine how effective the attack is against the cover
-  var attackMultiplier = 1;
-
-  //primitive cover means the attack is twice as effective against the cover
+  var coverMultiplier = 1;
   if(primitiveCover){
-    attackMultiplier *= 2;
+    coverMultiplier /= 2;
   }
 
-  //a primitive attack means the attack is half as effective against the cover
-  if(Number(details.Prim)){
-    attackMultiplier /= 2;
+  if(primitiveAttack){
+    coverMultiplier *= 2;
   }
 
-  //Apply Cover=================================================================
-
-  //Penetration is twice as effective as Damage
-  attackMultiplier *= 2;
-
-  //Reduce the Penetration by the Cover (accounting for the multiplier)
-  var pen = Number(details.Pen.get("current"))
-  pen -= ( cover / attackMultiplier );
-  //and round the result
-  pen = Math.round(pen);
-
-  //has the cover been entirely used?
-  if(pen >= 0){
-    //record the remaining Penetration
-    details.Pen.set('current', pen);
-  } else {
-    //record that 0 penetration is left
-    details.Pen.set('current', 0);
-
-    //determine the remaining damage after cover
-    var dam = Number(details.Dam.get("current"));
-    //the penetration ended up negative, apply it to the damage next
-    //also multiply by two to negate the double effectiveness of the penetration
-    dam += pen*2;
-    //and round the result
-    dam = Math.round(pen);
-
-    //does any cover remain?
-    if(dam >= 0){
-        //record the remaining damage
-        details.Dam.set('current', dam);
-    } else {
-        //record the remaining damage
-        details.Dam.set('current', 0);
-    }
+  pen -= ( cover * coverMultiplier / 2);
+  if (pen <= 0) {
+    dam += pen * 2;
+    pen = 0;
+    if(dam <= 0) dam = 0;
   }
-  //alert the GM
-  whisper("Dam: " + details.Dam.get("current") + ", Pen: " + details.Pen.get("current"));
+
+  details.Dam.set('current', Math.floor(dam));
+  details.Pen.set('current', Math.floor(pen));
+  whisper('Dam: ' + details.Dam.get('current') + ', Pen: ' + details.Pen.get('current'));
 }
 
-//waits until CentralInput has been initialized
-on("ready",function(){
-  //Lets the gm reduce damage and penetration when an attack passes through cover
-  CentralInput.addCMD(/^!\s*cover\s*(\d+)\s*(|p|prim|primitive)\s*$/i,applyCover);
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*cover\s*(\d+)\s*(|p|prim|primitive)\s*$/i, applyCover);
 });
 //searches every message for rolls to hit and damage rolls.
 on("chat:message", function(msg) {
@@ -5117,18 +4549,18 @@ on("ready",function(){
   //Lets gm  view and edit damage variables with modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|fell|felling|prim|primitive)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets gm view damage variables without modifiers
   CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm set the damage type
   CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
     matches[2] = "Damage Type";
     matches[5] = matches[5].toUpperCase();
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm reset an attack back to how it was first detected, before
   //modifications
@@ -5147,7 +4579,7 @@ function hordeKill(matches, msg){
     var toKill = Number(matches[1]);
     var useHits = false;
   } else {
-    var toKill = Number(attrValue("Hits"));
+    var toKill = Number(attributeValue("Hits"));
     var useHits = true;
   }
 
@@ -5162,11 +4594,11 @@ function hordeKill(matches, msg){
     if(toKill > 0 && graphic.get("status_dead") == false){
       toKill--;
       graphic.set("status_dead", true);
-      damageFx(graphic, attrValue("Damage Type"));
+      damageFx(graphic, attributeValue("Damage Type"));
     }
   });
   if(useHits){
-    attrValue("Hits", {setTo: toKill});
+    attributeValue("Hits", {setTo: toKill});
   }
 
   if(toKill > 0){
@@ -5352,7 +4784,7 @@ INQAttack.checkJammed = function(){
     }
   }
   if(INQAttack.d100 >= JamsAt){
-    var jamReport =  GetLink(INQAttack.inqweapon.Name) + " **" + GetLink(JamResult) + "**";
+    var jamReport =  getLink(INQAttack.inqweapon.Name) + " **" + getLink(JamResult) + "**";
     if(!/s$/.test(JamResult)){
       jamReport += "s";
     }
@@ -5376,6 +4808,10 @@ INQAttack.detailTheCharacter = function(character, graphic){
   if(INQAttack.inqcharacter == undefined){
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
   }
+  log("INQAttack.inqcharacter.ObjID")
+  log(INQAttack.inqcharacter.ObjID)
+  log("INQAttack.inqcharacter.GraphicID")
+  log(INQAttack.inqcharacter.GraphicID)
 }
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
@@ -5417,18 +4853,18 @@ INQAttack.getWeapon = function(){
     weapons = trimToPerfectMatches(weapons, INQAttack.weaponname);
     //did none of the weapons match?
     if(weapons.length <= 0){
-      whisper("*" + INQAttack.weaponname + "* was not found.", INQAttack.msg.playerid);
+      whisper("*" + INQAttack.weaponname + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
       return false;
     }
     //are there too many weapons?
     if(weapons.length >= 2){
-      whisper("Which weapon did you intend to fire?", INQAttack.msg.playerid)
+      whisper("Which weapon did you intend to fire?", {speakingTo: INQAttack.msg.playerid});
       _.each(weapons, function(weapon){
         //use the weapon's exact name
-        var suggestion = "useweapon " + weapon.get("name") + INQAttack.options.toString();
+        var suggestion = "useweapon " + weapon.get("name") + JSON.stringify(INQAttack.options);
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
+        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
       });
       //don't continue unless you are certain what the user wants
       return false;
@@ -5461,20 +4897,20 @@ INQAttack.getSpecialAmmo = function(){
   clips = trimToPerfectMatches(clips, INQAttack.options.Ammo);
   //did none of the weapons match?
   if(clips.length <= 0){
-    whisper("*" + INQAttack.options.Ammo + "* was not found.", INQAttack.msg.playerid);
+    whisper("*" + INQAttack.options.Ammo + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
     return false;
   }
   //are there too many weapons?
   if(clips.length >= 2){
-    whisper("Which Special Ammunition did you intend to fire?", INQAttack.msg.playerid)
+    whisper("Which Special Ammunition did you intend to fire?", {speakingTo: INQAttack.msg.playerid})
     _.each(clips, function(clip){
       //specify the exact ammo name
       INQAttack.options.Ammo = clip.get("name");
       //construct the suggested command (without the !)
-      var suggestion = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
+      var suggestion = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
       //the suggested command must be encoded before it is placed inside the button
       suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + clip.get("name") + "](" + suggestion  + ")", INQAttack.msg.playerid);
+      whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
     });
     //something went wrong
     return false;
@@ -5575,7 +5011,7 @@ INQAttack.reportAmmo = function(){
   INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.options.RoF.toTitleCase();
   if(INQAttack.inqweapon.Class == "Psychic"){
     INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
-    INQAttack.Reports.Weapon += "<br><strong>" + GetLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
+    INQAttack.Reports.Weapon += "<br><strong>" + getLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
   }
   if(INQAttack.AmmoLeft != undefined){
     INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.AmmoLeft + "/" + INQAttack.inqweapon.Clip;
@@ -5604,7 +5040,7 @@ INQAttack.recordAmmo = function(){
     AmmoName += " (" + INQAttack.inqammo.Name + ")";
   }
   //how much ammo is left for this weapon?
-  INQAttack.AmmoLeft = attrValue(AmmoName, {
+  INQAttack.AmmoLeft = attributeValue(AmmoName, {
     characterid: INQAttack.inqcharacter.ObjID,
     graphicid: INQAttack.inqcharacter.GraphicID,
     alert: false}
@@ -5612,7 +5048,7 @@ INQAttack.recordAmmo = function(){
   //check if this ammo tracker exists yet
   if(INQAttack.AmmoLeft == undefined){
     //create a brand new clip
-    attrValue(AmmoName, {
+    attributeValue(AmmoName, {
       setTo: INQAttack.inqweapon.Clip,
       characterid: INQAttack.inqcharacter.ObjID,
       graphicid: INQAttack.inqcharacter.GraphicID,
@@ -5630,7 +5066,7 @@ INQAttack.recordAmmo = function(){
     return false;
   }
   //record the resulting clip
-  attrValue(AmmoName, {
+  attributeValue(AmmoName, {
     setTo: INQAttack.AmmoLeft,
     characterid: INQAttack.inqcharacter.ObjID,
     graphicid: INQAttack.inqcharacter.GraphicID,
@@ -5653,7 +5089,7 @@ INQAttack.rollDamage = function(){
   INQAttack.Reports.Damage +=  "{{Damage= [[" + INQAttack.damageFormula() + "]]}} ";
   //note the damage type
   if(typeof INQAttack.inqweapon.DamageType == 'string'){
-    var DamageType = GetLink(INQAttack.inqweapon.DamageType);
+    var DamageType = getLink(INQAttack.inqweapon.DamageType);
   } else {
     var DamageType = INQAttack.inqweapon.DamageType.toNote();
   }
@@ -5762,7 +5198,7 @@ INQAttack.rollToHit = function(){
   INQAttack.Reports.toHit = "&{template:default} ";
   INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
   if(INQAttack.inqweapon.FocusSkill){
-    INQAttack.Reports.toHit += "{{Skill=" + GetLink(INQAttack.inqweapon.FocusSkill) + "}} ";
+    INQAttack.Reports.toHit += "{{Skill=" + getLink(INQAttack.inqweapon.FocusSkill) + "}} ";
   }
   INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
   INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
@@ -5860,7 +5296,7 @@ INQAttack.skillBonus = function(){
         //if the character does not have a matching subgroup, give them a flat -20 modifier
         bonus = subgroupModifier;
       } else {
-        whisper("Psychic Power did not provide a skill group.");
+        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
         bonus = -20;
       }
     //the skill was found, and there is no need to match subgroups
@@ -6179,7 +5615,7 @@ INQAttack.useWeapon = function(matches,msg){
   //clean out any of the previous details
   INQAttack.clean();
   //get the options
-  INQAttack.options = new Hash(matches[2]);
+  INQAttack.options = JSON.parse(matches[2]);
   //save the weapon name
   INQAttack.weaponname = matches[1];
   //save the message for use elsewhere
@@ -6251,7 +5687,7 @@ INQAttack.deliverReport = function(){
   if(INQAttack.inqcharacter.controlledby == ""
   || INQAttack.options.whisper){
     if(!playerIsGM(INQAttack.msg.playerid)){
-      whisper("Damage rolled.", INQAttack.msg.playerid);
+      whisper("Damage rolled.", {speakingTo: INQAttack.msg.playerid});
     }
   }
 }
@@ -6287,11 +5723,11 @@ INQAttack.offerReroll = function(){
   //the reroll will not use up any ammo
   INQAttack.options.freeShot = "true";
   //offer a reroll instead of rolling the damage
-  var attack = "useweapon " + INQAttack.weaponname + INQAttack.options.toString();
+  var attack = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
   //encode the attack
   attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
-  setTimeout(whisper, 100, "[Reroll](" + attack + ")", INQAttack.msg.playerid);
+  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack.msg.playerid});
 }
 
 //prepare attack variables for each attack
@@ -6307,10 +5743,9 @@ INQAttack.prepareVariables = function(){
 }
 
 on("ready", function(){
-  var hash = new Hash();
   var regex = "^!\\s*use\\s*weapon";
   regex += "\\s+(\\S[^\\{\\}]*)"
-  regex += "(" + hash.regex({text: true}) + ")$"
+  regex += "(\\{.*\\})$"
   var re = RegExp(regex, "i");
   CentralInput.addCMD(re, INQAttack.useWeapon, true);
 });
@@ -6362,7 +5797,7 @@ function initiativeHandler(matches,msg,secondAttempt){
       var initBonus = calcInitBonus(character, graphic);
       //warn the user and exit if the bonus does not exist
       if(initBonus == undefined){
-        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", msg.playerid);
+        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
       }
 
       //modify the Initiative Bonus based on the text operator
@@ -6370,7 +5805,7 @@ function initiativeHandler(matches,msg,secondAttempt){
 
       //report the initiative bonus for the character to just the user
       //exit out now that you have made this report
-      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", msg.playerid);
+      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
     }
 
     //is the gm trying to directly edit a previous initiative roll?
@@ -6429,7 +5864,7 @@ function calcInitBonus(charObj, graphicObj){
     _characterid: charObj.id
   })[0] != undefined){
     //report the detection bonus for starships
-    var Detection = Number(attrValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
+    var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     return Math.floor(Detection/10);
 
   //if this character sheet has Ag, then it rolls initiative like normal.
@@ -6442,11 +5877,11 @@ function calcInitBonus(charObj, graphicObj){
   ) {
       //load up all the notes on the character
       var inqcharacter = new INQCharacter(charObj, graphicObj);
-      var Agility = Number(attrValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
+      var Agility = Number(attributeValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       //add the agility bonus and unnatural agility
       var initiativeBonus = Math.floor(Agility/10);
       //only add the Unnatural Ag attribute, if it exists
-      var UnnaturalAgility = Number(attrValue("Unnatural Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
+      var UnnaturalAgility = Number(attributeValue("Unnatural Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       if(UnnaturalAgility){
         initiativeBonus += UnnaturalAgility;
       }
@@ -6587,15 +6022,15 @@ function INQTurns(){
       var championID = turn.id;
       //only load up the Ag/Detection if the characters exist
       if(challengerID != undefined && championID != undefined){
-        challengerAg = attrValue("Ag", {graphicid: challengerID});
-        championAg = attrValue("Ag", {graphicid: championID});
+        challengerAg = attributeValue("Ag", {graphicid: challengerID});
+        championAg = attributeValue("Ag", {graphicid: championID});
         //the character may not have an Agility attribute, try Detection
         if(challengerAg == undefined){
-          challengerAg = attrValue("Detection", {graphicid: challengerID});
+          challengerAg = attributeValue("Detection", {graphicid: challengerID});
         }
         //the character may not have an Agility attribute, try Detection
         if(championAg == undefined){
-          championAg = attrValue("Ag", {graphicid: championID});
+          championAg = attributeValue("Ag", {graphicid: championID});
         }
       }
       //if actual values were found for Ag/Detection for both of them, compare the two
@@ -6701,30 +6136,30 @@ on("chat:message", function(msg){
       //storing the number of hits, this is because all hits are assumed to be
       //Single Shot mode, but later commands such as (!Full and !Semi) will
       //convert these negative numbers into a positive number of hits.
-      attrValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
+      attributeValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
     //otherwise record that there were no hits
     } else {
-      attrValue('Hits', {setTo: 0});
+      attributeValue('Hits', {setTo: 0});
     }
     //check for perils of the warp
     if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the one's place a 9?
       if((msg.inlinerolls[0].results.rolls[1].results[0].v - 10*Math.floor(msg.inlinerolls[0].results.rolls[1].results[0].v/10)) == 9){
-        announce("/em makes an unexpected twist. (" + GetLink("Psychic Phenomena") + ")", "The warp");
+        announce("/em makes an unexpected twist. (" + getLink("Psychic Phenomena") + ")", {speakingAs: "The warp"});
       }
     } else if(/^\s*{{\s*name\s*=\s*<strong>\s*BS\s*<\/strong>:.*}}/i.test(msg.content)){
       //was the roll >= 96?
       if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 96){
         //warn the gm that the weapon jammed
-        announce("/em " + GetLink("Jam") + "s!" , "The weapon");
+        announce("/em " + getLink("Jam") + "s!" , {speakingAs: "The weapon"});
       //Full Auto and Semi Auto attacks jam on a 94+. Warn the gm just in case
       //this is one of them.
       } else if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 94){
         //warn the gm that the weapon may have jammed
-        announce("/em " + GetLink("Jam") + "s!", "The Full/Semi Auto weapon");
+        announce("/em " + getLink("Jam") + "s!", {speakingAs: "The Full/Semi Auto weapon"});
       } else if(msg.inlinerolls[0].results.rolls[1].results[0].v >= 91){
         //warn the gm that the weapon may have jammed
-        announce("/em " + GetLink("Overheats") + "!", "The weapon");
+        announce("/em " + getLink("Overheats") + "!", {speakingAs: "The weapon"});
       }
     }
   }
@@ -6795,7 +6230,7 @@ function applyCrit(matches,msg){
       graphic.set(statMarker,false);
     }
     //report which crit was applied and how many times it was applied
-    whisper (graphic.get("name") + ": " + effectName + " (" + critQty + ")");
+    whisper(graphic.get("name") + ": " + effectName + " (" + critQty + ")");
   });
 }
 
@@ -6827,12 +6262,7 @@ function cohesionHandler(matches,msg){
   //are there no cohesion attributes anywhere?
   if(cohesionObjs.length <= 0){
     //no stat to work with. alert the gm and player
-    whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.",msg.playerid);
-    //but don't alert the gm twice
-    if(playerIsGM(msg.playerid) == false){
-      whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.");
-    }
-    return;
+    return whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.", {speakingTo: msg.playerid, gmEcho: true});
   //were there too many cohesion attributes?
   } else if(cohesionObjs.length >= 2){
     //warn the gm, but continue forward
@@ -6842,7 +6272,7 @@ function cohesionHandler(matches,msg){
   }
 
   //make a cohesion test
-  sendChat("player|" + msg.playerid,"/r D10<" + cohesionObjs[0].get("current") + " Cohesion Test");
+  sendChat("player|" + msg.playerid, "/r D10<" + cohesionObjs[0].get("current") + " Cohesion Test");
 }
 
 //waits until CentralInput has been initialized
@@ -6851,10 +6281,10 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*cohesion\s*$/i, cohesionHandler, true);
 
   //Lets players freely view and edit cohesion with modifiers
-  var re = makeStatHandlerRegex('cohesion');
+  var re = makeAttributeHandlerRegex('cohesion');
   CentralInput.addCMD(re, function(matches,msg){
     matches[2] = "Cohesion";
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
 //lets players use and view their fate points
@@ -6862,29 +6292,29 @@ on("ready",function(){
 function fateHandler(matches,msg){
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
-      var Fate = attrValue("Fate",{characterid: character.id, graphicid: graphic.id});
+      var Fate = attributeValue("Fate",{characterid: character.id, graphicid: graphic.id});
       var name = character.get("name");
 
       //exit if the character does not have Fate Points
       if(Fate == undefined){
         //while exiting, tell the user which character did not have a Fate Attribute
-        return whisper(name + " does not have a Fate Attribute!", msg.playerid);
+        return whisper(name + " does not have a Fate Attribute!", {speakingTo: msg.playerid, gmEcho: true});
       }
 
       //be sure the player has enough fate points to spend
       if(Fate < 1){
-        return whisper(name + " does not have enough Fate to spend.",msg.playerid);
+        return whisper(name + " does not have enough Fate to spend.", {speakingTo: msg.playerid});
       } else {
         //announce that the player is spending a fate point
         announce(name + " spends a Fate Point!");
         //reduce the number of fate points by one
-        attrValue("Fate",{setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
+        attributeValue("Fate", {setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
         //report what remains
         var finalReport = name + " has [[" + Fate + "-1]] Fate Point";
         if(Fate-1 != 1){
           finalReport += "s";
         }
-        whisper(finalReport + " left.", msg.playerid);
+        whisper(finalReport + " left.", {speakingTo: msg.playerid});
       }
   });
 }
@@ -6896,7 +6326,7 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*fate\s*$/i,fateHandler,true);
 });
 //toggles whether or not each selected graphic is frenzied and modifies their
-//stats accordingly using the statHandler function
+//stats accordingly using the attributeHandler function
 function getFrenzied(matches,msg){
   //are we frenzying everyone we have selected?
   frenzyTokens = matches[1].toLowerCase() != "un"
@@ -6918,13 +6348,13 @@ function getFrenzied(matches,msg){
     //if we are un-frenzying the token, be sure it was already frenzied
     if(!frenzyTokens && graphic.get("status_red")){
       graphic.set("status_red",false);
-      whisper(graphic.get("name") + " is no longer frenzied.",msg.playerid);
+      whisper(graphic.get("name") + " is no longer frenzied.", {speakingTo: msg.playerid, gmEcho: true});
       //add this character to the list of characters to have their stats modified
       toBeModified.push(graphic);
     //if we are frenzying the token, be sure it wasn't already frenzied
     } else if(frenzyTokens && !graphic.get("status_red")) {
       graphic.set("status_red",true);
-      whisper(graphic.get("name") + " is frenzied!",msg.playerid);
+      whisper(graphic.get("name") + " is frenzied!", {speakingTo: msg.playerid, gmEcho: true});
       //add this character to the list of characters to have their stats modified
       toBeModified.push(graphic);
     }
@@ -6933,9 +6363,9 @@ function getFrenzied(matches,msg){
   //alert the gm if nothing will happen
   if(toBeModified.length <= 0){
     if(frenzyTokens) {
-      whisper("No tokens were frenzied.");
+      whisper("No tokens were frenzied.", {speakingTo: msg.playerid, gmEcho: true});
     } else {
-      whisper("No tokens were unfrenzied.");
+      whisper("No tokens were unfrenzied", {speakingTo: msg.playerid, gmEcho: true});
     }
     return;
   }
@@ -6949,21 +6379,21 @@ function getFrenzied(matches,msg){
   matches[2] = "WS";
   matches[3] = "+=";
   matches[5] = "10";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "S";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "T";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "Wp";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
 
   //decreased stats
   matches[2] = "BS";
   matches[3] = "-=";
   matches[5] = "20";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
   matches[2] = "It";
-  statHandler(matches, msg, {show: false});
+  attributeHandler(matches, msg, {show: false});
 }
 
 //adds the commands after CentralInput has been initialized
@@ -6999,7 +6429,7 @@ only heal up to that point until you receive proper care.
     //add the current Wounds to the healing done
     var NewWounds = Wounds.current + Healing;
     //find the Max Healing attribute
-    var MaxHealing = attrValue("Max Healing", {graphicid: graphic.id, characterid: character.id, alert: false});
+    var MaxHealing = attributeValue("Max Healing", {graphicid: graphic.id, characterid: character.id, alert: false});
     //does the Max Healing attribute exist?
     if(MaxHealing != undefined) {
       //turn the max healing into a number
@@ -7019,7 +6449,7 @@ only heal up to that point until you receive proper care.
       NewWounds = Wounds.max;
     }
     //create/edit the Max Healing attribute and set it to the NewWounds
-    attrValue("Max Healing", {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
+    attributeValue("Max Healing", {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
     //set the max healing attribute's max value equal to its current value (if it exists!)
     //if a character has their max healing attribute set to its max value for some reason,
     //we don't want it to be some old value that we forgot about
@@ -7067,7 +6497,7 @@ on("change:graphic:bar3_value", function(obj, prev) {
   if(Wounds.current - Number(prev) < 0){return;}
 
   //find the Max Healing attribute
-  var MaxHealing = attrValue("Max Healing", {graphicid: obj.id, alert: false});
+  var MaxHealing = attributeValue("Max Healing", {graphicid: obj.id, alert: false});
 
   //be sure you found at least one Max Healing attribute
   //otherwise ignore the change
@@ -7083,11 +6513,11 @@ on("change:graphic:bar3_value", function(obj, prev) {
       //is the new health greater than the max health?
       if(Wounds.current > Wounds.max){
         //the healing cap can only go so far as maxHP, even in extreme circumstances
-        attrValue("Max Healing", {setTo: Wounds.max, graphicid: obj.id, alert: false});
+        attributeValue("Max Healing", {setTo: Wounds.max, graphicid: obj.id, alert: false});
         MaxHealing = Wounds.max;
       } else {
         //record that the healing cap can only go this far
-        attrValue("Max Healing", {setTo: Wounds.current, graphicid: obj.id, alert: false});
+        attributeValue("Max Healing", {setTo: Wounds.current, graphicid: obj.id, alert: false});
         MaxHealing = Wounds.current;
       }
       //set the max healing attribute's max value equal to its current value (if it exists!)
@@ -7183,7 +6613,7 @@ INQSkill.skillHandler = function(matches, msg){
         modifier += subgroupModifier;
       } else {
         //the skill needs a subgroup but the user didn't supply one
-        whisper("Please specify a subgroup for *" + GetLink(skillName) + "*", msg.playerid)
+        whisper("Please specify a subgroup for *" + getLink(skillName) + "*", {speakingTo: msg.playerid, gmEcho: true});
         //skip to the next character
         return;
       }
@@ -7208,7 +6638,7 @@ INQSkill.skillHandler = function(matches, msg){
     options = {
       display: [{
         Title: "Skill",
-        Content: GetLink(skillName)
+        Content: getLink(skillName)
       }]
     }
     //show the subgroup as well if it exists
@@ -7421,18 +6851,18 @@ function statRoll(matches, msg, options){
     //if working for a group stat, search for the stat anywhere in the campaign
     if(options["partyStat"]){
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName);
+      var stat = attributeValue(statName);
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
-      var unnatural_stat = attrValue("Unnatural " + statName,{alert: false});
+      var unnatural_stat = attributeValue("Unnatural " + statName,{alert: false});
       //ignore the name of the character that owns this stat
       var name = "";
     } else {
       //retrieve the value of the stat we are working with
-      var stat = attrValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
+      var stat = attributeValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
       //retrive the unnatural bonus to the stat we are working with
       //but don't worry if you can't find one
-      var unnatural_stat = attrValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
+      var unnatural_stat = attributeValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
       //retrive the name of the character that owns the stat
       //and add a bit a formatting for later
       var name = ": " + character.get("name");
@@ -7455,7 +6885,7 @@ function statRoll(matches, msg, options){
     if(toGM || (isNPC && playerIsGM(msg.playerid))){
       var whisperGM = "/w gm ";
       if(!playerIsGM(msg.playerid)){
-        whisper("Rolling " + statName + " for GM.", msg.playerid);
+        whisper("Rolling " + statName + " for GM.", {speakingTo: msg.playerid});
       }
     } else {
       var whisperGM = "";
@@ -7579,11 +7009,11 @@ on("ready", function() {
   inqArmour = inqArmour.replace(/|$/,"");
   inqArmour += ")";
   inqAttributes.push(inqArmour);
-  var re = makeStatHandlerRegex(inqAttributes);
+  var re = makeAttributeHandlerRegex(inqAttributes);
   CentralInput.addCMD(re, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     var tokenBar = defaultToTokenBars(matches[2]);
-    statHandler(matches,msg,{bar: tokenBar});
+    attributeHandler(matches,msg,{bar: tokenBar});
   },true);
 
   //Lets players make a Profit Factor Test
@@ -7591,11 +7021,11 @@ on("ready", function() {
     matches[2] = "Profit Factor";
     statRoll(matches,msg,{partyStat: true});
   },true);
-  var profitFactorRe = makeStatHandlerRegex("Profit Factor");
+  var profitFactorRe = makeAttributeHandlerRegex("Profit Factor");
   //Lets players freely view and edit profit factor with modifiers
   CentralInput.addCMD(profitFactorRe, function(matches,msg){
     matches[2] = "Profit Factor";
-    statHandler(matches,msg,{partyStat: true});
+    attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
 //be sure the inqattack object exists before we start working with it
@@ -7613,7 +7043,7 @@ INQAttack.addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper("Please carefully select who we are giving these weapns to.", msg.playerid);
+      whisper("Please carefully select who we are giving these weapns to.", {speakingTo: msg.playerid});
       return;
     }
   }
@@ -7632,12 +7062,12 @@ INQAttack.addWeapon = function(matches, msg){
   weapons = trimToPerfectMatches(weapons, name);
   //did none of the weapons match?
   if(weapons.length <= 0){
-    whisper("*" + name + "* was not found.", msg.playerid);
+    whisper("*" + name + "* was not found.", {speakingTo: msg.playerid});
     return false;
   }
   //are there too many weapons?
   if(weapons.length >= 2){
-    whisper("Which weapon did you intend to add?", msg.playerid)
+    whisper("Which weapon did you intend to add?", {speakingTo: msg.playerid});
     _.each(weapons, function(weapon){
       //use the weapon's exact name
       var suggestion = "addweapon " + weapon.get("name");
@@ -7646,7 +7076,7 @@ INQAttack.addWeapon = function(matches, msg){
       }
       //the suggested command must be encoded before it is placed inside the button
       suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + weapon.get("name") + "](" + suggestion  + ")", msg.playerid);
+      whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
     });
     //don't continue unless you are certain what the user wants
     return false;
@@ -7666,12 +7096,12 @@ INQAttack.addWeapon = function(matches, msg){
       clips = trimToPerfectMatches(clips, ammoNames[i]);
       //did none of the weapons match?
       if(clips.length <= 0){
-        whisper("*" + ammoNames[i] + "* was not found.", msg.playerid);
+        whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
         return false;
       }
       //are there too many weapons?
       if(clips.length >= 2){
-        whisper("Which Special Ammunition did you intend to add?", msg.playerid)
+        whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
         _.each(clips, function(clip){
           //specify the exact ammo name
           ammoNames[i] = clip.get("name");
@@ -7679,7 +7109,7 @@ INQAttack.addWeapon = function(matches, msg){
           var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
           //the suggested command must be encoded before it is placed inside the button
           suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-          whisper("[" + clip.get("name") + "](" + suggestion  + ")", msg.playerid);
+          whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
         });
         //something went wrong
         return false;
@@ -7706,10 +7136,10 @@ INQAttack.addWeapon = function(matches, msg){
       //add the token action to the character
       INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
     } else {
-      whisper("Add Weapon is not prepared to create an Ability for Gear.");
+      whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
     }
     //report the success
-    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", msg.playerid);
+    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
   });
 }
 
@@ -7744,6 +7174,7 @@ function endMission(matches, msg){
         attrObj.set("current", attrObj.get("max"));
       }
     });
+
     //remove all of the requisitioned weapons and gear
     //get the character bio and gmnotes
     var charBio = "";
@@ -7805,8 +7236,6 @@ function endMission(matches, msg){
       return notes;
     });
     //save the modifications to the bio/gmnotes
-    character.set("bio",     charNotes[0]);
-    character.set("gmnotes", charNotes[1]);
     whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
   });
 }
@@ -7835,7 +7264,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
     if(matches){
       //get the weapon name
       INQAttack.weaponname = matches[1];
-      INQAttack.options = new Hash(matches[2].replace(/\?\{[^\{\}]+\}/g,""));
+      INQAttack.options = JSON.parse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""));
       if(INQAttack.options.Name){
         abilityNames.push(INQAttack.options.Name);
       } else {
@@ -7861,8 +7290,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
       }
     });
   } while(!nameIsUnique);
-  //create the base options Hash for the weapon ability
-  var options = new Hash();
+  var options = {};
   if(quantity){
     options.Clip = quantity;
   }
@@ -8045,7 +7473,7 @@ function reloadWeapon(matches, msg){
         var suggestion = "reload " + name;
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + name + "](" + suggestion  + ")", msg.playerid);
+        whisper("[" + name + "](" + suggestion  + ")", {speakingTo: msg.playerid});
       });
       return;
     }
@@ -8055,7 +7483,7 @@ function reloadWeapon(matches, msg){
       playerid: msg.playerid,
       selected: [graphic]
     };
-    statHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
+    attributeHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
   });
 }
 
@@ -8147,10 +7575,10 @@ function Calendar(day,month,year) {
       var output = pretext + this.dateToText() + ".";
       //if we are not reporting back to a specific person, then report back to everyone
       if(who == null){
-          sendChat("System",output)
+          sendChat("System", output)
       } else {
           //report the date privatly to the inquirer
-          whisper(output,who)
+          whisper(output, {speakingTo: who})
       }
     }
 
@@ -8843,11 +8271,11 @@ function Calendar(day,month,year) {
             if(gm){
                 //update the character sheet text with the new schedule
                 logbook.set("gmnotes","<u>Recorded Hidden Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","/w gm The " + GetLink("Log Book") + " has been updated.");
+                sendChat("System","/w gm The " + getLink("Log Book") + " has been updated.");
             } else {
                 //update the character sheet text with the new schedule
                 logbook.set("bio","<u>Recorded Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","The " + GetLink("Log Book") + " has been updated.");
+                sendChat("System","The " + getLink("Log Book") + " has been updated.");
             }
         //otherwise you are talking about a future event, put it in the calendar
         }else{
@@ -8855,11 +8283,11 @@ function Calendar(day,month,year) {
             if(gm){
                 //update the character sheet text with the new schedule
                 calendar.set("gmnotes","<u>Upcoming Hidden Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","/w gm The " + GetLink("Calendar") + " has been updated.");
+                sendChat("System","/w gm The " + getLink("Calendar") + " has been updated.");
             } else {
                 //update the character sheet text with the new schedule
                 calendar.set("bio","<u>Upcoming Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","The " + GetLink("Calendar") + " has been updated.");
+                sendChat("System","The " + getLink("Calendar") + " has been updated.");
             }
         }
 
@@ -9180,7 +8608,7 @@ on("ready",function(){
     var currentTime = myCalendar.textToNumbers(matches[1]);
 
     //report the time in number format
-    whisper(myCalendar.difference(currentTime) + matches[1],msg.playerid);
+    whisper(myCalendar.difference(currentTime) + matches[1], {speakingTo: msg.playerid});
     //get rid of the evidence
     delete myCalendar;
   });
@@ -9245,13 +8673,13 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacterBio(matches[1])){
       charImport.makeCharacter();
-      whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
     }
   });
   CentralInput.addCMD(/^!\s*import\s*vehicle\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
     if(charImport.getCharacterBio(matches[1])){
       charImport.makeVehicle();
-      whisper("*" + GetLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
+      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
     }
   });
 });
@@ -9270,8 +8698,7 @@ function importWeapon(matches, msg){
   var weapon = new INQWeapon(matches[1] + "(" + details + ")");
 
   //give each selected character a custom weapon
-  var customWeapon = new Hash();
-  customWeapon.custom = "true";
+  var customWeapon = {custom: true};
   eachCharacter(msg, function(character, graphic){
     var inqcharacter = new INQCharacter(character, graphic);
     if(weapon.Class == "Melee"){
@@ -9757,8 +9184,8 @@ function System(){
     this.SystemNumber = 1; //the system numeral, for identification purposes
     this.PlanetNumber = 1; //the planet numeral, for identification purposes
     this.MoonNumber = 1;   //the moon numeral, for identification purposes
-
-    //System Features
+    
+    //System Features  
     this.BiosphereAtmosphere = 0; //Due to Haven, Biosphere Planets have higher atmosphere rolls
     this.HavenHabitability = 0; //Due to Haven, Planets have higher habitability rolls
     this.EmpireInhabitants = []; //the preset ruins inhabitants (who are now dead and gone)
@@ -9770,7 +9197,7 @@ function System(){
     this.PrimaryBiosphere = 1;   //index for the Primary Biosphere. Please do not modify.
     this.OuterReaches = 2;       //index for the OuterReaches. Please do not modify.
     this.PlanetBounty = 0; //Due to bounty, Planets have additional Mineral Resources
-
+    
     //Planet Creation
     this.RegionShift = 0; //Shifts the Region for planet generation
     this.OrbitalFeatures = 0; //the number of orbital features aroudn a planet
@@ -9783,8 +9210,8 @@ function System(){
     this.PlanetExoticBounty = 0; //Due to Bounty, Planets have additional Exotic Mineral Resources
     this.Wasteland = 11;  //what is the chance that the location will be a wasteland?
     this.ExtraCreatures = false; //does this planet have extra creatures?
-
-
+    
+    
 //=================================================================================================================================
 //Resource Functions
 //=================================================================================================================================
@@ -9793,10 +9220,10 @@ function System(){
     this.calculateAbundance = function (abundance,type){
         abundance = abundance || randomInteger(100);
         type = type || "";
-
+        
         //this bonus applies universally
         abundance += this.ResourceBonus;
-
+        
         //if this resource type is found in the list of resources to reduce
         //AND if there are still reductions to do
         if(this.ReductionTypes.indexOf(type) != -1 && this.ResourceReductions > 0){
@@ -9813,25 +9240,25 @@ function System(){
                 abundance += randomInteger(10);
             }
         }
-
+        
         //now that all the modifiers have been applied, be sure the abundance lies in legal means
         if(abundance > this.ResourceCap){abundance = this.ResourceCap;}
         else if(abundance < 0){abundance = 0;} //still output a 0, that way you can see when a race has totally depleted a resource
-
+        
         //return the modified abundance
         return abundance;
     }
-
+    
     //generates a random Mineral resource
     this.RandomMineral = function (abundance, PresetMineral){
         PresetMineral = PresetMineral || "";
-
+        
         //apply all the standard modifiers to the abundance
         abundance = this.calculateAbundance(abundance,"Mineral");
-
+        
         //record the abundance of the minerals in string form
-        var output = abundance.toString() + " " + GetLink("Abundance") + " of ";
-
+        var output = abundance.toString() + " " + getLink("Abundance") + " of ";
+        
         //if the mineral was not already preset, roll for one randomly
         if(PresetMineral == ""){
             switch(randomInteger(10)){
@@ -9840,20 +9267,20 @@ function System(){
                 case 8: case 9: output += "Radioactive"; break;
                 case 10: output += "Exotic"; break;
             }
-            output += " " + GetLink("Minerals");
+            output += " " + getLink("Minerals");
         } else {
             output += PresetMineral;
         }
         //return the abundance and mineral in string form
         return output;
     }
-
+    
     //generates a random Organic resource
     this.RandomOrganic = function(abundance){
         //apply the standard modifiers to the abundance of the organic compound
         abundance = this.calculateAbundance(abundance,"Organic Compound");
         //record the modified abundance in string form
-        var output = abundance.toString() + " " + GetLink("Abundance") + " of ";
+        var output = abundance.toString() + " " + getLink("Abundance") + " of ";
         //roll for a random organic compound
         switch(randomInteger(10)){
             case 1: case 2:  output += "Curative"; break;
@@ -9862,16 +9289,16 @@ function System(){
             case 7: case 8: case 9: output += "Vivid"; break;
             case 10: output += "Exotic"; break;
         }
-        output += " " + GetLink("Compounds")
+        output += " " + getLink("Compounds")
         //return the abundance and compound type in string form
         return output;
-    }
-
+    } 
+    
     //generates a random Xenos Ruin resource
     this.RandomRuin = function(abundance, PresetRuin){
         PresetRuin = PresetRuin || "";
         var output = "";
-
+            
         //if abundance is == "Name" then only return the name of a random xenos ruin
         if(abundance != "Name"){
             //calculate abundance based on the preset resource type, by default, this function produces Xenos ruins
@@ -9880,15 +9307,15 @@ function System(){
             } else {
                 abundance = this.calculateAbundance(abundance,"Ruin");
             }
-
+            
             //Ruined Empire System Traits increase the abundance of Ruins and Archeotech.
             for(index = 0; index < this.EmpireAbundance; index++){
                 abundance += randomInteger(10)+5;
             }
             //record the abundance in string form
-            output += abundance.toString() + " " + GetLink("Abundance") + " of ";
+            output += abundance.toString() + " " + getLink("Abundance") + " of ";
         }
-
+        
         //if the ruin type was not already preset, randomly generate a ruin type
         if(PresetRuin == ""){
             switch(this.Sector){
@@ -9918,22 +9345,22 @@ function System(){
             }
         } else if(PresetRuin == "Human") {
             //human ruins are Archeotech resources
-            output += GetLink("Archeotech Cache");
+            output += getLink("Archeotech Cache");
         } else {
             //otherwise just add the preset Xenos ruin
             output += PresetRuin;
         }
-
+        
         //if you are not just asking for random ruin type and the ruin is not archeotech
         if(abundance != "Name" && PresetRuin != "Human"){
             //append [Ruins] to the output as the Preset Ruin is just an adjective for this noun
-            output += " " + GetLink("Ruins");
+            output += " " + getLink("Ruins");
         }
-
+        
         //return the final result in string form
         return output;
     }
-
+    
 //=================================================================================================================================
 //Race Functions
 //=================================================================================================================================
@@ -9943,12 +9370,12 @@ function System(){
         PresetRace = PresetRace || "";
         var roll;
         var output = PresetRace;
-
+        
         //if the race has not already been predetermined, select a random one
         if(PresetRace == ""){
             switch(this.Sector){
                 case "K":
-                if(Habitable){roll = randomInteger(10);} else {roll = randomInteger(7);}
+                if(Habitable){roll = randomInteger(10);} else {roll = randomInteger(7);}   
                 switch(roll){
                     case 1: output = "Eldar"; break;
                     case 2: case 3: case 4: output = "Human"; break;
@@ -9956,7 +9383,7 @@ function System(){
                     case 9: case 10: output = "Orks"; break;
                     case 5: output = "Rak'Gol"; break;
                     //we will generate a random xenos later, save onto the fact that this is an Unknown Race
-                    case 6: case 7:
+                    case 6: case 7: 
                         PresetRace = "Unknown";
                     break;
                 }
@@ -9966,7 +9393,7 @@ function System(){
                     //there is a very large change that the settlement is human
                     output = "Human";
                 }else{
-                    if(Habitable){roll = randomInteger(10);} else {roll = randomInteger(8);}
+                    if(Habitable){roll = randomInteger(10);} else {roll = randomInteger(8);}   
                     switch(roll){
                         case 1: output = "Eldar"; break;
                         case 2: case 3: case 4: case 5: case 6: output = "Human"; break;
@@ -9974,7 +9401,7 @@ function System(){
                         case 10: output = "Orks"; break;
                         case 7: output = "Rak'Gol"; break;
                         //we will generate a random xenos later, save onto the fact that this is an Unknown Race
-                        case 8:
+                        case 8: 
                             PresetRace = "Unknown";
                         break;
                     }
@@ -9988,7 +9415,7 @@ function System(){
                     case 4: case 5: case 6: output = "Human"; break;
                     case 7: case 8: output = "Tau"; break;
                     //we will generate a random xenos later, save onto the fact that this is an Unknown Race
-                    case 9:
+                    case 9: 
                         PresetRace = "Unknown";
                     break;
                     case 10: output = "Necron"; break;
@@ -10000,7 +9427,7 @@ function System(){
                     case 1: case 2: case 3: output = "Tyranid"; break;
                     case 4: case 5: case 6: output = "Necron"; break;
                     case 7: output = "Human"; break;
-                    case 8: case 9: case 10:
+                    case 8: case 9: case 10: 
                         PresetRace = "Unknown";
                     break;
                 }
@@ -10014,7 +9441,7 @@ function System(){
                     case 7: output = "Necron"; break;
                     case 8: output = "Tau"; break;
                     //we will generate a random xenos later, save onto the fact that this is an Unknown Race
-                    case 9: case 10:
+                    case 9: case 10: 
                         PresetRace = "Unknown";
                     break;
                 }
@@ -10031,7 +9458,7 @@ function System(){
                     case 7: output = "Tau"; break;
                     case 8: output = "Tyranid"; break;
                     //we will generate a random xenos later, save onto the fact that this is an Unknown Race
-                    case 9: case 10:
+                    case 9: case 10: 
                         PresetRace = "Unknown";
                     break;
                 }
@@ -10181,7 +9608,7 @@ function System(){
                     this.ReductionTypes = "Mineral, Ruin, Archeotech, Organic Compound"; //only the resources in this list will be reduced
                 }
                 break;
-                case "Necron - ":
+                case "Necron - ": 
                 switch(randomInteger(5)){
                     case 1: output += "Voidfarers";
                     this.ResourceReductions = 1000; //reduce this many resources of a planet based on colony type
@@ -10195,9 +9622,9 @@ function System(){
                     this.ReductionBase = 0; //reduce the resources by this flat amount
                     this.ReductionTypes = "Mineral, Archeotech, Ruin"; //only the resources in this list will be reduced
                     break;
-                } break;
+                } break;    
                 break;
-                case "Tau - ":
+                case "Tau - ": 
                 roll = randomInteger(5);
                 switch(roll){
                     case 1: output += "Orbital Habitation"; break;
@@ -10230,7 +9657,7 @@ function System(){
                     this.ReductionBase = 0; //reduce the resources by this flat amount
                     this.ReductionTypes = "Organic Compound"; //only the resources in this list will be reduced
                     break;
-                }
+                }    
                 break;
                 default:
                 if(Habitable){roll = randomInteger(10);}else{roll = randomInteger(4);}
@@ -10289,7 +9716,7 @@ function System(){
         //return the random inhabitants
         return output;
     }
-
+    
     //roll for a random pirate fleet type to plague this system
     this.RandomPirate = function(){
         switch(this.Sector){
@@ -10301,7 +9728,7 @@ function System(){
                 case 5: case 6: return "Orks"; break;
                 case 7: return "Chaos"; break;
                 case 8: return "Renegade"; break;
-                case 9: return this.RandomCreature("native voidfarer",this.Sector + "-" + this.SystemNumber.toString()); break;
+                case 9: return this.RandomCreature("native voidfarer",this.Sector + "-" + this.SystemNumber.toString()); break; 
                 case 10: return "Rak’Gol"; break;
             }
             break;
@@ -10338,7 +9765,7 @@ function System(){
                 case 7: return "Human"; break;
                 case 8: case 9: case 10: return this.RandomCreature("native voidfarer",this.Sector + "-" + this.SystemNumber.toString()); break;
             }
-            break;
+            break; 
             case "H":
             switch(randomInteger(10)){
                 case 1: return "Eldar"; break;
@@ -10347,7 +9774,7 @@ function System(){
                 case 6: case 7: return "Necron"; break;
                 case 8: case 9: case 10: return this.RandomCreature("native voidfarer",this.Sector + "-" + this.SystemNumber.toString()); break;
             }
-            break;
+            break; 
             case "S":
             switch(randomInteger(10)){
                 case 1: return "Human"; break;
@@ -10361,7 +9788,7 @@ function System(){
                 case 9: case 10: return this.RandomCreature("native voidfarer",this.Sector + "-" + this.SystemNumber.toString()); break;
             }
             break;
-        }
+        }        
     }
 
 //=================================================================================================================================
@@ -10375,8 +9802,8 @@ function System(){
         //generate a profit motive
         output += "<li><strong>Profit Motive</strong>: ";
         switch(randomInteger(10)){
-
-            case 1: case 2:
+            
+            case 1: case 2: 
                 output += "Lost Treasures - ";
                 switch(randomInteger(10)){
                     case 1: case 2: output += "Lost Explorator</li>"; break;
@@ -10385,7 +9812,7 @@ function System(){
                     case 8: case 9: output += "Winterscale's Lost World</li>"; break;
                     case 10: output += "A Missing Dynasty</li>"; break;
                 }break;
-
+            
             case 3: case 4: //Undiscovered worlds
                 output += "Undiscovered Worlds - ";
                 switch(randomInteger(10)){
@@ -10395,7 +9822,7 @@ function System(){
                     case 8: case 9: output += "A Jewel Amidst the Sand</li>"; break;
                     case 10: output += "Off the Well-Tread Path</li>"; break;
                 }break;
-
+            
             case 5: case 6://Imperial Interest
                 output += "Imperial Interest - ";
                 switch(randomInteger(10)){
@@ -10430,14 +9857,14 @@ function System(){
                     case 8: case 9: output += "A Failed Mission</li>"; break;
                     case 10: output += "Imperial Cache</li>"; break;
                 }break;
-
+            
         }
-
+        
         //generate an encounter site
         output += "<li><strong>Encounter Site</strong>: ";
         switch(randomInteger(10)){
-
-            case 1: output += "Derelict Vessel - ";
+            
+            case 1: output += "Derelict Vessel - "; 
             switch(randomInteger(5)){
                 case 1: output += "Automated Defences"; break;
                 case 2: output += "Vicious Residents"; break;
@@ -10451,7 +9878,7 @@ function System(){
                 case 2: output += "Valuable Survivors"; break;
                 case 3: output += "Lost Cargo"; break;
             }break;
-            case 2: output += "Death Zone - ";
+            case 2: output += "Death Zone - "; 
             switch(randomInteger(5)){
                 case 1: output += "Sinkhole"; break;
                 case 2: output += "Lingering Curses"; break;
@@ -10465,7 +9892,7 @@ function System(){
                 case 2: output += "Ancient Plunder"; break;
                 case 3: output += "New Colonies"; break;
             }break;
-            case 3: output += "Lost City - ";
+            case 3: output += "Lost City - "; 
             switch(randomInteger(5)){
                 case 1: output += "Hostile Inhabitants"; break;
                 case 2: output += "Pitfall Trap"; break;
@@ -10479,7 +9906,7 @@ function System(){
                 case 2: output += "Secret Lore"; break;
                 case 3: output += "Glory and Renown"; break;
             }break;
-            case 4: output += "Warrens and Hollows - ";
+            case 4: output += "Warrens and Hollows - "; 
             switch(randomInteger(5)){
                 case 1: output += "Toxic Spores"; break;
                 case 2: output += "Twisting Labyrinth"; break;
@@ -10493,7 +9920,7 @@ function System(){
                 case 2: output += "Purge and Cleanse"; break;
                 case 3: output += "Rare Specimens"; break;
             }break;
-            case 5: output += "Xenoform Biome - ";
+            case 5: output += "Xenoform Biome - "; 
             switch(randomInteger(5)){
                 case 1: output += "Hallucinogenic Spores"; break;
                 case 2: output += "Shifting Maze"; break;
@@ -10506,7 +9933,7 @@ function System(){
                 case 1: output += "Cleared for Colonization"; break;
                 case 2: output += "Unnatural Interest"; break;
             }break;
-            case 6: output += "Hidden Oasis - ";
+            case 6: output += "Hidden Oasis - "; 
             switch(randomInteger(5)){
                 case 1: output += "Native Predators"; break;
                 case 2: output += "Deadly Flora"; break;
@@ -10520,7 +9947,7 @@ function System(){
                 case 2: output += "Those That Never Leave"; break;
                 case 3: output += "Trade Centre Establishment"; break;
             }break;
-            case 7: output += "Cavern - ";
+            case 7: output += "Cavern - "; 
             switch(randomInteger(5)){
                 case 1: output += "Cave-In!"; break;
                 case 2: output += "Dwellers Within"; break;
@@ -10534,7 +9961,7 @@ function System(){
                 case 2: output += "Safe Havens"; break;
                 case 3: output += "Lost Relics"; break;
             }break;
-            case 8: output += "Jungle - ";
+            case 8: output += "Jungle - "; 
             switch(randomInteger(5)){
                 case 1: output += "Apex Hunters"; break;
                 case 2: output += "Dangerous Terrain"; break;
@@ -10548,7 +9975,7 @@ function System(){
                 case 2: output += "New Species"; break;
                 case 3: output += "Lost Colony"; break;
             }break;
-            case 9: output += "Chaos Scarred Region - ";
+            case 9: output += "Chaos Scarred Region - "; 
             switch(randomInteger(5)){
                 case 1: output += "Daemonic Incurions"; break;
                 case 2: output += "Corrupting Terrain"; break;
@@ -10561,7 +9988,7 @@ function System(){
                 case 1: output += "Wonders of the Expanse"; break;
                 case 2: output += "Potent Relics"; break;
             }break;
-            case 10: output += "Ancient Warzone - ";
+            case 10: output += "Ancient Warzone - "; 
             switch(randomInteger(5)){
                 case 1: output += "Active Defences"; break;
                 case 2: output += "Unexploded Munitions"; break;
@@ -10577,8 +10004,8 @@ function System(){
             }break;
         }
         output += "</li>";
-
-
+        
+        
         //Dangers
         var EncounterDangers = 1;
         while(EncounterDangers > 0){
@@ -10608,8 +10035,8 @@ function System(){
                 output += "</li>";
             }
             EncounterDangers--;
-        }
-
+        }                
+        
         //Complication
         output += "<li><strong>Complication</strong>: ";
         switch(randomInteger(10)){
@@ -10620,7 +10047,7 @@ function System(){
             case 5: output += "Devouring Infection"; break;
             case 6: output += "Hunter and Prey"; break;
             case 7: output += "In Shadows Cast"; break;
-            case 8: output += "Tomb of the Ancients - ";
+            case 8: output += "Tomb of the Ancients - "; 
             switch(randomInteger(4)){
                 case 1: output += "Nightmare Globe"; break;
                 case 2: output += "Temporal Sink"; break;
@@ -10634,7 +10061,7 @@ function System(){
         //return the adventure in string form
         return output;
     }
-
+    
 
 //=================================================================================================================================
 //System Element Functions
@@ -10649,7 +10076,7 @@ function System(){
 
         //create temporary variables
         var output = ""; //stores the text sumary of the planet
-
+        
         var PlanetGravity = 0;  //this function could be called as a moon and so we do not want to interrupt the host Gravity
         var Atmosphere = 0; //this varable records the atmospheric presence of the planet
         var Composition = 0; //this variable records the atmosphere composition
@@ -10657,11 +10084,11 @@ function System(){
         var Habitability = 0; //this variable records how habitable the planet is
         var TerritoryNumber = 1;//this variable labels each territory with a number
         var Size = 0; //this variable records the size of the planet, this provides an upper limit for the size of its moons
-
+        
         var i; //a simple counter variable that can be turned into a string
         var Die;
         var k;
-
+        
         //reset object variables
         this.ResourceBonus = 0;  //this is a bonus to any rolls for resource abundance
         this.ResourceCap = 500;
@@ -10671,51 +10098,51 @@ function System(){
         this.ReductionTypes = ""; //only the resources in this list will be reduced
         this.Wasteland = 11;  //what is the chance that the location will be a wasteland?
         this.ExtraCreatures = false; //does this planet have extra creatures?
-
+        
         //reset non-Moon object variables
         if(!Moon){
             this.MoonNumber = 1;
             this.OrbitalFeatures = 0;
             this.RegionShift = 0;
         }
-
+        
         //Generate the Body of the Planet/Moon
         output += "<ul><li><strong>Body</strong>: ";
-
+        
         //roll a random size for the planet
         Size = randomInteger(10);
         //be sure that the body is not larger than the host planet
         if(Size > MaxSize){Size = MaxSize;}
-
+        
         //the size of the body applies a modifer to the roll for gravity
         //it can also alter rolls for resources
         switch(Size){
-            case 1: output += "Low-Mass";
-            PlanetGravity = -7;
-            this.ResourceCap = 40;
+            case 1: output += "Low-Mass"; 
+            PlanetGravity = -7;  
+            this.ResourceCap = 40; 
             break;
-            case 2: case 3: output += "Small";
+            case 2: case 3: output += "Small"; 
             PlanetGravity = -5;
             break;
-            case 4: output += "Small and Dense";
+            case 4: output += "Small and Dense"; 
             this.ResourceBonus = 10;
             break;
             case 5: case 6: case 7: output += "Large"; break;
-            case 8: output += "Large and Dense";
+            case 8: output += "Large and Dense"; 
             PlanetGravity = 5;
             this.ResourceBonus = 10;
             break;
-            case 9: case 10: output += "Vast";
+            case 9: case 10: output += "Vast"; 
             PlanetGravity = 4;
             break;
         }
         //close this bullet point
         output += "</li>";
-
+        
         //Generate the Gravity of the Planet/Moon
-        output += "<li><strong>" + GetLink("Gravity") + "</strong>: ";
+        output += "<li><strong>" + getLink("Gravity") + "</strong>: ";
         PlanetGravity += randomInteger(10);
-
+        
         //the gravity of the planet determines the number of Orbital Features, only if this Planet is not a Moon. Moons don't get their own moons
         //further the gravity provides a bonus to atmosphere rolls
         if(PlanetGravity <= 2) {
@@ -10732,16 +10159,16 @@ function System(){
         }
         //close this bullet point
         output += "</li>";
-
+        
         //Generate the Atmosphere of the Planet
-        output += "<li><strong>" + GetLink("Atmosphere") + "</strong>: ";
-
+        output += "<li><strong>" + getLink("Atmosphere") + "</strong>: ";
+        
         //roll for the atmosphere
         Atmosphere += randomInteger(10);
-
+        
         //haven systems have an atmosphere bonus for being in the Primary Biosphere
         if(this.region == this.PrimaryBiosphere){Atmosphere += this.BiosphereAtmosphere;}
-
+        
         if(Atmosphere <= 1) {
             output  += "-";
         } else if(Atmosphere >= 2 && Atmosphere <= 4) {
@@ -10751,7 +10178,7 @@ function System(){
         } else { //if(Atmosphere >= 10)
             output += "Heavy & ";
         }
-
+        
         //if there is an atmosphere, generate its composition
         if(Atmosphere >= 2){
             Composition += randomInteger(10);
@@ -10767,9 +10194,9 @@ function System(){
         }
         //close this bullet point
         output += "</li>";
-
+        
         //Generate the Atmosphere of the Planet
-        output += "<li><strong>" + GetLink("Climate") + "</strong>: ";
+        output += "<li><strong>" + getLink("Climate") + "</strong>: ";
         //Climate is pre determined if there is no atmosphere
         //Climite strongly affects Habitability
         if(Atmosphere <= 1) {
@@ -10786,8 +10213,8 @@ function System(){
             Climate = randomInteger(10);
             //adjust the roll for the solar region
             if(this.region + this.RegionShift <= this.InnerCauldron){Climate -= 6;}
-            if(this.region + this.RegionShift >= this.OuterReaches){Climate += 6;}
-
+            if(this.region + this.RegionShift >= this.OuterReaches){Climate += 6;}   
+            
             if(Climate <= 0) {
                 output += "Burning World";
                 Habitability = -7;
@@ -10807,7 +10234,7 @@ function System(){
         }
         //close this bullet point
         output += "</li>";
-
+        
         //Generate the Habitability of the Planet
         output += "<li><strong>Habitability</strong>: ";
         //roll for the habitability, adding in the bonus for Haven Systems
@@ -10825,7 +10252,7 @@ function System(){
         }
         //end bullet point
         output += "</li>";
-
+        
         //generate discernable landmasses, if there is water, it is more likely to have distinct landmasses
         //there is a small chance that there won't be any landmasses, thus a planet submerged in water
         if((Habitability <= 3 && randomInteger(10) >= 8)||(Habitability >= 4 && randomInteger(10) >= 4)){
@@ -10834,13 +10261,13 @@ function System(){
             i = 1
         }
         output += "<li><strong>Landmasses</strong>: " + i.toString() + "</li>";
-
+        
         //generate the Inhabitants of the Planet
         output += "<li><strong>Inhabitants</strong>: ";
         //the likelihood of sentient inhabitants has a 3x increase if the world is habitable
         //the likelihood of sentient inhabitants has a 3x increase if the system is owned by a void faring civilization, it will be one of the preset civilizations and it will be a civilization capable of surviving on an inhabitable world
         if(this.VoidInhabitants.length > 0 && ((Habitability >= 6 && randomInteger(10) >= 2) || (Habitability < 6 && randomInteger(10) == 8))){
-            output += this.RandomRace(false,this.VoidInhabitants[randomInteger(this.VoidInhabitants.length)-1]);
+            output += this.RandomRace(false,this.VoidInhabitants[randomInteger(this.VoidInhabitants.length)-1]);    
         } else if(Habitability >= 6 && randomInteger(10) >= 8) {
             output += this.RandomRace(true);
         } else if(Habitability < 6 && randomInteger(10) == 10) {
@@ -10849,7 +10276,7 @@ function System(){
             output += "-";
         }
         output += "</li>"
-
+        
         //generate planetary mineral resources
         //the amount of resources depends on the size of the planet
         if(Size <= 4) {
@@ -10866,7 +10293,7 @@ function System(){
             output += "<li>" + this.RandomMineral() + "</li>";
             i--;
         }
-
+        
         //generate the additional resources of the planet
         //the amount is dependant on the size of the planet
         if(Size <= 4) {
@@ -10878,12 +10305,12 @@ function System(){
         }
         while(i > 0){
             output += "<li>";
-           //determine the category of this additional resources
+           //determine the category of this additional resources                
             switch(randomInteger(10)){
                 case 5: case 6:
                 output += this.RandomRuin(randomInteger(100),"Human"); //Archeotech
                 break;
-                case 7: case 8:
+                case 7: case 8: 
                 output += this.RandomRuin();
                 break;
                 case 9: case 10:
@@ -10899,12 +10326,12 @@ function System(){
             i--;
             output += "</li>";
         }
-
+        
         //generate mandatory exotic bounties
         for(var i = 0; i < this.PlanetExoticBounty; i++){
-            output += "<li>" + this.RandomMineral(randomInteger(100),"Exotic " + GetLink("Minerals"))+ "</li>";
+            output += "<li>" + this.RandomMineral(randomInteger(100),"Exotic " + getLink("Minerals"))+ "</li>";
         }
-
+        
         //generate mandatory extra ruins
         //for each result of Empire
         for(var i = 0; i < this.EmpireRuins; i++){
@@ -10914,34 +10341,34 @@ function System(){
                 output += "<li>" + this.RandomRuin(randomInteger(100),this.EmpireInhabitants[randomInteger(this.EmpireInhabitants.length)-1]) + "</li>";
             }
         }
-
+        
         //generate the noteworthy areas of the planet, defined as territories
         i = randomInteger(5);
         //modify the number of notable territories, based on the habitability of the planet
-        if(Habitability < 6) {
+        if(Habitability < 6) { 
             i -= 4;
         } else if(Habitability >= 8) {
             i += 2;
         }
-
+        
         //modify the number of territories, based on the size of the planet
         if(Size <= 4) { //small worlds
             i += -2;
         } else if(Size >= 9) { //vast worlds
             i += 3;
         }
-
+        
         //generate at least one territory
         do{
             //label the territory
-            var locationLabel = this.Sector + "-" + this.SystemNumber.toString() + "-" + this.PlanetNumber.toString();
+            var locationLabel = this.Sector + "-" + this.SystemNumber.toString() + "-" + this.PlanetNumber.toString(); 
             //add the Moon label if it is a moon
             if(Moon){locationLabel += "-" + this.MoonNumber.toString();}
             //add the Territory Number and move it up one
             locationLabel += "-" + TerritoryNumber.toString();
             output += "<li><strong>Territory " + locationLabel + "</strong>: ";
             TerritoryNumber++;
-
+            
             //the types of territories available are dependant on the habitability of the planet
             if(Habitability < 4){
                 Die = randomInteger(2);
@@ -10954,7 +10381,7 @@ function System(){
             var Territory = {}
             //get a list of traits ready
             Territory.Traits = [];
-            //get a list of features ready
+            //get a list of features ready            
             Territory.Landmarks = [];
             //has this territory been reduced to a wasteland?
             if(randomInteger(10) >= this.Wasteland){
@@ -10967,7 +10394,7 @@ function System(){
             }
             //determine the territory type with the Die roll
             switch(Die){
-                case 1:
+                case 1: 
                 Territory.Type = "Wasteland";
                 //output += "Wasteland</li><ul>";
                 //die will be recycled as a counter for the number of traits on this territory
@@ -11043,7 +10470,7 @@ function System(){
                     Die--;
                 }
                 break;
-                case 3:
+                case 3: 
                 Territory.Type = "Swamp";
                 //output += "Swamp</li><ul>";
                 //die will be recycled as a counter for the number of traits on this territory
@@ -11081,7 +10508,7 @@ function System(){
                     Die--;
                 }
                 break;
-                case 4:
+                case 4: 
                 Territory.Type = "Plains";
                 //output += "Plains</li><ul>";
                 //die will be recycled as a counter for the number of traits on this territory
@@ -11092,7 +10519,7 @@ function System(){
                         Territory.Traits.push("Broken Ground");
                         //output += "<li>Broken Ground</li>";
                         break;
-                        case 3: case 4: case 5: case 6:
+                        case 3: case 4: case 5: case 6: 
                         Territory.Traits.push("Expansive");
                         //output += "<li>Expansive</li>";
                         break;
@@ -11158,7 +10585,7 @@ function System(){
                 }
                 break;
             }
-
+            
             //add landmarks to this territory
             Die = randomInteger(5);
             //modify the number of landmarks by the Size of the planet
@@ -11272,7 +10699,7 @@ function System(){
                         if(Territory.Traits[traitIndex] == "Extreme Temperature"){
                             //what is the temperature of the planet?
                             if(Climate <= 3){
-                                //the planet is already hot, but this location is even hotter
+                                //the planet is already hot, but this location is even hotter 
                                 possibleAdaptations.push("volcanic");
                             } else if (Climate >= 8){
                                 //the planet is already cold, but this location is even colder
@@ -11291,7 +10718,7 @@ function System(){
                     //landmarks
                     for(landmarkIndex = 0; landmarkIndex < Territory.Landmarks.length; landmarkIndex++){
                         switch(Territory.Landmarks[landmarkIndex]){
-                            case "Inland Sea":
+                            case "Inland Sea": 
                             case "Reef":
                             case "Whirlpool":
                                 possibleAdaptations.push("ocean");
@@ -11316,8 +10743,8 @@ function System(){
                     }
                     log(possibleAdaptations)
                     //does this adaptation support a large number of plants?
-                    //if it does, 1/2 chance to be a plant
-                    if(possibleAdaptations[0] == "volcanic"
+                    //if it does, 1/2 chance to be a plant  
+                    if(possibleAdaptations[0] == "volcanic" 
                     || possibleAdaptations[0] == "ice"
                     || possibleAdaptations[0] == "desert"
                     || randomInteger(2) == 1){
@@ -11340,10 +10767,10 @@ function System(){
             }
             //close up the bullet point group for the territory
             output += "</ul></ul>";
-
+            
             i--;
         }while(i > 0);
-
+        
         //reset object variables
         this.ResourceBonus = 0;  //this is a bonus to any rolls for resource abundance
         this.ResourceCap = 500;
@@ -11353,7 +10780,7 @@ function System(){
         this.ReductionTypes = ""; //only the resources in this list will be reduced
         this.Wasteland = 11;  //what is the chance that the location will be a wasteland?
         this.ExtraCreatures = false; //does this planet have extra creatures?
-
+        
         //Moons cannot generate orbital features, otherwise things could get crazy
         if(!Moon){
             //be sure at least one orbital feature will have a chance at being generated
@@ -11374,7 +10801,7 @@ function System(){
                     if(randomInteger(100) == 1) {
                         output += this.RandomAdventure();
                     }
-                } else if(i >= 86) {
+                } else if(i >= 86) { 
                     output += "<li><strong>Moon</strong>: "  + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "-" + this.MoonNumber + "</li>";
                     if(this.Sector == "S"){Size = 10;} //larger objects orbitting smaller objects is one of the tammer happenings in the Screaming Vortex
                     output += this.RandomPlanet("Moon",Size);
@@ -11382,18 +10809,18 @@ function System(){
                 this.OrbitalFeatures--;
             } while(this.OrbitalFeatures > 0);
         }
-
+        
         //close bullet point group
         output += "</ul>";
-
+        
         //do not increase the Planet Counter if this is a Moon
         //do not increase the Moon Number if this is a Planet
         if(!Moon){this.PlanetNumber++;}else{this.MoonNumber++;}
-
+        
         //deliver the summary of the planet
         return output;
     }
-
+    
     //Generates a list of warp connections for the system
     this.WriteWarpRoutes = function(connections){
         //create an output variable
@@ -11405,7 +10832,7 @@ function System(){
             var TravelTime = []; //how long does it normally take to travel this route?
             var RouteStability = []; //what is the stability of the route?
             var DestinationID = []; //what is the ID of the token this system connects to?
-
+            
             var piece = "";
             var pieces = [];
             //dismantle the input piece by piece
@@ -11442,7 +10869,7 @@ function System(){
                     var connectedGraphic = getObj('graphic',pieces[i+2]);
                     //was this graphic found and does it represent anything?
                     if(connectedGraphic && connectedGraphic.get("represents")){
-                        textOutput += "<u><a href=\"http://journal.roll20.net/character/" + connectedGraphic.get("represents") + "\">" + connectedGraphic.get("name") +  "</a></u>";
+                        textOutput += "<u><a href=\"http://journal.roll20.net/character/" + connectedGraphic.get("represents") + "\">" + connectedGraphic.get("name") +  "</a></u>"; 
                     } else {
                         textOutput += "?????";
                     }
@@ -11457,10 +10884,10 @@ function System(){
             //close off this bullet point section
             textOutput += "</ul>";
         }
-
+        
         return textOutput;
     }
-
+    
     //Generates the System with Planets, Territories, and Xenos. Saves it into a handout.
     this.Generate = function(input,connections){
       //default the connections input to blank
@@ -11488,22 +10915,22 @@ function System(){
             default: this.Sector = "K"; //Kronos Expanse ~ Increase System Features by 2
         }
       }
-
-      //keep searching for New World i until you don't find it
-
+      
+      //keep searching for New World i until you don't find it 
+      
       var UniqueName = 'System ' + this.Sector + "-" + this.SystemNumber.toString();
-      var OldSystems = findObjs({ type: 'character', name: UniqueName });
+      var OldSystems = findObjs({ type: 'character', name: UniqueName });      
       while(OldSystems.length > 0){
           this.SystemNumber++;
           UniqueName = 'System ' + this.Sector + "-" + this.SystemNumber.toString();
           OldSystems = findObjs({ type: 'character', name: UniqueName });
       }
-
-    //create the handout with the unique name
+      
+    //create the handout with the unique name  
       var NewSystem = createObj("character", {
         name:  UniqueName
       });
-
+      
     //save the character sheet id
     output.id = NewSystem.id;
     output.SystemName = UniqueName;
@@ -11511,17 +10938,17 @@ function System(){
     //set up the Notes and GMNotes for the handout
     var Notes = "";
     var GMNotes = "";
-
+    
     //general storage for numbers, both counters and random Ints
     var Die = 1;
-    var i = 0;
+    var i = 0; 
     var j = 0;
-
+    
     //System Features
     var FeaturesTotal = 0; //# of Features in the system.
     var AsteroidBounty = 0; //Due to bounty, Asteroids could receive additional resources
     var PlanetMinimum = 0; // the minimum number of planets in this system
-
+    
     //System Elements
     var AsteroidBelts = [0,0,0];    //determines the population of this element in each Solar Zone
     var AsteroidClusters = [0,0,0]; //determines the population of this element in each Solar Zone
@@ -11534,17 +10961,17 @@ function System(){
     var SolarFlares = [0,0,0];      //determines the population of this element in each Solar Zone
     var StarshipGraveyards = [0,0,0];//determines the population of this element in each Solar Zone
     var ResourceType;               //storage variable for the type of Resource that will be present in the element
-
+    
     //Star Creation
     var StarsTotal = 1;         //# of Stars in the system
     var Elements = [0,0,0];     //determines the bonus number of system elements in this region. Can be negative.
-
+    
     //Gas Giant Creation
     var Gravity = 0;  //determines the gravity of the planet
-
+    
     ///write any warp routes down if they exist
     GMNotes += this.WriteWarpRoutes(connections);
-
+    
     //=====System Features=====
     //The Calaxis Sector has 0 features as the remaining worlds as rather unnotable
     if(this.Sector == "C"){
@@ -11570,7 +10997,7 @@ function System(){
         FeaturesTotal--;
         //roll for a random System Feature
         i = randomInteger(10);
-
+        
         //Handles all the Sector specific exceptions
         //Replace Pirate Den with a biased reroll in the Outer Reaches (few Pirates have survived the creeping ruin of the Tyranids and Necrons)
         if(i == 5 && this.Sector == "O"){i = randomInteger(5);}
@@ -11580,15 +11007,15 @@ function System(){
         if(i == 10 && this.Sector == "O"){i = 8 + randomInteger(2);}
         //replace Warp Stasis with a chance for Warp Turbulence in the Screaming Vortex and Hadex Anomely
         if(i == 9 && (this.Sector == "H" || this.Sector == "S")){i = 8 + randomInteger(2);}
-
+        
         //based on what was rolled and editted, add a System Element
         switch(i) {
             case 1: GMNotes += "<strong>Bountiful</strong>: ";
             switch(randomInteger(4)){
-                case 1: GMNotes += "Add one Asteroid Belt or Asteroid Cluster to any one Solar Zone.";
+                case 1: GMNotes += "Add one Asteroid Belt or Asteroid Cluster to any one Solar Zone."; 
                     if(randomInteger(2) == 1){AsteroidBelts[randomInteger(3)-1]++;}else{AsteroidClusters[randomInteger(3)-1]++;}
                 break;
-                case 2: GMNotes += "Roll an additional time on Table 1-20 Mineral Resources for each Asteroid Belt and Cluster.";
+                case 2: GMNotes += "Roll an additional time on Table 1-20 Mineral Resources for each Asteroid Belt and Cluster."; 
                     AsteroidBounty++;
                 break;
                 case 3: GMNotes += "Roll one additional time on Table 1-20 Minderal Resources when generating Planets in this System";
@@ -11600,36 +11027,36 @@ function System(){
             } break;
             case 2: GMNotes += "<strong>Gravity Tides</strong>: ";
             switch(randomInteger(3)){
-                case 1: GMNotes += "Add D5 " + GetLink("Gravity Tides") +  " to random Solar Zones.";
+                case 1: GMNotes += "Add D5 " + getLink("Gravity Tides") +  " to random Solar Zones."; 
                     i = randomInteger(5);
-                    while(i > 0){GravityRiptides[randomInteger(3)-1]++; i--;}
-                break;
-                case 2: GMNotes += "The gravity wells surrounding Planets in this System churn like whirlpools, battering orbiting vessels with their fluctuations. Safely entering orbit with a voidship requires a Difficult (–10) " + GetLink("Pilot") + "(Space Craft) Test, causing the loss of 1 point of Hull Integrity for every two Degrees of Failure. Small craft can enter and exit the gravity well only after the pilot passes a Very Hard (–30)" + GetLink("Pilot") + "(Flyers) Test. Every full day spent in orbit requires an additional " + GetLink("Pilot") + " Test"; break;
+                    while(i > 0){GravityRiptides[randomInteger(3)-1]++; i--;}                
+                break;                    
+                case 2: GMNotes += "The gravity wells surrounding Planets in this System churn like whirlpools, battering orbiting vessels with their fluctuations. Safely entering orbit with a voidship requires a Difficult (–10) " + getLink("Pilot") + "(Space Craft) Test, causing the loss of 1 point of Hull Integrity for every two Degrees of Failure. Small craft can enter and exit the gravity well only after the pilot passes a Very Hard (–30)" + getLink("Pilot") + "(Flyers) Test. Every full day spent in orbit requires an additional " + getLink("Pilot") + " Test"; break;
                 case 3: GMNotes += "Travel between Planets within this System takes half the usual time."; break;
             } break;
-            case 3: GMNotes += "<strong>Haven</strong>: ";
+            case 3: GMNotes += "<strong>Haven</strong>: "; 
             switch(randomInteger(3)){
-                case 1: GMNotes += "Add one Planet to each Solar Zone.";
+                case 1: GMNotes += "Add one Planet to each Solar Zone."; 
                 Planets[this.InnerCauldron]++; Planets[this.PrimaryBiosphere]++; Planets[this.OuterReaches]++;
                 break;
                 case 2: GMNotes += "Planets within the System’s Primary Biosphere receive +1 to the result of the roll on Table 1–9: Atmospheric Presence and +2 to the result of the roll on Table 1–10: Atmospheric Composition (see page 21).";
                     this.BiosphereAtmosphere++;
                 break;
-                case 3: GMNotes += "Planets in this System add +2 to the result of any roll they make on Table 1–12: Habitability (see page 23).";
+                case 3: GMNotes += "Planets in this System add +2 to the result of any roll they make on Table 1–12: Habitability (see page 23)."; 
                     this.HavenHabitability += 2;
                 break;
             } break;
-            case 4: GMNotes += "<strong>Ill-Omened</strong>: ";
+            case 4: GMNotes += "<strong>Ill-Omened</strong>: "; 
             switch(randomInteger(7)){
                 case 1: GMNotes += "Any ship entering the System for the first time loses 1d5 Morale, unless one of the Explorers passes a Challenging (+0) [Charm] or [Intimidate] Test. If the nature and reputation of the System was known to the crew ahead of time, the Test difficulty and Morale loss for failure might be higher at the GM’s discretion."; break;
                 case 2: GMNotes += "All Morale loss suffered within this System is increased by 1, as the crew attribute whatever misfortune they suffer to the malevolent will of their surroundings. This does not apply to Morale lost for entering a System the first time (even the most fearful voidsman’s imagination can only concoct so many horrors!)."; break;
-                case 3: GMNotes += "Any " + GetLink("Fear") +  " Tests made within the System are made at an additional –10 penalty."; break;
-                case 4: GMNotes += "When spending a " + GetLink("Fate Point") +  " within this System, roll 1d10. On a 9, it has no effect. If it was spent to alter a Test in some way, it counts as the only Fate Point that can be used for that Test as normal, even though it had no effect. Void Born Explorers recover " + GetLink("Fate Point") +  "s lost in this manner (thanks to the result of 9) as normal."; break;
+                case 3: GMNotes += "Any " + getLink("Fear") +  " Tests made within the System are made at an additional –10 penalty."; break;
+                case 4: GMNotes += "When spending a " + getLink("Fate Point") +  " within this System, roll 1d10. On a 9, it has no effect. If it was spent to alter a Test in some way, it counts as the only Fate Point that can be used for that Test as normal, even though it had no effect. Void Born Explorers recover " + getLink("Fate Point") +  "s lost in this manner (thanks to the result of 9) as normal."; break;
                 case 5: GMNotes += "All Willpower Tests made within this System are made at a –10 penalty."; break;
-                case 6: GMNotes += "Whenever an Explorer would gain " + GetLink("Insanity") +  " Points while within this System, double the amount of Insanity Points he gains."; break;
-                case 7: GMNotes += "Attempting to use Psychic Techniques from the Divination Discipline to gain information about the System or anything within it requires the user to pass a Difficult (–10) " + GetLink("Fear") +  " Test before he can attempt the " + GetLink("Focus Power Test") +  "."; break;
+                case 6: GMNotes += "Whenever an Explorer would gain " + getLink("Insanity") +  " Points while within this System, double the amount of Insanity Points he gains."; break;
+                case 7: GMNotes += "Attempting to use Psychic Techniques from the Divination Discipline to gain information about the System or anything within it requires the user to pass a Difficult (–10) " + getLink("Fear") +  " Test before he can attempt the " + getLink("Focus Power Test") +  "."; break;
             } break;
-            case 5: GMNotes += "<strong>Pirate Den</strong>: ";
+            case 5: GMNotes += "<strong>Pirate Den</strong>: "; 
             i = randomInteger(5)+4;
             GMNotes += i.toString() + " " + this.RandomPirate() + " ships";
             if(randomInteger(10) > 4){GMNotes += " and one space station";}
@@ -11641,7 +11068,7 @@ function System(){
             if(randomInteger(3) == 1){StarshipGraveyards[this.OuterReaches]++;}
             if(randomInteger(3) == 1){DerelictStations[this.InnerCauldron]++;}
             if(randomInteger(3) == 1){DerelictStations[this.PrimaryBiosphere]++;}
-            if(randomInteger(3) == 1){DerelictStations[this.OuterReaches]++;}
+            if(randomInteger(3) == 1){DerelictStations[this.OuterReaches]++;}                    
             this.EmpireRuins++;
             this.EmpireAbundance++;
             switch(randomInteger(2)){
@@ -11657,30 +11084,30 @@ function System(){
                     PlanetMinimum += 4;
                     this.VoidInhabitants.push(this.RandomRace("Name"));
             break;
-            case 8: GMNotes += "<strong>Stellar Anomaly</strong>: ";
+            case 8: GMNotes += "<strong>Stellar Anomaly</strong>: "; 
             switch(randomInteger(3)){
                 case 1:
                 GMNotes += "Reduce the number of Planets generated by 2, as the presence of a Stellar Anomaly tends to disrupt the formation of any bodies smaller than itself.";
-                Planets[randomInteger(3)-1]--;
+                Planets[randomInteger(3)-1]--; 
                 Planets[randomInteger(3)-1]--;
                 break;
-                case 2: GMNotes += GetLink("Scholastic Lore") +  "(Astromancy) and " + GetLink("Navigation") +  "(Stellar) Tests made to plot routes through the System, or to determine position within it, receive a +10 bonus."; break;
+                case 2: GMNotes += getLink("Scholastic Lore") +  "(Astromancy) and " + getLink("Navigation") +  "(Stellar) Tests made to plot routes through the System, or to determine position within it, receive a +10 bonus."; break;
                 case 3: GMNotes += "The massive forces exerted by a Stellar Anomaly sometimes seems to stabilise local Warp routes, though many dismiss this as voidsmen’s superstition and no record exists of any Navigator’s comment on the matter. Ships travelling through the System only need to roll for Warp Travel Encounters for every seven full days of travel (or once, for a trip of under seven days). However, the same forces make the necessity of occasional drops into realspace for course adjustment into an additional hazard. On any result of doubles when rolling for a Warp Travel encounter, the vessel runs afoul of a hazard in realspace instead of applying the normally generated result. The effects of such hazards can be extrapolated from similar System Elements, such as Gravity Riptides, Radiation Bursts, or Solar Flares."; break;
             } break;
-            case 9: GMNotes += "<strong>Warp Stasis</strong>: ";
+            case 9: GMNotes += "<strong>Warp Stasis</strong>: "; 
             switch(randomInteger(4)){
                 case 1: GMNotes += "Travel to and from the System is becalmed. Double the base travel time of any trip entering or leaving the area. The time required to send Astrotelepathic messages into or out of the System is likewise doubled. In addition, pushing a coherent message across its boundaries requires incredible focus; Astropaths suffer a –3 penalty to their Psy Rating for the purposes of sending Astrotelepathic messages from this System."; break;
-                case 2: GMNotes += GetLink("Focus Power Test") +  "s and " + GetLink("Psyniscience") +  " Tests within the System are made at a –10 penalty."; break;
+                case 2: GMNotes += getLink("Focus Power Test") +  "s and " + getLink("Psyniscience") +  " Tests within the System are made at a –10 penalty."; break;
                 case 3: GMNotes += "Psychic Techniques cannot be used at the Push level within the System."; break;
                 case 4: GMNotes += "When rolling on Table 6–2: Psychic Phenomena (see page 160 of the ROGUE TRADER Core Rulebook) within this System, roll twice and use the lower result."; break;
             } break;
-            case 10: GMNotes += "<strong>Warp Turbulence</strong>: ";
+            case 10: GMNotes += "<strong>Warp Turbulence</strong>: "; 
             switch(randomInteger(5)){
-                case 1: GMNotes += "Navigators suffer a –10 penalty to " + GetLink("Navigation") +  "(Warp) Tests for Warp Jumps that begin or end in this System."; break;
+                case 1: GMNotes += "Navigators suffer a –10 penalty to " + getLink("Navigation") +  "(Warp) Tests for Warp Jumps that begin or end in this System."; break;
                 case 2: GMNotes += "Add +10 to all rolls for on Table 6–2: Psychic Phenomena (see page 160 of the ROGUE TRADER Core Rulebook) made within the System."; break;
-                case 3: GMNotes += "Whenever an Explorer would gain " + GetLink("Corruption") +  " Points within the System, increase the amount gained by 1."; break;
+                case 3: GMNotes += "Whenever an Explorer would gain " + getLink("Corruption") +  " Points within the System, increase the amount gained by 1."; break;
                 case 4: GMNotes += "Add +1 to the Psy Rating of any Psychic Technique used at the Unfettered or Push levels."; break;
-                case 5: GMNotes += "One of the Planets in the System is engulfed in a permanent Warp storm, rendering it inaccessible to all but the most dedicated (and insane) of travellers. " + GetLink("Navigation") +  "(Warp) Tests made within this System suffer a –20 penalty due to the difficulty of plotting courses around this hazard."; break;
+                case 5: GMNotes += "One of the Planets in the System is engulfed in a permanent Warp storm, rendering it inaccessible to all but the most dedicated (and insane) of travellers. " + getLink("Navigation") +  "(Warp) Tests made within this System suffer a –20 penalty due to the difficulty of plotting courses around this hazard."; break;
             } break;
             break;
         }
@@ -11689,8 +11116,8 @@ function System(){
     }
     //close up the bullet point group
     GMNotes += "</ul>";
-
-
+    
+    
     //=====Star Creation=====
     GMNotes += "<br>Stars<br><ul>";
     Notes += "Stars<br><ul>";
@@ -11736,7 +11163,7 @@ function System(){
         }
         //what is the star type?
         switch(roll){
-            case 1:
+            case 1: 
                 GMNotes += "Mighty</strong>: The fierce light of this star dominates its system utterly. Its coloration is likely to be blue or blue-white. The Inner Cauldron is dominant, and the Primary Biosphere is weak.</li>";
                 Notes += "Mighty</strong>: The fierce light of this star dominates its system utterly. Its coloration is likely to be blue or blue-white.</li>";
                 Elements[this.InnerCauldron] += randomInteger(3);
@@ -11748,13 +11175,13 @@ function System(){
                 Notes += "Vigorous</strong>: A steady illumination burns forth from the heart of this star. Its coloration is likely to be a pure white.</li>";
                 output.StarTypes.push("#ffffff");
                 break;
-            case 5: case 6:
+            case 5: case 6: 
                 GMNotes += "Luminous</strong>: Though it is has been long aeons since this star has shone at its brightest, a constant glow nonetheless provides for the system. It is likely to be yellow or yellow-orange in colour. The Inner Cauldron is weak.</li>";
                 Notes += "Luminous</strong>: Though it is has been long aeons since this star has shone at its brightest, a constant glow nonetheless provides for the system. It is likely to be yellow or yellow-orange in colour.</li>";
                 Elements[this.InnerCauldron] -= randomInteger(3);
                 output.StarTypes.push("#ffff00");
                 break;
-            case 7:
+            case 7: 
                 GMNotes += "Dull</strong>: The end of the star’s life advances inexorably, although it can still burn for millennia yet. Many stars of this type are of a vast size, seemingly incongruous with their wan light. Its coloration is likely a sullen red. The Outer Reaches are Dominant.</li>";
                 Notes += "Dull</strong>: The end of the star’s life advances inexorably, although it can still burn for millennia yet. Many stars of this type are of a vast size, seemingly incongruous with their wan light. Its coloration is likely a sullen red.</li>";
                 Elements[this.OuterReaches] += randomInteger(3);
@@ -11772,18 +11199,18 @@ function System(){
                 StarsTotal += 2; //the system is at least binary. Roll again for both this star and the new one.
                 break;
         }
-    }
+    }    
     //close a bullet point group
     GMNotes += "</ul>";
     Notes += "</ul>";
-
+    
     //=====System Elements=====
-
+    
     //be sure there is at least one chance to generate an element in each region
     if(Elements[this.InnerCauldron] < 1){Elements[this.InnerCauldron] = 1;}
     if(Elements[this.PrimaryBiosphere] < 1){Elements[this.PrimaryBiosphere] = 1;}
     if(Elements[this.OuterReaches] < 1){Elements[this.OuterReaches] = 1;}
-
+    
     //generate Inner Cauldron Elements
     for(j = 0; j < Elements[this.InnerCauldron]; j++) {
         i = randomInteger(100);
@@ -11804,7 +11231,7 @@ function System(){
             SolarFlares[this.InnerCauldron]++;
         }
     }
-
+    
     //generate Primary Biosphere Elements
     for(j = 0; j < Elements[this.PrimaryBiosphere]; j++) {
          i = randomInteger(100);
@@ -11825,7 +11252,7 @@ function System(){
             StarshipGraveyards[this.PrimaryBiosphere]++;
         }
     }
-
+    
     //generate Outer Reaches Elements
     for(j = 0; j < Elements[this.OuterReaches]; j++) {
          i = randomInteger(100);
@@ -11848,39 +11275,39 @@ function System(){
             StarshipGraveyards[this.OuterReaches]++;
         }
     }
-
+    
     //be sure there are no negative planets
     for(var i = 0; i < 3; i++){
         if(Planets[i]<0){Planets[i] = 0;}
     }
-
+    
     //be sure the number of planets meets the required minimum for starfarer's System Feature
     while(Planets[this.InnerCauldron]+Planets[this.PrimaryBiosphere]+Planets[this.OuterReaches] < PlanetMinimum){
         Planets[randomInteger(3)-1]++;
     }
-
+    
     //detail the elements
     for(this.region = 0; this.region < 3; this.region++){
         //add the title for the region
-        switch(this.region){
-            case 0:
-                GMNotes += "<hr><strong>Inner Cauldron</strong><br><br>";
-                Notes += "<strong>Inner Cauldron</strong><ul>";
+        switch(this.region){ 
+            case 0: 
+                GMNotes += "<hr><strong>Inner Cauldron</strong><br><br>"; 
+                Notes += "<strong>Inner Cauldron</strong><ul>"; 
             break;
-            case 1:
+            case 1: 
                 GMNotes += "<hr><strong>Primary Biosphere</strong><br><br>";
-                Notes += "<strong>Primary Biosphere</strong><ul>";
+                Notes += "<strong>Primary Biosphere</strong><ul>"; 
             break;
-            case 2:
+            case 2: 
                 GMNotes += "<hr><strong>Outer Reaches</strong><br><br>";
-                Notes += "<strong>Outer Reaches</strong><ul>";
+                Notes += "<strong>Outer Reaches</strong><ul>"; 
             break;
         }
-
+        
         //Add Asteroid Belts
         for(j = 0; j < AsteroidBelts[this.region]; j++){
-            GMNotes += GetLink("Asteroid Belt") + "<ul>";
-            Notes += "<li>" + GetLink("Asteroid Belt") + "</li>";
+            GMNotes += getLink("Asteroid Belt") + "<ul>";
+            Notes += "<li>" + getLink("Asteroid Belt") + "</li>";
             //add a random number of minerals, including any System Feature Bonuses
             i = randomInteger(5) + AsteroidBounty;
             while(i > 0) {
@@ -11893,11 +11320,11 @@ function System(){
             }
             GMNotes += "</ul>";
         }
-
+        
         //Add Asteroid Clusters
         for(j = 0; j < AsteroidClusters[this.region]; j++){
-            GMNotes += GetLink("Asteroid Cluster") + "<ul>";
-            Notes += "<li>" + GetLink("Asteroid Cluster") + "</li>";
+            GMNotes += getLink("Asteroid Cluster") + "<ul>";
+            Notes += "<li>" + getLink("Asteroid Cluster") + "</li>";
             //add a random number of minerals, including any System Feature Bonuses
             i = randomInteger(5) + AsteroidBounty;
             while(i > 0) {
@@ -11908,10 +11335,10 @@ function System(){
                     GMNotes += this.RandomAdventure();
                 }
             }
-
+            
             GMNotes += "</ul>";
         }
-
+        
         //Add Derelict Stations
         for(j = 0; j < DerelictStations[this.region]; j++){
             GMNotes += "Derelict Station<ul><li>";
@@ -11931,7 +11358,7 @@ function System(){
             if(i === "Egarian" || (Number(i) >= 1 && Number(i) <= 10)) {
                 ResourceType = "Egarian";
                 GMNotes += "<strong>Egarian Void-maze</strong>: The station is a bafflfling construct of crystals with no readily apparent purpose or function, but built along similar geometrical principles as the dead cities of the Egarian Dominion.";
-
+                
             } else if(i === "Eldar" || (Number(i) >= 11 && Number(i) <= 20)) {
                 ResourceType = "Eldar";
                 switch(randomInteger(3)){
@@ -11957,7 +11384,7 @@ function System(){
             }
             */
             GMNotes += "</li>";
-
+            
             //exactly how many resources does it contain?
             for(k = randomInteger(5)-1; k > 0; k--) {
                 GMNotes += "<li>" + this.RandomRuin(randomInteger(100),ResourceType) + "</li>";
@@ -11968,38 +11395,38 @@ function System(){
             }
             GMNotes += "</ul>";
         }
-
+        
         //Add Dust Clouds
         if(DustClouds[this.region] > 0) {
-            GMNotes += GetLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")<br><br>";
-            Notes += "<li>" + GetLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")</li>";
+            GMNotes += getLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")<br><br>";
+            Notes += "<li>" + getLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")</li>";
         }
-
+        
         //Add Gravity Riptides
         if(GravityRiptides[this.region] > 0) {
-            GMNotes += GetLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Gravity Tides freely available to the player
-            //Notes += "<li>" + GetLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")</li>";
         }
-
+        
         //Add Radiation Bursts
         if(RadiationBursts[this.region] > 0) {
-            GMNotes += GetLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Radiation Bursts freely available to the player
-            //Notes += "<li>" + GetLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")</li>";
         }
-
+        
         //Add Solar Flares
         if(SolarFlares[this.region] > 0) {
-            GMNotes += GetLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Solar Flares freely available to the player
-            //Notes += "<li>" + GetLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")</li>";
         }
-
+        
         //Add Starship Graveyards
         for(j = 0; j < StarshipGraveyards[this.region]; j++){
-            GMNotes += GetLink("Starship Graveyard") + "<ul>";
-            Notes += "<li>" + GetLink("Starship Graveyard") + "</li>";
+            GMNotes += getLink("Starship Graveyard") + "<ul>";
+            Notes += "<li>" + getLink("Starship Graveyard") + "</li>";
             ResourceType = [0,0];
             for(k = 0; k < ResourceType.length; k++){
                 //if there is a preset empire, go with the ruined empire. Otherwise generate a random ship
@@ -12042,35 +11469,35 @@ function System(){
                     GMNotes += this.RandomAdventure();
                 }
             }
-
+            
             //close the bullet group
             GMNotes += "</ul>";
         }
-
-
-
+        
+        
+        
         //Add Planets
         for(j = 0; j < Planets[this.region]; j++){
-            GMNotes += GetLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber;
-            Notes += "<li>" + GetLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
+            GMNotes += getLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber;
+            Notes += "<li>" + getLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
             GMNotes += this.RandomPlanet();
         }
-
+        
         //Add Gas Giants
         for(j = 0; j < GasGiants[this.region]; j++){
-            GMNotes += GetLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "<ul>";
-            Notes += "<li>" + GetLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
+            GMNotes += getLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "<ul>";
+            Notes += "<li>" + getLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
             //reset temporary planet generation variables
             Gravity = 0;
             this.RegionShift = 0;
             this.OrbitalFeatures = 0;
             this.MoonNumber = 1;
-
+            
             //Generate the Body of the Gas Giant
             GMNotes += "<li><strong>Body</strong>: ";
-
+            
             switch(randomInteger(10)){
-                case 1: case 2: GMNotes += "Gas Dwarf";
+                case 1: case 2: GMNotes += "Gas Dwarf"; 
                 Gravity = -5;
                 break;
                 case 3: case 4: case 5: case 6: case 7: case 8: GMNotes += "Gas Giant"; break;
@@ -12086,7 +11513,7 @@ function System(){
             }
             //close this bullet point
             GMNotes += "</li>";
-
+            
             //Generate the Gravity of the Gas Giant
             GMNotes += "<li><strong>Gravity</strong>: ";
             i = Gravity + randomInteger(10);
@@ -12110,7 +11537,7 @@ function System(){
             }
             //close this bullet point
             GMNotes += "</li>";
-
+            
             //be sure at least one orbital feature will have a chance at being generated
             //generate Orbital Features for the Gas Giant
             do {
@@ -12142,18 +11569,18 @@ function System(){
         }
         Notes += "</ul>"
     }
-
+    
     //record the Handout Notes
     NewSystem.set('bio',Notes);
     NewSystem.set('gmnotes',GMNotes);
-
+    
     //edit the gmnotes of the handout
-    sendChat("System", "/w gm Generated " + GetLink(UniqueName, "http://journal.roll20.net/character/" + NewSystem.id));
-
+    sendChat("System", "/w gm Generated " + getLink(UniqueName, "http://journal.roll20.net/character/" + NewSystem.id));
+    
     //output the id of the character sheet and a list of the stars
     return output;
     }
-
+   
 }
 
 on("chat:message", function(msg) {
@@ -12161,21 +11588,21 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
     mySystem = new System();
     mySystem.Generate(msg.content);
     delete mySystem;
-}
+} 
 });//Generates a random vehicle for the use of a native Xenos
     this.RandomVehicle = function(type, tech, creature){
         //type is selected outside of this function, the type will determine the weapons, size, movement, and special abilities
         //the possibilities for type are as follows: miniature, light vehicle, transport, heavy vehicle, artillery, fighter, bomber, lander, titan
-
-        //tech is selected outside of this function, it
+        
+        //tech is selected outside of this function, it 
         //the possibilities for tech range from -3 to 1
-
+        
         //creature is the entire creature object with all of its stats and abilities
-
+        
         //create an object to contain all of the vehicle stats
         vehicle =  {WS: 0, BS:0, S:0, T:0, Ag:0, Wp:0, It:0, Pr:0, Fe:0,
                     Unnatural_WS: 0, Unnatural_BS:0, Unnatural_S:0, Unnatural_T:0, Unnatural_Ag:0, Unnatural_Wp:0, Unnatural_It:0, Unnatural_Pr:0, Unnatural_Fe:0,
-                    Weapons: [],
+                    Weapons: [], 
                     MType: "",
                     TSpeed: 0,
                     AUs: 0,
@@ -12185,7 +11612,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     FArmour: 0, SArmour: 0, RArmour: 0,
                     CarryC: 0,
                     Special: ""};
-
+        
         //use the vehicle type to generate all of its weapons and bonuses
         switch(type){
             case "miniature":
@@ -12273,16 +11700,16 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             case "titan":
                 break;
         }
-
+        
         //randomly determine movement type
         switch(this.TechRoll(tech-1,10)){
-            case 1:
+            case 1:  
                 vehicle.Movement = "beast";
                 break;
-            case 2:
+            case 2:  
                 vehicle.Movement = "chariot";
                 break;
-            case 3: case 4: case 5:
+            case 3: case 4: case 5:  
                 vehicle.Movement = "locomotion";
                 break;
             case 6: case 7: case 8:
@@ -12292,18 +11719,18 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 vehicle.Movement = "skimmer";
                 break;
         }
-
-
+        
+        
     }    //Re-roll multiple dice a number of times seeking the lowest or highest result
     this.TechRoll = function(rerolls, diceSides, diceNum){
         //how many dice are we rolling each time?
         diceNum = diceNum || 1;
         //is this a D5, D10, D100, etc?
         diceSides = diceSides || 10;
-        //how many times are we attempting to reroll this
+        //how many times are we attempting to reroll this 
         //and are we searching for the lowest (negative) or the highest (positive)
         rerolls = rerolls || -1;
-
+        
         //save the output
         var output = 0;
         //roll the dice for the first time
@@ -12316,7 +11743,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //keep rerolling for all of the rerolls
         for(var i = 0; i < Math.abs(rerolls); i++){
             //make a temporary variable for each re-roll
-            var temproll = 0;
+            var temproll = 0;    
             //keep rolling dice for the roll up to diceNum
             for(var j = 0; j < diceNum; j++){
                 //roll a D5, D10, etc as speciied
@@ -12332,7 +11759,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //report the final roll
         return output;
     }
-
+    
     //Generates a random weapon to detail a native creature or their vehicle.
     this.RandomWeapon = function(type, tech, qualities, blast, rangemultiplier, clipmultiplier){
       //==input==
@@ -12353,11 +11780,11 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
       //==output==
         //create an object that will contain all of the weapon's stats
         weapon = {};
-
+    
         //how many qualities does this weapon have?
         var totalQualities = this.TechRoll(tech,5)-1;
         weapon.Qualities = "";
-
+    
         //which type of weapon are we working with?
         switch(type){
             case "thrown":
@@ -12508,7 +11935,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         } else{
             weapon.Range = 0;
         }
-
+        
         //determine the damage type (Impact, Rending, Explosive, Energy)
         //lower tech nations are much more likely to have impact weapons
         switch(this.TechRoll(tech,10)){
@@ -12528,11 +11955,11 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //will we force the first property to be Primitive?
         if(randomInteger(100) < 1 + -20*tech){
             //add a link to Primitive and prepare for more qualities
-            weapon.Qualities += GetLink("Primitive") + ", ";
+            weapon.Qualities += getLink("Primitive") + ", ";
             //reduce the number of weapon qualities by one
             totalQualities--;
         }
-
+        
         //add the total number of random qualities to the weapon
         var randomQuality;
         //preset all of the valued qualities to negative one
@@ -12559,16 +11986,16 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
             switch(randomQuality){
                 case 1:
-                    weapon.Qualities += GetLink("Corrosive") + ", ";
+                    weapon.Qualities += getLink("Corrosive") + ", ";
                     break;
                 case 2:
-                    weapon.Qualities += GetLink("Decay") + ", ";
+                    weapon.Qualities += getLink("Decay") + ", ";
                     break;
                 case 3:
-                    weapon.Qualities += GetLink("Irradiated") + ", ";
+                    weapon.Qualities += getLink("Irradiated") + ", ";
                     break;
                 case 4:
-                    weapon.Qualities += GetLink("Overcharge") + ", ";
+                    weapon.Qualities += getLink("Overcharge") + ", ";
                     break;
                 case 5:
                     //start at 0
@@ -12589,7 +12016,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     weapon.Crippling += randomInteger(5);
                     break;
                 case 9:
-                    weapon.Qualities += GetLink("Deadly Snare") + ", ";
+                    weapon.Qualities += getLink("Deadly Snare") + ", ";
                     break;
                 case 10:
                     //start at 0
@@ -12602,13 +12029,13 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     weapon.Felling += randomInteger(5);
                     break;
                 case 12:
-                    weapon.Qualities += GetLink("Fire") + ", ";
+                    weapon.Qualities += getLink("Fire") + ", ";
                     break;
                 case 13:
-                    weapon.Qualities += GetLink("Force") + ", ";
+                    weapon.Qualities += getLink("Force") + ", ";
                     break;
                 case 14:
-                    weapon.Qualities += GetLink("Gauss") + ", ";
+                    weapon.Qualities += getLink("Gauss") + ", ";
                     break;
                 case 15:
                     weapon.Hallucinogenic += randomInteger(5);
@@ -12622,16 +12049,16 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     weapon.Proven += randomInteger(5);
                     break;
                 case 18:
-                    weapon.Qualities += GetLink("Razor Sharp") + ", ";
+                    weapon.Qualities += getLink("Razor Sharp") + ", ";
                     break;
                 case 19:
-                    weapon.Qualities += GetLink("Rune Weapon") + ", ";
+                    weapon.Qualities += getLink("Rune Weapon") + ", ";
                     break;
                 case 20:
-                    weapon.Qualities += GetLink("Sanctified") + ", ";
+                    weapon.Qualities += getLink("Sanctified") + ", ";
                     break;
                 case 21:
-                    weapon.Qualities += GetLink("Shocking") + ", ";
+                    weapon.Qualities += getLink("Shocking") + ", ";
                     break;
                 case 22:
                     //start at 0
@@ -12639,25 +12066,25 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     weapon.Smoke += randomInteger(5);
                     break;
                 case 23:
-                    weapon.Qualities += GetLink("Snare") + ", ";
+                    weapon.Qualities += getLink("Snare") + ", ";
                     break;
                 case 24:
-                    weapon.Qualities += GetLink("Tainted") + ", ";
+                    weapon.Qualities += getLink("Tainted") + ", ";
                     break;
                 case 25:
-                    weapon.Qualities += GetLink("Tearing") + ", ";
+                    weapon.Qualities += getLink("Tearing") + ", ";
                     break;
                 case 26:
-                    weapon.Qualities += GetLink("Tesla") + ", ";
+                    weapon.Qualities += getLink("Tesla") + ", ";
                     break;
                 case 27:
                     weapon.Toxic += randomInteger(5);
                     break;
                 case 28:
-                    weapon.Qualities += GetLink("Unstable") + ", ";
+                    weapon.Qualities += getLink("Unstable") + ", ";
                     break;
                 case 29:
-                    weapon.Qualities += GetLink("Volatile") + ", ";
+                    weapon.Qualities += getLink("Volatile") + ", ";
                     break;
                 default:
                     //for ease of modifying in the future, scale back the random number by the number of generic qualities
@@ -12666,62 +12093,62 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     if(weapon.Type == "Melee"){
                         switch(randomQuality){
                             case 1:
-                                weapon.Qualities += GetLink("Balanced") + ", ";
+                                weapon.Qualities += getLink("Balanced") + ", ";
                                 break;
                             case 2:
-                                weapon.Qualities += GetLink("Defensive") + ", ";
-                                break;
+                                weapon.Qualities += getLink("Defensive") + ", ";
+                                break;    
                             case 3:
-                                weapon.Qualities += GetLink("Fist") + ", ";
+                                weapon.Qualities += getLink("Fist") + ", ";
                                 break;
                             case 4:
-                                weapon.Qualities += GetLink("Flexible") + ", ";
+                                weapon.Qualities += getLink("Flexible") + ", ";
                                 break;
                             case 5:
-                                weapon.Qualities += GetLink("Powerfield") + ", ";
+                                weapon.Qualities += getLink("Powerfield") + ", ";
                                 break;
                             case 6:
-                                weapon.Qualities += GetLink("Unbalanced") + ", ";
+                                weapon.Qualities += getLink("Unbalanced") + ", ";
                                 break;
                             case 7:
-                                weapon.Qualities += GetLink("Unwieldy") + ", ";
+                                weapon.Qualities += getLink("Unwieldy") + ", ";
                                 break;
                         }
                     //otherwise the weapon is ranged. Generate ranged qualities
                     }else{
                         switch(randomQuality){
                             case 1:
-                                weapon.Qualities += GetLink("Accurate") + ", ";
+                                weapon.Qualities += getLink("Accurate") + ", ";
                                 break;
                             case 2:
-                                weapon.Qualities += GetLink("Customised") + ", ";
+                                weapon.Qualities += getLink("Customised") + ", ";
                                 break;
                             case 3:
-                                weapon.Qualities += GetLink("Gyro-Stabalised") + ", ";
+                                weapon.Qualities += getLink("Gyro-Stabalised") + ", ";
                                 break;
                             case 4:
-                                weapon.Qualities += GetLink("Inaccurate") + ", ";
+                                weapon.Qualities += getLink("Inaccurate") + ", ";
                                 break;
                             case 5:
-                                weapon.Qualities += GetLink("Living Ammunition") + ", ";
+                                weapon.Qualities += getLink("Living Ammunition") + ", ";
                                 break;
                             case 6:
-                                weapon.Qualities += GetLink("Maximal") + ", ";
+                                weapon.Qualities += getLink("Maximal") + ", ";
                                 break;
                             case 7:
-                                weapon.Qualities += GetLink("Melta") + ", ";
+                                weapon.Qualities += getLink("Melta") + ", ";
                                 break;
                             case 8:
-                                weapon.Qualities += GetLink("Overheats") + ", ";
+                                weapon.Qualities += getLink("Overheats") + ", ";
                                 break;
                             case 9:
-                                weapon.Qualities += GetLink("Recharge") + ", ";
+                                weapon.Qualities += getLink("Recharge") + ", ";
                                 break;
                             case 10:
-                                weapon.Qualities += GetLink("Reliable") + ", ";
+                                weapon.Qualities += getLink("Reliable") + ", ";
                                 break;
                             case 11:
-                                weapon.Qualities += GetLink("Scatter") + ", ";
+                                weapon.Qualities += getLink("Scatter") + ", ";
                                 break;
                             case 12:
                                 //have we already added the Spray quality?
@@ -12741,13 +12168,13 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                                 }
                                 break;
                             case 13:
-                                weapon.Qualities += GetLink("Storm") + ", ";
+                                weapon.Qualities += getLink("Storm") + ", ";
                                 break;
                             case 14:
-                                weapon.Qualities += GetLink("Twin-linked") + ", ";
+                                weapon.Qualities += getLink("Twin-linked") + ", ";
                                 break;
                             case 15:
-                                weapon.Qualities += GetLink("Unreliable") + ", ";
+                                weapon.Qualities += getLink("Unreliable") + ", ";
                                 break;
                             case 16:
                                 weapon.AreaSaturation += weapon.Range / randomInteger(50);
@@ -12755,47 +12182,47 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         }
                     }
             }
-
+            
         }
         //add the numerical qualities to the weapons
         if(weapon.Blast >= 0){
-            weapon.Qualities += GetLink("Blast") + "(" + weapon.Blast.toString() + "), ";
+            weapon.Qualities += getLink("Blast") + "(" + weapon.Blast.toString() + "), ";
         }
         if(weapon.Claws >= 0){
-            weapon.Qualities += GetLink("Claws") + "(" + weapon.Claws.toString() + "), ";
+            weapon.Qualities += getLink("Claws") + "(" + weapon.Claws.toString() + "), ";
         }
         if(weapon.Concussive >= 0){
-            weapon.Qualities += GetLink("Concussive") + "(" + weapon.Concussive.toString() + "), ";
+            weapon.Qualities += getLink("Concussive") + "(" + weapon.Concussive.toString() + "), ";
         }
         if(weapon.Crippling >= 0){
-            weapon.Qualities += GetLink("Crippling") + "(" + weapon.Crippling.toString() + "), ";
+            weapon.Qualities += getLink("Crippling") + "(" + weapon.Crippling.toString() + "), ";
         }
         if(weapon.Devastating >= 0){
-            weapon.Qualities += GetLink("Devastating") + "(" + weapon.Devastating.toString() + "), ";
+            weapon.Qualities += getLink("Devastating") + "(" + weapon.Devastating.toString() + "), ";
         }
         if(weapon.Felling >= 0){
-            weapon.Qualities += GetLink("Felling") + "(" + weapon.Felling.toString() + "), ";
+            weapon.Qualities += getLink("Felling") + "(" + weapon.Felling.toString() + "), ";
         }
         if(weapon.Hallucinogenic >= 0){
-            weapon.Qualities += GetLink("Hallucinogenic") + "(" + weapon.Hallucinogenic.toString() + "), ";
+            weapon.Qualities += getLink("Hallucinogenic") + "(" + weapon.Hallucinogenic.toString() + "), ";
         }
         if(weapon.Haywire >= 0){
-            weapon.Qualities += GetLink("Haywire") + "(" + weapon.Haywire.toString() + "), ";
+            weapon.Qualities += getLink("Haywire") + "(" + weapon.Haywire.toString() + "), ";
         }
         if(weapon.Proven >= 0){
-            weapon.Qualities += GetLink("Proven") + "(" + weapon.Proven.toString() + "), ";
+            weapon.Qualities += getLink("Proven") + "(" + weapon.Proven.toString() + "), ";
         }
         if(weapon.Smoke >= 0){
-            weapon.Qualities += GetLink("Smoke") + "(" + weapon.Smoke.toString() + "), ";
+            weapon.Qualities += getLink("Smoke") + "(" + weapon.Smoke.toString() + "), ";
         }
         if(weapon.Toxic >= 0){
-            weapon.Qualities += GetLink("Toxic") + "(" + weapon.Toxic.toString() + "), ";
+            weapon.Qualities += getLink("Toxic") + "(" + weapon.Toxic.toString() + "), ";
         }
         if(weapon.Spray >= 0){
-            weapon.Qualities += GetLink("Spray") + "(" + weapon.Spray.toString() + "m), ";
+            weapon.Qualities += getLink("Spray") + "(" + weapon.Spray.toString() + "m), ";
         }
         if(weapon.AreaSaturation >= 0){
-            weapon.Qualities += GetLink("Area Saturation") + "(" + weapon.AreaSaturation.toString() + "m), ";
+            weapon.Qualities += getLink("Area Saturation") + "(" + weapon.AreaSaturation.toString() + "m), ";
         }
         //prepend any preselected qualities
         weapon.Qualities = qualities + ", " + weapon.Qualities;
@@ -12849,9 +12276,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             if(Xenos.Talents.indexOf("Swift Attack") != -1 && Xenos.Talents.indexOf("Lightning Attack") != -1){
                 Xenos.WS += 10;
             } else if(Xenos.Talents.indexOf("Swift Attack") != -1) {
-                Xenos.Talents += GetLink("Lightning Attack") + "<br>";
+                Xenos.Talents += getLink("Lightning Attack") + "<br>";
             } else {
-                Xenos.Talents += GetLink("Swift Attack") + "<br>";
+                Xenos.Talents += getLink("Swift Attack") + "<br>";
             }
         }
         //create a function for every trait
@@ -12859,7 +12286,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             if(Xenos.Traits.indexOf("Improved Natural Weapons") != -1){
                 Xenos.Damage += 2;
             } else {
-                Xenos.Traits += GetLink("Improved Natural Weapons") + "<br>";
+                Xenos.Traits += getLink("Improved Natural Weapons") + "<br>";
             }
         }
         Xenos.Apex = function (){
@@ -12879,12 +12306,12 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         }
         Xenos.Amorphous = function(){
             Xenos.T += 10;
-            Xenos.Traits += GetLink("Amorphous") + "<br>";
+            Xenos.Traits += getLink("Amorphous") + "<br>";
             if(!Xenos.isAmorphous){
                 Xenos.isAmorphous = true;
-                Xenos.Traits += GetLink("Strange Physiology") + "<br>";
-                Xenos.Traits += GetLink("Unnatural Senses") + "<br>";
-                Xenos.Traits += GetLink("Fear") + "(2)<br>";
+                Xenos.Traits += getLink("Strange Physiology") + "<br>";
+                Xenos.Traits += getLink("Unnatural Senses") + "<br>";
+                Xenos.Traits += getLink("Fear") + "(2)<br>";
             }
             if(randomInteger(2)==1){
                 Xenos.Climb++;
@@ -12892,24 +12319,24 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
         }
         Xenos.Amphibious = function(){
-            Xenos.Traits += GetLink("Amphibious") + "<br>";
+            Xenos.Traits += getLink("Amphibious") + "<br>";
         }
         Xenos.Aquatic = function(){
-            Xenos.Traits += GetLink("Aquatic") + "<br>";
+            Xenos.Traits += getLink("Aquatic") + "<br>";
         }
         Xenos.Arboreal = function(){
-            Xenos.Skills += GetLink("Acrobatics") + "+20<br>";
+            Xenos.Skills += getLink("Acrobatics") + "+20<br>";
             Xenos.Climb += 3;
             Xenos.Dodge += 3;
-            Xenos.Traits += GetLink("Catfall") + "<br>";
-            Xenos.Traits += GetLink("Arboreal") + "<br>";
+            Xenos.Traits += getLink("Catfall") + "<br>";
+            Xenos.Traits += getLink("Arboreal") + "<br>";
         }
         Xenos.Armoured = function(){
             Xenos.ArmourAll(randomInteger(5));
         }
         Xenos.Crawler = function(){
             if(Xenos.Traits.indexOf("Crawler") == -1){
-                Xenos.Traits += GetLink("Crawler") + "<br>";
+                Xenos.Traits += getLink("Crawler") + "<br>";
             }
             if(randomInteger(5) == 1){
                 Xenos.Climb++;
@@ -12917,15 +12344,15 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         }
         Xenos.Darkling = function(){
             if(Xenos.Traits.indexOf("Blink") == -1){
-                Xenos.Traits += GetLink("Blind") + "<br>";
+                Xenos.Traits += getLink("Blind") + "<br>";
             }
             if(randomInteger(2) == 1){
                 if(Xenos.Traits.indexOf("Sonar Sense") == -1){
-                    Xenos.Traits += GetLink("Sonar Sense") + "<br>";
+                    Xenos.Traits += getLink("Sonar Sense") + "<br>";
                 }
             } else {
                 if(Xenos.Traits.indexOf("Unnatural Senses") == -1){
-                    Xenos.Traits += GetLink("Unnatural Senses") + "<br>";
+                    Xenos.Traits += getLink("Unnatural Senses") + "<br>";
                 }
             }
             Xenos.Awareness++;
@@ -12936,14 +12363,14 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         Xenos.Deadly = function(){
             Xenos.WS += 10;
             if(Xenos.isDeadly && Xenos.Qualities.indexOf("Razor Sharp") == -1){
-                Xenos.Qualities += GetLink("Razor Sharp") + ", ";
+                Xenos.Qualities += getLink("Razor Sharp") + ", ";
             } else {
                 Xenos.ImprovedNaturalWeapons();
             }
         }
         Xenos.Deathdweller = function(){
             if(Xenos.Talents.indexOf("(Radiation)") == -1){
-                Xenos.Talents += GetLink("Resistance") + "(Radiation)<br>";
+                Xenos.Talents += getLink("Resistance") + "(Radiation)<br>";
                 Xenos.Wounds += 3;
             } else {
                 Xenos.Wounds += 2;
@@ -12951,28 +12378,28 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
         }
         Xenos.Deterrent = function(){
-            Xenos.Traits += GetLink("Deterrent") + "<br>";
+            Xenos.Traits += getLink("Deterrent") + "<br>";
         }
         Xenos.Disturbing = function(){
-            Xenos.Traits += GetLink("Fear") + "<br>";
+            Xenos.Traits += getLink("Fear") + "<br>";
         }
         Xenos.FadeKind = function(){
             switch(randomInteger(2)){
-                case 1: Xenos.Traits += GetLink("Incorporeal") + "<br>"; break;
-                case 2: Xenos.Traits += GetLink("Phase") + "<br>"; break;
+                case 1: Xenos.Traits += getLink("Incorporeal") + "<br>"; break;
+                case 2: Xenos.Traits += getLink("Phase") + "<br>"; break;
             }
-            if(randomInteger(4)==1){Xenos.Traits += GetLink("Fear") + "<br>";}
+            if(randomInteger(4)==1){Xenos.Traits += getLink("Fear") + "<br>";}
         }
         Xenos.Flexible = function(){
             Xenos.Traits += "Flexible<br>";
             //apply a different benefit depending on how many times this result was achieved
             switch(Xenos.isFlexible){
                 case 0:
-                    Xenos.Skills += GetLink("Dodge") + "+10<br>";
-                    Xenos.Qualities += GetLink("Flexible") + ", ";
+                    Xenos.Skills += getLink("Dodge") + "+10<br>";
+                    Xenos.Qualities += getLink("Flexible") + ", ";
                 break;
                 case 1:
-                    Xenos.Qualities += GetLink("Snare") + ", ";
+                    Xenos.Qualities += getLink("Snare") + ", ";
                 break;
                 default:
                     Xenos.Ag += 10;
@@ -12981,19 +12408,19 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.isFlexible++;
         }
         Xenos.FoulAura = function(type){
-            Xenos.Traits += GetLink("Foul Aura") + "(" + type + ")<br>";
+            Xenos.Traits += getLink("Foul Aura") + "(" + type + ")<br>";
         }
         Xenos.Frictionless = function(){
-            Xenos.Traits += GetLink("Fictionless")  + "<br>";
+            Xenos.Traits += getLink("Fictionless")  + "<br>";
         }
         Xenos.Gestalt = function(){
             Xenos.T += 10;
             Xenos.Wp += 10;
             Xenos.It -= 10;
-            Xenos.Traits += GetLink("Gestalt") + "<br>";
+            Xenos.Traits += getLink("Gestalt") + "<br>";
         }
         Xenos.LethalDefences = function(){
-            Xenos.Traits += GetLink("Lethal Defences") + "<br>";
+            Xenos.Traits += getLink("Lethal Defences") + "<br>";
         }
         Xenos.Mighty = function(){
             Xenos.Traits += "Mighty<br>";
@@ -13006,7 +12433,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
         }
         Xenos.Paralytic = function(){
-            Xenos.Qualities += GetLink("Paralytic") + ", ";
+            Xenos.Qualities += getLink("Paralytic") + ", ";
         }
         Xenos.ProjectileAttack = function(){
             if(Xenos.BS == 0){
@@ -13045,7 +12472,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
         }
         Xenos.Silicate = function(){
-            Xenos.Traits += GetLink("Silicate") + "<br>";
+            Xenos.Traits += getLink("Silicate") + "<br>";
             Xenos.Ag -= 10;
             Xenos.ArmourAll(1+randomInteger(5));
             Xenos.Unnatural_S += Math.floor(Xenos.S/10);
@@ -13057,10 +12484,10 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Shadowing += 3;
         }
         Xenos.Sticky = function(){
-            Xenos.Traits += GetLink("Sticky") + "<br>";
+            Xenos.Traits += getLink("Sticky") + "<br>";
         }
         Xenos.SustainedLife = function(){
-            Xenos.Traits += GetLink("Sustained Life") + "<br>";
+            Xenos.Traits += getLink("Sustained Life") + "<br>";
         }
         Xenos.Swift = function(){
             Xenos.Traits += "Swift<br>";
@@ -13072,7 +12499,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
         }
         Xenos.ThermalAdaptation = function(type){
-            Xenos.Talents += GetLink("Thermal Adaptation");
+            Xenos.Talents += getLink("Thermal Adaptation");
             Xenos.T += 5;
             if(Xenos.Talents.indexOf("(Cold)")){
                 Xenos.Talents += "(Cold)";
@@ -13089,27 +12516,27 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Burrower++;
         }
         Xenos.Unkillable = function(){
-            Xenos.Traits += GetLink("Regeneration") + "(1)<br>";
+            Xenos.Traits += getLink("Regeneration") + "(1)<br>";
             Xenos.Wounds += 5;
         }
         Xenos.UprootedMovement = function(){
-            Xenos.Triats += GetLink("Uprooted Movement") + "<br>"
+            Xenos.Triats += getLink("Uprooted Movement") + "<br>"
         }
         Xenos.Valuable = function(){
             Xenos.Traits += "Valuable<br>";
         }
         Xenos.Venomous = function(){
-            Xenos.Qualities += GetLink("Toxic") + ", ";
+            Xenos.Qualities += getLink("Toxic") + ", ";
         }
         Xenos.Warped = function(){
-            Xenos.Traits += GetLink("Mutation") + " - "
+            Xenos.Traits += getLink("Mutation") + " - "
             switch(randomInteger(100)){
                 case 1:  case 2:  case 3:  case 4:  case 5:  Xenos.Traits += "Grotesque"; break;
                 case 6:  case 7:  case 8:  case 9:  case 10: Xenos.Traits += "Tough Hide"; Xenos.ArmourAll(2); break;
                 case 11: case 12: case 13: case 14: case 15: Xenos.Traits += "Misshapen"; Xenos.Ag -= randomInteger(10) + randomInteger(10); break;
-                case 16: case 17: case 18: case 19: case 20: Xenos.Traits += "Feels No Pain"; Xenos.Wounds += 5; Xenos.Talents += "<br>" + GetLink("Iron Jaw"); break;
+                case 16: case 17: case 18: case 19: case 20: Xenos.Traits += "Feels No Pain"; Xenos.Wounds += 5; Xenos.Talents += "<br>" + getLink("Iron Jaw"); break;
                 case 21: case 22: case 23: case 24: case 25: Xenos.Traits += "Brute"; Xenos.S += 10; Xenos.T += 10; break;
-                case 26: case 27: case 28: case 29: case 30: Xenos.Traits += "Nightsider"; Xenos.Traits += "<br>" + GetLink("Dark Sight"); break;
+                case 26: case 27: case 28: case 29: case 30: Xenos.Traits += "Nightsider"; Xenos.Traits += "<br>" + getLink("Dark Sight"); break;
                 case 31: case 32: case 33: case 34: case 35: Xenos.Traits += "Mental Regressive";
                 switch(randomInteger(10)){
                     case 6: case 7: Xenos.It = Math.round(Xenos.It / 2); break; //halve the characteristic
@@ -13138,48 +12565,48 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 break;
                 case 36: case 37: case 38: case 39: case 40: Xenos.Traits += "Malformed Hands"; Xenos.WS -= 10; Xenos.BS -= 10; break;
                 case 41: case 42: case 43: case 44: case 45: Xenos.Traits += "Tox Blood"; Xenos.It -= randomInteger(10); Xenos.T -= randomInteger(10); break;
-                case 46: case 47: case 48: case 49: case 50: Xenos.Traits += "Hulking"; Xenos.Traits += "<br>" + GetLink("Size") + "(+1)"; Xenos.S += 10; Xenos.Wounds += 5; break;
-                case 51: case 52: case 53: case 54: case 55: Xenos.Traits += "Wyrdling"; Xenos.Traits += "<br>" + GetLink("Psy Rating") + "(2)<br>Psychic Technique<br>Psychic Technique"; break;
-                case 56: case 57: case 58: case 59:          Xenos.Traits += "Vile Deformity"; Xenos.Traits += "<br>" + GetLink("Fear"); break;
+                case 46: case 47: case 48: case 49: case 50: Xenos.Traits += "Hulking"; Xenos.Traits += "<br>" + getLink("Size") + "(+1)"; Xenos.S += 10; Xenos.Wounds += 5; break;
+                case 51: case 52: case 53: case 54: case 55: Xenos.Traits += "Wyrdling"; Xenos.Traits += "<br>" + getLink("Psy Rating") + "(2)<br>Psychic Technique<br>Psychic Technique"; break;
+                case 56: case 57: case 58: case 59:          Xenos.Traits += "Vile Deformity"; Xenos.Traits += "<br>" + getLink("Fear"); break;
                 case 60: case 61: case 62: case 63:          Xenos.Traits += "Aberration"; Xenos.S += 10; Xenos.Ag += 10; Xenos.Fe -= 10; Xenos.It -= randomInteger(10); break;
                 case 64: case 65: case 66: case 67:          Xenos.Traits += "Degenerate Mind";
                 Xenos.It -= randomInteger(10);
                 Xenos.Fe -= randomInteger(10);
                 switch(randomInteger(3)){
-                    case 1: Xenos.Traits += "<br>" + GetLink("Frenzy"); break;
-                    case 2: Xenos.Traits += "<br>" + GetLink("Fearless"); break;
-                    case 3: Xenos.Traits += "<br>" + GetLink("From Beyond"); break;
+                    case 1: Xenos.Traits += "<br>" + getLink("Frenzy"); break;
+                    case 2: Xenos.Traits += "<br>" + getLink("Fearless"); break;
+                    case 3: Xenos.Traits += "<br>" + getLink("From Beyond"); break;
                 }
                 break;
                 case 68: case 69: case 70: case 71:          Xenos.Traits += "Ravaged Body"; Die = randomInteger(5); Mutations += Die; ExoticTraits += Die; break;
                 case 72: case 73: case 74:                   Xenos.Traits += "Clawed/Fanged";
                 Xenos.WS += 10;
                 if(Xenos.Deadly && Xenos.Qualities.indexOf("Razor Sharp") == -1){
-                    Xenos.Qualities += GetLink("Razor Sharp") + ", ";
+                    Xenos.Qualities += getLink("Razor Sharp") + ", ";
                 } else{
                     Xenos.Deadly = true;
                     if(Xenos.Traits.indexOf("Improved Natural Weapons") != -1){
                         Xenos.Damage += 2;
                     } else {
-                        Xenos.Traits += GetLink("Improved Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Improved Natural Weapons") + "<br>";
                     }
                 }
                 break;
-                case 75: case 76: case 77: case 78:          Xenos.Traits += "Necrophage"; Xenos.Traits += "<br>" + GetLink("Regeneration") + "(1)"; Xenos.T += 10; break;
+                case 75: case 76: case 77: case 78:          Xenos.Traits += "Necrophage"; Xenos.Traits += "<br>" + getLink("Regeneration") + "(1)"; Xenos.T += 10; break;
                 case 79: case 80: case 81:                   Xenos.Traits += "Corrupted Flesh"; break;
-                case 82: case 83: case 84: case 85:          Xenos.Traits += "Venomous"; Xenos.Traits += "<br>" + GetLink("Toxic"); break;
+                case 82: case 83: case 84: case 85:          Xenos.Traits += "Venomous"; Xenos.Traits += "<br>" + getLink("Toxic"); break;
                 case 86: case 87: case 88: case 89:          Xenos.Traits += "Hideous Strength"; Xenos.Unnatural_S += Math.floor(Xenos.S/10); break;
-                case 90: case 91:                            Xenos.Traits += "Multiple Appendages"; Xenos.Traits += "<br>" + GetLink("Multiple Arms") + "(1)"; break;
-                case 92: case 93:                            Xenos.Traits += "Worm"; Xenos.Wounds += 5; Xenos.Traits += "<br>" + GetLink("Crawler"); break;
-                case 94:                                     Xenos.Traits += "Nightmarish"; Xenos.Traits += "<br>" + GetLink("Fear") + "(3)"; break;
+                case 90: case 91:                            Xenos.Traits += "Multiple Appendages"; Xenos.Traits += "<br>" + getLink("Multiple Arms") + "(1)"; break;
+                case 92: case 93:                            Xenos.Traits += "Worm"; Xenos.Wounds += 5; Xenos.Traits += "<br>" + getLink("Crawler"); break;
+                case 94:                                     Xenos.Traits += "Nightmarish"; Xenos.Traits += "<br>" + getLink("Fear") + "(3)"; break;
                 case 95:                                     Xenos.Traits += "Malleable"; Xenos.Ag += 10; break;
-                case 96:                                     Xenos.Traits += "Winged"; Die = Math.floor(Xenos.Ag/10) + Xenos.Unnatural_Ag; Xenos.Traits += "<br>" + GetLink("Flyer") + "(" + Die.toString() +  ")"; break;
+                case 96:                                     Xenos.Traits += "Winged"; Die = Math.floor(Xenos.Ag/10) + Xenos.Unnatural_Ag; Xenos.Traits += "<br>" + getLink("Flyer") + "(" + Die.toString() +  ")"; break;
                 case 97:                                     Xenos.Traits += "Corpulent"; Xenos.Wounds += 5; Xenos.Unnatural_T += Math.floor(Xenos.T/10); break;
-                case 98:                                     Xenos.Traits += "Shadow Kin"; Xenos.Traits += "<br>" + GetLink("Phase"); Xenos.S -= 10; Xenos.T -= 10; break;
-                case 99:                                     Xenos.Traits += "Corrosive Bile"; Xenos.RWeaponName = "Bile"; Xenos.RRange += 1; Xenos.RDamage += 2; Xenos.RQualities += GetLink("Tearing") + ", "; Xenos.RDamageType = "Energy"; break;
-                case 100:                                    Xenos.Traits += "Hellspawn"; Xenos.Traits += "<br>" + GetLink("Daemonic") + "<br>" + GetLink("Fear") + "(2)<br>" + GetLink("From Beyond"); break;
+                case 98:                                     Xenos.Traits += "Shadow Kin"; Xenos.Traits += "<br>" + getLink("Phase"); Xenos.S -= 10; Xenos.T -= 10; break;
+                case 99:                                     Xenos.Traits += "Corrosive Bile"; Xenos.RWeaponName = "Bile"; Xenos.RRange += 1; Xenos.RDamage += 2; Xenos.RQualities += getLink("Tearing") + ", "; Xenos.RDamageType = "Energy"; break;
+                case 100:                                    Xenos.Traits += "Hellspawn"; Xenos.Traits += "<br>" + getLink("Daemonic") + "<br>" + getLink("Fear") + "(2)<br>" + getLink("From Beyond"); break;
             }
-            Xenos.Traits += "<br>" + GetLink("Mutation") + " - ?<br>";
+            Xenos.Traits += "<br>" + getLink("Mutation") + " - ?<br>";
         }
 
         //creatures of the hadex anomely have a strong chance to grow one mutation
@@ -13333,12 +12760,12 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Ag = 25;
                         Xenos.Pr = 15;
                         Xenos.Wounds = 24;
-                        Xenos.Traits += GetLink("Diffuse") + "<br>";
-                        Xenos.Traits += GetLink("From Beyond") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
-                        Xenos.Traits += GetLink("Size") + "(Enormous)<br>";
+                        Xenos.Traits += getLink("Diffuse") + "<br>";
+                        Xenos.Traits += getLink("From Beyond") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Size") + "(Enormous)<br>";
                         Xenos.HalfMove += 2;
-                        Xenos.Traits += GetLink("Strange Physiology") + "<br>";
+                        Xenos.Traits += getLink("Strange Physiology") + "<br>";
                         //basic attack
                         Xenos.Damage = 0;
                         Xenos.Pen = 0;
@@ -13355,12 +12782,12 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Ag = 35;
                         Xenos.Pr = 25;
                         Xenos.Wounds = 8;
-                        Xenos.Talents += GetLink("Sturdy") + "<br>";
-                        Xenos.Traits += GetLink("From Beyond") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
-                        Xenos.Traits += GetLink("Size") + "(Scrawny)<br>";
+                        Xenos.Talents += getLink("Sturdy") + "<br>";
+                        Xenos.Traits += getLink("From Beyond") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Size") + "(Scrawny)<br>";
                         Xenos.HalfMove -= 1;
-                        Xenos.Traits += GetLink("Strange Physiology") + "<br>";
+                        Xenos.Traits += getLink("Strange Physiology") + "<br>";
                         //basic attack
                         Xenos.Damage = -1;
                         Xenos.Pen = 0;
@@ -13378,12 +12805,12 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Pr = 35;
                         Xenos.Wounds = 20;
                         Xenos.ArmourAll(2);
-                        Xenos.Talents += GetLink("Sturdy") + "<br>";
-                        Xenos.Traits += GetLink("From Beyond") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
-                        Xenos.Traits += GetLink("Size") + "(Enormous)<br>";
+                        Xenos.Talents += getLink("Sturdy") + "<br>";
+                        Xenos.Traits += getLink("From Beyond") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Size") + "(Enormous)<br>";
                         Xenos.HalfMove += 2;
-                        Xenos.Traits += GetLink("Strange Physiology") + "<br>";
+                        Xenos.Traits += getLink("Strange Physiology") + "<br>";
                         //basic attack
                         Xenos.Damage = 1;
                         Xenos.Pen = 0;
@@ -13401,13 +12828,13 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Pr = 20;
                         Xenos.Wounds = 40;
                         Xenos.ArmourAll(4);
-                        Xenos.Talents += GetLink("Sturdy") + "<br>";
-                        Xenos.Traits += GetLink("From Beyond") + "<br>";
-                        Xenos.Traits += GetLink("Improved Natural Weapons") + "<br>";
-                        Xenos.Traits += GetLink("Size") + "(Massive)<br>";
+                        Xenos.Talents += getLink("Sturdy") + "<br>";
+                        Xenos.Traits += getLink("From Beyond") + "<br>";
+                        Xenos.Traits += getLink("Improved Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Size") + "(Massive)<br>";
                         Xenos.HalfMove += 3;
-                        Xenos.Traits += GetLink("Strange Physiology") + "<br>";
-                        Xenos.Traits += GetLink("Swift Attack") + "<br>";
+                        Xenos.Traits += getLink("Strange Physiology") + "<br>";
+                        Xenos.Traits += getLink("Swift Attack") + "<br>";
                         //basic attack
                         Xenos.Damage = 3;
                         Xenos.Pen = 0;
@@ -13682,14 +13109,14 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         case 'Massive':   Xenos.S += 20; Xenos.T += 20; Xenos.Wounds += 20; Xenos.Ag -= 20; Xenos.HalfMove += 3; break;
                     }
                 }
-                Xenos.Traits += GetLink("Size") + "(" + XenosSize + ")<br>";
+                Xenos.Traits += getLink("Size") + "(" + XenosSize + ")<br>";
 
                 //each creature has a chance to generate extra arms
                 while(randomInteger(5) == 1){
                     Xenos.Arms += 2;
                 }
                 if(Xenos.Arms > 2){
-                    Xenos.Traits += GetLink("Multiple Arms") + "(" + Xenos.Arms + ")<br>";
+                    Xenos.Traits += getLink("Multiple Arms") + "(" + Xenos.Arms + ")<br>";
                 }
 
                 //each creature has a chance to generate extra legs
@@ -13700,7 +13127,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.Legs += 2;
                 }
                 if(Xenos.Legs > 2){
-                    Xenos.Traits += GetLink("Multiple Legs") + "(" + Xenos.Legs + ")<br>";
+                    Xenos.Traits += getLink("Multiple Legs") + "(" + Xenos.Legs + ")<br>";
                 }
 
                 //add in the base profile
@@ -13715,9 +13142,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Wp += 30;
                         Xenos.Wounds += 9;
                         Xenos.Awareness++;
-                        Xenos.Traits += GetLink("Bestial") + "<br>";
+                        Xenos.Traits += getLink("Bestial") + "<br>";
                         Xenos.Flyer = true;
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
                         Xenos.WeaponName = "Talons";
                         Xenos.DamageType = "Rending";
                     break;
@@ -13731,9 +13158,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Wp += 40;
                         Xenos.Wounds += 14;
                         Xenos.Awareness++;
-                        Xenos.Traits += GetLink("Bestial") + "<br>";
-                        Xenos.Traits += GetLink("Sturdy") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Bestial") + "<br>";
+                        Xenos.Traits += getLink("Sturdy") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
                         Xenos.WeaponName = "Hooves";
                         Xenos.DamageType = "Impact";
                     break;
@@ -13747,11 +13174,11 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Wp += 45;
                         Xenos.Wounds += 15;
                         Xenos.Awareness++;
-                        Xenos.Skills += GetLink("Tracking") + "<br>";
-                        Xenos.Talents += GetLink("Swift Attack") + "<br>";
-                        Xenos.Traits += GetLink("Bestial") + "<br>";
-                        Xenos.Traits += GetLink("Brutal Charge") + "(3)<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
+                        Xenos.Skills += getLink("Tracking") + "<br>";
+                        Xenos.Talents += getLink("Swift Attack") + "<br>";
+                        Xenos.Traits += getLink("Bestial") + "<br>";
+                        Xenos.Traits += getLink("Brutal Charge") + "(3)<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
                         Xenos.WeaponName = "Claws";
                         Xenos.DamageType = "Rending";
                     break;
@@ -13765,9 +13192,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Wp += 35;
                         Xenos.Wounds += 12;
                         Xenos.Awareness++;
-                        Xenos.Skills += GetLink("Tracking") + "<br>";
-                        Xenos.Traits += GetLink("Bestial") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
+                        Xenos.Skills += getLink("Tracking") + "<br>";
+                        Xenos.Traits += getLink("Bestial") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
                         Xenos.WeaponName = "Fangs";
                         Xenos.DamageType = "Rending";
                     break;
@@ -13781,9 +13208,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         Xenos.Wp += 10;
                         Xenos.Wounds += 10;
                         Xenos.Awareness++;
-                        Xenos.Traits += GetLink("Bestial") + "<br>";
-                        Xenos.Traits += GetLink("Fear") + "<br>";
-                        Xenos.Traits += GetLink("Natural Weapons") + "<br>";
+                        Xenos.Traits += getLink("Bestial") + "<br>";
+                        Xenos.Traits += getLink("Fear") + "<br>";
+                        Xenos.Traits += getLink("Natural Weapons") + "<br>";
                         Xenos.WeaponName = "Stingers";
                         Xenos.DamageType = "Rending";
                     break;
@@ -14335,7 +13762,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", ";
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", ";
                 break;
                 case 5:  case 6:
                     //bigger is better: large weapons and rock
@@ -14346,7 +13773,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = (Math.floor(Xenos.S/10) + Xenos.Unnatural_S);
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                     //large stick
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Large Stick";
@@ -14354,7 +13781,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Unwieldy");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", " + getLink("Unwieldy");
                 break;
                 case 7:
                     //sharper rocks and sticks
@@ -14365,7 +13792,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 3*(Math.floor(Xenos.S/10) + Xenos.Unnatural_S);
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                     //large stick
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].WeaponName = "Sharp Stick";
@@ -14373,7 +13800,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                 break;
                 case 8:
                     //bow and arrow
@@ -14384,7 +13811,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 10;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Reliable") + ", " + GetLink("Inaccurate");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", " + getLink("Reliable") + ", " + getLink("Inaccurate");
                 break;
                 case 9:
                     //sticks with sharpened rock head, (spear)
@@ -14394,7 +13821,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                 break;
                 case 10:
                     //arrows with arrowheads
@@ -14405,7 +13832,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 20;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                 break;
                 //======================
                 //PRE-INDUSTRIAL WEAPONS - Primitive Quality
@@ -14418,7 +13845,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", " + getLink("Balanced");
                 break;
                 case 14: case 13:
                     //iron sword
@@ -14428,7 +13855,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 0;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", " + getLink("Balanced");
                 break; //iron age
                 case 16: case 15:
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length] = {};
@@ -14437,7 +13864,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive") + ", " + getLink("Balanced");
                 break;
                 case 17:
                     //long bow
@@ -14448,7 +13875,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 30;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                 break;
                 case 18:
                     //crossbow
@@ -14459,7 +13886,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 10;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Primitive");
                 break; //crossbow
                 case 19:
                     //guns, pistols
@@ -14470,7 +13897,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 15;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Inaccurate") + ", " + getLink("Primitive");
                 break;
                 case 20:
                     //cannon
@@ -14481,7 +13908,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 35;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Inaccurate") + ", " + getLink("Primitive");
                 break;
                 //======================
                 //BASIC INDUSTRY WEAPONS
@@ -14496,7 +13923,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = 100;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 4;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 50;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Inaccurate") + ", " + getLink("Primitive");
                 break;
                 case 22:
                     //multi-shot guns - primitive
@@ -14508,7 +13935,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 3;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 30;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Inaccurate") + ", " + getLink("Primitive");
                 break;
                 case 23:
                     //grenades
@@ -14518,7 +13945,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "X";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 3 * (Math.floor(Xenos.S/10) + Xenos.Unnatural_S);
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Blast") + "(" + randomInteger(5) + ")";
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Blast") + "(" + randomInteger(5) + ")";
                 break; //grenades
                 case 24:
                     //bombs
@@ -14528,7 +13955,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(6)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "X";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = (Math.floor(Xenos.S/10) + Xenos.Unnatural_S);
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Blast") + "(" + randomInteger(10) + ")";
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Blast") + "(" + randomInteger(10) + ")";
                 break;
                 case 25:
                     //single person machine guns
@@ -14540,7 +13967,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Inaccurate") + ", " + GetLink("Primitive");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Inaccurate") + ", " + getLink("Primitive");
                 break;
                 case 26:
                     //flame weapon
@@ -14551,7 +13978,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(20);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Spray") + ", " + GetLink("Flame");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Spray") + ", " + getLink("Flame");
                 break;
                 case 27:
                     //chemical weapons
@@ -14562,7 +13989,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(20);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Spray") + ", " + GetLink("Toxic");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Spray") + ", " + getLink("Toxic");
                 break;
                 case 28:
                     //advanced single shot guns!
@@ -14596,7 +14023,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(10);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(10)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Irradiated");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Irradiated");
                 break;
                 //=========================
                 //ADVANCED INDUSTRY WEAPONS
@@ -14611,7 +14038,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Motion Predictor");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Motion Predictor");
                 break;
                 case 32:
                     //autogun with anti-armoour rounds
@@ -14634,7 +14061,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(5)*10;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*10;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Accurate") + ", " + GetLink("Reliable") + GetLink("Silencer");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Accurate") + ", " + getLink("Reliable") + getLink("Silencer");
                 break;
                 case 34:
                     //full auto hand held weaponry
@@ -14658,7 +14085,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(5)*40;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Reliable");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Reliable");
                 break;
                 case 36:
                     //rapid fire las weaponry
@@ -14670,7 +14097,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Reliable");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Reliable");
                 break;
                 case 37:
                     //large chain weapons
@@ -14680,7 +14107,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing") + ", " + GetLink("Unwieldy");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Tearing") + ", " + getLink("Unwieldy");
                 break;
                 case 38:
                     //balanced chain weapons
@@ -14690,7 +14117,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "R";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Tearing") + ", " + getLink("Balanced");
                 break;
                 case 39:
                     //Unwieldy Shock weapons
@@ -14700,7 +14127,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Shocking") + ", " + GetLink("Unwieldy");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Shocking") + ", " + getLink("Unwieldy");
                 break;
                 case 40:
                     //Balanced Shock Weapons
@@ -14710,7 +14137,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "I";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Shocking") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Shocking") + ", " + getLink("Balanced");
                 break;
                 //==================
                 //VOID FARER WEAPONS
@@ -14724,7 +14151,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(5)*40;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "X";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Tearing");
                 break;
                 case 42:
                     //Rapid Fire Bolter Weapons
@@ -14736,7 +14163,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "X";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1+randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Tearing");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Tearing");
                 break;
                 case 43:
                     //Unbalanced Power Weapons
@@ -14746,7 +14173,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Power Field") + ", " + GetLink("Unwieldy");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Power Field") + ", " + getLink("Unwieldy");
                 break;
                 case 44:
                     //Balanced Power Weapons
@@ -14756,7 +14183,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Power Field") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Power Field") + ", " + getLink("Balanced");
                 break;
                 case 45:
                     //Single Shot Plasma Weapons
@@ -14767,7 +14194,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(5)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Overheats") + ", " + GetLink("Blast") + "(" + randomInteger(3) + ")";
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Overheats") + ", " + getLink("Blast") + "(" + randomInteger(3) + ")";
                 break;
                 case 46:
                     //Rapid Fire Plasma Weapons
@@ -14779,7 +14206,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1 + randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(30)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Overheats") + ", " + GetLink("Blast") + "(" + randomInteger(3) + ")";
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Overheats") + ", " + getLink("Blast") + "(" + randomInteger(3) + ")";
                 break;
                 case 47:
                     //Single Shop Melta Weapons
@@ -14790,7 +14217,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Clip = randomInteger(5)*5;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(5)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Melta");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Melta");
                 break;
                 case 48:
                     //Rapid Fire Melta Weapons
@@ -14802,7 +14229,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Semi = 1 + randomInteger(3);
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = randomInteger(5)*5;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Melta");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Melta");
                 break;
                 case 49:
                     //Unbalanced Force Weapons
@@ -14812,7 +14239,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Force") + ", " + GetLink("Unwieldy");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Force") + ", " + getLink("Unwieldy");
                 break;
                 case 50:
                     //Balanced Force Weapons
@@ -14822,7 +14249,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Pen = randomInteger(3)-1;
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].DamageType = "E";
                     Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Range = 0;
-                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = GetLink("Force") + ", " + GetLink("Balanced");
+                    Xenos.NativeWeapons[Xenos.NativeWeapons.length - 1].Qualities = getLink("Force") + ", " + getLink("Balanced");
                 break;
             }
             */
@@ -14887,7 +14314,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 break;
                 case 35: case 36:
                     //flack armour
-                    Xenos.ArmourName = GetLink("Flack Armour");
+                    Xenos.ArmourName = getLink("Flack Armour");
                     //armour everything but the head
                     ArmourBase = 3;
                 break;
@@ -14898,7 +14325,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 break;
                 case 39: case 40:
                     //mesh armour
-                    Xenos.ArmourName = GetLink("Reflective") +  " Mesh";
+                    Xenos.ArmourName = getLink("Reflective") +  " Mesh";
                     ArmourBase = 4;
                 break;
                 //================
@@ -15037,10 +14464,10 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         if(Xenos.Burrower > 0){
             Die = Xenos.Unnatural_S + Math.floor(Xenos.S/10); //start with the creature's strength bonus
             Die += 2*(Xenos.Burrower-1); //Add 2 Burrower for each instane of the trait
-            Xenos.Traits += GetLink("Burrower") + "(" + Die.toString() + ")"; //Write it down
+            Xenos.Traits += getLink("Burrower") + "(" + Die.toString() + ")"; //Write it down
         }
         if(Xenos.Climb >= 0){
-            Xenos.Skills += GetLink("Climb");
+            Xenos.Skills += getLink("Climb");
             if(Xenos.Climb > 0){
                 Die = Xenos.Climb * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15048,7 +14475,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.Swim >= 0){
-            Xenos.Skills += GetLink("Swim");
+            Xenos.Skills += getLink("Swim");
             if(Xenos.Swim > 0){
                 Die = Xenos.Swim * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15056,7 +14483,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.Concealment >= 0){
-            Xenos.Skills += GetLink("Concealment");
+            Xenos.Skills += getLink("Concealment");
             if(Xenos.Concealment > 0){
                 Die = Xenos.Concealment * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15064,7 +14491,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.SilentMove >= 0){
-            Xenos.Skills += GetLink("Silent Move");
+            Xenos.Skills += getLink("Silent Move");
             if(Xenos.SilentMove > 0){
                 Die = Xenos.SilentMove * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15072,7 +14499,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.Shadowing >= 0){
-            Xenos.Skills += GetLink("Shadowing");
+            Xenos.Skills += getLink("Shadowing");
             if(Xenos.Shadowing > 0){
                 Die = Xenos.Shadowing * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15080,7 +14507,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.Dodge >= 0){
-            Xenos.Skills += GetLink("Dodge");
+            Xenos.Skills += getLink("Dodge");
             if(Xenos.Dodge > 0){
                 Die = Xenos.Dodge * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15088,7 +14515,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Skills += "<br>";
         }
         if(Xenos.Awareness >= 0){
-            Xenos.Skills += GetLink("Awareness");
+            Xenos.Skills += getLink("Awareness");
             if(Xenos.Awareness > 0){
                 Die = Xenos.Awareness * 10;
                 Xenos.Skill += "+" + Die.toString();
@@ -15097,7 +14524,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         }
         if(Xenos.Flyer){
             var flyerSpeed = 2*(Math.floor(Xenos.Ag/10) + Xenos.Unnatural_Ag);
-             Xenos.Traits += GetLink("Flyer") + "(" + flyerSpeed.toString() + ")<br>";
+             Xenos.Traits += getLink("Flyer") + "(" + flyerSpeed.toString() + ")<br>";
         }
         //calculate movement if not a plant, plants don't move (but walking plants do!)
         if(XenosType != 'flora' || Xenos.Traits.indexOf("Uprooted Movement") != -1){
@@ -15127,7 +14554,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //Compile the Weapons Stats
         //Check to see if the weapon is primitive
         if(Xenos.Traits.indexOf("Improved Natural Weapons") == -1){
-            Xenos.Qualities += GetLink("Primitive") + ", ";
+            Xenos.Qualities += getLink("Primitive") + ", ";
         }
         //convert the creatures attack into text and save it in Xenos.Weapons
         Xenos.Weapons = Xenos.WeaponName + " (D10";
@@ -15138,9 +14565,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             Xenos.Weapons += Die.toString();
         }
         if(Xenos.DamageType == "Explosive" || Xenos.DamageType.length == 0){
-            Xenos.Weapons += " " + GetLink("X");
+            Xenos.Weapons += " " + getLink("X");
         } else {
-            Xenos.Weapons += " " + GetLink(Xenos.DamageType[0]);
+            Xenos.Weapons += " " + getLink(Xenos.DamageType[0]);
         }
         Xenos.Weapons += "; Pen " + Xenos.Pen;
         if(Xenos.Qualities.length > 2){
@@ -15187,9 +14614,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 Xenos.Weapons += Xenos.RDamage.toString();
             }
             if(Xenos.RDamageType == "Explosive" || Xenos.RDamageType.length == 0){
-                Xenos.Weapons += " " + GetLink("X");
+                Xenos.Weapons += " " + getLink("X");
             } else {
-                Xenos.Weapons += " " + GetLink(Xenos.RDamageType[0]);
+                Xenos.Weapons += " " + getLink(Xenos.RDamageType[0]);
             }
             Xenos.Weapons += "; Pen " + Xenos.RPen;
             if(Xenos.RQualities.length > 2){
@@ -15284,7 +14711,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             }
 
             //detail the damage type
-            Xenos.Weapons += " " + GetLink(Xenos.NativeWeapons[weaponIndex].DamageType);
+            Xenos.Weapons += " " + getLink(Xenos.NativeWeapons[weaponIndex].DamageType);
             Xenos.Weapons += "; Pen " + Xenos.NativeWeapons[weaponIndex].Pen.toString();
             if(Xenos.NativeWeapons[weaponIndex].Qualities.length != ""){
                 Xenos.Weapons += "; " + Xenos.NativeWeapons[weaponIndex].Qualities;
@@ -15496,9 +14923,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         createObj("attribute", {name: "Unnatural Fe", current: Xenos.Unnatural_Fe, max: Xenos.Unnatural_Fe, characterid: NewXenos.id});
 
         //alert the gm
-        sendChat("System","/w gm Created " + GetLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id));
+        sendChat("System","/w gm Created " + getLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id));
 
-        return GetLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id);
+        return getLink(UniqueName,"http://journal.roll20.net/character/" + NewXenos.id);
     }
 
 on("chat:message", function(msg) {

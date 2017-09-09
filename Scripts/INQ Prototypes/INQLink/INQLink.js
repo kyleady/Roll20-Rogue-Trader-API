@@ -19,7 +19,7 @@ function INQLink(text){
     if(this.ObjID != "" || justText){
       output += this.toLink();
     } else {
-      output += GetLink(this.Name);
+      output += getLink(this.Name);
     }
     _.each(this.Groups,function(group){
       output += "(" + group + ")";

@@ -82,7 +82,7 @@ function setDefaultToken(matches, msg){
     character.set("avatar", graphic.get("imgsrc").replace("/thumb.png?", "/med.png?"));
   }
 
-  whisper("Default Token set for *" + GetLink(character.get("name")) + "*.");
+  whisper("Default Token set for *" + getLink(character.get("name")) + "*.");
 }
 
 on("ready", function(){

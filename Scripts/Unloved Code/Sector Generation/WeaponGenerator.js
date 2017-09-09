@@ -232,7 +232,7 @@
         //will we force the first property to be Primitive?
         if(randomInteger(100) < 1 + -20*tech){
             //add a link to Primitive and prepare for more qualities
-            weapon.Qualities += GetLink("Primitive") + ", ";
+            weapon.Qualities += getLink("Primitive") + ", ";
             //reduce the number of weapon qualities by one
             totalQualities--;
         }
@@ -263,16 +263,16 @@
             }
             switch(randomQuality){
                 case 1:
-                    weapon.Qualities += GetLink("Corrosive") + ", ";
+                    weapon.Qualities += getLink("Corrosive") + ", ";
                     break;
                 case 2:
-                    weapon.Qualities += GetLink("Decay") + ", ";
+                    weapon.Qualities += getLink("Decay") + ", ";
                     break;
                 case 3:
-                    weapon.Qualities += GetLink("Irradiated") + ", ";
+                    weapon.Qualities += getLink("Irradiated") + ", ";
                     break;
                 case 4:
-                    weapon.Qualities += GetLink("Overcharge") + ", ";
+                    weapon.Qualities += getLink("Overcharge") + ", ";
                     break;
                 case 5:
                     //start at 0
@@ -293,7 +293,7 @@
                     weapon.Crippling += randomInteger(5);
                     break;
                 case 9:
-                    weapon.Qualities += GetLink("Deadly Snare") + ", ";
+                    weapon.Qualities += getLink("Deadly Snare") + ", ";
                     break;
                 case 10:
                     //start at 0
@@ -306,13 +306,13 @@
                     weapon.Felling += randomInteger(5);
                     break;
                 case 12:
-                    weapon.Qualities += GetLink("Fire") + ", ";
+                    weapon.Qualities += getLink("Fire") + ", ";
                     break;
                 case 13:
-                    weapon.Qualities += GetLink("Force") + ", ";
+                    weapon.Qualities += getLink("Force") + ", ";
                     break;
                 case 14:
-                    weapon.Qualities += GetLink("Gauss") + ", ";
+                    weapon.Qualities += getLink("Gauss") + ", ";
                     break;
                 case 15:
                     weapon.Hallucinogenic += randomInteger(5);
@@ -326,16 +326,16 @@
                     weapon.Proven += randomInteger(5);
                     break;
                 case 18:
-                    weapon.Qualities += GetLink("Razor Sharp") + ", ";
+                    weapon.Qualities += getLink("Razor Sharp") + ", ";
                     break;
                 case 19:
-                    weapon.Qualities += GetLink("Rune Weapon") + ", ";
+                    weapon.Qualities += getLink("Rune Weapon") + ", ";
                     break;
                 case 20:
-                    weapon.Qualities += GetLink("Sanctified") + ", ";
+                    weapon.Qualities += getLink("Sanctified") + ", ";
                     break;
                 case 21:
-                    weapon.Qualities += GetLink("Shocking") + ", ";
+                    weapon.Qualities += getLink("Shocking") + ", ";
                     break;
                 case 22:
                     //start at 0
@@ -343,25 +343,25 @@
                     weapon.Smoke += randomInteger(5);
                     break;
                 case 23:
-                    weapon.Qualities += GetLink("Snare") + ", ";
+                    weapon.Qualities += getLink("Snare") + ", ";
                     break;
                 case 24:
-                    weapon.Qualities += GetLink("Tainted") + ", ";
+                    weapon.Qualities += getLink("Tainted") + ", ";
                     break;
                 case 25:
-                    weapon.Qualities += GetLink("Tearing") + ", ";
+                    weapon.Qualities += getLink("Tearing") + ", ";
                     break;
                 case 26:
-                    weapon.Qualities += GetLink("Tesla") + ", ";
+                    weapon.Qualities += getLink("Tesla") + ", ";
                     break;
                 case 27:
                     weapon.Toxic += randomInteger(5);
                     break;
                 case 28:
-                    weapon.Qualities += GetLink("Unstable") + ", ";
+                    weapon.Qualities += getLink("Unstable") + ", ";
                     break;
                 case 29:
-                    weapon.Qualities += GetLink("Volatile") + ", ";
+                    weapon.Qualities += getLink("Volatile") + ", ";
                     break;
                 default:
                     //for ease of modifying in the future, scale back the random number by the number of generic qualities
@@ -370,62 +370,62 @@
                     if(weapon.Type == "Melee"){
                         switch(randomQuality){
                             case 1:
-                                weapon.Qualities += GetLink("Balanced") + ", ";
+                                weapon.Qualities += getLink("Balanced") + ", ";
                                 break;
                             case 2:
-                                weapon.Qualities += GetLink("Defensive") + ", ";
+                                weapon.Qualities += getLink("Defensive") + ", ";
                                 break;    
                             case 3:
-                                weapon.Qualities += GetLink("Fist") + ", ";
+                                weapon.Qualities += getLink("Fist") + ", ";
                                 break;
                             case 4:
-                                weapon.Qualities += GetLink("Flexible") + ", ";
+                                weapon.Qualities += getLink("Flexible") + ", ";
                                 break;
                             case 5:
-                                weapon.Qualities += GetLink("Powerfield") + ", ";
+                                weapon.Qualities += getLink("Powerfield") + ", ";
                                 break;
                             case 6:
-                                weapon.Qualities += GetLink("Unbalanced") + ", ";
+                                weapon.Qualities += getLink("Unbalanced") + ", ";
                                 break;
                             case 7:
-                                weapon.Qualities += GetLink("Unwieldy") + ", ";
+                                weapon.Qualities += getLink("Unwieldy") + ", ";
                                 break;
                         }
                     //otherwise the weapon is ranged. Generate ranged qualities
                     }else{
                         switch(randomQuality){
                             case 1:
-                                weapon.Qualities += GetLink("Accurate") + ", ";
+                                weapon.Qualities += getLink("Accurate") + ", ";
                                 break;
                             case 2:
-                                weapon.Qualities += GetLink("Customised") + ", ";
+                                weapon.Qualities += getLink("Customised") + ", ";
                                 break;
                             case 3:
-                                weapon.Qualities += GetLink("Gyro-Stabalised") + ", ";
+                                weapon.Qualities += getLink("Gyro-Stabalised") + ", ";
                                 break;
                             case 4:
-                                weapon.Qualities += GetLink("Inaccurate") + ", ";
+                                weapon.Qualities += getLink("Inaccurate") + ", ";
                                 break;
                             case 5:
-                                weapon.Qualities += GetLink("Living Ammunition") + ", ";
+                                weapon.Qualities += getLink("Living Ammunition") + ", ";
                                 break;
                             case 6:
-                                weapon.Qualities += GetLink("Maximal") + ", ";
+                                weapon.Qualities += getLink("Maximal") + ", ";
                                 break;
                             case 7:
-                                weapon.Qualities += GetLink("Melta") + ", ";
+                                weapon.Qualities += getLink("Melta") + ", ";
                                 break;
                             case 8:
-                                weapon.Qualities += GetLink("Overheats") + ", ";
+                                weapon.Qualities += getLink("Overheats") + ", ";
                                 break;
                             case 9:
-                                weapon.Qualities += GetLink("Recharge") + ", ";
+                                weapon.Qualities += getLink("Recharge") + ", ";
                                 break;
                             case 10:
-                                weapon.Qualities += GetLink("Reliable") + ", ";
+                                weapon.Qualities += getLink("Reliable") + ", ";
                                 break;
                             case 11:
-                                weapon.Qualities += GetLink("Scatter") + ", ";
+                                weapon.Qualities += getLink("Scatter") + ", ";
                                 break;
                             case 12:
                                 //have we already added the Spray quality?
@@ -445,13 +445,13 @@
                                 }
                                 break;
                             case 13:
-                                weapon.Qualities += GetLink("Storm") + ", ";
+                                weapon.Qualities += getLink("Storm") + ", ";
                                 break;
                             case 14:
-                                weapon.Qualities += GetLink("Twin-linked") + ", ";
+                                weapon.Qualities += getLink("Twin-linked") + ", ";
                                 break;
                             case 15:
-                                weapon.Qualities += GetLink("Unreliable") + ", ";
+                                weapon.Qualities += getLink("Unreliable") + ", ";
                                 break;
                             case 16:
                                 weapon.AreaSaturation += weapon.Range / randomInteger(50);
@@ -463,43 +463,43 @@
         }
         //add the numerical qualities to the weapons
         if(weapon.Blast >= 0){
-            weapon.Qualities += GetLink("Blast") + "(" + weapon.Blast.toString() + "), ";
+            weapon.Qualities += getLink("Blast") + "(" + weapon.Blast.toString() + "), ";
         }
         if(weapon.Claws >= 0){
-            weapon.Qualities += GetLink("Claws") + "(" + weapon.Claws.toString() + "), ";
+            weapon.Qualities += getLink("Claws") + "(" + weapon.Claws.toString() + "), ";
         }
         if(weapon.Concussive >= 0){
-            weapon.Qualities += GetLink("Concussive") + "(" + weapon.Concussive.toString() + "), ";
+            weapon.Qualities += getLink("Concussive") + "(" + weapon.Concussive.toString() + "), ";
         }
         if(weapon.Crippling >= 0){
-            weapon.Qualities += GetLink("Crippling") + "(" + weapon.Crippling.toString() + "), ";
+            weapon.Qualities += getLink("Crippling") + "(" + weapon.Crippling.toString() + "), ";
         }
         if(weapon.Devastating >= 0){
-            weapon.Qualities += GetLink("Devastating") + "(" + weapon.Devastating.toString() + "), ";
+            weapon.Qualities += getLink("Devastating") + "(" + weapon.Devastating.toString() + "), ";
         }
         if(weapon.Felling >= 0){
-            weapon.Qualities += GetLink("Felling") + "(" + weapon.Felling.toString() + "), ";
+            weapon.Qualities += getLink("Felling") + "(" + weapon.Felling.toString() + "), ";
         }
         if(weapon.Hallucinogenic >= 0){
-            weapon.Qualities += GetLink("Hallucinogenic") + "(" + weapon.Hallucinogenic.toString() + "), ";
+            weapon.Qualities += getLink("Hallucinogenic") + "(" + weapon.Hallucinogenic.toString() + "), ";
         }
         if(weapon.Haywire >= 0){
-            weapon.Qualities += GetLink("Haywire") + "(" + weapon.Haywire.toString() + "), ";
+            weapon.Qualities += getLink("Haywire") + "(" + weapon.Haywire.toString() + "), ";
         }
         if(weapon.Proven >= 0){
-            weapon.Qualities += GetLink("Proven") + "(" + weapon.Proven.toString() + "), ";
+            weapon.Qualities += getLink("Proven") + "(" + weapon.Proven.toString() + "), ";
         }
         if(weapon.Smoke >= 0){
-            weapon.Qualities += GetLink("Smoke") + "(" + weapon.Smoke.toString() + "), ";
+            weapon.Qualities += getLink("Smoke") + "(" + weapon.Smoke.toString() + "), ";
         }
         if(weapon.Toxic >= 0){
-            weapon.Qualities += GetLink("Toxic") + "(" + weapon.Toxic.toString() + "), ";
+            weapon.Qualities += getLink("Toxic") + "(" + weapon.Toxic.toString() + "), ";
         }
         if(weapon.Spray >= 0){
-            weapon.Qualities += GetLink("Spray") + "(" + weapon.Spray.toString() + "m), ";
+            weapon.Qualities += getLink("Spray") + "(" + weapon.Spray.toString() + "m), ";
         }
         if(weapon.AreaSaturation >= 0){
-            weapon.Qualities += GetLink("Area Saturation") + "(" + weapon.AreaSaturation.toString() + "m), ";
+            weapon.Qualities += getLink("Area Saturation") + "(" + weapon.AreaSaturation.toString() + "m), ";
         }
         //prepend any preselected qualities
         weapon.Qualities = qualities + ", " + weapon.Qualities;

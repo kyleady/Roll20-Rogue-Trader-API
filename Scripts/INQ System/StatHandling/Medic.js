@@ -26,7 +26,7 @@ only heal up to that point until you receive proper care.
     //add the current Wounds to the healing done
     var NewWounds = Wounds.current + Healing;
     //find the Max Healing attribute
-    var MaxHealing = attrValue("Max Healing", {graphicid: graphic.id, characterid: character.id, alert: false});
+    var MaxHealing = attributeValue("Max Healing", {graphicid: graphic.id, characterid: character.id, alert: false});
     //does the Max Healing attribute exist?
     if(MaxHealing != undefined) {
       //turn the max healing into a number
@@ -46,7 +46,7 @@ only heal up to that point until you receive proper care.
       NewWounds = Wounds.max;
     }
     //create/edit the Max Healing attribute and set it to the NewWounds
-    attrValue("Max Healing", {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
+    attributeValue("Max Healing", {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
     //set the max healing attribute's max value equal to its current value (if it exists!)
     //if a character has their max healing attribute set to its max value for some reason,
     //we don't want it to be some old value that we forgot about
@@ -94,7 +94,7 @@ on("change:graphic:bar3_value", function(obj, prev) {
   if(Wounds.current - Number(prev) < 0){return;}
 
   //find the Max Healing attribute
-  var MaxHealing = attrValue("Max Healing", {graphicid: obj.id, alert: false});
+  var MaxHealing = attributeValue("Max Healing", {graphicid: obj.id, alert: false});
 
   //be sure you found at least one Max Healing attribute
   //otherwise ignore the change
@@ -110,11 +110,11 @@ on("change:graphic:bar3_value", function(obj, prev) {
       //is the new health greater than the max health?
       if(Wounds.current > Wounds.max){
         //the healing cap can only go so far as maxHP, even in extreme circumstances
-        attrValue("Max Healing", {setTo: Wounds.max, graphicid: obj.id, alert: false});
+        attributeValue("Max Healing", {setTo: Wounds.max, graphicid: obj.id, alert: false});
         MaxHealing = Wounds.max;
       } else {
         //record that the healing cap can only go this far
-        attrValue("Max Healing", {setTo: Wounds.current, graphicid: obj.id, alert: false});
+        attributeValue("Max Healing", {setTo: Wounds.current, graphicid: obj.id, alert: false});
         MaxHealing = Wounds.current;
       }
       //set the max healing attribute's max value equal to its current value (if it exists!)

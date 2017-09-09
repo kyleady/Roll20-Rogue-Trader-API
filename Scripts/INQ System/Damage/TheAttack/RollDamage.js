@@ -12,7 +12,7 @@ INQAttack.rollDamage = function(){
   INQAttack.Reports.Damage +=  "{{Damage= [[" + INQAttack.damageFormula() + "]]}} ";
   //note the damage type
   if(typeof INQAttack.inqweapon.DamageType == 'string'){
-    var DamageType = GetLink(INQAttack.inqweapon.DamageType);
+    var DamageType = getLink(INQAttack.inqweapon.DamageType);
   } else {
     var DamageType = INQAttack.inqweapon.DamageType.toNote();
   }

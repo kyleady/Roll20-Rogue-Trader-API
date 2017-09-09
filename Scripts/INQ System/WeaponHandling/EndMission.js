@@ -16,6 +16,7 @@ function endMission(matches, msg){
         attrObj.set("current", attrObj.get("max"));
       }
     });
+
     //remove all of the requisitioned weapons and gear
     //get the character bio and gmnotes
     var charBio = "";
@@ -77,8 +78,6 @@ function endMission(matches, msg){
       return notes;
     });
     //save the modifications to the bio/gmnotes
-    character.set("bio",     charNotes[0]);
-    character.set("gmnotes", charNotes[1]);
     whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
   });
 }

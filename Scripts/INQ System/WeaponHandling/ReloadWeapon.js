@@ -19,7 +19,7 @@ function reloadWeapon(matches, msg){
         var suggestion = "reload " + name;
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + name + "](" + suggestion  + ")", msg.playerid);
+        whisper("[" + name + "](" + suggestion  + ")", {speakingTo: msg.playerid});
       });
       return;
     }
@@ -29,7 +29,7 @@ function reloadWeapon(matches, msg){
       playerid: msg.playerid,
       selected: [graphic]
     };
-    statHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
+    attributeHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
   });
 }
 

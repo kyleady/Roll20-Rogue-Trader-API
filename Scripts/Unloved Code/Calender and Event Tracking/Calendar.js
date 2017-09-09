@@ -63,10 +63,10 @@ function Calendar(day,month,year) {
       var output = pretext + this.dateToText() + ".";
       //if we are not reporting back to a specific person, then report back to everyone
       if(who == null){
-          sendChat("System",output)
+          sendChat("System", output)
       } else {
           //report the date privatly to the inquirer
-          whisper(output,who)
+          whisper(output, {speakingTo: who})
       }
     }
 
@@ -759,11 +759,11 @@ function Calendar(day,month,year) {
             if(gm){
                 //update the character sheet text with the new schedule
                 logbook.set("gmnotes","<u>Recorded Hidden Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","/w gm The " + GetLink("Log Book") + " has been updated.");
+                sendChat("System","/w gm The " + getLink("Log Book") + " has been updated.");
             } else {
                 //update the character sheet text with the new schedule
                 logbook.set("bio","<u>Recorded Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","The " + GetLink("Log Book") + " has been updated.");
+                sendChat("System","The " + getLink("Log Book") + " has been updated.");
             }
         //otherwise you are talking about a future event, put it in the calendar
         }else{
@@ -771,11 +771,11 @@ function Calendar(day,month,year) {
             if(gm){
                 //update the character sheet text with the new schedule
                 calendar.set("gmnotes","<u>Upcoming Hidden Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","/w gm The " + GetLink("Calendar") + " has been updated.");
+                sendChat("System","/w gm The " + getLink("Calendar") + " has been updated.");
             } else {
                 //update the character sheet text with the new schedule
                 calendar.set("bio","<u>Upcoming Events</u>" + this.scheduleToText(schedule));
-                sendChat("System","The " + GetLink("Calendar") + " has been updated.");
+                sendChat("System","The " + getLink("Calendar") + " has been updated.");
             }
         }
 
@@ -1096,7 +1096,7 @@ on("ready",function(){
     var currentTime = myCalendar.textToNumbers(matches[1]);
 
     //report the time in number format
-    whisper(myCalendar.difference(currentTime) + matches[1],msg.playerid);
+    whisper(myCalendar.difference(currentTime) + matches[1], {speakingTo: msg.playerid});
     //get rid of the evidence
     delete myCalendar;
   });

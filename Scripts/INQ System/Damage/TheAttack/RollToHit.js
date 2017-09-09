@@ -19,7 +19,7 @@ INQAttack.rollToHit = function(){
   INQAttack.Reports.toHit = "&{template:default} ";
   INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
   if(INQAttack.inqweapon.FocusSkill){
-    INQAttack.Reports.toHit += "{{Skill=" + GetLink(INQAttack.inqweapon.FocusSkill) + "}} ";
+    INQAttack.Reports.toHit += "{{Skill=" + getLink(INQAttack.inqweapon.FocusSkill) + "}} ";
   }
   INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
   INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
@@ -117,7 +117,7 @@ INQAttack.skillBonus = function(){
         //if the character does not have a matching subgroup, give them a flat -20 modifier
         bonus = subgroupModifier;
       } else {
-        whisper("Psychic Power did not provide a skill group.");
+        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
         bonus = -20;
       }
     //the skill was found, and there is no need to match subgroups

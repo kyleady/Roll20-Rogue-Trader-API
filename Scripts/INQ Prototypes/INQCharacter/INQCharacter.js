@@ -225,8 +225,7 @@ function INQCharacter(character, graphic){
     }
 
     //create all of the character's abilities
-    var customWeapon = new Hash();
-    customWeapon.custom = "true";
+    var customWeapon = {custom: true};
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,

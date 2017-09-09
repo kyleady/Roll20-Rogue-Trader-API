@@ -10,8 +10,9 @@
     "mock20": "^1.0.0"
   },
   "scripts": {
-    "test": "mocha --recursive",
-    "compile": "echo \"require('mock20');\" > INQTotal.js && find ./Scripts -type f -exec cat {} + >> INQTotal.js && echo \"MOCK20endOfLastScript();\" >> INQTotal.js"
+    "test": "npm run compile_script && npm run compile_module && mocha --recursive",
+    "compile_script": "echo \"\" > INQTotal.js && find ./Scripts -type f -exec cat {} + >> INQTotal.js",
+    "compile_module": "echo \"require('mock20')\" > INQModule.js && cat INQTotal.js >> INQModule.js && echo \"MOCK20endOfLastScript();\" >> INQModule.js"
   },
   "repository": {
     "type": "git",

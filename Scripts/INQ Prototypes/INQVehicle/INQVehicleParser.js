@@ -76,12 +76,9 @@ function INQVehicleParser(){
     && graphic.get("bar2_link") == ""
     && graphic.get("bar3_link") == ""){
       //roll20 stores token gmnotes in URI component
-      var gmnotes = decodeURIComponent(graphic.get("gmnotes"));
-      //create a hash of the temporary attributes
-      var tempAttrs = new Hash(gmnotes);
-      //overwrite any values detailed here
-      for(var k in tempAttrs){
-        this.Attributes[k] = Number(tempAttrs[k]);
+      var localAttributes = new LocalAttributes(graphic);
+      for(var k in localAttributes.Attributes){
+        this.Attributes[k] = Number(localAttributes.Attributes[k]);
       }
     }
   }

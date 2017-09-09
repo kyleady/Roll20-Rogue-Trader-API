@@ -4,7 +4,7 @@ on("ready",function(){
   INQAttack.applyToughness = function(damage){
     if(this.targetType == "character"){
       //get the target's toughness
-      var Toughness = attrValue("T", {characterid: this.character.id, graphicid: this.graphic.id});
+      var Toughness = attributeValue("T", {characterid: this.character.id, graphicid: this.graphic.id});
       //be sure that the Toughness was found
       if(Toughness){
         Toughness = Number(Toughness);
@@ -15,7 +15,7 @@ on("ready",function(){
       log("Felling: " + Number(this.Fell.get("current")))
 
       //get the target's toughness
-      var UnnaturalToughness = attrValue("Unnatural T", {characterid: this.character.id, graphicid: this.graphic.id});
+      var UnnaturalToughness = attributeValue("Unnatural T", {characterid: this.character.id, graphicid: this.graphic.id});
       //be sure that the Toughness was found
       if(UnnaturalToughness){
         log("Unnatural Toughness: " + UnnaturalToughness)

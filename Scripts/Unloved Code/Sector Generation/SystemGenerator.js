@@ -78,7 +78,7 @@ function System(){
         abundance = this.calculateAbundance(abundance,"Mineral");
         
         //record the abundance of the minerals in string form
-        var output = abundance.toString() + " " + GetLink("Abundance") + " of ";
+        var output = abundance.toString() + " " + getLink("Abundance") + " of ";
         
         //if the mineral was not already preset, roll for one randomly
         if(PresetMineral == ""){
@@ -88,7 +88,7 @@ function System(){
                 case 8: case 9: output += "Radioactive"; break;
                 case 10: output += "Exotic"; break;
             }
-            output += " " + GetLink("Minerals");
+            output += " " + getLink("Minerals");
         } else {
             output += PresetMineral;
         }
@@ -101,7 +101,7 @@ function System(){
         //apply the standard modifiers to the abundance of the organic compound
         abundance = this.calculateAbundance(abundance,"Organic Compound");
         //record the modified abundance in string form
-        var output = abundance.toString() + " " + GetLink("Abundance") + " of ";
+        var output = abundance.toString() + " " + getLink("Abundance") + " of ";
         //roll for a random organic compound
         switch(randomInteger(10)){
             case 1: case 2:  output += "Curative"; break;
@@ -110,7 +110,7 @@ function System(){
             case 7: case 8: case 9: output += "Vivid"; break;
             case 10: output += "Exotic"; break;
         }
-        output += " " + GetLink("Compounds")
+        output += " " + getLink("Compounds")
         //return the abundance and compound type in string form
         return output;
     } 
@@ -134,7 +134,7 @@ function System(){
                 abundance += randomInteger(10)+5;
             }
             //record the abundance in string form
-            output += abundance.toString() + " " + GetLink("Abundance") + " of ";
+            output += abundance.toString() + " " + getLink("Abundance") + " of ";
         }
         
         //if the ruin type was not already preset, randomly generate a ruin type
@@ -166,7 +166,7 @@ function System(){
             }
         } else if(PresetRuin == "Human") {
             //human ruins are Archeotech resources
-            output += GetLink("Archeotech Cache");
+            output += getLink("Archeotech Cache");
         } else {
             //otherwise just add the preset Xenos ruin
             output += PresetRuin;
@@ -175,7 +175,7 @@ function System(){
         //if you are not just asking for random ruin type and the ruin is not archeotech
         if(abundance != "Name" && PresetRuin != "Human"){
             //append [Ruins] to the output as the Preset Ruin is just an adjective for this noun
-            output += " " + GetLink("Ruins");
+            output += " " + getLink("Ruins");
         }
         
         //return the final result in string form
@@ -961,7 +961,7 @@ function System(){
         output += "</li>";
         
         //Generate the Gravity of the Planet/Moon
-        output += "<li><strong>" + GetLink("Gravity") + "</strong>: ";
+        output += "<li><strong>" + getLink("Gravity") + "</strong>: ";
         PlanetGravity += randomInteger(10);
         
         //the gravity of the planet determines the number of Orbital Features, only if this Planet is not a Moon. Moons don't get their own moons
@@ -982,7 +982,7 @@ function System(){
         output += "</li>";
         
         //Generate the Atmosphere of the Planet
-        output += "<li><strong>" + GetLink("Atmosphere") + "</strong>: ";
+        output += "<li><strong>" + getLink("Atmosphere") + "</strong>: ";
         
         //roll for the atmosphere
         Atmosphere += randomInteger(10);
@@ -1017,7 +1017,7 @@ function System(){
         output += "</li>";
         
         //Generate the Atmosphere of the Planet
-        output += "<li><strong>" + GetLink("Climate") + "</strong>: ";
+        output += "<li><strong>" + getLink("Climate") + "</strong>: ";
         //Climate is pre determined if there is no atmosphere
         //Climite strongly affects Habitability
         if(Atmosphere <= 1) {
@@ -1150,7 +1150,7 @@ function System(){
         
         //generate mandatory exotic bounties
         for(var i = 0; i < this.PlanetExoticBounty; i++){
-            output += "<li>" + this.RandomMineral(randomInteger(100),"Exotic " + GetLink("Minerals"))+ "</li>";
+            output += "<li>" + this.RandomMineral(randomInteger(100),"Exotic " + getLink("Minerals"))+ "</li>";
         }
         
         //generate mandatory extra ruins
@@ -1848,11 +1848,11 @@ function System(){
             } break;
             case 2: GMNotes += "<strong>Gravity Tides</strong>: ";
             switch(randomInteger(3)){
-                case 1: GMNotes += "Add D5 " + GetLink("Gravity Tides") +  " to random Solar Zones."; 
+                case 1: GMNotes += "Add D5 " + getLink("Gravity Tides") +  " to random Solar Zones."; 
                     i = randomInteger(5);
                     while(i > 0){GravityRiptides[randomInteger(3)-1]++; i--;}                
                 break;                    
-                case 2: GMNotes += "The gravity wells surrounding Planets in this System churn like whirlpools, battering orbiting vessels with their fluctuations. Safely entering orbit with a voidship requires a Difficult (–10) " + GetLink("Pilot") + "(Space Craft) Test, causing the loss of 1 point of Hull Integrity for every two Degrees of Failure. Small craft can enter and exit the gravity well only after the pilot passes a Very Hard (–30)" + GetLink("Pilot") + "(Flyers) Test. Every full day spent in orbit requires an additional " + GetLink("Pilot") + " Test"; break;
+                case 2: GMNotes += "The gravity wells surrounding Planets in this System churn like whirlpools, battering orbiting vessels with their fluctuations. Safely entering orbit with a voidship requires a Difficult (–10) " + getLink("Pilot") + "(Space Craft) Test, causing the loss of 1 point of Hull Integrity for every two Degrees of Failure. Small craft can enter and exit the gravity well only after the pilot passes a Very Hard (–30)" + getLink("Pilot") + "(Flyers) Test. Every full day spent in orbit requires an additional " + getLink("Pilot") + " Test"; break;
                 case 3: GMNotes += "Travel between Planets within this System takes half the usual time."; break;
             } break;
             case 3: GMNotes += "<strong>Haven</strong>: "; 
@@ -1871,11 +1871,11 @@ function System(){
             switch(randomInteger(7)){
                 case 1: GMNotes += "Any ship entering the System for the first time loses 1d5 Morale, unless one of the Explorers passes a Challenging (+0) [Charm] or [Intimidate] Test. If the nature and reputation of the System was known to the crew ahead of time, the Test difficulty and Morale loss for failure might be higher at the GM’s discretion."; break;
                 case 2: GMNotes += "All Morale loss suffered within this System is increased by 1, as the crew attribute whatever misfortune they suffer to the malevolent will of their surroundings. This does not apply to Morale lost for entering a System the first time (even the most fearful voidsman’s imagination can only concoct so many horrors!)."; break;
-                case 3: GMNotes += "Any " + GetLink("Fear") +  " Tests made within the System are made at an additional –10 penalty."; break;
-                case 4: GMNotes += "When spending a " + GetLink("Fate Point") +  " within this System, roll 1d10. On a 9, it has no effect. If it was spent to alter a Test in some way, it counts as the only Fate Point that can be used for that Test as normal, even though it had no effect. Void Born Explorers recover " + GetLink("Fate Point") +  "s lost in this manner (thanks to the result of 9) as normal."; break;
+                case 3: GMNotes += "Any " + getLink("Fear") +  " Tests made within the System are made at an additional –10 penalty."; break;
+                case 4: GMNotes += "When spending a " + getLink("Fate Point") +  " within this System, roll 1d10. On a 9, it has no effect. If it was spent to alter a Test in some way, it counts as the only Fate Point that can be used for that Test as normal, even though it had no effect. Void Born Explorers recover " + getLink("Fate Point") +  "s lost in this manner (thanks to the result of 9) as normal."; break;
                 case 5: GMNotes += "All Willpower Tests made within this System are made at a –10 penalty."; break;
-                case 6: GMNotes += "Whenever an Explorer would gain " + GetLink("Insanity") +  " Points while within this System, double the amount of Insanity Points he gains."; break;
-                case 7: GMNotes += "Attempting to use Psychic Techniques from the Divination Discipline to gain information about the System or anything within it requires the user to pass a Difficult (–10) " + GetLink("Fear") +  " Test before he can attempt the " + GetLink("Focus Power Test") +  "."; break;
+                case 6: GMNotes += "Whenever an Explorer would gain " + getLink("Insanity") +  " Points while within this System, double the amount of Insanity Points he gains."; break;
+                case 7: GMNotes += "Attempting to use Psychic Techniques from the Divination Discipline to gain information about the System or anything within it requires the user to pass a Difficult (–10) " + getLink("Fear") +  " Test before he can attempt the " + getLink("Focus Power Test") +  "."; break;
             } break;
             case 5: GMNotes += "<strong>Pirate Den</strong>: "; 
             i = randomInteger(5)+4;
@@ -1912,23 +1912,23 @@ function System(){
                 Planets[randomInteger(3)-1]--; 
                 Planets[randomInteger(3)-1]--;
                 break;
-                case 2: GMNotes += GetLink("Scholastic Lore") +  "(Astromancy) and " + GetLink("Navigation") +  "(Stellar) Tests made to plot routes through the System, or to determine position within it, receive a +10 bonus."; break;
+                case 2: GMNotes += getLink("Scholastic Lore") +  "(Astromancy) and " + getLink("Navigation") +  "(Stellar) Tests made to plot routes through the System, or to determine position within it, receive a +10 bonus."; break;
                 case 3: GMNotes += "The massive forces exerted by a Stellar Anomaly sometimes seems to stabilise local Warp routes, though many dismiss this as voidsmen’s superstition and no record exists of any Navigator’s comment on the matter. Ships travelling through the System only need to roll for Warp Travel Encounters for every seven full days of travel (or once, for a trip of under seven days). However, the same forces make the necessity of occasional drops into realspace for course adjustment into an additional hazard. On any result of doubles when rolling for a Warp Travel encounter, the vessel runs afoul of a hazard in realspace instead of applying the normally generated result. The effects of such hazards can be extrapolated from similar System Elements, such as Gravity Riptides, Radiation Bursts, or Solar Flares."; break;
             } break;
             case 9: GMNotes += "<strong>Warp Stasis</strong>: "; 
             switch(randomInteger(4)){
                 case 1: GMNotes += "Travel to and from the System is becalmed. Double the base travel time of any trip entering or leaving the area. The time required to send Astrotelepathic messages into or out of the System is likewise doubled. In addition, pushing a coherent message across its boundaries requires incredible focus; Astropaths suffer a –3 penalty to their Psy Rating for the purposes of sending Astrotelepathic messages from this System."; break;
-                case 2: GMNotes += GetLink("Focus Power Test") +  "s and " + GetLink("Psyniscience") +  " Tests within the System are made at a –10 penalty."; break;
+                case 2: GMNotes += getLink("Focus Power Test") +  "s and " + getLink("Psyniscience") +  " Tests within the System are made at a –10 penalty."; break;
                 case 3: GMNotes += "Psychic Techniques cannot be used at the Push level within the System."; break;
                 case 4: GMNotes += "When rolling on Table 6–2: Psychic Phenomena (see page 160 of the ROGUE TRADER Core Rulebook) within this System, roll twice and use the lower result."; break;
             } break;
             case 10: GMNotes += "<strong>Warp Turbulence</strong>: "; 
             switch(randomInteger(5)){
-                case 1: GMNotes += "Navigators suffer a –10 penalty to " + GetLink("Navigation") +  "(Warp) Tests for Warp Jumps that begin or end in this System."; break;
+                case 1: GMNotes += "Navigators suffer a –10 penalty to " + getLink("Navigation") +  "(Warp) Tests for Warp Jumps that begin or end in this System."; break;
                 case 2: GMNotes += "Add +10 to all rolls for on Table 6–2: Psychic Phenomena (see page 160 of the ROGUE TRADER Core Rulebook) made within the System."; break;
-                case 3: GMNotes += "Whenever an Explorer would gain " + GetLink("Corruption") +  " Points within the System, increase the amount gained by 1."; break;
+                case 3: GMNotes += "Whenever an Explorer would gain " + getLink("Corruption") +  " Points within the System, increase the amount gained by 1."; break;
                 case 4: GMNotes += "Add +1 to the Psy Rating of any Psychic Technique used at the Unfettered or Push levels."; break;
-                case 5: GMNotes += "One of the Planets in the System is engulfed in a permanent Warp storm, rendering it inaccessible to all but the most dedicated (and insane) of travellers. " + GetLink("Navigation") +  "(Warp) Tests made within this System suffer a –20 penalty due to the difficulty of plotting courses around this hazard."; break;
+                case 5: GMNotes += "One of the Planets in the System is engulfed in a permanent Warp storm, rendering it inaccessible to all but the most dedicated (and insane) of travellers. " + getLink("Navigation") +  "(Warp) Tests made within this System suffer a –20 penalty due to the difficulty of plotting courses around this hazard."; break;
             } break;
             break;
         }
@@ -2127,8 +2127,8 @@ function System(){
         
         //Add Asteroid Belts
         for(j = 0; j < AsteroidBelts[this.region]; j++){
-            GMNotes += GetLink("Asteroid Belt") + "<ul>";
-            Notes += "<li>" + GetLink("Asteroid Belt") + "</li>";
+            GMNotes += getLink("Asteroid Belt") + "<ul>";
+            Notes += "<li>" + getLink("Asteroid Belt") + "</li>";
             //add a random number of minerals, including any System Feature Bonuses
             i = randomInteger(5) + AsteroidBounty;
             while(i > 0) {
@@ -2144,8 +2144,8 @@ function System(){
         
         //Add Asteroid Clusters
         for(j = 0; j < AsteroidClusters[this.region]; j++){
-            GMNotes += GetLink("Asteroid Cluster") + "<ul>";
-            Notes += "<li>" + GetLink("Asteroid Cluster") + "</li>";
+            GMNotes += getLink("Asteroid Cluster") + "<ul>";
+            Notes += "<li>" + getLink("Asteroid Cluster") + "</li>";
             //add a random number of minerals, including any System Feature Bonuses
             i = randomInteger(5) + AsteroidBounty;
             while(i > 0) {
@@ -2219,35 +2219,35 @@ function System(){
         
         //Add Dust Clouds
         if(DustClouds[this.region] > 0) {
-            GMNotes += GetLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")<br><br>";
-            Notes += "<li>" + GetLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")</li>";
+            GMNotes += getLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")<br><br>";
+            Notes += "<li>" + getLink("Dust Cloud") + "(x" + DustClouds[this.region].toString() + ")</li>";
         }
         
         //Add Gravity Riptides
         if(GravityRiptides[this.region] > 0) {
-            GMNotes += GetLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Gravity Tides freely available to the player
-            //Notes += "<li>" + GetLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Gravity Riptide") + "(x" + GravityRiptides[this.region].toString() + ")</li>";
         }
         
         //Add Radiation Bursts
         if(RadiationBursts[this.region] > 0) {
-            GMNotes += GetLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Radiation Bursts freely available to the player
-            //Notes += "<li>" + GetLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Radiation Burst") + "(x" + RadiationBursts[this.region].toString() + ")</li>";
         }
         
         //Add Solar Flares
         if(SolarFlares[this.region] > 0) {
-            GMNotes += GetLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")<br><br>";
+            GMNotes += getLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")<br><br>";
             //For right now I am not going to make Solar Flares freely available to the player
-            //Notes += "<li>" + GetLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")</li>";
+            //Notes += "<li>" + getLink("Solar Flare") + "(x" + SolarFlares[this.region].toString() + ")</li>";
         }
         
         //Add Starship Graveyards
         for(j = 0; j < StarshipGraveyards[this.region]; j++){
-            GMNotes += GetLink("Starship Graveyard") + "<ul>";
-            Notes += "<li>" + GetLink("Starship Graveyard") + "</li>";
+            GMNotes += getLink("Starship Graveyard") + "<ul>";
+            Notes += "<li>" + getLink("Starship Graveyard") + "</li>";
             ResourceType = [0,0];
             for(k = 0; k < ResourceType.length; k++){
                 //if there is a preset empire, go with the ruined empire. Otherwise generate a random ship
@@ -2299,15 +2299,15 @@ function System(){
         
         //Add Planets
         for(j = 0; j < Planets[this.region]; j++){
-            GMNotes += GetLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber;
-            Notes += "<li>" + GetLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
+            GMNotes += getLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber;
+            Notes += "<li>" + getLink("Planet") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
             GMNotes += this.RandomPlanet();
         }
         
         //Add Gas Giants
         for(j = 0; j < GasGiants[this.region]; j++){
-            GMNotes += GetLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "<ul>";
-            Notes += "<li>" + GetLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
+            GMNotes += getLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "<ul>";
+            Notes += "<li>" + getLink("Gas Giant") + " " + this.Sector + "-" + this.SystemNumber + "-" + this.PlanetNumber + "</li>";
             //reset temporary planet generation variables
             Gravity = 0;
             this.RegionShift = 0;
@@ -2396,7 +2396,7 @@ function System(){
     NewSystem.set('gmnotes',GMNotes);
     
     //edit the gmnotes of the handout
-    sendChat("System", "/w gm Generated " + GetLink(UniqueName, "http://journal.roll20.net/character/" + NewSystem.id));
+    sendChat("System", "/w gm Generated " + getLink(UniqueName, "http://journal.roll20.net/character/" + NewSystem.id));
     
     //output the id of the character sheet and a list of the stars
     return output;

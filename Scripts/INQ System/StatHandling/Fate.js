@@ -3,29 +3,29 @@
 function fateHandler(matches,msg){
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
-      var Fate = attrValue("Fate",{characterid: character.id, graphicid: graphic.id});
+      var Fate = attributeValue("Fate",{characterid: character.id, graphicid: graphic.id});
       var name = character.get("name");
 
       //exit if the character does not have Fate Points
       if(Fate == undefined){
         //while exiting, tell the user which character did not have a Fate Attribute
-        return whisper(name + " does not have a Fate Attribute!", msg.playerid);
+        return whisper(name + " does not have a Fate Attribute!", {speakingTo: msg.playerid, gmEcho: true});
       }
 
       //be sure the player has enough fate points to spend
       if(Fate < 1){
-        return whisper(name + " does not have enough Fate to spend.",msg.playerid);
+        return whisper(name + " does not have enough Fate to spend.", {speakingTo: msg.playerid});
       } else {
         //announce that the player is spending a fate point
         announce(name + " spends a Fate Point!");
         //reduce the number of fate points by one
-        attrValue("Fate",{setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
+        attributeValue("Fate", {setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
         //report what remains
         var finalReport = name + " has [[" + Fate + "-1]] Fate Point";
         if(Fate-1 != 1){
           finalReport += "s";
         }
-        whisper(finalReport + " left.", msg.playerid);
+        whisper(finalReport + " left.", {speakingTo: msg.playerid});
       }
   });
 }

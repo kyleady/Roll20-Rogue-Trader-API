@@ -12,14 +12,14 @@ on("ready",function(){
           //Load up the Wounds and Unnatural Wounds attributes. Warn the gm if
           //they are not found.
           var WBonus = 1;
-          var Wounds = attrValue("Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
+          var Wounds = attributeValue("Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
           if(Wounds != undefined){
             //Calculate the Wounds Bonus of the Character
             Wounds = Number(Wounds);
             WBonus = Math.floor(Wounds/10);
           }
 
-          var UnnaturalWounds = attrValue("Unnatural Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
+          var UnnaturalWounds = attributeValue("Unnatural Wounds", {characterid: this.character.id, graphicid: this.graphic.id});
           if(UnnaturalWounds != undefined){
             //Add in Unnatural Wounds to the Wounds Bonus
             UnnaturalWounds = Number(UnnaturalWounds);
@@ -37,13 +37,13 @@ on("ready",function(){
           //Load up the Structural Integrity and Unnatural Structural Integrity
           //Attributes. Warn the gm if they are not found.
           var SIBonus = 1;
-          var StrucInt = attrValue("Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
+          var StrucInt = attributeValue("Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
           if(StrucInt != undefined){
             //Calculate the Structural Integrity Bonus of the Vehicle
             StrucInt = Number(StrucInt);
             SIBonus = Math.floor(StrucInt/10);
           }
-          var UnnaturalStrucInt = attrValue("Unnatural Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
+          var UnnaturalStrucInt = attributeValue("Unnatural Structural Integrity", {characterid: this.character.id, graphicid: this.graphic.id});
           if(UnnaturalStrucInt != undefined){
             //Add in any Unnatural Structural Integrity to the Bonus
             UnnaturalStrucInt = Number(UnnaturalStrucInt);
