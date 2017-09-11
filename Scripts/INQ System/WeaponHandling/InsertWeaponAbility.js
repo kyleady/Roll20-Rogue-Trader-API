@@ -19,7 +19,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
     if(matches){
       //get the weapon name
       INQAttack.weaponname = matches[1];
-      INQAttack.options = JSON.parse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""));
+      INQAttack.options = carefulParse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""))  || {};
       if(INQAttack.options.Name){
         abilityNames.push(INQAttack.options.Name);
       } else {

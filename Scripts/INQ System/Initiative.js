@@ -338,7 +338,7 @@ function INQTurns(){
     this.turnorder = [];
   } else{
     //otherwise turn the turn order into an array
-    this.turnorder = JSON.parse(Campaign().get("turnorder"));
+    this.turnorder = carefulParse(Campaign().get("turnorder")) || {};
   }
 }
 

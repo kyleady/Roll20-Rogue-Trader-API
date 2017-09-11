@@ -2598,7 +2598,7 @@
         //Feature not available yet :(
         //create the default token for the Xenos from the 'Ahh! A Monster Blueprint!' Character Sheet
         //var Blueprint = findObjs({type: 'character', name: "Ahh! A Monster Blueprint!"})[0];
-        //var Token = JSON.parse(Blueprint._defaulttoken);
+        //var Token = carefulParse(Blueprint._defaulttoken) || {};
 
         //Link the token to the sheet
         //Token.represents = NewXenos.id;

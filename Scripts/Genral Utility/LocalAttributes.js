@@ -5,7 +5,7 @@ function LocalAttributes(graphic) {
   this.Attributes = {};
   if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(this.gmnotes)){
     this.Attributes = this.gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, '$1');
-    this.Attributes = JSON.parse(this.Attributes);
+    this.Attributes = carefulParse(this.Attributes) || {};
   }
 
   this.get = function(attribute) {

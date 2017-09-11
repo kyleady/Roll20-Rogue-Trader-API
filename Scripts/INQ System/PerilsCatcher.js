@@ -12,7 +12,7 @@ on("chat:message", function(msg){
   && /{{\s*unnatural\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content)
   && msg.inlinerolls.length == 2) {
     //load up the AmmoTracker object to calculate the hit location
-    saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
+    saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v, {whisper: true});
     //if the number of successes was positive, add in Unnatural and save it
     if(msg.inlinerolls[0].results.total > 0){
       //the negative modifier keeps the total number of hits <= -1 while still

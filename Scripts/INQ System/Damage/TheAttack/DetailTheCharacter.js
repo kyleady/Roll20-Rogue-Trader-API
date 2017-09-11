@@ -3,7 +3,7 @@ INQAttack = INQAttack || {};
 
 INQAttack.detailTheCharacter = function(character, graphic){
   INQAttack.inqcharacter = undefined;
-  if(characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
+  if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
     var pilot = defaultCharacter(INQAttack.msg.playerid);
     if(pilot != undefined){
       INQAttack.inqcharacter = new INQCharacter(pilot);
@@ -14,8 +14,8 @@ INQAttack.detailTheCharacter = function(character, graphic){
   if(INQAttack.inqcharacter == undefined){
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
   }
-  log("INQAttack.inqcharacter.ObjID")
-  log(INQAttack.inqcharacter.ObjID)
-  log("INQAttack.inqcharacter.GraphicID")
-  log(INQAttack.inqcharacter.GraphicID)
+  //log("INQAttack.inqcharacter.ObjID")
+  //log(INQAttack.inqcharacter.ObjID)
+  //log("INQAttack.inqcharacter.GraphicID")
+  //log(INQAttack.inqcharacter.GraphicID)
 }

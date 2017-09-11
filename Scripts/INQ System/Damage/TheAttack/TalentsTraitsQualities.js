@@ -201,38 +201,38 @@ INQAttack.accountForHordeDmg = function(){
 //special ammunition will explicitly note stat modifications
 //apply damage modifications
 INQAttack.accountForDamage = function(){
-  var damage = INQAttack.inqweapon.has("Damage");
-  if(damage){
-    _.each(damage, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.DamageBase += Number(value.Name);
-      }
-    });
-  }
+  var dam = INQAttack.inqweapon.has("Dam") || [];
+  var damage = INQAttack.inqweapon.has("Damage") || [];
+  dam = dam.concat(damage);
+  _.each(dam, function(value){
+    if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.DamageBase += Number(value.Name);
+    }
+  });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply penetration modifications
 INQAttack.accountForPen = function(){
-  var pen = INQAttack.inqweapon.has("Pen");
-  if(pen){
-    _.each(pen, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.Penetration += Number(value.Name);
-      } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
-      }
-    });
-  }
+  var pen = INQAttack.inqweapon.has("Pen") || [];
+  var penetration = INQAttack.inqweapon.has("Penetration") || [];
+  pen = pen.concat(penetration);
+  _.each(pen, function(value){
+    if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.Penetration += Number(value.Name);
+    } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
+    }
+  });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply damage TYPE modifications
 INQAttack.accountForType = function(){
-  var type = INQAttack.inqweapon.has("Type");
+  var type = INQAttack.inqweapon.has("DamageType");
   if(type){
     _.each(type, function(value){
-      INQAttack.inqweapon.DamageType = new INQLink(value.Name);
+      INQAttack.inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
     });
   }
 }

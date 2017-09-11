@@ -1,5 +1,6 @@
 //take the given roll and calculate the location
-function saveHitLocation(roll){
+function saveHitLocation(roll, options){
+  if(typeof options != 'object') options = {};
   //calculate Tens Location
   var tens = Math.floor(roll/10);
   //calculate Ones Location
@@ -29,7 +30,11 @@ function saveHitLocation(roll){
       } Location += "Leg"; break;
   }
   //send the total Damage at a 1 second delay
-  setTimeout(whisper,100,"<strong>Location</strong>: " + Location);
+  if (options.whisper) {
+    setTimeout(function(location){whisper(location, {speakingAs: 'Location'})}, 100, Location);
+  } else {
+    setTimeout(function(location){announce(location, {speakingAs: 'Location'})}, 100, Location);
+  }
 }
 
 

@@ -16,7 +16,7 @@ function journalSearch(matches, msg){
 }
 
 function moreSearch(matches, msg){
-  if(!LinkList[msg.playerid]) return whisper('No results.', {speakingTo: msg.playerid});
+  if(!LinkList[msg.playerid] || !LinkList[msg.playerid].length) return whisper('No results.', {speakingTo: msg.playerid});
   for(var i = 1; i <= 5 && LinkList[msg.playerid].length; i++){
     whisper(LinkList[msg.playerid][0], {speakingTo: msg.playerid});
     LinkList[msg.playerid].shift();

@@ -113,9 +113,7 @@ INQAttack.useAmmo = function(ammo){
   //only add the special rules of the ammo to the inqweapon, we want every
   //modification to be highly visible to the player
   for(var k in INQAttack.inqammo){
-    if(k == "Name"){continue;}
-    if(k == "ObjID"){continue;}
-    if(k == "ObjType"){continue;}
+    if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
     if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
     if(Array.isArray(INQAttack.inqammo[k])){
       INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);

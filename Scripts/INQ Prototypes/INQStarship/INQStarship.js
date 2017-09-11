@@ -32,15 +32,16 @@ function INQStarship(){
   this.Attributes.Population = 100;
   this.Attributes.Moral = 100;
   this.Attributes.Hull = 1;
-  this.VoidShields = 0;
-  this.Turret = 1;
-  this.Crew = 10;
-  this.Manoeuvrability = 0;
+  this.Attributes.VoidShields = 0;
 
   this.Attributes.Armour_F = 0;
   this.Attributes.Armour_P = 0;
   this.Attributes.Armour_S = 0;
   this.Attributes.Armour_A = 0;
+
+  this.Attributes.Turret = 1;
+  this.Attributes.Crew = 10;
+  this.Attributes.Manoeuvrability = 0;
 
   //return the attribute bonus Stat/10 + Unnatural Stat
   this.bonus = function(stat){
@@ -75,16 +76,6 @@ function INQStarship(){
     gmnotes += "<strong>Weapon Capacity</strong>: ";
     gmnotes += this.WeaponCapacity;
     gmnotes += "<br>";
-
-    //display the essential components
-    gmnotes += "<br>";
-    gmnotes += "<u>Essential Components<u>";
-    gmnotes += "<br>";
-    for(var k in this.EssentialComponents){
-      gmnotes += this.EssentialComponents[k].toNote() + ",";
-    }
-    //remove the last comma
-    gmnotes = gmnotes.replace(/,\s*$/,"");
 
     //display every list
     for(var list in this.List){

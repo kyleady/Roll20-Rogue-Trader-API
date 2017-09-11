@@ -1,6 +1,6 @@
 function whisper(content, options){
   if(typeof options != 'object') options = {};
-  var speakingAs = options.speakingAs || 'API';
+  var speakingAs = options.speakingAs || 'INQ';
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('whisper() attempted to send an empty message.');
   var new_options = {};

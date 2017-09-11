@@ -111,18 +111,17 @@ on("chat:message", function(msg) {
     }
 
     //create a button to report the lowest damage roll
-    var lowestButton = "<strong>Lowest</strong>: "
-    lowestButton += "[" + lowest.toString() + "]";
+    var lowestButton = "[" + lowest.toString() + "]";
     lowestButton += "("
     lowestButton += "!{URIFixed}" + encodeURIFixed("Crit?");
     lowestButton += ")";
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
-      whisper(lowestButton);
+      whisper(lowestButton, {speakingAs: 'Lowest'});
     } else {
       //report the highest roll publicly
-      announce(lowestButton)
+      announce(lowestButton, {speakingAs: 'Lowest'});
     }
 
     //save the damage variables to their maximums as well

@@ -5,7 +5,7 @@ INQAttack.useWeapon = function(matches,msg){
   //clean out any of the previous details
   INQAttack.clean();
   //get the options
-  INQAttack.options = JSON.parse(matches[2]);
+  INQAttack.options = carefulParse(matches[2])  || {};
   //save the weapon name
   INQAttack.weaponname = matches[1];
   //save the message for use elsewhere
@@ -72,7 +72,7 @@ INQAttack.deliverReport = function(){
     }
   });
   //record the results of the attack
-  INQAttack.recordAttack();
+  if(INQAttack.hits) INQAttack.recordAttack();
   //if a player whispered this to the gm, let the player know it was successful
   if(INQAttack.inqcharacter.controlledby == ""
   || INQAttack.options.whisper){
@@ -95,7 +95,7 @@ INQAttack.clean = function(){
 INQAttack.recordAttack = function(){
   //report the hit location and save the hit location
   if(INQAttack.d100 != undefined){
-    saveHitLocation(INQAttack.d100);
+    saveHitLocation(INQAttack.d100, {whisper: INQAttack.inqcharacter.controlledby == "" || INQAttack.options.whisper});
   }
   if(INQAttack.hits != undefined){
     //save the number of hits achieved

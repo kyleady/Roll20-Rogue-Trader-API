@@ -1,7 +1,7 @@
 
 function announce(content, options){
   if(typeof options != 'object') options = {};
-  var speakingAs = options.speakingAs || 'API';
+  var speakingAs = options.speakingAs || 'INQ';
   var callback = options.callback || null;
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('announce() attempted to send an empty message.');
@@ -64,24 +64,35 @@ function attributeValue(name, options){
     options['characterid'] = graphic.get('represents');
   }
 
-  var character = getObj('character', options['characterid']);
-
   var attribute = getAttribute(name, options);
   if(!attribute) {
-    if(options['setTo'] != undefined && character){
-      attributes = [createObj('attribute', {
+    if(options['setTo'] != undefined){
+      var character = getObj('character', options['characterid']);
+      if(!character) return;
+      var attribute = createObj('attribute', {
         name: name,
         current: options['setTo'],
         max: options['setTo'],
         characterid: character.id
-      })];
-      return attributes[0];
+      });
+      return attribute
     }
 
     return;
   }
   if(options['setTo'] != undefined) attribute.set(workingWith, options['setTo']);
   return attribute.get(workingWith);
+}
+function carefulParse(str) {
+  var obj = undefined;
+  try {
+    return JSON.parse(str);
+  } catch(e) {
+    setTimeout(whisper, 200, 'JSON failed to parse. See the log for details.');
+    log('failed to parse');
+    log(str);
+    log(e);
+  }
 }
 var CentralInput = {};
 CentralInput.Commands = [];
@@ -247,7 +258,7 @@ function journalSearch(matches, msg){
 }
 
 function moreSearch(matches, msg){
-  if(!LinkList[msg.playerid]) return whisper('No results.', {speakingTo: msg.playerid});
+  if(!LinkList[msg.playerid] || !LinkList[msg.playerid].length) return whisper('No results.', {speakingTo: msg.playerid});
   for(var i = 1; i <= 5 && LinkList[msg.playerid].length; i++){
     whisper(LinkList[msg.playerid][0], {speakingTo: msg.playerid});
     LinkList[msg.playerid].shift();
@@ -351,7 +362,7 @@ function LocalAttributes(graphic) {
   this.Attributes = {};
   if(/[^\{\}]*(\{.*\})[^\{\}]*/.test(this.gmnotes)){
     this.Attributes = this.gmnotes.replace(/[^\{\}]*(\{.*\})[^\{\}]*/, '$1');
-    this.Attributes = JSON.parse(this.Attributes);
+    this.Attributes = carefulParse(this.Attributes) || {};
   }
 
   this.get = function(attribute) {
@@ -855,7 +866,7 @@ on('ready', function(){
 });
 function whisper(content, options){
   if(typeof options != 'object') options = {};
-  var speakingAs = options.speakingAs || 'API';
+  var speakingAs = options.speakingAs || 'INQ';
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('whisper() attempted to send an empty message.');
   var new_options = {};
@@ -1756,7 +1767,7 @@ function INQParser(object){
     var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
     Lines = this.balanceLinkTags(Lines);
     for(var i = 0; i < Lines.length; i++){
-      log(Lines[i]);
+      //log(Lines[i]);
       this.parseLine(Lines[i]);
     }
     //finish off any in-progress lists
@@ -2016,15 +2027,16 @@ function INQStarship(){
   this.Attributes.Population = 100;
   this.Attributes.Moral = 100;
   this.Attributes.Hull = 1;
-  this.VoidShields = 0;
-  this.Turret = 1;
-  this.Crew = 10;
-  this.Manoeuvrability = 0;
+  this.Attributes.VoidShields = 0;
 
   this.Attributes.Armour_F = 0;
   this.Attributes.Armour_P = 0;
   this.Attributes.Armour_S = 0;
   this.Attributes.Armour_A = 0;
+
+  this.Attributes.Turret = 1;
+  this.Attributes.Crew = 10;
+  this.Attributes.Manoeuvrability = 0;
 
   //return the attribute bonus Stat/10 + Unnatural Stat
   this.bonus = function(stat){
@@ -2059,16 +2071,6 @@ function INQStarship(){
     gmnotes += "<strong>Weapon Capacity</strong>: ";
     gmnotes += this.WeaponCapacity;
     gmnotes += "<br>";
-
-    //display the essential components
-    gmnotes += "<br>";
-    gmnotes += "<u>Essential Components<u>";
-    gmnotes += "<br>";
-    for(var k in this.EssentialComponents){
-      gmnotes += this.EssentialComponents[k].toNote() + ",";
-    }
-    //remove the last comma
-    gmnotes = gmnotes.replace(/,\s*$/,"");
 
     //display every list
     for(var list in this.List){
@@ -3496,6 +3498,11 @@ function setDefaultToken(matches, msg){
       var bar2 = getAttrByName(character.id, "Aerial Speed", "max")   || 0;
       var bar3 = getAttrByName(character.id, "Structural Integrity", "max");
     break;
+    case "starship":
+      var bar1 = getAttrByName(character.id, "Population", "max") || 0;
+      var bar2 = getAttrByName(character.id, "Moral", "max") || 0;
+      var bar3 = getAttrByName(character.id, "Hull", "max");
+    break;
   }
 
 
@@ -3670,7 +3677,8 @@ on("ready",function(){
   CentralInput.addCMD(/^!\s*crit\s*\?\s*(|v|vehicle|s|starship|i|impact|e|energy|r|rending|x|explosive)\s*(|h|head|(?:|l|r)\s*(?:a|l)|(?:|left|right)\s*(?:arm|leg)s?|b|body|motive(?: systems)?|hull|weapon|turret)\s*$/i,getCritLink,true);
 });
 //take the given roll and calculate the location
-function saveHitLocation(roll){
+function saveHitLocation(roll, options){
+  if(typeof options != 'object') options = {};
   //calculate Tens Location
   var tens = Math.floor(roll/10);
   //calculate Ones Location
@@ -3700,7 +3708,11 @@ function saveHitLocation(roll){
       } Location += "Leg"; break;
   }
   //send the total Damage at a 1 second delay
-  setTimeout(whisper,100,"<strong>Location</strong>: " + Location);
+  if (options.whisper) {
+    setTimeout(function(location){whisper(location, {speakingAs: 'Location'})}, 100, Location);
+  } else {
+    setTimeout(function(location){announce(location, {speakingAs: 'Location'})}, 100, Location);
+  }
 }
 
 
@@ -3947,7 +3959,7 @@ function applyDamage (matches,msg){
 
     //Reroll Location after each hit
     if(this.targetType == "character"){
-      saveHitLocation(randomInteger(100));
+      saveHitLocation(randomInteger(100), {whisper: true});
     }
 
     //report an exact amount to the gm
@@ -4246,18 +4258,17 @@ on("chat:message", function(msg) {
     }
 
     //create a button to report the lowest damage roll
-    var lowestButton = "<strong>Lowest</strong>: "
-    lowestButton += "[" + lowest.toString() + "]";
+    var lowestButton = "[" + lowest.toString() + "]";
     lowestButton += "("
     lowestButton += "!{URIFixed}" + encodeURIFixed("Crit?");
     lowestButton += ")";
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
-      whisper(lowestButton);
+      whisper(lowestButton, {speakingAs: 'Lowest'});
     } else {
       //report the highest roll publicly
-      announce(lowestButton)
+      announce(lowestButton, {speakingAs: 'Lowest'});
     }
 
     //save the damage variables to their maximums as well
@@ -4797,7 +4808,7 @@ INQAttack = INQAttack || {};
 
 INQAttack.detailTheCharacter = function(character, graphic){
   INQAttack.inqcharacter = undefined;
-  if(characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
+  if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
     var pilot = defaultCharacter(INQAttack.msg.playerid);
     if(pilot != undefined){
       INQAttack.inqcharacter = new INQCharacter(pilot);
@@ -4808,10 +4819,10 @@ INQAttack.detailTheCharacter = function(character, graphic){
   if(INQAttack.inqcharacter == undefined){
     INQAttack.inqcharacter = new INQCharacter(character, graphic);
   }
-  log("INQAttack.inqcharacter.ObjID")
-  log(INQAttack.inqcharacter.ObjID)
-  log("INQAttack.inqcharacter.GraphicID")
-  log(INQAttack.inqcharacter.GraphicID)
+  //log("INQAttack.inqcharacter.ObjID")
+  //log(INQAttack.inqcharacter.ObjID)
+  //log("INQAttack.inqcharacter.GraphicID")
+  //log(INQAttack.inqcharacter.GraphicID)
 }
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
@@ -4925,12 +4936,11 @@ INQAttack.getSpecialAmmo = function(){
 INQAttack.useAmmo = function(ammo){
   //parse the special ammunition
   INQAttack.inqammo = new INQWeapon(ammo);
+  log(INQAttack.inqammo)
   //only add the special rules of the ammo to the inqweapon, we want every
   //modification to be highly visible to the player
   for(var k in INQAttack.inqammo){
-    if(k == "Name"){continue;}
-    if(k == "ObjID"){continue;}
-    if(k == "ObjType"){continue;}
+    if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
     if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
     if(Array.isArray(INQAttack.inqammo[k])){
       INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
@@ -5573,38 +5583,38 @@ INQAttack.accountForHordeDmg = function(){
 //special ammunition will explicitly note stat modifications
 //apply damage modifications
 INQAttack.accountForDamage = function(){
-  var damage = INQAttack.inqweapon.has("Damage");
-  if(damage){
-    _.each(damage, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.DamageBase += Number(value.Name);
-      }
-    });
-  }
+  var dam = INQAttack.inqweapon.has("Dam") || [];
+  var damage = INQAttack.inqweapon.has("Damage") || [];
+  dam = dam.concat(damage);
+  _.each(dam, function(value){
+    if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.DamageBase += Number(value.Name);
+    }
+  });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply penetration modifications
 INQAttack.accountForPen = function(){
-  var pen = INQAttack.inqweapon.has("Pen");
-  if(pen){
-    _.each(pen, function(value){
-      if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.Penetration += Number(value.Name);
-      } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
-        INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
-      }
-    });
-  }
+  var pen = INQAttack.inqweapon.has("Pen") || [];
+  var penetration = INQAttack.inqweapon.has("Penetration") || [];
+  pen = pen.concat(penetration);
+  _.each(pen, function(value){
+    if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.Penetration += Number(value.Name);
+    } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
+      INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
+    }
+  });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply damage TYPE modifications
 INQAttack.accountForType = function(){
-  var type = INQAttack.inqweapon.has("Type");
+  var type = INQAttack.inqweapon.has("DamageType");
   if(type){
     _.each(type, function(value){
-      INQAttack.inqweapon.DamageType = new INQLink(value.Name);
+      INQAttack.inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
     });
   }
 }
@@ -5615,7 +5625,7 @@ INQAttack.useWeapon = function(matches,msg){
   //clean out any of the previous details
   INQAttack.clean();
   //get the options
-  INQAttack.options = JSON.parse(matches[2]);
+  INQAttack.options = carefulParse(matches[2])  || {};
   //save the weapon name
   INQAttack.weaponname = matches[1];
   //save the message for use elsewhere
@@ -5682,7 +5692,7 @@ INQAttack.deliverReport = function(){
     }
   });
   //record the results of the attack
-  INQAttack.recordAttack();
+  if(INQAttack.hits) INQAttack.recordAttack();
   //if a player whispered this to the gm, let the player know it was successful
   if(INQAttack.inqcharacter.controlledby == ""
   || INQAttack.options.whisper){
@@ -5705,7 +5715,7 @@ INQAttack.clean = function(){
 INQAttack.recordAttack = function(){
   //report the hit location and save the hit location
   if(INQAttack.d100 != undefined){
-    saveHitLocation(INQAttack.d100);
+    saveHitLocation(INQAttack.d100, {whisper: INQAttack.inqcharacter.controlledby == "" || INQAttack.options.whisper});
   }
   if(INQAttack.hits != undefined){
     //save the number of hits achieved
@@ -6089,7 +6099,7 @@ function INQTurns(){
     this.turnorder = [];
   } else{
     //otherwise turn the turn order into an array
-    this.turnorder = JSON.parse(Campaign().get("turnorder"));
+    this.turnorder = carefulParse(Campaign().get("turnorder")) || {};
   }
 }
 
@@ -6129,7 +6139,7 @@ on("chat:message", function(msg){
   && /{{\s*unnatural\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content)
   && msg.inlinerolls.length == 2) {
     //load up the AmmoTracker object to calculate the hit location
-    saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v);
+    saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v, {whisper: true});
     //if the number of successes was positive, add in Unnatural and save it
     if(msg.inlinerolls[0].results.total > 0){
       //the negative modifier keeps the total number of hits <= -1 while still
@@ -7264,7 +7274,7 @@ INQAttack.insertWeaponAbility = function(inqweapon, character, quantity, ammoNam
     if(matches){
       //get the weapon name
       INQAttack.weaponname = matches[1];
-      INQAttack.options = JSON.parse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""));
+      INQAttack.options = carefulParse(matches[2].replace(/\?\{[^\{\}]+\}/g, ""))  || {};
       if(INQAttack.options.Name){
         abilityNames.push(INQAttack.options.Name);
       } else {
@@ -14830,7 +14840,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //Feature not available yet :(
         //create the default token for the Xenos from the 'Ahh! A Monster Blueprint!' Character Sheet
         //var Blueprint = findObjs({type: 'character', name: "Ahh! A Monster Blueprint!"})[0];
-        //var Token = JSON.parse(Blueprint._defaulttoken);
+        //var Token = carefulParse(Blueprint._defaulttoken) || {};
 
         //Link the token to the sheet
         //Token.represents = NewXenos.id;

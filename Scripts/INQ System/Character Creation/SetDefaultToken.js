@@ -48,6 +48,11 @@ function setDefaultToken(matches, msg){
       var bar2 = getAttrByName(character.id, "Aerial Speed", "max")   || 0;
       var bar3 = getAttrByName(character.id, "Structural Integrity", "max");
     break;
+    case "starship":
+      var bar1 = getAttrByName(character.id, "Population", "max") || 0;
+      var bar2 = getAttrByName(character.id, "Moral", "max") || 0;
+      var bar3 = getAttrByName(character.id, "Hull", "max");
+    break;
   }
 
 
