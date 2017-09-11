@@ -1,4 +1,25 @@
 
+function addCounter(matches, msg) {
+  var name = matches[1];
+  var turns = matches[2];
+  var turnorder = Campaign().get('turnorder');
+  if(turnorder) {
+    turnorder = carefulParse(turnorder);
+  } else {
+    turnorder = [];
+  }
+  turnorder.unshift({
+    id: '-1',
+    pr: turns,
+    custom: name,
+    formula: '-1'
+  });
+  Campaign().set('turnorder', JSON.stringify(turnorder));
+}
+
+on('ready', function(){
+  CentralInput.addCMD(/^!\s*add\s*counter\s*(.+\D)\s*(\d+)$/i, addCounter);
+});
 function announce(content, options){
   if(typeof options != 'object') options = {};
   var speakingAs = options.speakingAs || 'INQ';
@@ -3959,7 +3980,7 @@ function applyDamage (matches,msg){
 
     //Reroll Location after each hit
     if(this.targetType == "character"){
-      saveHitLocation(randomInteger(100), {whisper: true});
+      saveHitLocation(randomInteger(100));
     }
 
     //report an exact amount to the gm
@@ -4936,7 +4957,6 @@ INQAttack.getSpecialAmmo = function(){
 INQAttack.useAmmo = function(ammo){
   //parse the special ammunition
   INQAttack.inqammo = new INQWeapon(ammo);
-  log(INQAttack.inqammo)
   //only add the special rules of the ammo to the inqweapon, we want every
   //modification to be highly visible to the player
   for(var k in INQAttack.inqammo){
@@ -6124,6 +6144,30 @@ on("ready",function(){
     Campaign().set("turnorder", "");
     whisper("Initiative cleared.")
   });
+});
+function painSuppress(matches, msg) {
+  var text = matches[1];
+  if(msg.selected == undefined || msg.selected == []){
+    if(playerIsGM(msg.playerid)){
+      whisper('Please carefully select who is using pain suppressants.', {speakingTo: msg.playerid});
+      return;
+    }
+  }
+  eachCharacter(msg, function(character, graphic){
+    var clip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false});
+    if(clip == undefined) clip = 6;
+    clip = Number(clip);
+    if(clip <= 0) return whisper('Not enough pain suppressants.', {speakingTo: msg.playerid});
+    clip--;
+    var clip = attributeValue('Ammo - Pain Suppressant', {setTo: clip, graphicid: graphic.id, alert: false});
+    var maxClip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false, max: true}) || 6;
+    whisper(graphic.get('name') + ' has [[' + clip + ']]/' + maxClip + ' pain suppressants left.', {speakingTo: msg.playerid});
+    addCounter(['', graphic.get('name') + '(' + text + ')', randomInteger(10).toString()], msg);
+  });
+}
+
+on('ready', function(){
+  CentralInput.addCMD(/^!\s*pain\s*suppress\s*(.+)\s*$/i, painSuppress, true);
 });
 //If the message was a roll to hit, record the number of Hits. The roll to hit
 //must be a roll template and that roll template must have the following
