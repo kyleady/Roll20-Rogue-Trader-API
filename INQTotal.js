@@ -3897,14 +3897,14 @@ INQAttack.getAttack = function(){
     if(details == undefined){return;}
 
     //record the attack details for use elsewhere in the object
-    this.DamType = details.DamType;
-    this.Dam     = details.Dam;
-    this.Pen     = details.Pen;
-    this.Fell    = details.Fell;
-    this.Prim    = details.Prim;
-    this.Hits    = details.Hits;
-    this.OnesLoc = details.OnesLoc;
-    this.TensLoc = details.TensLoc;
+    INQAttack.DamType = details.DamType;
+    INQAttack.Dam     = details.Dam;
+    INQAttack.Pen     = details.Pen;
+    INQAttack.Prim    = details.Prim;
+    INQAttack.Fell    = details.Fell;
+    INQAttack.Hits    = details.Hits;
+    INQAttack.OnesLoc = details.OnesLoc;
+    INQAttack.TensLoc = details.TensLoc;
 
     //return that reading the details was successful
     return true;
@@ -3912,11 +3912,11 @@ INQAttack.getAttack = function(){
 
 //warn the gm of any damage type that should not be applied to a character type
 INQAttack.appropriateDamageType = function(){
-  if(this.targetType == "starship" && this.Type.get("current").toUpperCase() != "S"){
-    whisper(graphic.get("name") + ": Using non-starship damage on a starship. Aborting. [Correct This](!damage type = s)");
+  if(INQAttack.targetType == "starship" && INQAttack.DamType.get("current").toUpperCase() != "S"){
+    whisper(INQAttack.graphic.get("name") + ": Using non-starship damage on a starship. Aborting. [Correct This](!damage type = s)");
     return false;
-  } else if(this.targetType != "starship" && this.DamType.get("current").toUpperCase() == "S"){
-    whisper(graphic.get("name") + ": Using starship damage on a non-starship. Aborting. [Correct This](!damage type = i)");
+  } else if(INQAttack.targetType != "starship" && INQAttack.DamType.get("current").toUpperCase() == "S"){
+    whisper(INQAttack.graphic.get("name") + ": Using starship damage on a non-starship. Aborting. [Correct This](!damage type = i)");
     return false;
   }
   //no warning to hand out
@@ -3979,8 +3979,24 @@ function applyDamage (matches,msg){
     }
 
     //Reroll Location after each hit
-    if(this.targetType == "character"){
+    if(INQAttack.targetType == "character"){
       saveHitLocation(randomInteger(100));
+    } else if (INQAttack.targetType == 'starship') {
+      var population = graphic.get('bar1_value');
+      var populationDef = attributeValue('Armour_Population', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var populationDamage = damage - populationDef;
+      if(populationDamage < 0) populationDamage = 0;
+      population -= populationDamage;
+      if(population < 0) population = 0;
+      graphic.set('bar1_value', population);
+
+      var moral = graphic.get('bar2_value');
+      var moralDef = attributeValue('Armour_Moral', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var moralDamage = damage - moralDef;
+      if(moralDamage < 0) moralDamage = 0;
+      moral -= moralDamage;
+      if(moral < 0) moral = 0;
+      graphic.set('bar2_value', moral);
     }
 
     //report an exact amount to the gm
@@ -5859,6 +5875,7 @@ function initiativeHandler(matches,msg,secondAttempt){
     if(initBonus == undefined){
       //otherwise calculate the bonus as normal.
       var initBonus = calcInitBonus(character, graphic);
+      if (initBonus == undefined) return;
       //randomize the roll
       var roll = randomInteger(10);
       //see how to modify the initBonus

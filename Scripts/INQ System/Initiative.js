@@ -78,6 +78,7 @@ function initiativeHandler(matches,msg,secondAttempt){
     if(initBonus == undefined){
       //otherwise calculate the bonus as normal.
       var initBonus = calcInitBonus(character, graphic);
+      if (initBonus == undefined) return;
       //randomize the roll
       var roll = randomInteger(10);
       //see how to modify the initBonus
