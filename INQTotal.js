@@ -245,73 +245,80 @@ function skillHandler(matches, msg){
 
   //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
-    //parse this character
-    var inqcharacter = new INQCharacter(character, graphic);
-    //determine if the character has this skill
-    var skill = inqcharacter.has(skillName, "Skills");
-    if(!skill){
-      //the character does not have this skill
-      modifier += -20;
-    //the character has a skill with subgroups
-    } else if(skill.length > 0){
-      //did the user provide a subgroup?
-      if(skillSubgroup){
-        //does the character have the given subgroup?
-        var regex = "^\\s*";
-        regex += INQSkill.toRegex({Name: skillSubgroup});
-        regex += "\\s*$";
-        var re = RegExp(regex, "i");
-        var matchingSubgroup = false;
-        var subgroupModifier = -20;
-        _.each(skill, function(subgroup){
-          if(re.test(subgroup.Name) || /^\s*all\s*$/i.test(subgroup.Name)){
-            //overwrite the subgroup's modifier if it is better
-            if(subgroup.Bonus > subgroupModifier){
-              subgroupModifier = subgroup.Bonus;
-            }
-          }
+    (function(){
+      return new Promise(function(resolve){
+        //parse this character
+        var inqcharacter = new INQCharacter(objs.character, objs.graphic, function(){
+          resolve(inqcharacter);
         });
-        //if the character does not have a matching subgroup, give them a flat -20 modifier
-        modifier += subgroupModifier;
-      } else {
-        //the skill needs a subgroup but the user didn't supply one
-        whisper("Please specify a subgroup for *" + getLink(skillName) + "*", {speakingTo: msg.playerid, gmEcho: true});
-        //skip to the next character
-        return;
-      }
-    //the skill was found, and there is no need to match subgroups
-    } else {
-      //apply the skill's modifier
-      modifier += skill.Bonus;
-    }
-    //turn the modifier into text
-    if(modifier >= 0){
-      var modifierSign = "+";
-    } else {
-      var modifierSign = "-";
-    }
-    modifierAbsValue = Math.abs(modifier).toString();
-    //create a fake msg to select this character alone
-    fakeMsg = {
-      playerid: msg.playerid,
-      selected: [graphic]
-    };
-    //note the skill being rolled in the template
-    options = {
-      display: [{
-        Title: "Skill",
-        Content: getLink(skillName)
-      }]
-    }
-    //show the subgroup as well if it exists
-    if(skillSubgroup){
-      options.display.push({
-        Title: "Group",
-        Content: skillSubgroup.trim().toTitleCase().replace(/\s\s+/g, " ")
       });
-    }
-    //call upon the stat handler to make the actual roll
-    statRoll(["", gmwhisper, stat, modifierSign, modifierAbsValue], fakeMsg, options);
+    })({msg: msg, character: character, graphic: graphic}).then(function(inqcharacter){
+      //determine if the character has this skill
+      var skill = inqcharacter.has(skillName, "Skills");
+      if(!skill){
+        //the character does not have this skill
+        modifier += -20;
+      //the character has a skill with subgroups
+      } else if(skill.length > 0){
+        //did the user provide a subgroup?
+        if(skillSubgroup){
+          //does the character have the given subgroup?
+          var regex = "^\\s*";
+          regex += INQSkill.toRegex({Name: skillSubgroup});
+          regex += "\\s*$";
+          var re = RegExp(regex, "i");
+          var matchingSubgroup = false;
+          var subgroupModifier = -20;
+          _.each(skill, function(subgroup){
+            if(re.test(subgroup.Name) || /^\s*all\s*$/i.test(subgroup.Name)){
+              //overwrite the subgroup's modifier if it is better
+              if(subgroup.Bonus > subgroupModifier){
+                subgroupModifier = subgroup.Bonus;
+              }
+            }
+          });
+          //if the character does not have a matching subgroup, give them a flat -20 modifier
+          modifier += subgroupModifier;
+        } else {
+          //the skill needs a subgroup but the user didn't supply one
+          whisper("Please specify a subgroup for *" + getLink(skillName) + "*", {speakingTo: msg.playerid, gmEcho: true});
+          //skip to the next character
+          return;
+        }
+      //the skill was found, and there is no need to match subgroups
+      } else {
+        //apply the skill's modifier
+        modifier += skill.Bonus;
+      }
+      //turn the modifier into text
+      if(modifier >= 0){
+        var modifierSign = "+";
+      } else {
+        var modifierSign = "-";
+      }
+      var modifierAbsValue = Math.abs(modifier).toString();
+      //create a fake msg to select this character alone
+      var fakeMsg = {
+        playerid: msg.playerid,
+        selected: [graphic]
+      };
+      //note the skill being rolled in the template
+      options = {
+        display: [{
+          Title: "Skill",
+          Content: getLink(skillName)
+        }]
+      }
+      //show the subgroup as well if it exists
+      if(skillSubgroup){
+        options.display.push({
+          Title: "Group",
+          Content: skillSubgroup.trim().toTitleCase().replace(/\s\s+/g, " ")
+        });
+      }
+      //call upon the stat handler to make the actual roll
+      statRoll(["", gmwhisper, stat, modifierSign, modifierAbsValue], fakeMsg, options);
+    });
   });
 }
 
@@ -1186,6 +1193,8 @@ function initiativeHandler(matches,msg,secondAttempt){
   var operator = matches[1];
   var modifier = matches[2] + matches[3];
 
+  var Promises = [];
+
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
     //diverge based on the type of text operator specified
@@ -1201,65 +1210,78 @@ function initiativeHandler(matches,msg,secondAttempt){
     //is the user just making a querry?
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
-      var initBonus = calcInitBonus(character, graphic);
-      //warn the user and exit if the bonus does not exist
-      if(initBonus == undefined){
-        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
-      }
+      calcInitBonus(character, graphic, function(initBonus){
+        //warn the user and exit if the bonus does not exist
+        if(initBonus == undefined){
+          return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
+        }
 
-      //modify the Initiative Bonus based on the text operator
-      initBonus = numModifier.calc(initBonus, operator, modifier);
+        //modify the Initiative Bonus based on the text operator
+        initBonus = numModifier.calc(initBonus, operator, modifier);
 
-      //report the initiative bonus for the character to just the user
-      //exit out now that you have made this report
-      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
+        //report the initiative bonus for the character to just the user
+        //exit out now that you have made this report
+        whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
+      });
+
+      return;
     }
 
     //is the gm trying to directly edit a previous initiative roll?
-    if(operator.indexOf("=") != -1){
-      //get the initiative of the previous roll to edit, or find that it doesn't exist
-      var initBonus = turns.getInit(graphic.id);
-      if(initBonus != undefined){
-        //calculate the modified initiative
-        var roll = numModifier.calc(initBonus, operator, modifier) - initBonus;
+    Promises.push(new Promise(function(){
+      var init = {Bonus: undefined, roll: 0};
+      if(operator == "="){
+        init.Bonus = Number(modifier);
+      } else if(operator.indexOf("=") != -1){
+        //get the initiative of the previous roll to edit, or find that it doesn't exist
+        init.Bonus = turns.getInit(graphic.id);
+        if(init.Bonus != undefined){
+          //calculate the modified initiative
+          init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
+        }
       }
-    }
 
-    //is the gm deciding what the initiative is?
-    if(operator == "="){
-      //the total roll is equal to the modifier
-      var initBonus = Number(modifier);
-      var roll = 0;
-    }
+      //roll initiative with modifiers
+      if(init.Bonus == undefined){
+        //otherwise calculate the bonus as normal.
+        calcInitBonus(character, graphic, function(initBonus){
+          if (initBonus != undefined) {
+            //randomize the roll
+            init.roll = randomInteger(10);
+            //see how to modify the initBonus
+            init.Bonus = numModifier.calc(initBonus, operator, modifier);
+          }
+          resolve(init);
+        });
+        return;
+      }
 
-    //roll initiative with modifiers
-    if(initBonus == undefined){
-      //otherwise calculate the bonus as normal.
-      var initBonus = calcInitBonus(character, graphic);
-      if (initBonus == undefined) return;
-      //randomize the roll
-      var roll = randomInteger(10);
-      //see how to modify the initBonus
-      initBonus = numModifier.calc(initBonus, operator, modifier);
-    }
+      resolve(init);
+    }));
 
-    //report the resultant initiative roll
-    //report the result to everyone if it is controlled by someone
-    if(character.get("controlledby") != ""){
-        announce(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
-    } else {
-        //report the result to the gm alone if it is an NPC.
-        whisper(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
-    }
+    Promises.push(function(init){
+      //report the resultant initiative roll
+      //report the result to everyone if it is controlled by someone
+      if (character.get("controlledby") != "") {
+          announce(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
+      } else {
+          //report the result to the gm alone if it is an NPC.
+          whisper(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
+      }
 
-    //create a turn object
-    var turnObj = turns.toTurnObj(graphic, initBonus + roll);
-    //add the turn
-    turns.addTurn(turnObj);
+      //create a turn object
+      var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+      //add the turn
+      turns.addTurn(turnObj);
+    });
   });
 
   //save the resulting turn order
-  turns.save();
+  Promises.push(turns.save());
+
+  Promises.reduce(function(chain, nextPromise){
+    chain.then(nextPromise)
+  }, Promise.resolve());
 }
 
 //adds the commands after CentralInput has been initialized
@@ -1477,29 +1499,42 @@ function useWeapon (matches, msg) {
     //prepare attack variables for each character's attack
     INQAttack.prepareVariables();
     //detail the character (or make a dummy character)
-    INQAttack.detailTheCharacter(character, graphic);
-    //get the weapon specified and be sure nothing went wrong
-    if(!INQAttack.detailTheWeapon()){return;}
-    //be sure you are dealing with a specific character
-    if(character != undefined){
-      //roll to hit
-      INQAttack.rollToHit();
-      //use up the ammo for the attack
-      //cancel this attack if there isn't enough ammo
-      if(!INQAttack.expendAmmunition()){return;}
-    }
-    //check if the weapon jammed
-    INQAttack.checkJammed();
-    //only show the damage if the attack hit
-    if(INQAttack.hits == 0){
-      //offer reroll
-      INQAttack.offerReroll();
-    } else {
-      //roll damage
-      INQAttack.rollDamage();
-    }
-    //report the results
-    INQAttack.deliverReport();
+    (function(){
+      return new Promise(function(resolve){
+        INQAttack.detailTheCharacter(character, graphic, function(){
+          resolve();
+        });
+      });
+    })().then(function(){
+      return new Promise(function(resolve){
+        INQAttack.detailTheWeapon(function(valid){
+          resolve(valid);
+        });
+      });
+    }).then(function(valid){
+      if(valid){
+        if(character != undefined){
+          //roll to hit
+          INQAttack.rollToHit();
+          //use up the ammo for the attack
+          //cancel this attack if there isn't enough ammo
+          if(!INQAttack.expendAmmunition()){return;}
+        }
+        
+        //check if the weapon jammed
+        INQAttack.checkJammed();
+        //only show the damage if the attack hit
+        if(INQAttack.hits == 0){
+          //offer reroll
+          INQAttack.offerReroll();
+        } else {
+          //roll damage
+          INQAttack.rollDamage();
+        }
+        //report the results
+        INQAttack.deliverReport();
+      }
+    });
   });
 }
 
@@ -1635,65 +1670,77 @@ INQAttack.addWeapon = function(matches, msg){
     //don't continue unless you are certain what the user wants
     return false;
   }
-  //detail the one and only weapon that was found
-  var inqweapon = new INQWeapon(weapons[0]);
-
-  //was there any ammo to load?
-  if(ammoStr){
-    //get the exact name of every clip
-    for(var i = 0; i < ammoNames.length; i++){
-      //if the ammo name is empty, just use the unmodified weapon
-      if(ammoNames[i] == ""){continue;}
-      //search for the ammo
-      var clips = matchingObjs("handout", ammoNames[i].split(" "));
-      //try to trim down to exact ammo matches
-      clips = trimToPerfectMatches(clips, ammoNames[i]);
-      //did none of the weapons match?
-      if(clips.length <= 0){
-        whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
-        return false;
+  (function(){
+    return new Promise(function(resolve){
+      var inqweapon = new INQWeapon(weapons[0], function(){
+        resolve(inqweapon);
+      });
+    });
+  })().then(function(inqweapon){
+    //was there any ammo to load?
+    if(ammoStr){
+      //get the exact name of every clip
+      for(var i = 0; i < ammoNames.length; i++){
+        //if the ammo name is empty, just use the unmodified weapon
+        if(ammoNames[i] == ""){continue;}
+        //search for the ammo
+        var clips = matchingObjs("handout", ammoNames[i].split(" "));
+        //try to trim down to exact ammo matches
+        clips = trimToPerfectMatches(clips, ammoNames[i]);
+        //did none of the weapons match?
+        if(clips.length <= 0){
+          whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
+          return false;
+        }
+        //are there too many weapons?
+        if(clips.length >= 2){
+          whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
+          _.each(clips, function(clip){
+            //specify the exact ammo name
+            ammoNames[i] = clip.get("name");
+            //construct the suggested command (without the !)
+            var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
+            //the suggested command must be encoded before it is placed inside the button
+            suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
+            whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
+          });
+          //something went wrong
+          return false;
+        }
+        //be sure the name is exactly correct
+        ammoNames[i] = clips[0].get("name");
       }
-      //are there too many weapons?
-      if(clips.length >= 2){
-        whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
-        _.each(clips, function(clip){
-          //specify the exact ammo name
-          ammoNames[i] = clip.get("name");
-          //construct the suggested command (without the !)
-          var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
-          //the suggested command must be encoded before it is placed inside the button
-          suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-          whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
+    }
+    //only weapons that have a clip of 0 are assumed to be consumable
+    //weapons that have an alternate clip size do not need a note on the character bio
+    if(quantity != undefined && inqweapon.Clip == 0){
+      var quantityNote = quantity;
+    }
+    //add this weapon to each of the selected characters
+    eachCharacter(msg, function(character, graphic){
+      (function(){
+        return new Promise(function(resolve){
+          //parse the character
+          INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
+            resolve();
+          });
         });
-        //something went wrong
-        return false;
-      }
-      //be sure the name is exactly correct
-      ammoNames[i] = clips[0].get("name");
-    }
-  }
-  //only weapons that have a clip of 0 are assumed to be consumable
-  //weapons that have an alternate clip size do not need a note on the character bio
-  if(quantity != undefined && inqweapon.Clip == 0){
-    var quantityNote = quantity;
-  }
-  //add this weapon to each of the selected characters
-  eachCharacter(msg, function(character, graphic){
-    //parse the character
-    INQAttack.inqcharacter = new INQCharacter(character, graphic);
-    //try to insert the link before continuing
-    /*
-    if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
-    */
-    //only add an ability if it isn't gear
-    if(inqweapon.Class != "Gear"){
-      //add the token action to the character
-      INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
-    } else {
-      whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
-    }
-    //report the success
-    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+      })().then(function(inqcharacter){
+        //try to insert the link before continuing
+        /*
+        if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
+        */
+        //only add an ability if it isn't gear
+        if(inqweapon.Class != "Gear"){
+          //add the token action to the character
+          INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
+        } else {
+          whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
+        }
+        //report the success
+        whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+      });
+    });
   });
 }
 
@@ -1717,80 +1764,84 @@ on("ready", function(){
   //BUT DOES NOT delete any of the abilities associated with the removed weapons
 function endMission(matches, msg){
   eachCharacter(msg, function(character, graphic){
-    //get every attribute the character has
-    var attrObjs = findObjs({_type: "attribute", characterid: character.id});
-    //reset all of the attributes of the character
-    //but delete any ammo attributes first
-    _.each(attrObjs, function(attrObj){
-      if(attrObj.get("name").indexOf("Ammo - ") == 0){
-        attrObj.remove();
-      } else {
-        attrObj.set("current", attrObj.get("max"));
-      }
-    });
+    (function(){
+      return new Promise(function(resolve){
+        character.get('bio', function(bio){
+          resolve({bio: bio});
+        });
+      });
+    })().then(function(Notes){
+      return new Promise(function(resolve){
+        character.get('gmnotes', function(gmnotes){
+          Notes.gmnotes = gmnotes;
+          resolve(Notes);
+        });
+      });
+    }).then(function(Notes){
+      //get every attribute the character has
+      var attrObjs = findObjs({_type: "attribute", characterid: character.id});
+      //reset all of the attributes of the character
+      //but delete any ammo attributes first
+      _.each(attrObjs, function(attrObj){
+        if(attrObj.get("name").indexOf("Ammo - ") == 0){
+          attrObj.remove();
+        } else {
+          attrObj.set("current", attrObj.get("max"));
+        }
+      });
+      //delete requisitioned weapons/gear from both the bio and gmnotes
+      var charNotes = _.map(Notes, function(notes){
+        //be sure the notes are not null
+        if(notes == "null"){
+            notes = "";
+        }
+        //break up the notes by line
+        var lines = notes.split(/\s*<br>\s*/);
+        //create a regex for a list header
+        var listRegex = "^\\s*";
+        listRegex += "(?:<(?:strong|em|u)>\\s*)+";
+        listRegex += "([^<>]+)";
+        listRegex += "(?:</(?:strong|em|u)>\\s*)+";
+        listRegex += "$";
+        var listRe = RegExp(listRegex, "i");
+        var inqlinkparser = new INQLinkParser();
+        var linkRe = RegExp(inqlinkparser.regex(), "i");
 
-    //remove all of the requisitioned weapons and gear
-    //get the character bio and gmnotes
-    var charBio = "";
-    character.get("bio", function(bio){
-      charBio = bio || "";
-    });
-    var charGMNotes = "";
-    character.get("gmnotes", function(gmnotes){
-      charGMNotes = gmnotes || "";
-    });
-    //delete requisitioned weapons/gear from both the bio and gmnotes
-    var charNotes = _.map([charBio, charGMNotes], function(notes){
-      //be sure the notes are not null
-      if(notes == "null"){
-          notes = "";
-      }
-      //break up the notes by line
-      var lines = notes.split(/\s*<br>\s*/);
-      //create a regex for a list header
-      var listRegex = "^\\s*";
-      listRegex += "(?:<(?:strong|em|u)>\\s*)+";
-      listRegex += "([^<>]+)";
-      listRegex += "(?:</(?:strong|em|u)>\\s*)+";
-      listRegex += "$";
-      var listRe = RegExp(listRegex, "i");
-      var inqlinkparser = new INQLinkParser();
-      var linkRe = RegExp(inqlinkparser.regex(), "i");
-
-      //delete (and store) every requisitioned weapon/gear
-      var withinSection = false;
-      for(var i = 0; i < lines.length; i++){
-        //determine if we are entering into a list of requisitioned items
-        if(listRe.test(lines[i])){
-          //get the list name
-          var matches = lines[i].match(listRe);
-          //is the list name requisitioned gear or weapons?
-          var titleMatches = matches[1].match(/^\s*(gear|weapons)\s*\(\s*requisitioned\s*\)\s*$/i);
-          if(titleMatches){
-            withinSection = titleMatches[1].toLowerCase();
-          } else {
-            //we are no longer in requisitioned items
+        //delete (and store) every requisitioned weapon/gear
+        var withinSection = false;
+        for(var i = 0; i < lines.length; i++){
+          //determine if we are entering into a list of requisitioned items
+          if(listRe.test(lines[i])){
+            //get the list name
+            var matches = lines[i].match(listRe);
+            //is the list name requisitioned gear or weapons?
+            var titleMatches = matches[1].match(/^\s*(gear|weapons)\s*\(\s*requisitioned\s*\)\s*$/i);
+            if(titleMatches){
+              withinSection = titleMatches[1].toLowerCase();
+            } else {
+              //we are no longer in requisitioned items
+              withinSection = false;
+            }
+          //work with each link that is within a requisitioned list
+          } else if(withinSection
+                 && linkRe.test(lines[i])){
+            //delete this line
+            lines.splice(i,1);
+            //move back up one line to account for the deleted line
+            i--;
+          //empty lines do not note the end of a list
+          } else if(lines[i] != ""){
             withinSection = false;
           }
-        //work with each link that is within a requisitioned list
-        } else if(withinSection
-               && linkRe.test(lines[i])){
-          //delete this line
-          lines.splice(i,1);
-          //move back up one line to account for the deleted line
-          i--;
-        //empty lines do not note the end of a list
-        } else if(lines[i] != ""){
-          withinSection = false;
         }
-      }
-      //reconstruct the bio/gmnotes
-      notes = lines.join("<br>");
-      //return the notes which may or may not have been modified
-      return notes;
+        //reconstruct the bio/gmnotes
+        notes = lines.join("<br>");
+        //return the notes which may or may not have been modified
+        return notes;
+      });
+      //save the modifications to the bio/gmnotes
+      whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
     });
-    //save the modifications to the bio/gmnotes
-    whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
   });
 }
 
@@ -2261,7 +2312,7 @@ on("chat:message", function(msg) {
 });
 //used inside initiativeHandler() multiple times, this calculates the bonus
 //added to the D10 when rolling Initiative for the character/starship
-function calcInitBonus(charObj, graphicObj){
+function calcInitBonus(charObj, graphicObj, callback){
   //if this character sheet has Detection, then it is a starship
   if(findObjs({
     _type: "attribute",
@@ -2270,8 +2321,8 @@ function calcInitBonus(charObj, graphicObj){
   })[0] != undefined){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
-    return Math.floor(Detection/10);
-
+    var DetectionBonus = Math.floor(Detection/10);
+    if(typeof callback != 'function') callback(DetectionBonus);
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
     findObjs({
@@ -2280,8 +2331,8 @@ function calcInitBonus(charObj, graphicObj){
       _characterid: charObj.id
     })[0] != undefined
   ) {
-      //load up all the notes on the character
-      var inqcharacter = new INQCharacter(charObj, graphicObj);
+    //load up all the notes on the character
+    new INQCharacter(charObj, graphicObj, function(inqcharacter){
       var Agility = Number(attributeValue("Ag", {characterid: charObj.id, graphicid: graphicObj.id}));
       //add the agility bonus and unnatural agility
       var initiativeBonus = Math.floor(Agility/10);
@@ -2303,13 +2354,12 @@ function calcInitBonus(charObj, graphicObj){
           initiativeBonus += 2;
       }
 
-      //return the final result
-      return initiativeBonus;
-
+      if(typeof callback != 'function') callback(initiativeBonus);
+    });
   //neither Ag nor Detection were found. Warn the gm and exit.
   } else {
     whisper( graphicObj.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.");
-    return undefined;
+    if(typeof callback != 'function') callback();
   }
 }
 //get the type of character.
@@ -2581,142 +2631,148 @@ INQAttack = INQAttack || {};
 
 //insert the given weapon into the list of character Requisitioned Weapons
 //if it is a Psychic Power, it will instead be listed under Psychic Powers
-INQAttack.insertWeaponLink = function(inqweapon, character, quantity){
-  //get the character bio and gmnotes
-  var charBio = "";
-  character.get("bio", function(bio){
-    charBio = bio || "";
-  });
-  var charGMNotes = "";
-  character.get("gmnotes", function(gmnotes){
-    charGMNotes = gmnotes || "";
-  });
-  //determine if the weapon was inserted anywhere
-  var weaponWasInserted = false;
-  //try to insert the weapon link into both
-  var charNotes = _.map([charBio, charGMNotes], function(notes){
-    //be sure the notes are not null
-    if(notes == "null"){
-        notes = "";
-    }
-    //break up the notes by line
-    var lines = notes.split(/\s*<br>\s*/);
-    //determine where we want to place the weapon
-    if(inqweapon.Class == "Psychic"){
-      var titleRe = /Psychic\s*Powers/i;
-    } else if(inqweapon.Class == "Gear"){
-      var titleRe = /Gear/i;
-    } else {
-      var titleRe = /Weapons/i;
-    }
-    var listRegex = "^\\s*";
-    listRegex += "(?:<(?:strong|em|u)>\\s*)+";
-    listRegex += "([^<>]+)";
-    listRegex += "(?:</(?:strong|em|u)>\\s*)+";
-    listRegex += "$";
-    var listRe = RegExp(listRegex, "i");
-
-    var ruleRegex = "^\\s*";
-    ruleRegex += "(?:<(?:strong|em|u)>\\s*)+";
-    ruleRegex += "([^<>]+)";
-    ruleRegex += "(?:</(?:strong|em|u)>\\s*)+";
-    ruleRegex += ":";
-    ruleRegex += "(.+)";
-    ruleRegex += "$";
-    var ruleRe = RegExp(ruleRegex, "i");
-
-    //create a list of groups that have the right title
-    var groups = [];
-    var group = undefined;
-    for(var i = 0; i < lines.length; i++){
-      if(listRe.test(lines[i])){
-        //close off the last group before making a new one
-        if(group){
-          group.LastIndex = i - 1;
-          groups.push(group);
-          group = undefined;
-        }
-        //record the new group's name and start index
-        //but only if it matches the title
-        var matches = lines[i].match(listRe);
-        if(titleRe.test(matches[1])){
-          group = {Name: matches[1], FirstIndex: i};
-        }
-      } else if(ruleRe.test(lines[i])){
-        //close off the last group before making a new one
-        if(group){
-          group.LastIndex = i - 1;
-          groups.push(group);
-          group = undefined;
-        }
+INQAttack.insertWeaponLink = function(inqweapon, character, quantity, options){
+  (function(){
+    return new Promise(function(resolve){
+      character.get('bio', function(bio){
+        resolve({bio: bio});
+      });
+    });
+  })().then(function(Notes){
+    return new Promise(function(resolve){
+      character.get('gmnotes', function(gmnotes){
+        Notes.gmnotes = gmnotes;
+        resolve(Notes);
+      });
+    });
+  }).then(function(Notes){
+    //determine if the weapon was inserted anywhere
+    var weaponWasInserted = false;
+    //try to insert the weapon link into both
+    var charNotes = _.map(Notes, function(notes){
+      //be sure the notes are not null
+      if(notes == "null"){
+          notes = "";
       }
-    }
-    //close off any remaing group
-    if(group){
-      group.LastIndex = i - 1;
-      groups.push(group);
-      group = undefined;
-    }
-    //only attempt to insert the weapon if a group was found
-    if(groups.length > 0){
-      var insertHere = undefined;
+      //break up the notes by line
+      var lines = notes.split(/\s*<br>\s*/);
+      //determine where we want to place the weapon
       if(inqweapon.Class == "Psychic"){
-        //just insert the psychic ability into the first group found
-        insertHere = groups[0].LastIndex;
+        var titleRe = /Psychic\s*Powers/i;
+      } else if(inqweapon.Class == "Gear"){
+        var titleRe = /Gear/i;
       } else {
-        //prioritize Weapons/Gear(Requisitioned) first
-        _.each(groups, function(group){
-          //if a place for the weapon/gear was found, quit
-          if(insertHere){return;}
-          //is this the title we want?
-          if(/^\s*\w+\s*\(\s*requisitioned\s*\)\s*$/i.test(group.Name)){
-            insertHere = group.LastIndex;
+        var titleRe = /Weapons/i;
+      }
+      var listRegex = "^\\s*";
+      listRegex += "(?:<(?:strong|em|u)>\\s*)+";
+      listRegex += "([^<>]+)";
+      listRegex += "(?:</(?:strong|em|u)>\\s*)+";
+      listRegex += "$";
+      var listRe = RegExp(listRegex, "i");
+
+      var ruleRegex = "^\\s*";
+      ruleRegex += "(?:<(?:strong|em|u)>\\s*)+";
+      ruleRegex += "([^<>]+)";
+      ruleRegex += "(?:</(?:strong|em|u)>\\s*)+";
+      ruleRegex += ":";
+      ruleRegex += "(.+)";
+      ruleRegex += "$";
+      var ruleRe = RegExp(ruleRegex, "i");
+
+      //create a list of groups that have the right title
+      var groups = [];
+      var group = undefined;
+      for(var i = 0; i < lines.length; i++){
+        if(listRe.test(lines[i])){
+          //close off the last group before making a new one
+          if(group){
+            group.LastIndex = i - 1;
+            groups.push(group);
+            group = undefined;
           }
-        });
-        //if Weapons|Gear(Standard Issue) is found, create Weapons|Gear(Requisitioned)
-        _.each(groups, function(group){
-          //if the weappon/gear already has a place for itself, don't try to create one
-          if(insertHere){return;}
-          //is this the title we want?
-          if(/^\s*\w+\s*\(\s*standard\s*issue\s*\)\s*$/i.test(group.Name)){
-            //insert a new group, with (Requisitioned), here
-            var newTitle = "<strong>";
-            newTitle += group.Name.replace(/standard\s*issue/i, "Requisitioned");
-            newTitle += "</strong>";
-            //add an extra line for spacing
-            lines.splice(group.LastIndex+1, 0, newTitle, "");
-            insertHere = group.LastIndex+2;
+          //record the new group's name and start index
+          //but only if it matches the title
+          var matches = lines[i].match(listRe);
+          if(titleRe.test(matches[1])){
+            group = {Name: matches[1], FirstIndex: i};
           }
-        });
-        //otherwise just insert the weapon/gear into the first group found
-        if(!insertHere){
-          insertHere = groups[0].LastIndex;
+        } else if(ruleRe.test(lines[i])){
+          //close off the last group before making a new one
+          if(group){
+            group.LastIndex = i - 1;
+            groups.push(group);
+            group = undefined;
+          }
         }
       }
-      //be sure you are not inserting the link below empty space
-      while(lines[insertHere] == "" && insertHere > 0){
-        insertHere--;
+      //close off any remaing group
+      if(group){
+        group.LastIndex = i - 1;
+        groups.push(group);
+        group = undefined;
       }
-      //insert the inqweapon link where you are told
-      lines.splice(insertHere+1, 0, inqweapon.toLink(quantity));
-      //reconstruct the bio/gmnotes
-      notes = lines.join("<br>");
-      //note that the weapon was inserted
-      weaponWasInserted = true;
+      //only attempt to insert the weapon if a group was found
+      if(groups.length > 0){
+        var insertHere = undefined;
+        if(inqweapon.Class == "Psychic"){
+          //just insert the psychic ability into the first group found
+          insertHere = groups[0].LastIndex;
+        } else {
+          //prioritize Weapons/Gear(Requisitioned) first
+          _.each(groups, function(group){
+            //if a place for the weapon/gear was found, quit
+            if(insertHere){return;}
+            //is this the title we want?
+            if(/^\s*\w+\s*\(\s*requisitioned\s*\)\s*$/i.test(group.Name)){
+              insertHere = group.LastIndex;
+            }
+          });
+          //if Weapons|Gear(Standard Issue) is found, create Weapons|Gear(Requisitioned)
+          _.each(groups, function(group){
+            //if the weappon/gear already has a place for itself, don't try to create one
+            if(insertHere){return;}
+            //is this the title we want?
+            if(/^\s*\w+\s*\(\s*standard\s*issue\s*\)\s*$/i.test(group.Name)){
+              //insert a new group, with (Requisitioned), here
+              var newTitle = "<strong>";
+              newTitle += group.Name.replace(/standard\s*issue/i, "Requisitioned");
+              newTitle += "</strong>";
+              //add an extra line for spacing
+              lines.splice(group.LastIndex+1, 0, newTitle, "");
+              insertHere = group.LastIndex+2;
+            }
+          });
+          //otherwise just insert the weapon/gear into the first group found
+          if(!insertHere){
+            insertHere = groups[0].LastIndex;
+          }
+        }
+        //be sure you are not inserting the link below empty space
+        while(lines[insertHere] == "" && insertHere > 0){
+          insertHere--;
+        }
+        //insert the inqweapon link where you are told
+        lines.splice(insertHere+1, 0, inqweapon.toLink(quantity));
+        //reconstruct the bio/gmnotes
+        notes = lines.join("<br>");
+        //note that the weapon was inserted
+        weaponWasInserted = true;
+      }
+      //return the notes which may or may not have been modified
+      return notes;
+    });
+    //if the notes were modified, save that modification
+    if(weaponWasInserted){
+      character.set("bio",     charNotes[0]);
+      character.set("gmnotes", charNotes[1]);
+    } else {
+      //otherwise let the gm know that it had no idea where to insert the weapon
+      whisper("Please make a proper group for the *" + inqweapon.Name + "* on *" + character.get("name") + "*.");
     }
-    //return the notes which may or may not have been modified
-    return notes;
+    //report if it was successful
+    return weaponWasInserted;
   });
-  //if the notes were modified, save that modification
-  if(weaponWasInserted){
-    character.set("bio",     charNotes[0]);
-    character.set("gmnotes", charNotes[1]);
-  } else {
-    //otherwise let the gm know that it had no idea where to insert the weapon
-    whisper("Please make a proper group for the *" + inqweapon.Name + "* on *" + character.get("name") + "*.");
-  }
-  //report if it was successful
-  return weaponWasInserted;
 }
 //take the given roll and calculate the location
 function saveHitLocation(roll, options){
@@ -3006,44 +3062,74 @@ INQAttack.deliverReport = function(){
 }
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
-INQAttack.detailTheCharacter = function(character, graphic){
+INQAttack.detailTheCharacter = function(character, graphic, callback){
   INQAttack.inqcharacter = undefined;
-  if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
-    var pilot = defaultCharacter(INQAttack.msg.playerid);
-    if(pilot != undefined){
-      INQAttack.inqcharacter = new INQCharacter(pilot);
-      INQAttack.inqcharacter.ObjID = character.id;
-      INQAttack.inqcharacter.GraphicID = graphic.id;
+  (function(){
+    return new Promise(function(resolve){
+      if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
+        var pilot = defaultCharacter(INQAttack.msg.playerid);
+        if(pilot != undefined){
+          INQAttack.inqcharacter = new INQCharacter(pilot, undefined, function(){
+            INQAttack.inqcharacter.ObjID = character.id;
+            INQAttack.inqcharacter.GraphicID = graphic.id;
+            resolve();
+          });
+          return;
+        }
+      }
+      resolve();
+    });
+  })().then(function(){
+    if(INQAttack.inqcharacter == undefined){
+      INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
+        callback();
+      });
+    } else {
+      callback();
     }
-  }
-  if(INQAttack.inqcharacter == undefined){
-    INQAttack.inqcharacter = new INQCharacter(character, graphic);
-  }
+  });
 }
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
 //completely detail the weapon using ammo and character
 //returns true if nothing went wrong
 //returns false if something went wrong
-INQAttack.detailTheWeapon = function(){
-  //get the weapon base
-  if(!INQAttack.getWeapon()){return false;}
-  //add in the special ammo
-  if(!INQAttack.getSpecialAmmo()){return false;}
-  //overwrite any detail with user options
-  INQAttack.customizeWeapon();
-  //apply the special rules that affect the toHit roll
-  INQAttack.accountForHitsSpecialRules();
-  //apply the special rules that affect the damage roll
-  INQAttack.accountForDamageSpecialRules();
-  //determine the character's effective psy rating
-  INQAttack.calcEffectivePsyRating();
-  //apply that psy rating to the weapon
-  INQAttack.inqweapon.setPR(INQAttack.PsyRating);
-  //apply the strength bonus of the character to the weapon
-  INQAttack.inqweapon.setSB(INQAttack.inqcharacter.bonus("S"));
-  //the weapon was fully customized
-  return true;
+INQAttack.detailTheWeapon = function(callback){
+  (function(){
+    return new Promise(function(resolve){
+      //get the weapon base
+      INQAttack.getWeapon(function(result){
+        resolve(result);
+      });
+    });
+  })().then(function(valid){
+    return new Promise(function(resolve){
+      if(!valid) return resolve(false);
+      //add in the special ammo
+      INQAttack.getSpecialAmmo(function(){
+        resolve(result);
+      });
+    });
+  }).then(function(valid){
+    if(valid) {
+      //overwrite any detail with user options
+      INQAttack.customizeWeapon();
+      //apply the special rules that affect the toHit roll
+      INQAttack.accountForHitsSpecialRules();
+      //apply the special rules that affect the damage roll
+      INQAttack.accountForDamageSpecialRules();
+      //determine the character's effective psy rating
+      INQAttack.calcEffectivePsyRating();
+      //apply that psy rating to the weapon
+      INQAttack.inqweapon.setPR(INQAttack.PsyRating);
+      //apply the strength bonus of the character to the weapon
+      INQAttack.inqweapon.setSB(INQAttack.inqcharacter.bonus("S"));
+    }
+    //the weapon was fully customized
+    if(typeof callback == 'function'){
+      callback(valid);
+    }
+  });
 }
 INQAttack = INQAttack || {};
 
@@ -3122,10 +3208,11 @@ INQAttack.getFiringMode = function(){
 }
 INQAttack = INQAttack || {};
 //find the special ammunition
-INQAttack.getSpecialAmmo = function(){
+INQAttack.getSpecialAmmo = function(callback){
   //be sure the user was actually looking for special ammo
   if(!INQAttack.options.Ammo){
     //there was nothing to do so nothing went wrong
+    if(typeof callback == 'function') callback(true);
     return true;
   }
   //is this a custom ammo type?
@@ -3134,6 +3221,7 @@ INQAttack.getSpecialAmmo = function(){
     INQAttack.inqammo = new INQWeapon();
     INQAttack.inqammo.Name = INQAttack.options.Ammo
     //exit out with everything being fine
+    if(typeof callback == 'function') callback(true);
     return true;
   }
   //search for the ammo
@@ -3143,6 +3231,7 @@ INQAttack.getSpecialAmmo = function(){
   //did none of the weapons match?
   if(clips.length <= 0){
     whisper("*" + INQAttack.options.Ammo + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+    if(typeof callback == 'function') callback(false);
     return false;
   }
   //are there too many weapons?
@@ -3158,19 +3247,24 @@ INQAttack.getSpecialAmmo = function(){
       whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
     });
     //something went wrong
+    if(typeof callback == 'function') callback(false);
     return false;
   }
   //modify the weapon with the clip
-  INQAttack.useAmmo(clips[0]);
+  INQAttack.useAmmo(clips[0], function(){
+    callback(true);
+  });
   //nothing went wrong
   return true;
 }
 INQAttack = INQAttack || {};
 //find the weapon
-INQAttack.getWeapon = function(){
+INQAttack.getWeapon = function(callback){
   //is this a custom weapon?
   if(INQAttack.options.custom){
     INQAttack.inqweapon = new INQWeapon();
+    if(typeof callback == 'function') callback(true);
+    return true;
   //or are its stats found in the library?
   } else {
     //search for the weapon
@@ -3180,6 +3274,7 @@ INQAttack.getWeapon = function(){
     //did none of the weapons match?
     if(weapons.length <= 0){
       whisper("*" + INQAttack.weaponname + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+      if(typeof callback == 'function') callback(false);
       return false;
     }
     //are there too many weapons?
@@ -3193,13 +3288,17 @@ INQAttack.getWeapon = function(){
         whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
       });
       //don't continue unless you are certain what the user wants
+      if(typeof callback == 'function') callback(false);
       return false;
     }
+
+    INQAttack.inqweapon = new INQWeapon(weapons[0], function(){
+      if(typeof callback == 'function') callback(true);
+    });
+
     //detail the one and only weapon that was found
-    INQAttack.inqweapon = new INQWeapon(weapons[0]);
+    return true;
   }
-  //nothing went wrong
-  return true;
 }
 INQAttack = INQAttack || {};
 //the attack missed, offer a reroll
@@ -3661,20 +3760,31 @@ INQAttack.accountForType = function(){
 }
 INQAttack = INQAttack || {};
 //parse the special ammo and use it to customize the inqweaon
-INQAttack.useAmmo = function(ammo){
-  //parse the special ammunition
-  INQAttack.inqammo = new INQWeapon(ammo);
-  //only add the special rules of the ammo to the inqweapon, we want every
-  //modification to be highly visible to the player
-  for(var k in INQAttack.inqammo){
-    if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
-    if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
-    if(Array.isArray(INQAttack.inqammo[k])){
-      INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
-    } else {
-      INQAttack.inqweapon[k] = INQAttack.inqammo[k];
+INQAttack.useAmmo = function(ammo, callback){
+  (function(){
+    return new Promise(function(resolve){
+      //parse the special ammunition
+      INQAttack.inqammo = new INQWeapon(ammo, function(){
+        resolve();
+      });
+    });
+  })().then(function(){
+    //only add the special rules of the ammo to the inqweapon, we want every
+    //modification to be highly visible to the player
+    for(var k in INQAttack.inqammo){
+      if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
+      if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
+      if(Array.isArray(INQAttack.inqammo[k])){
+        INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
+      } else {
+        INQAttack.inqweapon[k] = INQAttack.inqammo[k];
+      }
     }
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqcharacter);
+    }
+  });
 }
 INQAttack = INQAttack || {};
 //make a list of all of the weapon special abilities
@@ -4016,7 +4126,7 @@ INQSkill.toRegex = function(skill){
   return output;
 }
 //the prototype for characters
-function INQCharacter(character, graphic){
+function INQCharacter(character, graphic, callback){
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -4260,16 +4370,32 @@ function INQCharacter(character, graphic){
   }
 
   //allow the user to immediately parse a character in the constructor
-  if(character != undefined){
-    if(typeof character == "string"){
-      Object.setPrototypeOf(this, new INQCharacterImportParser());
-      this.parse(character)
-    } else {
-      Object.setPrototypeOf(this, new INQCharacterParser());
-      this.parse(character, graphic);
+  (function(inqcharacter){
+    return new Promise(function(resolve){
+      if(character != undefined){
+        if(typeof character == "string"){
+          Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
+          inqcharacter.parse(character);
+          resolve(inqcharacter);
+        } else {
+          Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
+          inqcharacter.parse(character, graphic, function(){
+            resolve(inqcharacter);
+          });
+        }
+      } else {
+        resolve(inqcharacter);
+      }
+    });
+  })(this).then(function(inqcharacter){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQCharacter());
     }
-    Object.setPrototypeOf(this, new INQCharacter());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqcharacter);
+    }
+  });
 }
 function INQCharacterImportParser(){
   var StatNames = ["WS", "BS", "S", "T", "Ag", "It", "Per", "Wp", "Fe"];
@@ -4493,22 +4619,32 @@ function INQCharacterParser(){
     }
   }
   //the full parsing of the character
-  this.parse = function(character, graphic){
-    this.Content = new INQParser(character);
-    this.Name = character.get("name");
-    this.ObjID = character.id;
-    this.ObjType = character.get("_type");
+  this.parse = function(character, graphic, callback){
+    (function(parser){
+      return new Promise(function(resolve){
+        parser.Content = new INQParser(character, function(){
+          resolve(parser);
+        });
+      });
+    })(this).then(function(parser){
+      parser.Name = character.get("name");
+      parser.ObjID = character.id;
+      parser.ObjType = character.get("_type");
 
-    if(graphic){
-      this.GraphicID = graphic.id;
-    }
+      if(graphic){
+        parser.GraphicID = graphic.id;
+      }
 
-    this.controlledby = character.get("controlledby");
+      parser.controlledby = character.get("controlledby");
 
-    this.parseLists();
-    this.parseMovement();
-    this.parseSpecialRules();
-    this.parseAttributes(graphic);
+      parser.parseLists();
+      parser.parseMovement();
+      parser.parseSpecialRules();
+      parser.parseAttributes(graphic);
+      if(typeof callback == 'function'){
+        callback(parser);
+      }
+    });
   }
 }
 //be sure the inherited objects are ready
@@ -4532,19 +4668,19 @@ on("ready",function(){
   INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
   INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
 
-  INQVehicleParser.prototype = new INQVehicle();
+  INQVehicleParser.prototype = Object.create(INQVehicle.prototype);
   INQVehicleParser.prototype.constructor = INQVehicleParser;
 
   INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
   INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
 
-  INQCharacterParser.prototype = new INQCharacter();
+  INQCharacterParser.prototype = Object.create(INQCharacter.prototype);
   INQCharacterParser.prototype.constructor = INQCharacterParser;
 
-  INQWeaponNoteParser.prototype = new INQWeapon();
+  INQWeaponNoteParser.prototype = Object.create(INQWeapon.prototype);
   INQWeaponNoteParser.prototype.constructor = INQWeaponNoteParser;
 
-  INQWeaponParser.prototype = new INQWeapon();
+  INQWeaponParser.prototype = Object.create(INQWeapon.prototype);
   INQWeaponParser.prototype.constructor = INQWeaponParser;
 
   INQLinkParser.prototype = new INQLink();
@@ -4856,7 +4992,7 @@ function INQImportParser(targetObj){
   }
 }
 //a prototype the will parse handouts and character sheets for use by other prototypes
-function INQParser(object){
+function INQParser(object, mainCallback){
   //the text that will be parsed
   this.Text = "";
   //the parsing function
@@ -5065,37 +5201,62 @@ function INQParser(object){
   }
 
   //extract the text out of an object
-  this.objectToText = function(obj){
-    var Notes = "";
-    var GMNotes = "";
-    //compile the notes based on the object type
-    switch(obj.get("_type")){
-      case "handout":
-        obj.get("notes", function(notes){Notes = notes;});
-        break;
-      case "character":
-        obj.get("bio", function(bio){Notes = bio;});
-        break;
-    }
-    obj.get("gmnotes", function(gmnotes){GMNotes = gmnotes;});
-    //be sure a null result was not given
-    if(Notes == "null"){
-      Notes = "";
-    }
-    if(GMNotes == "null"){
-      GMNotes = "";
-    }
-    //save the result
-    this.Text = Notes + "<br>" + GMNotes;
+  this.objectToText = function(obj, callback){
+    var parser = this;
+    (function(){
+      return new Promise(function(resolve){
+        switch(obj.get("_type")){
+          case 'handout':
+            obj.get('notes', function(notes){resolve({notes: notes});});
+            break;
+          case 'character':
+            obj.get('bio', function(bio){resolve({notes: bio});});
+            break;
+        }
+      });
+    })().then(function(Notes){
+      return new Promise(function(resolve){
+        obj.get('gmnotes', function(gmnotes){
+          Notes.gmnotes = gmnotes;
+          resolve(Notes);
+        });
+      });
+    }).then(function(Notes){
+      //be sure a null result was not given
+      if(Notes.notes == 'null'){
+        Notes.notes = '';
+      }
+      if(Notes == 'null'){
+        GMNotes = '';
+      }
+      //save the result
+      parser.Text = Notes + "<br>" + GMNotes;
+      if(typeof callback == 'function'){
+        callback(parser);
+      }
+    });
   }
 
   //allow the user to specify the object to parse in the constructor
-  if(object != undefined){
-    //get the text to parse
-    this.objectToText(object);
-    //parse the text
-    this.parse();
-  }
+  (function(parser){
+    return new Promise(function(resolve){
+      if(object != undefined){
+        parser.objectToText(object, function(){
+          resolve(parser);
+        });
+      } else {
+        resolve(parser);
+      }
+    });
+  })(this).then(function(parser){
+    if(object != undefined){
+      //parse the text
+      parser.parse();
+    }
+    if(typeof mainCallback == 'function'){
+      mainCallback(parser);
+    }
+  });
 }
 //the prototype for characters
 function INQStarship(){
@@ -5423,7 +5584,7 @@ function INQTurns(){
   }
 }
 //the prototype for characters
-function INQVehicle(vehicle, graphic){
+function INQVehicle(vehicle, graphic, callback){
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -5623,16 +5784,32 @@ function INQVehicle(vehicle, graphic){
     return character;
   }
 
-  if(vehicle != undefined){
-    if(typeof vehicle == "string"){
-      Object.setPrototypeOf(this, new INQVehicleImportParser());
-      this.parse(vehicle);
-    } else {
-      Object.setPrototypeOf(this, new INQVehicleParser());
-      this.parse(vehicle, graphic);
+  (function(inqvehicle){
+    return new Promise(function(resolve){
+      if(vehicle != undefined){
+        if(typeof vehicle == "string"){
+          Object.setPrototypeOf(inqvehicle, new INQVehicleImportParser());
+          inqvehicle.parse(vehicle);
+          resolve(inqvehicle);
+        } else {
+          Object.setPrototypeOf(inqvehicle, new INQVehicleParser());
+          inqvehicle.parse(vehicle, graphic, function(){
+            resolve(inqvehicle);
+          });
+        }
+      } else {
+        resolve(inqvehicle);
+      }
+    });
+  })(this).then(function(inqvehicle){
+    if(vehicle != undefined){
+      Object.setPrototypeOf(inqvehicle, new INQVehicle());
     }
-    Object.setPrototypeOf(this, new INQVehicle());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqvehicle);
+    }
+  });
 }
 function INQVehicleImportParser(){
   this.parse = function(text){
@@ -5784,25 +5961,35 @@ function INQVehicleParser(){
   }
 
   //the full parsing of the character
-  this.parse = function(character, graphic){
-    this.Content = new INQParser(character);
-    this.Name = character.get("name");
-    this.ObjID = character.id;
-    this.ObjType = character.get("_type");
+  this.parse = function(character, graphic, callback){
+    (function(parser){
+      return new Promise(function(resolve){
+        parser.Content = new INQParser(character, function(){
+          resolve(parser);
+        });
+      });
+    })(this).then(function(parser){
+      parser.Name = character.get("name");
+      parser.ObjID = character.id;
+      parser.ObjType = character.get("_type");
 
-    if(graphic){
-      this.GraphicID = graphic.id;
-    }
+      if(graphic){
+        parser.GraphicID = graphic.id;
+      }
 
-    this.controlledby = character.get("controlledby");
+      parser.controlledby = character.get("controlledby");
 
-    this.parseLists();
-    this.parseLabels();
-    this.parseAttributes(graphic);
+      parser.parseLists();
+      parser.parseLabels();
+      parser.parseAttributes(graphic);
+      if(typeof callback == 'function'){
+        callback(parser);
+      }
+    });
   }
 }
 //the prototype for weapons
-function INQWeapon(obj){
+function INQWeapon(obj, callback){
 
   //default weapon stats
   this.Class          = "Melee";
@@ -5829,15 +6016,32 @@ function INQWeapon(obj){
   this.FocusStat      = "Wp";
 
   //allow the user to immediately parse a weapon in the constructor
-  if(obj != undefined){
-    if(typeof obj == "string"){
-      Object.setPrototypeOf(this, new INQWeaponNoteParser());
-    } else {
-      Object.setPrototypeOf(this, new INQWeaponParser());
+  (function(inqweapon){
+    return new Promise(function(resolve){
+      if(obj != undefined){
+        if(typeof obj == "string"){
+          Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
+          inqweapon.parse(obj);
+          resolve(inqweapon);
+        } else {
+          Object.setPrototypeOf(inqweapon, new INQWeaponParser());
+          inqweapon.parse(obj, function(){
+            resolve(inqweapon);
+          });
+        }
+      } else {
+        resolve(inqweapon);
+      }
+    });
+  })(this).then(function(inqweapon){
+    if(obj != undefined){
+      Object.setPrototypeOf(inqweapon, new INQWeapon());
     }
-    this.parse(obj);
-    Object.setPrototypeOf(this, new INQWeapon());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqweapon);
+    }
+  });
 
   //check if the weapon has an inqlink with the given name
   //if there are no subgroups for the inqlink, just return {Bonus}
@@ -6557,54 +6761,62 @@ function INQWeaponParser(){
     }
   }
   //use all of the above parsing functions to transform text into the INQWeapon prototype
-  this.parse = function(obj){
-    //parse out the content of a handout
-    this.Content = new INQParser(obj);
-    //save the non-text details of the handout
-    this.Name = obj.get("name");
-    this.ObjID = obj.id;
-    this.ObjType = obj.get("_type");
+  this.parse = function(obj, callback){
+    (function(parser){
+      return new Promise(function(resolve){
+        parser.Content = new INQParser(obj, function(){
+          resolve(parser);
+        });
+      });
+    })(this).then(function(parser){
+      //save the non-text details of the handout
+      parser.Name = obj.get("name");
+      parser.ObjID = obj.id;
+      parser.ObjType = obj.get("_type");
 
-    //parse all the rules of the weapon based on the rule name
-    for(var i = 0; i < this.Content.Rules.length; i++){
-      var name = this.Content.Rules[i].Name;
-      var content = this.Content.Rules[i].Content;
-      if(/class/i.test(name)){
-        this.parseClass(content);
-      } else if(/^\s*range\s*$/i.test(name)){
-        this.parseRange(content);
-      } else if(/^\s*(rof|rate\s+of\s+fire)\s*$/i.test(name)){
-        this.parseRoF(content);
-      } else if(/^\s*dam(age)?\s*$/i.test(name)){
-        this.parseDamage(content);
-      } else if(/^\s*pen(etration)?\s*$/i.test(name)){
-        this.parsePenetration(content);
-      } else if(/^\s*clip\s*$/i.test(name)){
-        this.parseClip(content);
-      } else if(/^\s*reload\s*$/i.test(name)){
-        this.parseReload(content);
-      } else if(/^\s*special\s*(rules)?\s*$/i.test(name)){
-        this.parseSpecialRules(content);
-      } else if(/^\s*weight\s*$/i.test(name)){
-        this.parseWeight(content);
-      } else if(/^\s*req(uisition)?\s*$/i.test(name)){
-        this.parseRequisition(content);
-      } else if(/^\s*renown/i.test(name)){
-        this.parseRenown(content);
-      } else if(/^\s*availability/i.test(name)){
-        this.parseAvailability(content);
-      } else if(/^\s*focus\s*power\s*$/i.test(name)){
-        this.parseFocusPower(content);
-      } else if(/^\s*Opposed\s*$/i.test(name)){
-        this.parseOpposed(content);
+      //parse all the rules of the weapon based on the rule name
+      for(var i = 0; i < parser.Content.Rules.length; i++){
+        var name = parser.Content.Rules[i].Name;
+        var content = parser.Content.Rules[i].Content;
+        if(/class/i.test(name)){
+          parser.parseClass(content);
+        } else if(/^\s*range\s*$/i.test(name)){
+          parser.parseRange(content);
+        } else if(/^\s*(rof|rate\s+of\s+fire)\s*$/i.test(name)){
+          parser.parseRoF(content);
+        } else if(/^\s*dam(age)?\s*$/i.test(name)){
+          parser.parseDamage(content);
+        } else if(/^\s*pen(etration)?\s*$/i.test(name)){
+          parser.parsePenetration(content);
+        } else if(/^\s*clip\s*$/i.test(name)){
+          parser.parseClip(content);
+        } else if(/^\s*reload\s*$/i.test(name)){
+          parser.parseReload(content);
+        } else if(/^\s*special\s*(rules)?\s*$/i.test(name)){
+          parser.parseSpecialRules(content);
+        } else if(/^\s*weight\s*$/i.test(name)){
+          parser.parseWeight(content);
+        } else if(/^\s*req(uisition)?\s*$/i.test(name)){
+          parser.parseRequisition(content);
+        } else if(/^\s*renown/i.test(name)){
+          parser.parseRenown(content);
+        } else if(/^\s*availability/i.test(name)){
+          parser.parseAvailability(content);
+        } else if(/^\s*focus\s*power\s*$/i.test(name)){
+          parser.parseFocusPower(content);
+        } else if(/^\s*Opposed\s*$/i.test(name)){
+          parser.parseOpposed(content);
+        }
       }
-    }
-    //if the weapon still has no damage and it isn't a psychic power, it is gear
-    if(this.DamageBase == 0 && this.DiceNumber == 0 && this.Class != "Psychic"){
-      this.Class = "Gear";
-    }
-
-    delete this.Content;
+      //if the weapon still has no damage and it isn't a psychic power, it is gear
+      if(parser.DamageBase == 0 && parser.DiceNumber == 0 && parser.Class != "Psychic"){
+        parser.Class = "Gear";
+      }
+      delete parser.Content;
+      if(typeof callback == 'function'){
+        callback(parser);
+      }
+    });
   }
 }
 function addCounter(matches, msg) {
@@ -8668,7 +8880,7 @@ on("ready",function(){
 charImport = {}
 
 //save the content of the character bio
-charImport.getCharacterBio = function(charName){
+charImport.getCharacterBio = function(charName, callback){
   //create a list of charactersheets that have the given name
   this.charName = charName;
   var charList = findObjs({_type: "character", name: charName});
@@ -8686,22 +8898,19 @@ charImport.getCharacterBio = function(charName){
     return false;
   }
   //save the character object
-  this.CharObj = charList[0];
-  var charBio = "";
+  charImport.CharObj = charList[0];
   //otherwise try to load the Bio of the given character
-  this.CharObj.get("bio", function(bio){
-    charBio = bio;
+  charImport.CharObj.get("bio", function(bio){
+    //was the bio empty?
+    if(bio == ""){
+      whisper("Bio is empty.")
+      if(typeof callback == 'function') callback(false);
+    } else {
+    //there was no problem saving the bio
+      charImport.charText = bio;
+      if(typeof callback == 'function') callback(true);
+    }
   });
-
-  //was the bio empty?
-  if(charBio == ""){
-    whisper("Bio is empty.")
-    return false;
-  } else {
-  //there was no problem saving the bio
-    this.charText = charBio;
-    return true;
-  }
 }
 
 //convert text into character
@@ -8720,16 +8929,18 @@ charImport.makeVehicle = function(){
 
 on("ready",function(){
   CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
-    if(charImport.getCharacterBio(matches[1])){
+    charImport.getCharacterBio(matches[1], function(valid){
+      if(!valid) return;
       charImport.makeCharacter();
       whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
-    }
+    });
   });
   CentralInput.addCMD(/^!\s*import\s*vehicle\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
-    if(charImport.getCharacterBio(matches[1])){
+    charImport.getCharacterBio(matches[1], function(valid){
+      if(!valid) return;
       charImport.makeVehicle();
       whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
-    }
+    });
   });
 });
 //imports a weapon from text and converts it into an ability for the selected characters
@@ -8749,26 +8960,27 @@ function importWeapon(matches, msg){
   //give each selected character a custom weapon
   var customWeapon = {custom: true};
   eachCharacter(msg, function(character, graphic){
-    var inqcharacter = new INQCharacter(character, graphic);
-    if(weapon.Class == "Melee"){
-      weapon.DamageBase -= inqcharacter.bonus("S");
-      if(weapon.has("Fist")){
+    new INQCharacter(character, graphic, function(inqcharacter){
+      if(weapon.Class == "Melee"){
         weapon.DamageBase -= inqcharacter.bonus("S");
-      }
-      if(inqcharacter.has("Crushing Blow", "Talents")){
+        if(weapon.has("Fist")){
+          weapon.DamageBase -= inqcharacter.bonus("S");
+        }
+        if(inqcharacter.has("Crushing Blow", "Talents")){
+          weapon.DamageBase -= 2;
+        }
+      } else if(inqcharacter.has("Mighty Shot", "Talents")){
         weapon.DamageBase -= 2;
       }
-    } else if(inqcharacter.has("Mighty Shot", "Talents")){
-      weapon.DamageBase -= 2;
-    }
-    createObj("ability", {
-      characterid: character.id,
-      name: weapon.Name,
-      action: weapon.toAbility(inqcharacter, undefined, customWeapon),
-      istokenaction: true
-    });
+      createObj("ability", {
+        characterid: character.id,
+        name: weapon.Name,
+        action: weapon.toAbility(inqcharacter, undefined, customWeapon),
+        istokenaction: true
+      });
 
-    whisper("*" + character.get("name") + "* has been given a(n) *" + weapon.Name + "*");
+      whisper("*" + character.get("name") + "* has been given a(n) *" + weapon.Name + "*");
+    });
   });
 }
 

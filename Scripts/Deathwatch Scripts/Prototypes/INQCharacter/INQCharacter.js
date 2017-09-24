@@ -1,5 +1,5 @@
 //the prototype for characters
-function INQCharacter(character, graphic){
+function INQCharacter(character, graphic, callback){
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -243,14 +243,30 @@ function INQCharacter(character, graphic){
   }
 
   //allow the user to immediately parse a character in the constructor
-  if(character != undefined){
-    if(typeof character == "string"){
-      Object.setPrototypeOf(this, new INQCharacterImportParser());
-      this.parse(character)
-    } else {
-      Object.setPrototypeOf(this, new INQCharacterParser());
-      this.parse(character, graphic);
+  (function(inqcharacter){
+    return new Promise(function(resolve){
+      if(character != undefined){
+        if(typeof character == "string"){
+          Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
+          inqcharacter.parse(character);
+          resolve(inqcharacter);
+        } else {
+          Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
+          inqcharacter.parse(character, graphic, function(){
+            resolve(inqcharacter);
+          });
+        }
+      } else {
+        resolve(inqcharacter);
+      }
+    });
+  })(this).then(function(inqcharacter){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQCharacter());
     }
-    Object.setPrototypeOf(this, new INQCharacter());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqcharacter);
+    }
+  });
 }

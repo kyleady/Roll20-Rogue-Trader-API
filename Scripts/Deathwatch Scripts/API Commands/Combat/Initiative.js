@@ -28,6 +28,8 @@ function initiativeHandler(matches,msg,secondAttempt){
   var operator = matches[1];
   var modifier = matches[2] + matches[3];
 
+  var Promises = [];
+
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
     //diverge based on the type of text operator specified
@@ -43,65 +45,78 @@ function initiativeHandler(matches,msg,secondAttempt){
     //is the user just making a querry?
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
-      var initBonus = calcInitBonus(character, graphic);
-      //warn the user and exit if the bonus does not exist
-      if(initBonus == undefined){
-        return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
-      }
+      calcInitBonus(character, graphic, function(initBonus){
+        //warn the user and exit if the bonus does not exist
+        if(initBonus == undefined){
+          return whisper(graphic.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.", {speakingTo: msg.playerid, gmEcho: true});
+        }
 
-      //modify the Initiative Bonus based on the text operator
-      initBonus = numModifier.calc(initBonus, operator, modifier);
+        //modify the Initiative Bonus based on the text operator
+        initBonus = numModifier.calc(initBonus, operator, modifier);
 
-      //report the initiative bonus for the character to just the user
-      //exit out now that you have made this report
-      return whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
+        //report the initiative bonus for the character to just the user
+        //exit out now that you have made this report
+        whisper(graphic.get("name") + "\'s Initiative: " + initBonus + " + D10", {speakingTo: msg.playerid});
+      });
+
+      return;
     }
 
     //is the gm trying to directly edit a previous initiative roll?
-    if(operator.indexOf("=") != -1){
-      //get the initiative of the previous roll to edit, or find that it doesn't exist
-      var initBonus = turns.getInit(graphic.id);
-      if(initBonus != undefined){
-        //calculate the modified initiative
-        var roll = numModifier.calc(initBonus, operator, modifier) - initBonus;
+    Promises.push(new Promise(function(){
+      var init = {Bonus: undefined, roll: 0};
+      if(operator == "="){
+        init.Bonus = Number(modifier);
+      } else if(operator.indexOf("=") != -1){
+        //get the initiative of the previous roll to edit, or find that it doesn't exist
+        init.Bonus = turns.getInit(graphic.id);
+        if(init.Bonus != undefined){
+          //calculate the modified initiative
+          init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
+        }
       }
-    }
 
-    //is the gm deciding what the initiative is?
-    if(operator == "="){
-      //the total roll is equal to the modifier
-      var initBonus = Number(modifier);
-      var roll = 0;
-    }
+      //roll initiative with modifiers
+      if(init.Bonus == undefined){
+        //otherwise calculate the bonus as normal.
+        calcInitBonus(character, graphic, function(initBonus){
+          if (initBonus != undefined) {
+            //randomize the roll
+            init.roll = randomInteger(10);
+            //see how to modify the initBonus
+            init.Bonus = numModifier.calc(initBonus, operator, modifier);
+          }
+          resolve(init);
+        });
+        return;
+      }
 
-    //roll initiative with modifiers
-    if(initBonus == undefined){
-      //otherwise calculate the bonus as normal.
-      var initBonus = calcInitBonus(character, graphic);
-      if (initBonus == undefined) return;
-      //randomize the roll
-      var roll = randomInteger(10);
-      //see how to modify the initBonus
-      initBonus = numModifier.calc(initBonus, operator, modifier);
-    }
+      resolve(init);
+    }));
 
-    //report the resultant initiative roll
-    //report the result to everyone if it is controlled by someone
-    if(character.get("controlledby") != ""){
-        announce(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
-    } else {
-        //report the result to the gm alone if it is an NPC.
-        whisper(graphic.get("name") + " rolls a [[(" + roll.toString() + ")+" + initBonus.toString() + "]] for Initiative.");
-    }
+    Promises.push(function(init){
+      //report the resultant initiative roll
+      //report the result to everyone if it is controlled by someone
+      if (character.get("controlledby") != "") {
+          announce(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
+      } else {
+          //report the result to the gm alone if it is an NPC.
+          whisper(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
+      }
 
-    //create a turn object
-    var turnObj = turns.toTurnObj(graphic, initBonus + roll);
-    //add the turn
-    turns.addTurn(turnObj);
+      //create a turn object
+      var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+      //add the turn
+      turns.addTurn(turnObj);
+    });
   });
 
   //save the resulting turn order
-  turns.save();
+  Promises.push(turns.save());
+
+  Promises.reduce(function(chain, nextPromise){
+    chain.then(nextPromise)
+  }, Promise.resolve());
 }
 
 //adds the commands after CentralInput has been initialized

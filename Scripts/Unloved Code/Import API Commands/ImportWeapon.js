@@ -15,26 +15,27 @@ function importWeapon(matches, msg){
   //give each selected character a custom weapon
   var customWeapon = {custom: true};
   eachCharacter(msg, function(character, graphic){
-    var inqcharacter = new INQCharacter(character, graphic);
-    if(weapon.Class == "Melee"){
-      weapon.DamageBase -= inqcharacter.bonus("S");
-      if(weapon.has("Fist")){
+    new INQCharacter(character, graphic, function(inqcharacter){
+      if(weapon.Class == "Melee"){
         weapon.DamageBase -= inqcharacter.bonus("S");
-      }
-      if(inqcharacter.has("Crushing Blow", "Talents")){
+        if(weapon.has("Fist")){
+          weapon.DamageBase -= inqcharacter.bonus("S");
+        }
+        if(inqcharacter.has("Crushing Blow", "Talents")){
+          weapon.DamageBase -= 2;
+        }
+      } else if(inqcharacter.has("Mighty Shot", "Talents")){
         weapon.DamageBase -= 2;
       }
-    } else if(inqcharacter.has("Mighty Shot", "Talents")){
-      weapon.DamageBase -= 2;
-    }
-    createObj("ability", {
-      characterid: character.id,
-      name: weapon.Name,
-      action: weapon.toAbility(inqcharacter, undefined, customWeapon),
-      istokenaction: true
-    });
+      createObj("ability", {
+        characterid: character.id,
+        name: weapon.Name,
+        action: weapon.toAbility(inqcharacter, undefined, customWeapon),
+        istokenaction: true
+      });
 
-    whisper("*" + character.get("name") + "* has been given a(n) *" + weapon.Name + "*");
+      whisper("*" + character.get("name") + "* has been given a(n) *" + weapon.Name + "*");
+    });
   });
 }
 

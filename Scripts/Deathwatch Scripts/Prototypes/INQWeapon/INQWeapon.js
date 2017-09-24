@@ -1,5 +1,5 @@
 //the prototype for weapons
-function INQWeapon(obj){
+function INQWeapon(obj, callback){
 
   //default weapon stats
   this.Class          = "Melee";
@@ -26,15 +26,32 @@ function INQWeapon(obj){
   this.FocusStat      = "Wp";
 
   //allow the user to immediately parse a weapon in the constructor
-  if(obj != undefined){
-    if(typeof obj == "string"){
-      Object.setPrototypeOf(this, new INQWeaponNoteParser());
-    } else {
-      Object.setPrototypeOf(this, new INQWeaponParser());
+  (function(inqweapon){
+    return new Promise(function(resolve){
+      if(obj != undefined){
+        if(typeof obj == "string"){
+          Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
+          inqweapon.parse(obj);
+          resolve(inqweapon);
+        } else {
+          Object.setPrototypeOf(inqweapon, new INQWeaponParser());
+          inqweapon.parse(obj, function(){
+            resolve(inqweapon);
+          });
+        }
+      } else {
+        resolve(inqweapon);
+      }
+    });
+  })(this).then(function(inqweapon){
+    if(obj != undefined){
+      Object.setPrototypeOf(inqweapon, new INQWeapon());
     }
-    this.parse(obj);
-    Object.setPrototypeOf(this, new INQWeapon());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqweapon);
+    }
+  });
 
   //check if the weapon has an inqlink with the given name
   //if there are no subgroups for the inqlink, just return {Bonus}

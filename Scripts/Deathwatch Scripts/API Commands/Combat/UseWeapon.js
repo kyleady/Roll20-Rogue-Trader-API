@@ -22,29 +22,42 @@ function useWeapon (matches, msg) {
     //prepare attack variables for each character's attack
     INQAttack.prepareVariables();
     //detail the character (or make a dummy character)
-    INQAttack.detailTheCharacter(character, graphic);
-    //get the weapon specified and be sure nothing went wrong
-    if(!INQAttack.detailTheWeapon()){return;}
-    //be sure you are dealing with a specific character
-    if(character != undefined){
-      //roll to hit
-      INQAttack.rollToHit();
-      //use up the ammo for the attack
-      //cancel this attack if there isn't enough ammo
-      if(!INQAttack.expendAmmunition()){return;}
-    }
-    //check if the weapon jammed
-    INQAttack.checkJammed();
-    //only show the damage if the attack hit
-    if(INQAttack.hits == 0){
-      //offer reroll
-      INQAttack.offerReroll();
-    } else {
-      //roll damage
-      INQAttack.rollDamage();
-    }
-    //report the results
-    INQAttack.deliverReport();
+    (function(){
+      return new Promise(function(resolve){
+        INQAttack.detailTheCharacter(character, graphic, function(){
+          resolve();
+        });
+      });
+    })().then(function(){
+      return new Promise(function(resolve){
+        INQAttack.detailTheWeapon(function(valid){
+          resolve(valid);
+        });
+      });
+    }).then(function(valid){
+      if(valid){
+        if(character != undefined){
+          //roll to hit
+          INQAttack.rollToHit();
+          //use up the ammo for the attack
+          //cancel this attack if there isn't enough ammo
+          if(!INQAttack.expendAmmunition()){return;}
+        }
+        
+        //check if the weapon jammed
+        INQAttack.checkJammed();
+        //only show the damage if the attack hit
+        if(INQAttack.hits == 0){
+          //offer reroll
+          INQAttack.offerReroll();
+        } else {
+          //roll damage
+          INQAttack.rollDamage();
+        }
+        //report the results
+        INQAttack.deliverReport();
+      }
+    });
   });
 }
 

@@ -1,5 +1,5 @@
 //a prototype the will parse handouts and character sheets for use by other prototypes
-function INQParser(object){
+function INQParser(object, mainCallback){
   //the text that will be parsed
   this.Text = "";
   //the parsing function
@@ -208,35 +208,60 @@ function INQParser(object){
   }
 
   //extract the text out of an object
-  this.objectToText = function(obj){
-    var Notes = "";
-    var GMNotes = "";
-    //compile the notes based on the object type
-    switch(obj.get("_type")){
-      case "handout":
-        obj.get("notes", function(notes){Notes = notes;});
-        break;
-      case "character":
-        obj.get("bio", function(bio){Notes = bio;});
-        break;
-    }
-    obj.get("gmnotes", function(gmnotes){GMNotes = gmnotes;});
-    //be sure a null result was not given
-    if(Notes == "null"){
-      Notes = "";
-    }
-    if(GMNotes == "null"){
-      GMNotes = "";
-    }
-    //save the result
-    this.Text = Notes + "<br>" + GMNotes;
+  this.objectToText = function(obj, callback){
+    var parser = this;
+    (function(){
+      return new Promise(function(resolve){
+        switch(obj.get("_type")){
+          case 'handout':
+            obj.get('notes', function(notes){resolve({notes: notes});});
+            break;
+          case 'character':
+            obj.get('bio', function(bio){resolve({notes: bio});});
+            break;
+        }
+      });
+    })().then(function(Notes){
+      return new Promise(function(resolve){
+        obj.get('gmnotes', function(gmnotes){
+          Notes.gmnotes = gmnotes;
+          resolve(Notes);
+        });
+      });
+    }).then(function(Notes){
+      //be sure a null result was not given
+      if(Notes.notes == 'null'){
+        Notes.notes = '';
+      }
+      if(Notes == 'null'){
+        GMNotes = '';
+      }
+      //save the result
+      parser.Text = Notes + "<br>" + GMNotes;
+      if(typeof callback == 'function'){
+        callback(parser);
+      }
+    });
   }
 
   //allow the user to specify the object to parse in the constructor
-  if(object != undefined){
-    //get the text to parse
-    this.objectToText(object);
-    //parse the text
-    this.parse();
-  }
+  (function(parser){
+    return new Promise(function(resolve){
+      if(object != undefined){
+        parser.objectToText(object, function(){
+          resolve(parser);
+        });
+      } else {
+        resolve(parser);
+      }
+    });
+  })(this).then(function(parser){
+    if(object != undefined){
+      //parse the text
+      parser.parse();
+    }
+    if(typeof mainCallback == 'function'){
+      mainCallback(parser);
+    }
+  });
 }

@@ -1,5 +1,5 @@
 //the prototype for characters
-function INQVehicle(vehicle, graphic){
+function INQVehicle(vehicle, graphic, callback){
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -199,14 +199,30 @@ function INQVehicle(vehicle, graphic){
     return character;
   }
 
-  if(vehicle != undefined){
-    if(typeof vehicle == "string"){
-      Object.setPrototypeOf(this, new INQVehicleImportParser());
-      this.parse(vehicle);
-    } else {
-      Object.setPrototypeOf(this, new INQVehicleParser());
-      this.parse(vehicle, graphic);
+  (function(inqvehicle){
+    return new Promise(function(resolve){
+      if(vehicle != undefined){
+        if(typeof vehicle == "string"){
+          Object.setPrototypeOf(inqvehicle, new INQVehicleImportParser());
+          inqvehicle.parse(vehicle);
+          resolve(inqvehicle);
+        } else {
+          Object.setPrototypeOf(inqvehicle, new INQVehicleParser());
+          inqvehicle.parse(vehicle, graphic, function(){
+            resolve(inqvehicle);
+          });
+        }
+      } else {
+        resolve(inqvehicle);
+      }
+    });
+  })(this).then(function(inqvehicle){
+    if(vehicle != undefined){
+      Object.setPrototypeOf(inqvehicle, new INQVehicle());
     }
-    Object.setPrototypeOf(this, new INQVehicle());
-  }
+
+    if(typeof callback == 'function'){
+      callback(inqvehicle);
+    }
+  });
 }

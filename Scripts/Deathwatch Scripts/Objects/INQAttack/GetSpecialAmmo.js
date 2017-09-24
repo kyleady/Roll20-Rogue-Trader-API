@@ -1,9 +1,10 @@
 INQAttack = INQAttack || {};
 //find the special ammunition
-INQAttack.getSpecialAmmo = function(){
+INQAttack.getSpecialAmmo = function(callback){
   //be sure the user was actually looking for special ammo
   if(!INQAttack.options.Ammo){
     //there was nothing to do so nothing went wrong
+    if(typeof callback == 'function') callback(true);
     return true;
   }
   //is this a custom ammo type?
@@ -12,6 +13,7 @@ INQAttack.getSpecialAmmo = function(){
     INQAttack.inqammo = new INQWeapon();
     INQAttack.inqammo.Name = INQAttack.options.Ammo
     //exit out with everything being fine
+    if(typeof callback == 'function') callback(true);
     return true;
   }
   //search for the ammo
@@ -21,6 +23,7 @@ INQAttack.getSpecialAmmo = function(){
   //did none of the weapons match?
   if(clips.length <= 0){
     whisper("*" + INQAttack.options.Ammo + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+    if(typeof callback == 'function') callback(false);
     return false;
   }
   //are there too many weapons?
@@ -36,10 +39,13 @@ INQAttack.getSpecialAmmo = function(){
       whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
     });
     //something went wrong
+    if(typeof callback == 'function') callback(false);
     return false;
   }
   //modify the weapon with the clip
-  INQAttack.useAmmo(clips[0]);
+  INQAttack.useAmmo(clips[0], function(){
+    callback(true);
+  });
   //nothing went wrong
   return true;
 }

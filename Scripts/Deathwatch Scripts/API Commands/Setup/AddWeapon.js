@@ -51,65 +51,77 @@ INQAttack.addWeapon = function(matches, msg){
     //don't continue unless you are certain what the user wants
     return false;
   }
-  //detail the one and only weapon that was found
-  var inqweapon = new INQWeapon(weapons[0]);
-
-  //was there any ammo to load?
-  if(ammoStr){
-    //get the exact name of every clip
-    for(var i = 0; i < ammoNames.length; i++){
-      //if the ammo name is empty, just use the unmodified weapon
-      if(ammoNames[i] == ""){continue;}
-      //search for the ammo
-      var clips = matchingObjs("handout", ammoNames[i].split(" "));
-      //try to trim down to exact ammo matches
-      clips = trimToPerfectMatches(clips, ammoNames[i]);
-      //did none of the weapons match?
-      if(clips.length <= 0){
-        whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
-        return false;
+  (function(){
+    return new Promise(function(resolve){
+      var inqweapon = new INQWeapon(weapons[0], function(){
+        resolve(inqweapon);
+      });
+    });
+  })().then(function(inqweapon){
+    //was there any ammo to load?
+    if(ammoStr){
+      //get the exact name of every clip
+      for(var i = 0; i < ammoNames.length; i++){
+        //if the ammo name is empty, just use the unmodified weapon
+        if(ammoNames[i] == ""){continue;}
+        //search for the ammo
+        var clips = matchingObjs("handout", ammoNames[i].split(" "));
+        //try to trim down to exact ammo matches
+        clips = trimToPerfectMatches(clips, ammoNames[i]);
+        //did none of the weapons match?
+        if(clips.length <= 0){
+          whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
+          return false;
+        }
+        //are there too many weapons?
+        if(clips.length >= 2){
+          whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
+          _.each(clips, function(clip){
+            //specify the exact ammo name
+            ammoNames[i] = clip.get("name");
+            //construct the suggested command (without the !)
+            var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
+            //the suggested command must be encoded before it is placed inside the button
+            suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
+            whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
+          });
+          //something went wrong
+          return false;
+        }
+        //be sure the name is exactly correct
+        ammoNames[i] = clips[0].get("name");
       }
-      //are there too many weapons?
-      if(clips.length >= 2){
-        whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
-        _.each(clips, function(clip){
-          //specify the exact ammo name
-          ammoNames[i] = clip.get("name");
-          //construct the suggested command (without the !)
-          var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
-          //the suggested command must be encoded before it is placed inside the button
-          suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-          whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
+    }
+    //only weapons that have a clip of 0 are assumed to be consumable
+    //weapons that have an alternate clip size do not need a note on the character bio
+    if(quantity != undefined && inqweapon.Clip == 0){
+      var quantityNote = quantity;
+    }
+    //add this weapon to each of the selected characters
+    eachCharacter(msg, function(character, graphic){
+      (function(){
+        return new Promise(function(resolve){
+          //parse the character
+          INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
+            resolve();
+          });
         });
-        //something went wrong
-        return false;
-      }
-      //be sure the name is exactly correct
-      ammoNames[i] = clips[0].get("name");
-    }
-  }
-  //only weapons that have a clip of 0 are assumed to be consumable
-  //weapons that have an alternate clip size do not need a note on the character bio
-  if(quantity != undefined && inqweapon.Clip == 0){
-    var quantityNote = quantity;
-  }
-  //add this weapon to each of the selected characters
-  eachCharacter(msg, function(character, graphic){
-    //parse the character
-    INQAttack.inqcharacter = new INQCharacter(character, graphic);
-    //try to insert the link before continuing
-    /*
-    if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
-    */
-    //only add an ability if it isn't gear
-    if(inqweapon.Class != "Gear"){
-      //add the token action to the character
-      INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
-    } else {
-      whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
-    }
-    //report the success
-    whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+      })().then(function(inqcharacter){
+        //try to insert the link before continuing
+        /*
+        if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
+        */
+        //only add an ability if it isn't gear
+        if(inqweapon.Class != "Gear"){
+          //add the token action to the character
+          INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
+        } else {
+          whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
+        }
+        //report the success
+        whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+      });
+    });
   });
 }
 

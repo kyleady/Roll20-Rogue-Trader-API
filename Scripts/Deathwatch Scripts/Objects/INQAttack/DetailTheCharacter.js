@@ -1,16 +1,29 @@
 //be sure the inqattack object exists before we start working with it
 INQAttack = INQAttack || {};
-INQAttack.detailTheCharacter = function(character, graphic){
+INQAttack.detailTheCharacter = function(character, graphic, callback){
   INQAttack.inqcharacter = undefined;
-  if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
-    var pilot = defaultCharacter(INQAttack.msg.playerid);
-    if(pilot != undefined){
-      INQAttack.inqcharacter = new INQCharacter(pilot);
-      INQAttack.inqcharacter.ObjID = character.id;
-      INQAttack.inqcharacter.GraphicID = graphic.id;
+  (function(){
+    return new Promise(function(resolve){
+      if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
+        var pilot = defaultCharacter(INQAttack.msg.playerid);
+        if(pilot != undefined){
+          INQAttack.inqcharacter = new INQCharacter(pilot, undefined, function(){
+            INQAttack.inqcharacter.ObjID = character.id;
+            INQAttack.inqcharacter.GraphicID = graphic.id;
+            resolve();
+          });
+          return;
+        }
+      }
+      resolve();
+    });
+  })().then(function(){
+    if(INQAttack.inqcharacter == undefined){
+      INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
+        callback();
+      });
+    } else {
+      callback();
     }
-  }
-  if(INQAttack.inqcharacter == undefined){
-    INQAttack.inqcharacter = new INQCharacter(character, graphic);
-  }
+  });
 }

@@ -19,19 +19,19 @@ on("ready",function(){
   INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
   INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
 
-  INQVehicleParser.prototype = new INQVehicle();
+  INQVehicleParser.prototype = Object.create(INQVehicle.prototype);
   INQVehicleParser.prototype.constructor = INQVehicleParser;
 
   INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
   INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
 
-  INQCharacterParser.prototype = new INQCharacter();
+  INQCharacterParser.prototype = Object.create(INQCharacter.prototype);
   INQCharacterParser.prototype.constructor = INQCharacterParser;
 
-  INQWeaponNoteParser.prototype = new INQWeapon();
+  INQWeaponNoteParser.prototype = Object.create(INQWeapon.prototype);
   INQWeaponNoteParser.prototype.constructor = INQWeaponNoteParser;
 
-  INQWeaponParser.prototype = new INQWeapon();
+  INQWeaponParser.prototype = Object.create(INQWeapon.prototype);
   INQWeaponParser.prototype.constructor = INQWeaponParser;
 
   INQLinkParser.prototype = new INQLink();

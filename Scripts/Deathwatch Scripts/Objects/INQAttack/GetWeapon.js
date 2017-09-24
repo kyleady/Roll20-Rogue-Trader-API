@@ -1,9 +1,11 @@
 INQAttack = INQAttack || {};
 //find the weapon
-INQAttack.getWeapon = function(){
+INQAttack.getWeapon = function(callback){
   //is this a custom weapon?
   if(INQAttack.options.custom){
     INQAttack.inqweapon = new INQWeapon();
+    if(typeof callback == 'function') callback(true);
+    return true;
   //or are its stats found in the library?
   } else {
     //search for the weapon
@@ -13,6 +15,7 @@ INQAttack.getWeapon = function(){
     //did none of the weapons match?
     if(weapons.length <= 0){
       whisper("*" + INQAttack.weaponname + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+      if(typeof callback == 'function') callback(false);
       return false;
     }
     //are there too many weapons?
@@ -26,11 +29,15 @@ INQAttack.getWeapon = function(){
         whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
       });
       //don't continue unless you are certain what the user wants
+      if(typeof callback == 'function') callback(false);
       return false;
     }
+
+    INQAttack.inqweapon = new INQWeapon(weapons[0], function(){
+      if(typeof callback == 'function') callback(true);
+    });
+
     //detail the one and only weapon that was found
-    INQAttack.inqweapon = new INQWeapon(weapons[0]);
+    return true;
   }
-  //nothing went wrong
-  return true;
 }
