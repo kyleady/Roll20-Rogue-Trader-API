@@ -15,7 +15,13 @@ function attributeHandler(matches,msg,options){
       max: attributeValue(statName, {graphicid: graphic.id, max: true, alert: false, bar: options['bar']})
     };
     var name = (options.partyStat) ? '' : character.get('name');
-    if(attribute.current == undefined) return;
+    if (attribute.current == undefined) {
+      if (operator  == '=') {
+        attribute.current = '-';
+      } else {
+        return;
+      }
+    };
     if(attribute.max == undefined){
       if(modifier == 'max' && operator == '='){
         attributeValue(statName, {graphicid: graphic.id, delete: true, alert: false, bar: options['bar']});

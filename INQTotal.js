@@ -6857,7 +6857,13 @@ function attributeHandler(matches,msg,options){
       max: attributeValue(statName, {graphicid: graphic.id, max: true, alert: false, bar: options['bar']})
     };
     var name = (options.partyStat) ? '' : character.get('name');
-    if(attribute.current == undefined) return;
+    if (attribute.current == undefined) {
+      if (operator  == '=') {
+        attribute.current = '-';
+      } else {
+        return;
+      }
+    };
     if(attribute.max == undefined){
       if(modifier == 'max' && operator == '='){
         attributeValue(statName, {graphicid: graphic.id, delete: true, alert: false, bar: options['bar']});
@@ -7141,30 +7147,6 @@ function where(matches, msg){
 
 on('ready', function(){
   CentralInput.addCMD(/^!\s*where\s*\?\s*$/i, where);
-});
-on('ready', function() {
-    var Handouts = findObjs({
-        _type: 'handout'
-    });
-
-    var Characters = findObjs({
-        _type: 'character'
-    });
-
-    log('Reading through every handout and character');
-
-    _.each(Handouts, function(handout){
-        handout.get('notes',function(notes){notes;});
-        handout.get('gmnotes',function(gmnotes){gmnotes;});
-    });
-
-    log('...');
-    _.each(Characters, function(Character){
-        Character.get('bio', function(bio) {bio;});
-        Character.get('gmnotes', function(gmnotes) {gmnotes;});
-    });
-
-    log('Reading complete.');
 });
 function announce(content, options){
   if(typeof options != 'object') options = {};
@@ -7469,7 +7451,7 @@ function matchingAttrNames(graphicid, phrase){
   }
 
   var matchingAttrs = matchingObjs('attribute', keywords, function(attr){
-    return attr.get('characterid') == character.id;
+    return attr.get('_characterid') == character.id;
   });
 
   _.each(matchingAttrs, function(attr){

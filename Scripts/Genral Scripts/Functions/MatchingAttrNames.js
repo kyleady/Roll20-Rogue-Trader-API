@@ -19,7 +19,7 @@ function matchingAttrNames(graphicid, phrase){
   }
 
   var matchingAttrs = matchingObjs('attribute', keywords, function(attr){
-    return attr.get('characterid') == character.id;
+    return attr.get('_characterid') == character.id;
   });
 
   _.each(matchingAttrs, function(attr){
