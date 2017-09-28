@@ -54,9 +54,9 @@ function attributeValue(name, options){
         name: name,
         current: options['setTo'],
         max: options['setTo'],
-        characterid: character.id
+        _characterid: character.id
       });
-      return attribute
+      return attribute.get(workingWith);
     }
 
     return;

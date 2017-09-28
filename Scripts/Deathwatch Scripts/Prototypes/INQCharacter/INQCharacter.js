@@ -64,7 +64,6 @@ function INQCharacter(character, graphic, callback){
   this.Attributes["Unnatural Corruption"] = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
-
   //check if the character has an inqlink with the given name
   //and within the given list
   //if there are no subgroups for the inqlink, just return {Bonus}
@@ -117,7 +116,6 @@ function INQCharacter(character, graphic, callback){
 
     return info;
   }
-
   //return the attribute bonus Stat/10 + Unnatural Stat
   this.bonus = function(stat){
     var bonus = 0;
@@ -173,9 +171,8 @@ function INQCharacter(character, graphic, callback){
 
     return gmnotes;
   }
-
   //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer, characterid){
+  this.toCharacterObj = function(isPlayer, characterid, callback){
     //get the character
     var character = undefined;
     if(characterid){
@@ -205,20 +202,11 @@ function INQCharacter(character, graphic, callback){
 
     //save the object ID
     this.ObjID = character.id;
-
-    //write the character's notes down
-    var gmnotes = this.getCharacterBio();
-    if(isPlayer){
-      character.set("bio", gmnotes);
-    } else {
-      character.set("gmnotes", gmnotes);
-    }
-
     //create all of the character's attributes
     for(var name in this.Attributes){
-      createObj("attribute",{
+      createObj('attribute', {
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -229,7 +217,7 @@ function INQCharacter(character, graphic, callback){
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
       });
@@ -238,29 +226,33 @@ function INQCharacter(character, graphic, callback){
     //note who controlls the character
     character.set("controlledby", this.controlledby);
 
+    //write the character's notes down
+    var gmnotes = this.getCharacterBio();
+    var workingWith = (isPlayer) ? 'bio' : 'gmnotes';
+    character.set(workingWith, gmnotes);
     //return the resultant character object
     return character;
   }
-
   //allow the user to immediately parse a character in the constructor
-  (function(inqcharacter){
-    return new Promise(function(resolve){
-      if(character != undefined){
-        if(typeof character == "string"){
-          Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
-          inqcharacter.parse(character);
-          resolve(inqcharacter);
-        } else {
-          Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
-          inqcharacter.parse(character, graphic, function(){
-            resolve(inqcharacter);
-          });
-        }
-      } else {
+  var inqcharacter = this;
+  var myPromise = new Promise(function(resolve){
+    if(character != undefined){
+      if(typeof character == "string"){
+        Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
+        inqcharacter.parse(character);
         resolve(inqcharacter);
+      } else {
+        Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
+        inqcharacter.parse(character, graphic, function(){
+          resolve(inqcharacter);
+        });
       }
-    });
-  })(this).then(function(inqcharacter){
+    } else {
+      resolve(inqcharacter);
+    }
+  });
+
+  myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());
     }

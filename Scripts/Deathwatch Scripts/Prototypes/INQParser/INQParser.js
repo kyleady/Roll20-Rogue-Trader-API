@@ -210,18 +210,17 @@ function INQParser(object, mainCallback){
   //extract the text out of an object
   this.objectToText = function(obj, callback){
     var parser = this;
-    (function(){
-      return new Promise(function(resolve){
-        switch(obj.get("_type")){
-          case 'handout':
-            obj.get('notes', function(notes){resolve({notes: notes});});
-            break;
-          case 'character':
-            obj.get('bio', function(bio){resolve({notes: bio});});
-            break;
-        }
-      });
-    })().then(function(Notes){
+    var toTextPromise = new Promise(function(resolve){
+      switch(obj.get("_type")){
+        case 'handout':
+          obj.get('notes', function(notes){resolve({notes: notes});});
+          break;
+        case 'character':
+          obj.get('bio', function(bio){resolve({notes: bio});});
+          break;
+      }
+    });
+    toTextPromise.then(function(Notes){
       return new Promise(function(resolve){
         obj.get('gmnotes', function(gmnotes){
           Notes.gmnotes = gmnotes;
@@ -233,29 +232,27 @@ function INQParser(object, mainCallback){
       if(Notes.notes == 'null'){
         Notes.notes = '';
       }
-      if(Notes == 'null'){
-        GMNotes = '';
+      if(Notes.gmnotes == 'null'){
+        Notes.gmnotes = '';
       }
       //save the result
-      parser.Text = Notes + "<br>" + GMNotes;
-      if(typeof callback == 'function'){
-        callback(parser);
-      }
+      parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
+      if(typeof callback == 'function') callback(parser);
     });
   }
 
   //allow the user to specify the object to parse in the constructor
-  (function(parser){
-    return new Promise(function(resolve){
-      if(object != undefined){
-        parser.objectToText(object, function(){
-          resolve(parser);
-        });
-      } else {
-        resolve(parser);
-      }
-    });
-  })(this).then(function(parser){
+  var parser = this;
+  var parserPromise = new Promise(function(resolve){
+    if(object != undefined){
+      parser.objectToText(object, function(){
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+  parserPromise.then(function(){
     if(object != undefined){
       //parse the text
       parser.parse();

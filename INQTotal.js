@@ -5,7 +5,7 @@ function cohesionHandler(matches,msg){
   var cohesionObjs = findObjs({
     _type: "attribute",
     name: "Cohesion"
-  });
+  }) || [];
   //are there no cohesion attributes anywhere?
   if(cohesionObjs.length <= 0){
     //no stat to work with. alert the gm and player
@@ -156,12 +156,12 @@ function painSuppress(matches, msg) {
   }
   eachCharacter(msg, function(character, graphic){
     var clip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false});
-    if(clip == undefined) clip = 6;
+    if (clip == undefined) clip = attributeValue('Ammo - Pain Suppressant', {setTo: 6, graphicid: graphic.id, alert: false, max: true});
     clip = Number(clip);
     if(clip <= 0) return whisper('Not enough pain suppressants.', {speakingTo: msg.playerid});
     clip--;
+    var maxClip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false, max: true});
     var clip = attributeValue('Ammo - Pain Suppressant', {setTo: clip, graphicid: graphic.id, alert: false});
-    var maxClip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false, max: true}) || 6;
     whisper(graphic.get('name') + ' has [[' + clip + ']]/' + maxClip + ' pain suppressants left.', {speakingTo: msg.playerid});
     addCounter(['', graphic.get('name') + '(' + text + ')', randomInteger(10).toString()], msg);
   });
@@ -245,14 +245,14 @@ function skillHandler(matches, msg){
 
   //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
-    (function(){
-      return new Promise(function(resolve){
-        //parse this character
-        var inqcharacter = new INQCharacter(objs.character, objs.graphic, function(){
-          resolve(inqcharacter);
-        });
+    var skillPromise = new Promise(function(resolve){
+      //parse this character
+      var inqcharacter = new INQCharacter(character, graphic, function(){
+        resolve(inqcharacter);
       });
-    })({msg: msg, character: character, graphic: graphic}).then(function(inqcharacter){
+    });
+
+    skillPromise.then(function(inqcharacter){
       //determine if the character has this skill
       var skill = inqcharacter.has(skillName, "Skills");
       if(!skill){
@@ -333,7 +333,7 @@ on("ready", function(){
   regex += "\\s*)?\\s*";
   regex += "$";
 
-  CentralInput.addCMD(RegExp(regex, "i"), INQSkill.skillHandler, true);
+  CentralInput.addCMD(RegExp(regex, "i"), skillHandler, true);
 });
 //resets every stat of the selected characters to its maximum (creates an
 //exception for Fatigue as it resets to 0).
@@ -376,7 +376,7 @@ function statReset(matches,msg){
 on("ready",function(){
   //resets the attributes and status markets of every selected token (or every
   //token on the map)
-  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?)?)\s*$/i,statReset);
+  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?|all)?)\s*$/i,statReset);
 });
 //rolls a D100 against the designated stat and outputs the number of successes
 //takes into account corresponding unnatural bonuses
@@ -1847,6 +1847,37 @@ function endMission(matches, msg){
 
 on("ready", function(){
   CentralInput.addCMD(/^!\s*end\s*mission\s*$/i, endMission);
+});
+function lastWatchWave (matches, msg) {
+  var Troops = Number(matches[1]);
+  var Elite = 0;
+  var Master = 0;
+  var Chance = matches[2] || 4;
+  Chance = Number(Chance);
+  var MasterPotential = Math.floor(Troops / 16);
+  for (var i = 0; i < MasterPotential; i++) {
+    if (randomInteger(10) >= 4) {
+      Troops -= 16;
+      Master++;
+    }
+  }
+  var ElitePotential = Math.floor(Troops / 4);
+  for (var i = 0; i < ElitePotential; i++) {
+    if (randomInteger(10) >= 4) {
+      Troops -= 4;
+      Elite++;
+    }
+  }
+
+  var output = '';
+  if (Master) output += 'Master: ' + Master + ", ";
+  if (Elite) output += 'Elite: ' + Elite + ", ";
+  if(Troop) output += 'Horde: ' + (Troop * 5);
+  whisper(output.replace(/,$/, ''));
+}
+
+on("ready", function(){
+  CentralInput.addCMD(/^!\s*last\s*watch\s*wave\s*(\d+)\s*(?:|\s*(\d+)\s*)?$/i, lastWatchWave);
 });
 //allows the gm to create a new roll20 character sheet that represents a brand
 //new character.
@@ -4191,7 +4222,6 @@ function INQCharacter(character, graphic, callback){
   this.Attributes["Unnatural Corruption"] = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
-
   //check if the character has an inqlink with the given name
   //and within the given list
   //if there are no subgroups for the inqlink, just return {Bonus}
@@ -4244,7 +4274,6 @@ function INQCharacter(character, graphic, callback){
 
     return info;
   }
-
   //return the attribute bonus Stat/10 + Unnatural Stat
   this.bonus = function(stat){
     var bonus = 0;
@@ -4300,9 +4329,8 @@ function INQCharacter(character, graphic, callback){
 
     return gmnotes;
   }
-
   //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer, characterid){
+  this.toCharacterObj = function(isPlayer, characterid, callback){
     //get the character
     var character = undefined;
     if(characterid){
@@ -4332,20 +4360,11 @@ function INQCharacter(character, graphic, callback){
 
     //save the object ID
     this.ObjID = character.id;
-
-    //write the character's notes down
-    var gmnotes = this.getCharacterBio();
-    if(isPlayer){
-      character.set("bio", gmnotes);
-    } else {
-      character.set("gmnotes", gmnotes);
-    }
-
     //create all of the character's attributes
     for(var name in this.Attributes){
-      createObj("attribute",{
+      createObj('attribute', {
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -4356,7 +4375,7 @@ function INQCharacter(character, graphic, callback){
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
       });
@@ -4365,29 +4384,33 @@ function INQCharacter(character, graphic, callback){
     //note who controlls the character
     character.set("controlledby", this.controlledby);
 
+    //write the character's notes down
+    var gmnotes = this.getCharacterBio();
+    var workingWith = (isPlayer) ? 'bio' : 'gmnotes';
+    character.set(workingWith, gmnotes);
     //return the resultant character object
     return character;
   }
-
   //allow the user to immediately parse a character in the constructor
-  (function(inqcharacter){
-    return new Promise(function(resolve){
-      if(character != undefined){
-        if(typeof character == "string"){
-          Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
-          inqcharacter.parse(character);
-          resolve(inqcharacter);
-        } else {
-          Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
-          inqcharacter.parse(character, graphic, function(){
-            resolve(inqcharacter);
-          });
-        }
-      } else {
+  var inqcharacter = this;
+  var myPromise = new Promise(function(resolve){
+    if(character != undefined){
+      if(typeof character == "string"){
+        Object.setPrototypeOf(inqcharacter, new INQCharacterImportParser());
+        inqcharacter.parse(character);
         resolve(inqcharacter);
+      } else {
+        Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
+        inqcharacter.parse(character, graphic, function(){
+          resolve(inqcharacter);
+        });
       }
-    });
-  })(this).then(function(inqcharacter){
+    } else {
+      resolve(inqcharacter);
+    }
+  });
+
+  myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());
     }
@@ -4715,9 +4738,10 @@ function INQLink(text){
     if(this.Quantity > 0){
       output += "(x" + this.Quantity.toString() + ")";
     }
-    if(this.Bonus != 0){
+    if(this.Bonus > 0){
       output += "+" + this.Bonus.toString();
-
+    } else if (this.Bonus < 0) {
+      output += "–" + Math.abs(this.Bonus).toString();
     }
     return output;
   }
@@ -4730,11 +4754,11 @@ function INQLinkParser(){
   //save the regex for the link and its adjoining notes
   this.regex = function(){
     var regex = "\\s*(?:<a href=\"http:\\//journal\\.roll20\\.net\\/handout\\/[-\\w\\d]+\">)?"
-    regex += "([^\+<>\\(\\),; -][^\+<>;\\(\\)]*)";
+    regex += "([^+<>\\(\\),; –-][^+<>;\\(\\)–]*)";
     regex += "(?:<\\/a>)?";
     regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
     regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
-    regex += "\\s*(?:\\+\\s*(\\d+))?\\s*";
+    regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
 
     return regex;
   }
@@ -4760,8 +4784,8 @@ function INQLinkParser(){
       if(matches[3]){
         this.Quantity = Number(matches[3]);
       }
-      if(matches[4]){
-        this.Bonus = Number(matches[4]);
+      if(matches[4] && matches[5]){
+        this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
       }
     }
   }
@@ -5203,18 +5227,17 @@ function INQParser(object, mainCallback){
   //extract the text out of an object
   this.objectToText = function(obj, callback){
     var parser = this;
-    (function(){
-      return new Promise(function(resolve){
-        switch(obj.get("_type")){
-          case 'handout':
-            obj.get('notes', function(notes){resolve({notes: notes});});
-            break;
-          case 'character':
-            obj.get('bio', function(bio){resolve({notes: bio});});
-            break;
-        }
-      });
-    })().then(function(Notes){
+    var toTextPromise = new Promise(function(resolve){
+      switch(obj.get("_type")){
+        case 'handout':
+          obj.get('notes', function(notes){resolve({notes: notes});});
+          break;
+        case 'character':
+          obj.get('bio', function(bio){resolve({notes: bio});});
+          break;
+      }
+    });
+    toTextPromise.then(function(Notes){
       return new Promise(function(resolve){
         obj.get('gmnotes', function(gmnotes){
           Notes.gmnotes = gmnotes;
@@ -5226,29 +5249,27 @@ function INQParser(object, mainCallback){
       if(Notes.notes == 'null'){
         Notes.notes = '';
       }
-      if(Notes == 'null'){
-        GMNotes = '';
+      if(Notes.gmnotes == 'null'){
+        Notes.gmnotes = '';
       }
       //save the result
-      parser.Text = Notes + "<br>" + GMNotes;
-      if(typeof callback == 'function'){
-        callback(parser);
-      }
+      parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
+      if(typeof callback == 'function') callback(parser);
     });
   }
 
   //allow the user to specify the object to parse in the constructor
-  (function(parser){
-    return new Promise(function(resolve){
-      if(object != undefined){
-        parser.objectToText(object, function(){
-          resolve(parser);
-        });
-      } else {
-        resolve(parser);
-      }
-    });
-  })(this).then(function(parser){
+  var parser = this;
+  var parserPromise = new Promise(function(resolve){
+    if(object != undefined){
+      parser.objectToText(object, function(){
+        resolve();
+      });
+    } else {
+      resolve();
+    }
+  });
+  parserPromise.then(function(){
     if(object != undefined){
       //parse the text
       parser.parse();
@@ -7222,9 +7243,9 @@ function attributeValue(name, options){
         name: name,
         current: options['setTo'],
         max: options['setTo'],
-        characterid: character.id
+        _characterid: character.id
       });
-      return attribute
+      return attribute.get(workingWith);
     }
 
     return;
@@ -7304,34 +7325,36 @@ function eachCharacter(msg, givenFunction){
       var character = undefined;
     } else if(typeof obj.get === 'function' && obj.get('_type') == 'character') {
       var character = obj;
-      var graphic = undefined;
+      var graphics = [];
       if(Campaign().get('playerspecificpages') && Campaign().get('playerspecificpages')[msg.playerid]){
-        graphic = findObjs({
+        graphics = findObjs({
           _pageid: Campaign().get('playerspecificpages')[msg.playerid],
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
-        graphic = findObjs({
+      if(graphics[0] == undefined){
+        graphics = findObjs({
           _pageid: Campaign().get('playerpageid'),
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
-        graphic = findObjs({
+      if(graphics[0] == undefined){
+        graphics = findObjs({
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
+      if(graphics[0] == undefined){
         return whisper(character.get('name') + ' does not have a token on any map in the entire campaign.',
          {speakingTo: msg.playerid, gmEcho: true});
       }
+
+      var graphic = graphics[0];
     } else if(typeof obj.get === 'function' && obj.get('_type') == 'graphic') {
       var graphic = obj;
       var character = getObj('character', graphic.get('represents'));

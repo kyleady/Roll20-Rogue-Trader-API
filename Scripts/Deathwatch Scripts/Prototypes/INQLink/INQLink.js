@@ -27,9 +27,10 @@ function INQLink(text){
     if(this.Quantity > 0){
       output += "(x" + this.Quantity.toString() + ")";
     }
-    if(this.Bonus != 0){
+    if(this.Bonus > 0){
       output += "+" + this.Bonus.toString();
-
+    } else if (this.Bonus < 0) {
+      output += "–" + Math.abs(this.Bonus).toString();
     }
     return output;
   }

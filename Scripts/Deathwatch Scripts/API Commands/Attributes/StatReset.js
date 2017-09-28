@@ -39,5 +39,5 @@ function statReset(matches,msg){
 on("ready",function(){
   //resets the attributes and status markets of every selected token (or every
   //token on the map)
-  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?)?)\s*$/i,statReset);
+  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?|all)?)\s*$/i,statReset);
 });

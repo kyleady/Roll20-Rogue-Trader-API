@@ -4,11 +4,11 @@ function INQLinkParser(){
   //save the regex for the link and its adjoining notes
   this.regex = function(){
     var regex = "\\s*(?:<a href=\"http:\\//journal\\.roll20\\.net\\/handout\\/[-\\w\\d]+\">)?"
-    regex += "([^\+<>\\(\\),; -][^\+<>;\\(\\)]*)";
+    regex += "([^+<>\\(\\),; –-][^+<>;\\(\\)–]*)";
     regex += "(?:<\\/a>)?";
     regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
     regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
-    regex += "\\s*(?:\\+\\s*(\\d+))?\\s*";
+    regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
 
     return regex;
   }
@@ -34,8 +34,8 @@ function INQLinkParser(){
       if(matches[3]){
         this.Quantity = Number(matches[3]);
       }
-      if(matches[4]){
-        this.Bonus = Number(matches[4]);
+      if(matches[4] && matches[5]){
+        this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
       }
     }
   }

@@ -4,7 +4,7 @@ function cohesionHandler(matches,msg){
   var cohesionObjs = findObjs({
     _type: "attribute",
     name: "Cohesion"
-  });
+  }) || [];
   //are there no cohesion attributes anywhere?
   if(cohesionObjs.length <= 0){
     //no stat to work with. alert the gm and player

@@ -8,12 +8,12 @@ function painSuppress(matches, msg) {
   }
   eachCharacter(msg, function(character, graphic){
     var clip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false});
-    if(clip == undefined) clip = 6;
+    if (clip == undefined) clip = attributeValue('Ammo - Pain Suppressant', {setTo: 6, graphicid: graphic.id, alert: false, max: true});
     clip = Number(clip);
     if(clip <= 0) return whisper('Not enough pain suppressants.', {speakingTo: msg.playerid});
     clip--;
+    var maxClip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false, max: true});
     var clip = attributeValue('Ammo - Pain Suppressant', {setTo: clip, graphicid: graphic.id, alert: false});
-    var maxClip = attributeValue('Ammo - Pain Suppressant', {graphicid: graphic.id, alert: false, max: true}) || 6;
     whisper(graphic.get('name') + ' has [[' + clip + ']]/' + maxClip + ' pain suppressants left.', {speakingTo: msg.playerid});
     addCounter(['', graphic.get('name') + '(' + text + ')', randomInteger(10).toString()], msg);
   });

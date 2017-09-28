@@ -36,34 +36,36 @@ function eachCharacter(msg, givenFunction){
       var character = undefined;
     } else if(typeof obj.get === 'function' && obj.get('_type') == 'character') {
       var character = obj;
-      var graphic = undefined;
+      var graphics = [];
       if(Campaign().get('playerspecificpages') && Campaign().get('playerspecificpages')[msg.playerid]){
-        graphic = findObjs({
+        graphics = findObjs({
           _pageid: Campaign().get('playerspecificpages')[msg.playerid],
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
-        graphic = findObjs({
+      if(graphics[0] == undefined){
+        graphics = findObjs({
           _pageid: Campaign().get('playerpageid'),
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
-        graphic = findObjs({
+      if(graphics[0] == undefined){
+        graphics = findObjs({
           _type: 'graphic',
           represents: character.id
-        })[0];
+        }) || [];
       }
 
-      if(graphic == undefined){
+      if(graphics[0] == undefined){
         return whisper(character.get('name') + ' does not have a token on any map in the entire campaign.',
          {speakingTo: msg.playerid, gmEcho: true});
       }
+
+      var graphic = graphics[0];
     } else if(typeof obj.get === 'function' && obj.get('_type') == 'graphic') {
       var graphic = obj;
       var character = getObj('character', graphic.get('represents'));

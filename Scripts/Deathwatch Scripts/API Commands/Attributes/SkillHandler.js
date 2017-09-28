@@ -35,14 +35,14 @@ function skillHandler(matches, msg){
 
   //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
-    (function(){
-      return new Promise(function(resolve){
-        //parse this character
-        var inqcharacter = new INQCharacter(objs.character, objs.graphic, function(){
-          resolve(inqcharacter);
-        });
+    var skillPromise = new Promise(function(resolve){
+      //parse this character
+      var inqcharacter = new INQCharacter(character, graphic, function(){
+        resolve(inqcharacter);
       });
-    })({msg: msg, character: character, graphic: graphic}).then(function(inqcharacter){
+    });
+
+    skillPromise.then(function(inqcharacter){
       //determine if the character has this skill
       var skill = inqcharacter.has(skillName, "Skills");
       if(!skill){
@@ -123,5 +123,5 @@ on("ready", function(){
   regex += "\\s*)?\\s*";
   regex += "$";
 
-  CentralInput.addCMD(RegExp(regex, "i"), INQSkill.skillHandler, true);
+  CentralInput.addCMD(RegExp(regex, "i"), skillHandler, true);
 });
