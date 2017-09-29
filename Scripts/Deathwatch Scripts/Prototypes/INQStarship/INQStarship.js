@@ -116,7 +116,7 @@ function INQStarship(){
     for(var name in this.Attributes){
       createObj("attribute",{
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -126,7 +126,7 @@ function INQStarship(){
     _.each(this.List["Weapon Components"], function(weapon){
       createObj("ability", {
         name: weapon.Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: weapon.toAbility()
       });

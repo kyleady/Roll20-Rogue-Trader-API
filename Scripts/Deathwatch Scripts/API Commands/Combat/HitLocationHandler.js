@@ -18,10 +18,7 @@ function hitlocationHandler(matches,msg){
     objsAreDefined = false;
   }
   //if at least one of the objects was not found, exit
-  if(objsAreDefined == false){
-    return;
-  }
-
+  if(!objsAreDefined) return;
   var targeting = "";
   //did the user specify left or right?
   switch(matches[1].toLowerCase()){

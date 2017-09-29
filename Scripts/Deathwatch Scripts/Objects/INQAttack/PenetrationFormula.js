@@ -3,10 +3,10 @@ INQAttack = INQAttack || {};
 INQAttack.penetrationFormula = function(){
   var formula = "";
   if(INQAttack.penSuccessesMultiplier){
-    formula += "("
+    formula += "(";
   }
   if(INQAttack.penDoubleAt && INQAttack.successes >= INQAttack.penDoubleAt){
-    formula += "("
+    formula += "(";
   }
   if(INQAttack.inqweapon.PenDiceNumber > 0 && INQAttack.inqweapon.PenDiceType > 0){
     formula += INQAttack.inqweapon.PenDiceNumber + "d" + INQAttack.inqweapon.PenDicType;

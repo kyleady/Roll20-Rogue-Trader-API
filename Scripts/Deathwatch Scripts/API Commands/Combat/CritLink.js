@@ -6,21 +6,16 @@ function getCritLink(matches, msg, options){
   // be sure the options exists
   options = options || {};
   //default the options
-  if(options["show"] == undefined){
-    options["show"] = true;
-  }
+  if(options.show == undefined) options.show = true;
   //what is the type of damage being used? Or is the target not a character?
   var damageType = matches[1].toLowerCase();
   //what is the hit location
   var hitLocation = matches[2];
 
-  if(damageType == ""){
-    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  if(damageType == ''){
+    var DamTypeObj = findObjs({ _type: 'attribute', name: 'DamageType' })[0];
     if(DamTypeObj == undefined){
-      if(!playerIsGM(msg.playerid)){
-        whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
-      }
-      whisper("There is no Damage Type attribute in the campaign.");
+      whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
       return critLink;
     }
     damageType = DamTypeObj.get("current").toLowerCase();
@@ -28,8 +23,8 @@ function getCritLink(matches, msg, options){
 
   if(hitLocation == ""){
     //retrieve the hit location attributes in the campaign
-    onesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
-    tensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
+    onesLocObj = findObjs({ _type: 'attribute', name: "OnesLocation"})[0];
+    tensLocObj = findObjs({ _type: 'attribute', name: "TensLocation"})[0];
     //be sure they were found
     var successfulLoad = true;
     if(onesLocObj == undefined){
@@ -107,6 +102,7 @@ function getCritLink(matches, msg, options){
     hitLocation = "";
   }
 
+  if(damageType == 'Starship') hitLocation = '';
   //get the link to the Crit table
   var critTitle = damageType + " Critical Effects";
   if(hitLocation){

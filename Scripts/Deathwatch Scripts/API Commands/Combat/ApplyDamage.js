@@ -4,7 +4,7 @@ function applyDamage (matches,msg){
   //quit if one of the details was not found
   if(INQAttack.getAttack() == undefined){return;}
   //apply the damage to every selected character
-  eachCharacter(msg,function(character, graphic){
+  eachCharacter(msg, function(character, graphic){
     //record the target
     INQAttack.character = character;
     //allow targets to use temporary variables from the graphic
@@ -33,7 +33,9 @@ function applyDamage (matches,msg){
     //a capital H in bar2 alerts the system that this graphic is a horde
     if(graphic.get("bar2_value") == "H"){
       damage = INQAttack.hordeDamage(damage);
+      log('horde damage: ' + damage)
     }
+
 
     //be sure that the final result is a number
     damage = Number(damage);
@@ -51,7 +53,7 @@ function applyDamage (matches,msg){
     //record the damage
     graphic.set("bar3_value", remainingWounds);
     if(damage > 0){
-      damageFx(graphic, attributeValue("Damage Type"));
+      damageFx(graphic, attributeValue('DamageType'));
     }
 
     //Reroll Location after each hit
@@ -82,10 +84,7 @@ function applyDamage (matches,msg){
   });
   //reset starship damage
   //starship damage is a running tally and needs to be reset when used
-  if(INQAttack.DamType.get("current").toUpperCase() == "S"){
-    INQAttack.Dam.set("current",0);
-    //damage can be recovered by setting the current to the maximum
-  }
+  if (INQAttack.DamType.get("current").toUpperCase() == "S") INQAttack.Dam.set("current", 0);
 }
 
 //waits until CentralInput has been initialized

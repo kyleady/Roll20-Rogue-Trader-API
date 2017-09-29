@@ -26,7 +26,10 @@ function attackShow(matches,msg){
     }
   //output normal damage
   } else {
-    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]) + ", Pen: [[" +  details.Pen.get(matches[1]) + "]], Felling: [[" + details.Fell.get(matches[1]) + "]]";
+    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]);
+    output += ", Pen: [[" +  details.Pen.get(matches[1]) + "]]";
+    output += ", Felling: [[" + details.Fell.get(matches[1]) + "]]";
+    output += ", Hits: [[" + details.Hits.get(matches[1]) + "]]";
     if(Number(details.Prim.get(matches[1]))) {
       whisper( output + ", Primitive");
     } else {
@@ -49,7 +52,7 @@ on("ready",function(){
   });
   //Lets the gm set the damage type
   CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
-    matches[2] = "Damage Type";
+    matches[2] = 'DamageType';
     matches[5] = matches[5].toUpperCase();
     attributeHandler(matches,msg,{partyStat: true});
   });

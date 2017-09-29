@@ -162,7 +162,6 @@ function INQVehicle(vehicle, graphic, callback){
 
     //save the object ID
     this.ObjID = character.id;
-
     //write the character's notes down
     var gmnotes = this.getCharacterBio();
     if(isPlayer){
@@ -175,7 +174,7 @@ function INQVehicle(vehicle, graphic, callback){
     for(var name in this.Attributes){
       createObj("attribute",{
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -186,7 +185,7 @@ function INQVehicle(vehicle, graphic, callback){
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: this.List.Weapons[i].toAbility(undefined, undefined, customWeapon)
       });
@@ -199,30 +198,32 @@ function INQVehicle(vehicle, graphic, callback){
     return character;
   }
 
-  (function(inqvehicle){
-    return new Promise(function(resolve){
-      if(vehicle != undefined){
-        if(typeof vehicle == "string"){
-          Object.setPrototypeOf(inqvehicle, new INQVehicleImportParser());
-          inqvehicle.parse(vehicle);
-          resolve(inqvehicle);
-        } else {
-          Object.setPrototypeOf(inqvehicle, new INQVehicleParser());
-          inqvehicle.parse(vehicle, graphic, function(){
-            resolve(inqvehicle);
-          });
-        }
+  //allow the user to immediately parse a character in the constructor
+  var inqcharacter = this;
+  var myPromise = new Promise(function(resolve){
+    if(character != undefined){
+      if(typeof character == "string"){
+        Object.setPrototypeOf(inqcharacter, new INQVehicleImportParser());
+        inqcharacter.parse(character);
+        resolve(inqcharacter);
       } else {
-        resolve(inqvehicle);
+        Object.setPrototypeOf(inqcharacter, new INQVehicleParser());
+        inqcharacter.parse(character, graphic, function(){
+          resolve(inqcharacter);
+        });
       }
-    });
-  })(this).then(function(inqvehicle){
-    if(vehicle != undefined){
-      Object.setPrototypeOf(inqvehicle, new INQVehicle());
+    } else {
+      resolve(inqcharacter);
+    }
+  });
+
+  myPromise.then(function(inqcharacter){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQVehicle());
     }
 
     if(typeof callback == 'function'){
-      callback(inqvehicle);
+      callback(inqcharacter);
     }
   });
 }

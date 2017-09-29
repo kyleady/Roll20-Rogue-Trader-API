@@ -22,7 +22,7 @@ function hordeKill(matches, msg){
     if(toKill > 0 && graphic.get("status_dead") == false){
       toKill--;
       graphic.set("status_dead", true);
-      damageFx(graphic, attributeValue("Damage Type"));
+      damageFx(graphic, attributeValue('DamageType'));
     }
   });
   if(useHits){

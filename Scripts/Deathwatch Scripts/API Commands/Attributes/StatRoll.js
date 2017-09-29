@@ -132,7 +132,7 @@ function getProperStatName(statName){
       statName = "Felling";
       break;
     case "damtype":
-      statName = "Damage Type";
+      statName = 'DamageType';
       break;
     default:
       //most Attributes begin each word with a capital letter (also known as TitleCase)

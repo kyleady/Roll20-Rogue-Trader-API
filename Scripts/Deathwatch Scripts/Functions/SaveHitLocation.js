@@ -4,14 +4,12 @@ function saveHitLocation(roll, options){
   //calculate Tens Location
   var tens = Math.floor(roll/10);
   //calculate Ones Location
-  var ones = roll - 10*tens;
-  //load up the GM variables
-  var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
+  var ones = roll - 10 * tens;
   //load up the TensLocation variable to save the result in
-  var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "TensLocation" })[0];
+  var attribObj = findObjs({ _type: 'attribute', name: "TensLocation" })[0];
   attribObj.set("current",tens);
   //load up the OnesLocation variable to save the result in
-  var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "OnesLocation" })[0];
+  var attribObj = findObjs({ _type: 'attribute', name: "OnesLocation" })[0];
   attribObj.set("current",ones);
   //where did you hit?
   var Location = "";

@@ -512,7 +512,7 @@ function getProperStatName(statName){
       statName = "Felling";
       break;
     case "damtype":
-      statName = "Damage Type";
+      statName = 'DamageType';
       break;
     default:
       //most Attributes begin each word with a capital letter (also known as TitleCase)
@@ -601,7 +601,7 @@ function applyDamage (matches,msg){
   //quit if one of the details was not found
   if(INQAttack.getAttack() == undefined){return;}
   //apply the damage to every selected character
-  eachCharacter(msg,function(character, graphic){
+  eachCharacter(msg, function(character, graphic){
     //record the target
     INQAttack.character = character;
     //allow targets to use temporary variables from the graphic
@@ -630,7 +630,9 @@ function applyDamage (matches,msg){
     //a capital H in bar2 alerts the system that this graphic is a horde
     if(graphic.get("bar2_value") == "H"){
       damage = INQAttack.hordeDamage(damage);
+      log('horde damage: ' + damage)
     }
+
 
     //be sure that the final result is a number
     damage = Number(damage);
@@ -648,7 +650,7 @@ function applyDamage (matches,msg){
     //record the damage
     graphic.set("bar3_value", remainingWounds);
     if(damage > 0){
-      damageFx(graphic, attributeValue("Damage Type"));
+      damageFx(graphic, attributeValue('DamageType'));
     }
 
     //Reroll Location after each hit
@@ -679,10 +681,7 @@ function applyDamage (matches,msg){
   });
   //reset starship damage
   //starship damage is a running tally and needs to be reset when used
-  if(INQAttack.DamType.get("current").toUpperCase() == "S"){
-    INQAttack.Dam.set("current",0);
-    //damage can be recovered by setting the current to the maximum
-  }
+  if (INQAttack.DamType.get("current").toUpperCase() == "S") INQAttack.Dam.set("current", 0);
 }
 
 //waits until CentralInput has been initialized
@@ -696,15 +695,11 @@ function attackReset(matches,msg){
   //get the damage details obj
   var details = damDetails();
   //quit if one of the details was not found
-  if(details == undefined){
-    return;
-  }
+  if(details == undefined) return;
   //reset the damage variables to their maximums
-  for(var k in details){
-    details[k].set("current",details.get("max"));
-  }
+  for(var k in details) details[k].set("current", details[k].get("max"));
   //report the resut
-  attackShow()
+  attackShow();
 }
 
 on('ready', function(){
@@ -753,21 +748,16 @@ function getCritLink(matches, msg, options){
   // be sure the options exists
   options = options || {};
   //default the options
-  if(options["show"] == undefined){
-    options["show"] = true;
-  }
+  if(options.show == undefined) options.show = true;
   //what is the type of damage being used? Or is the target not a character?
   var damageType = matches[1].toLowerCase();
   //what is the hit location
   var hitLocation = matches[2];
 
-  if(damageType == ""){
-    var DamTypeObj = findObjs({ type: 'attribute', name: "Damage Type" })[0];
+  if(damageType == ''){
+    var DamTypeObj = findObjs({ _type: 'attribute', name: 'DamageType' })[0];
     if(DamTypeObj == undefined){
-      if(!playerIsGM(msg.playerid)){
-        whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
-      }
-      whisper("There is no Damage Type attribute in the campaign.");
+      whisper("There is no Damage Type attribute in the campaign.", {speakingTo: msg.playerid, gmEcho: true});
       return critLink;
     }
     damageType = DamTypeObj.get("current").toLowerCase();
@@ -775,8 +765,8 @@ function getCritLink(matches, msg, options){
 
   if(hitLocation == ""){
     //retrieve the hit location attributes in the campaign
-    onesLocObj = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
-    tensLocObj = findObjs({ type: 'attribute', name: "TensLocation"})[0];
+    onesLocObj = findObjs({ _type: 'attribute', name: "OnesLocation"})[0];
+    tensLocObj = findObjs({ _type: 'attribute', name: "TensLocation"})[0];
     //be sure they were found
     var successfulLoad = true;
     if(onesLocObj == undefined){
@@ -854,6 +844,7 @@ function getCritLink(matches, msg, options){
     hitLocation = "";
   }
 
+  if(damageType == 'Starship') hitLocation = '';
   //get the link to the Crit table
   var critTitle = damageType + " Critical Effects";
   if(hitLocation){
@@ -906,7 +897,10 @@ function attackShow(matches,msg){
     }
   //output normal damage
   } else {
-    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]) + ", Pen: [[" +  details.Pen.get(matches[1]) + "]], Felling: [[" + details.Fell.get(matches[1]) + "]]";
+    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]);
+    output += ", Pen: [[" +  details.Pen.get(matches[1]) + "]]";
+    output += ", Felling: [[" + details.Fell.get(matches[1]) + "]]";
+    output += ", Hits: [[" + details.Hits.get(matches[1]) + "]]";
     if(Number(details.Prim.get(matches[1]))) {
       whisper( output + ", Primitive");
     } else {
@@ -929,7 +923,7 @@ on("ready",function(){
   });
   //Lets the gm set the damage type
   CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
-    matches[2] = "Damage Type";
+    matches[2] = 'DamageType';
     matches[5] = matches[5].toUpperCase();
     attributeHandler(matches,msg,{partyStat: true});
   });
@@ -1032,10 +1026,7 @@ function hitlocationHandler(matches,msg){
     objsAreDefined = false;
   }
   //if at least one of the objects was not found, exit
-  if(objsAreDefined == false){
-    return;
-  }
-
+  if(!objsAreDefined) return;
   var targeting = "";
   //did the user specify left or right?
   switch(matches[1].toLowerCase()){
@@ -1142,7 +1133,7 @@ function hordeKill(matches, msg){
     if(toKill > 0 && graphic.get("status_dead") == false){
       toKill--;
       graphic.set("status_dead", true);
-      damageFx(graphic, attributeValue("Damage Type"));
+      damageFx(graphic, attributeValue('DamageType'));
     }
   });
   if(useHits){
@@ -2474,14 +2465,14 @@ function damageFx(graphic, damageType){
 function damDetails() {
   //load up all of the damage variables, wherever they may be
   var details = {};
-  details.DamType = findObjs({ type: 'attribute', name: "Damage Type" })[0];
-  details.Dam     = findObjs({ type: 'attribute', name: "Damage" })[0];
-  details.Pen     = findObjs({ type: 'attribute', name: "Penetration" })[0];
-  details.Fell    = findObjs({ type: 'attribute', name: "Felling" })[0];
-  details.Prim    = findObjs({ type: 'attribute', name: "Primitive" })[0];
-  details.Hits    = findObjs({ type: 'attribute', name: "Hits"})[0];
-  details.OnesLoc = findObjs({ type: 'attribute', name: "OnesLocation"})[0];
-  details.TensLoc = findObjs({ type: 'attribute', name: "TensLocation"})[0];
+  details.DamType = findObjs({ _type: 'attribute', name: 'DamageType' })[0];
+  details.Dam     = findObjs({ _type: 'attribute', name: "Damage" })[0];
+  details.Pen     = findObjs({ _type: 'attribute', name: "Penetration" })[0];
+  details.Fell    = findObjs({ _type: 'attribute', name: "Felling" })[0];
+  details.Prim    = findObjs({ _type: 'attribute', name: "Primitive" })[0];
+  details.Hits    = findObjs({ _type: 'attribute', name: "Hits"})[0];
+  details.OnesLoc = findObjs({ _type: 'attribute', name: "OnesLocation"})[0];
+  details.TensLoc = findObjs({ _type: 'attribute', name: "TensLocation"})[0];
 
   //be sure every variable was successfully loaded
   var successfulLoad = true;
@@ -2811,14 +2802,12 @@ function saveHitLocation(roll, options){
   //calculate Tens Location
   var tens = Math.floor(roll/10);
   //calculate Ones Location
-  var ones = roll - 10*tens;
-  //load up the GM variables
-  var storage =  findObjs({type: 'character', name: "Damage Catcher"})[0];
+  var ones = roll - 10 * tens;
   //load up the TensLocation variable to save the result in
-  var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "TensLocation" })[0];
+  var attribObj = findObjs({ _type: 'attribute', name: "TensLocation" })[0];
   attribObj.set("current",tens);
   //load up the OnesLocation variable to save the result in
-  var attribObj = findObjs({ type: 'attribute', characterid: storage.id, name: "OnesLocation" })[0];
+  var attribObj = findObjs({ _type: 'attribute', name: "OnesLocation" })[0];
   attribObj.set("current",ones);
   //where did you hit?
   var Location = "";
@@ -3348,10 +3337,10 @@ INQAttack = INQAttack || {};
 INQAttack.penetrationFormula = function(){
   var formula = "";
   if(INQAttack.penSuccessesMultiplier){
-    formula += "("
+    formula += "(";
   }
   if(INQAttack.penDoubleAt && INQAttack.successes >= INQAttack.penDoubleAt){
-    formula += "("
+    formula += "(";
   }
   if(INQAttack.inqweapon.PenDiceNumber > 0 && INQAttack.inqweapon.PenDiceType > 0){
     formula += INQAttack.inqweapon.PenDiceNumber + "d" + INQAttack.inqweapon.PenDicType;
@@ -4043,11 +4032,9 @@ INQAttack.hordeDamage = function(damage){
   //hits. This is will leave the damage unaffected on other tokens.)
   if(damage > 0){
     //at base it is the number of hits
-    damage = INQAttack.Hits.get("Current");
+    damage = INQAttack.Hits.get("current");
     //explosive damage deals one extra point of horde damage
-    if(INQAttack.DamType.get("current").toUpperCase() == "X"){
-      damage++;
-    }
+    if(INQAttack.DamType.get("current").toUpperCase() == "X") damage++;
     //FUTURE WORK: add devastating damage to the magnitude damage
   }
 
@@ -5397,7 +5384,7 @@ function INQStarship(){
     for(var name in this.Attributes){
       createObj("attribute",{
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -5407,7 +5394,7 @@ function INQStarship(){
     _.each(this.List["Weapon Components"], function(weapon){
       createObj("ability", {
         name: weapon.Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: weapon.toAbility()
       });
@@ -5768,7 +5755,6 @@ function INQVehicle(vehicle, graphic, callback){
 
     //save the object ID
     this.ObjID = character.id;
-
     //write the character's notes down
     var gmnotes = this.getCharacterBio();
     if(isPlayer){
@@ -5781,7 +5767,7 @@ function INQVehicle(vehicle, graphic, callback){
     for(var name in this.Attributes){
       createObj("attribute",{
         name: name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         current: this.Attributes[name],
         max: this.Attributes[name]
       });
@@ -5792,7 +5778,7 @@ function INQVehicle(vehicle, graphic, callback){
     for(var i = 0; i < this.List.Weapons.length; i++){
       createObj("ability", {
         name: this.List.Weapons[i].Name,
-        characterid: this.ObjID,
+        _characterid: this.ObjID,
         istokenaction: true,
         action: this.List.Weapons[i].toAbility(undefined, undefined, customWeapon)
       });
@@ -5805,30 +5791,32 @@ function INQVehicle(vehicle, graphic, callback){
     return character;
   }
 
-  (function(inqvehicle){
-    return new Promise(function(resolve){
-      if(vehicle != undefined){
-        if(typeof vehicle == "string"){
-          Object.setPrototypeOf(inqvehicle, new INQVehicleImportParser());
-          inqvehicle.parse(vehicle);
-          resolve(inqvehicle);
-        } else {
-          Object.setPrototypeOf(inqvehicle, new INQVehicleParser());
-          inqvehicle.parse(vehicle, graphic, function(){
-            resolve(inqvehicle);
-          });
-        }
+  //allow the user to immediately parse a character in the constructor
+  var inqcharacter = this;
+  var myPromise = new Promise(function(resolve){
+    if(character != undefined){
+      if(typeof character == "string"){
+        Object.setPrototypeOf(inqcharacter, new INQVehicleImportParser());
+        inqcharacter.parse(character);
+        resolve(inqcharacter);
       } else {
-        resolve(inqvehicle);
+        Object.setPrototypeOf(inqcharacter, new INQVehicleParser());
+        inqcharacter.parse(character, graphic, function(){
+          resolve(inqcharacter);
+        });
       }
-    });
-  })(this).then(function(inqvehicle){
-    if(vehicle != undefined){
-      Object.setPrototypeOf(inqvehicle, new INQVehicle());
+    } else {
+      resolve(inqcharacter);
+    }
+  });
+
+  myPromise.then(function(inqcharacter){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQVehicle());
     }
 
     if(typeof callback == 'function'){
-      callback(inqvehicle);
+      callback(inqcharacter);
     }
   });
 }
