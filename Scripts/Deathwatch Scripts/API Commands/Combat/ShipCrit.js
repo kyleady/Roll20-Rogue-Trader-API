@@ -52,7 +52,12 @@ function applyCrit(matches,msg){
     }
 
     //what is the number marker on this badge?
-    var degeneracy = Number(graphic.get(statMarker));
+    var degeneracy = graphic.get(statMarker);
+    if(typeof degeneracy == 'string') {
+      degeneracy = Number(degeneracy);
+    } else {
+      degeneracy = (degeneracy) ? 1 : 0;
+    }
     //add the input
     degeneracy += critQty;
     //are there still any badges?

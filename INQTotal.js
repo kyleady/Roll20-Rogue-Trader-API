@@ -1174,7 +1174,7 @@ on("ready", function(){
 //The reason this function attempts to run a second time is due to an issue with
 //the roll20 api. When attempting to read the notes/bio or gmnotes of a handout
 //or character sheet, it will always return an empty string on the first
-//attempt. In the past I just asked the user to "Try Again". However, this
+//attempt. In the past I just asked the user to  Again". However, this
 //work around will have the function silently attempt to read the notes
 //a second time. If this second attempt does not work, it will warn the user.
 function initiativeHandler(matches,msg,secondAttempt){
@@ -1185,6 +1185,7 @@ function initiativeHandler(matches,msg,secondAttempt){
   var modifier = matches[2] + matches[3];
 
   var Promises = [];
+
 
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
@@ -1197,7 +1198,6 @@ function initiativeHandler(matches,msg,secondAttempt){
     //  Otherwise: Make a new initiative roll for the character. If they
     //    already exist in the turn order, replace their previous roll. also
     //    adds in any listed modifiers.
-
     //is the user just making a querry?
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
@@ -1219,60 +1219,56 @@ function initiativeHandler(matches,msg,secondAttempt){
     }
 
     //is the gm trying to directly edit a previous initiative roll?
-    Promises.push(new Promise(function(){
-      var init = {Bonus: undefined, roll: 0};
-      if(operator == "="){
-        init.Bonus = Number(modifier);
-      } else if(operator.indexOf("=") != -1){
-        //get the initiative of the previous roll to edit, or find that it doesn't exist
-        init.Bonus = turns.getInit(graphic.id);
-        if(init.Bonus != undefined){
-          //calculate the modified initiative
-          init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
-        }
-      }
-
-      //roll initiative with modifiers
-      if(init.Bonus == undefined){
-        //otherwise calculate the bonus as normal.
-        calcInitBonus(character, graphic, function(initBonus){
-          if (initBonus != undefined) {
-            //randomize the roll
-            init.roll = randomInteger(10);
-            //see how to modify the initBonus
-            init.Bonus = numModifier.calc(initBonus, operator, modifier);
+    Promises.push(
+      new Promise(function(resolve){
+        var init = {Bonus: undefined, roll: 0};
+        if(operator == "="){
+          init.Bonus = Number(modifier);
+        } else if(operator.indexOf("=") != -1){
+          //get the initiative of the previous roll to edit, or find that it doesn't exist
+          init.Bonus = turns.getInit(graphic.id);
+          if(init.Bonus != undefined){
+            //calculate the modified initiative
+            init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
           }
-          resolve(init);
-        });
-        return;
-      }
+        }
 
-      resolve(init);
-    }));
+        //roll initiative with modifiers
+        if(init.Bonus == undefined){
+          //otherwise calculate the bonus as normal.
+          calcInitBonus(character, graphic, function(initBonus){
+            if (initBonus != undefined) {
+              //randomize the roll
+              init.roll = randomInteger(10);
+              //see how to modify the initBonus
+              init.Bonus = numModifier.calc(initBonus, operator, modifier);
+            }
 
-    Promises.push(function(init){
-      //report the resultant initiative roll
-      //report the result to everyone if it is controlled by someone
-      if (character.get("controlledby") != "") {
-          announce(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
-      } else {
-          //report the result to the gm alone if it is an NPC.
-          whisper(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
-      }
+            whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
+              {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
+            //create a turn object
+            var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+            //add the turn
+            turns.addTurn(turnObj);
+            resolve();
+          });
+          return;
+        }
 
-      //create a turn object
-      var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
-      //add the turn
-      turns.addTurn(turnObj);
-    });
+        whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
+          {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
+        //create a turn object
+        var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+        //add the turn
+        turns.addTurn(turnObj);
+        resolve();
+      })
+    );
   });
 
-  //save the resulting turn order
-  Promises.push(turns.save());
-
-  Promises.reduce(function(chain, nextPromise){
-    chain.then(nextPromise)
-  }, Promise.resolve());
+  Promise.all(Promises).then(function(){
+    turns.save();
+  });
 }
 
 //adds the commands after CentralInput has been initialized
@@ -1304,10 +1300,10 @@ on("ready",function(){
 //a positive number by the Full Auto formula.
 function fullautoConverter(matches,msg){
   //record the number of hits
-  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  var HitsObj = findObjs({ _type: 'attribute', name: "Hits" })[0];
   //besure there is a Hits Attribute to work with
   if(HitsObj == undefined){
-    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    return whisper("No attribute named Hits was found anywhere in the campaign.");
   }
 
   //did the user specify a number of Successes?
@@ -1341,10 +1337,10 @@ function fullautoConverter(matches,msg){
 //a positive number by the Semi Auto formula.
 function semiautoConverter(matches,msg){
   //record the number of hits
-  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  var HitsObj = findObjs({ _type: 'attribute', name: "Hits" })[0];
   //besure there is a Hits Attribute to work with
   if(HitsObj == undefined){
-    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    return whisper("No attribute named Hits was found anywhere in the campaign.");
   }
 
   //did the user specify a number of Successes?
@@ -1374,9 +1370,9 @@ function semiautoConverter(matches,msg){
 //waits until CentralInput has been initialized
 on("ready",function(){
   //Lets the gm convert the number of successes into Hits, as per the Full Auto formula
-  CentralInput.addCMD(/^!\s*full\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,fullautoConverter);
+  CentralInput.addCMD(/^!\s*full\s*(?:auto)?\s*=?\s*(\d*)\s*$/i,fullautoConverter);
   //Lets the gm convert the number of successes into Hits, as per the Semi Auto formula
-  CentralInput.addCMD(/^!\s*semi\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,semiautoConverter);
+  CentralInput.addCMD(/^!\s*semi\s*(?:auto)?\s*=?\s*(\d*)\s*$/i,semiautoConverter);
 });
 //applies status markers for the various starship critical hits based on user
 //input
@@ -1432,7 +1428,12 @@ function applyCrit(matches,msg){
     }
 
     //what is the number marker on this badge?
-    var degeneracy = Number(graphic.get(statMarker));
+    var degeneracy = graphic.get(statMarker);
+    if(typeof degeneracy == 'string') {
+      degeneracy = Number(degeneracy);
+    } else {
+      degeneracy = (degeneracy) ? 1 : 0;
+    }
     //add the input
     degeneracy += critQty;
     //are there still any badges?
@@ -2334,7 +2335,7 @@ on("chat:message", function(msg) {
 });
 //used inside initiativeHandler() multiple times, this calculates the bonus
 //added to the D10 when rolling Initiative for the character/starship
-function calcInitBonus(charObj, graphicObj, callback){
+function calcInitBonus(charObj, graphicObj, initCallback){
   //if this character sheet has Detection, then it is a starship
   if(findObjs({
     _type: "attribute",
@@ -2344,7 +2345,7 @@ function calcInitBonus(charObj, graphicObj, callback){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     var DetectionBonus = Math.floor(Detection/10);
-    if(typeof callback != 'function') callback(DetectionBonus);
+    if(typeof initCallback == 'function') initCallback(DetectionBonus);
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
     findObjs({
@@ -2376,12 +2377,12 @@ function calcInitBonus(charObj, graphicObj, callback){
           initiativeBonus += 2;
       }
 
-      if(typeof callback != 'function') callback(initiativeBonus);
+      if(typeof initCallback == 'function') initCallback(initiativeBonus);
     });
   //neither Ag nor Detection were found. Warn the gm and exit.
   } else {
     whisper( graphicObj.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.");
-    if(typeof callback != 'function') callback();
+    if(typeof initCallback == 'function') initCallback();
   }
 }
 //get the type of character.
@@ -2565,10 +2566,10 @@ function getHitLocation(tensLoc, onesLoc, targetType){
         case "-1":
           hitLocation = "S"
         break;
-        case "-2":
+        case "-3":
           hitLocation = "P"
         break;
-        case "-3":
+        case "-2":
           hitLocation = "A"
         break;
         default: //case "0":

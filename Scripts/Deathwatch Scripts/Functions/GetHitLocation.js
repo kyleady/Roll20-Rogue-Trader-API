@@ -45,10 +45,10 @@ function getHitLocation(tensLoc, onesLoc, targetType){
         case "-1":
           hitLocation = "S"
         break;
-        case "-2":
+        case "-3":
           hitLocation = "P"
         break;
-        case "-3":
+        case "-2":
           hitLocation = "A"
         break;
         default: //case "0":

@@ -1,6 +1,6 @@
 //used inside initiativeHandler() multiple times, this calculates the bonus
 //added to the D10 when rolling Initiative for the character/starship
-function calcInitBonus(charObj, graphicObj, callback){
+function calcInitBonus(charObj, graphicObj, initCallback){
   //if this character sheet has Detection, then it is a starship
   if(findObjs({
     _type: "attribute",
@@ -10,7 +10,7 @@ function calcInitBonus(charObj, graphicObj, callback){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     var DetectionBonus = Math.floor(Detection/10);
-    if(typeof callback != 'function') callback(DetectionBonus);
+    if(typeof initCallback == 'function') initCallback(DetectionBonus);
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
     findObjs({
@@ -42,11 +42,11 @@ function calcInitBonus(charObj, graphicObj, callback){
           initiativeBonus += 2;
       }
 
-      if(typeof callback != 'function') callback(initiativeBonus);
+      if(typeof initCallback == 'function') initCallback(initiativeBonus);
     });
   //neither Ag nor Detection were found. Warn the gm and exit.
   } else {
     whisper( graphicObj.get("name") + " did not have an Ag or Detection attribute. Initiative was not rolled.");
-    if(typeof callback != 'function') callback();
+    if(typeof initCallback == 'function') initCallback();
   }
 }

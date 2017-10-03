@@ -18,7 +18,7 @@
 //The reason this function attempts to run a second time is due to an issue with
 //the roll20 api. When attempting to read the notes/bio or gmnotes of a handout
 //or character sheet, it will always return an empty string on the first
-//attempt. In the past I just asked the user to "Try Again". However, this
+//attempt. In the past I just asked the user to  Again". However, this
 //work around will have the function silently attempt to read the notes
 //a second time. If this second attempt does not work, it will warn the user.
 function initiativeHandler(matches,msg,secondAttempt){
@@ -29,6 +29,7 @@ function initiativeHandler(matches,msg,secondAttempt){
   var modifier = matches[2] + matches[3];
 
   var Promises = [];
+
 
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
@@ -41,7 +42,6 @@ function initiativeHandler(matches,msg,secondAttempt){
     //  Otherwise: Make a new initiative roll for the character. If they
     //    already exist in the turn order, replace their previous roll. also
     //    adds in any listed modifiers.
-
     //is the user just making a querry?
     if(operator.indexOf("?") != -1){
       //find the initiative bonus of the character
@@ -63,60 +63,56 @@ function initiativeHandler(matches,msg,secondAttempt){
     }
 
     //is the gm trying to directly edit a previous initiative roll?
-    Promises.push(new Promise(function(){
-      var init = {Bonus: undefined, roll: 0};
-      if(operator == "="){
-        init.Bonus = Number(modifier);
-      } else if(operator.indexOf("=") != -1){
-        //get the initiative of the previous roll to edit, or find that it doesn't exist
-        init.Bonus = turns.getInit(graphic.id);
-        if(init.Bonus != undefined){
-          //calculate the modified initiative
-          init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
-        }
-      }
-
-      //roll initiative with modifiers
-      if(init.Bonus == undefined){
-        //otherwise calculate the bonus as normal.
-        calcInitBonus(character, graphic, function(initBonus){
-          if (initBonus != undefined) {
-            //randomize the roll
-            init.roll = randomInteger(10);
-            //see how to modify the initBonus
-            init.Bonus = numModifier.calc(initBonus, operator, modifier);
+    Promises.push(
+      new Promise(function(resolve){
+        var init = {Bonus: undefined, roll: 0};
+        if(operator == "="){
+          init.Bonus = Number(modifier);
+        } else if(operator.indexOf("=") != -1){
+          //get the initiative of the previous roll to edit, or find that it doesn't exist
+          init.Bonus = turns.getInit(graphic.id);
+          if(init.Bonus != undefined){
+            //calculate the modified initiative
+            init.roll = numModifier.calc(init.Bonus, operator, modifier) - init.Bonus;
           }
-          resolve(init);
-        });
-        return;
-      }
+        }
 
-      resolve(init);
-    }));
+        //roll initiative with modifiers
+        if(init.Bonus == undefined){
+          //otherwise calculate the bonus as normal.
+          calcInitBonus(character, graphic, function(initBonus){
+            if (initBonus != undefined) {
+              //randomize the roll
+              init.roll = randomInteger(10);
+              //see how to modify the initBonus
+              init.Bonus = numModifier.calc(initBonus, operator, modifier);
+            }
 
-    Promises.push(function(init){
-      //report the resultant initiative roll
-      //report the result to everyone if it is controlled by someone
-      if (character.get("controlledby") != "") {
-          announce(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
-      } else {
-          //report the result to the gm alone if it is an NPC.
-          whisper(graphic.get("name") + " rolls a [[(" + init.roll.toString() + ")+" + init.Bonus.toString() + "]] for Initiative.");
-      }
+            whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
+              {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
+            //create a turn object
+            var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+            //add the turn
+            turns.addTurn(turnObj);
+            resolve();
+          });
+          return;
+        }
 
-      //create a turn object
-      var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
-      //add the turn
-      turns.addTurn(turnObj);
-    });
+        whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
+          {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
+        //create a turn object
+        var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
+        //add the turn
+        turns.addTurn(turnObj);
+        resolve();
+      })
+    );
   });
 
-  //save the resulting turn order
-  Promises.push(turns.save());
-
-  Promises.reduce(function(chain, nextPromise){
-    chain.then(nextPromise)
-  }, Promise.resolve());
+  Promise.all(Promises).then(function(){
+    turns.save();
+  });
 }
 
 //adds the commands after CentralInput has been initialized

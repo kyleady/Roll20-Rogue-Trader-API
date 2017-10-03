@@ -5,10 +5,10 @@
 //a positive number by the Full Auto formula.
 function fullautoConverter(matches,msg){
   //record the number of hits
-  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  var HitsObj = findObjs({ _type: 'attribute', name: "Hits" })[0];
   //besure there is a Hits Attribute to work with
   if(HitsObj == undefined){
-    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    return whisper("No attribute named Hits was found anywhere in the campaign.");
   }
 
   //did the user specify a number of Successes?
@@ -42,10 +42,10 @@ function fullautoConverter(matches,msg){
 //a positive number by the Semi Auto formula.
 function semiautoConverter(matches,msg){
   //record the number of hits
-  var HitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
+  var HitsObj = findObjs({ _type: 'attribute', name: "Hits" })[0];
   //besure there is a Hits Attribute to work with
   if(HitsObj == undefined){
-    return whisper("No attribute named Primitive was found anywhere in the campaign. Damage was not recorded.");
+    return whisper("No attribute named Hits was found anywhere in the campaign.");
   }
 
   //did the user specify a number of Successes?
@@ -75,7 +75,7 @@ function semiautoConverter(matches,msg){
 //waits until CentralInput has been initialized
 on("ready",function(){
   //Lets the gm convert the number of successes into Hits, as per the Full Auto formula
-  CentralInput.addCMD(/^!\s*full\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,fullautoConverter);
+  CentralInput.addCMD(/^!\s*full\s*(?:auto)?\s*=?\s*(\d*)\s*$/i,fullautoConverter);
   //Lets the gm convert the number of successes into Hits, as per the Semi Auto formula
-  CentralInput.addCMD(/^!\s*semi\s*(?:auto)?\s*=?\s*(|\d+)\s*$/i,semiautoConverter);
+  CentralInput.addCMD(/^!\s*semi\s*(?:auto)?\s*=?\s*(\d*)\s*$/i,semiautoConverter);
 });
