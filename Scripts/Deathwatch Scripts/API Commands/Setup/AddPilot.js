@@ -3,7 +3,7 @@
 //matches[1] - used to find the pilot to add
 function addPilot(matches, msg){
   var pilotPhrase = matches[1];
-  var pilotKeywords = pilotPhrase.split(" ");
+  var pilotKeywords = pilotPhrase.split(' ');
 
   //if nothing was selected, ask the GM to select someone
   if(msg.selected == undefined || msg.selected.length <= 0){
@@ -51,9 +51,26 @@ function addPilot(matches, msg){
 
   //add the single pilot to each selected roll20 character(vehicle)
   eachCharacter(msg, function(vehicle, graphic){
+    var vehicleAttributes = findObjs({
+      _type: 'attribute',
+      _characterid: vehicle.id
+    });
+
+    var skipThisCharacter = false;
+
+    _.each(vehicleAttributes, function(vehicleAttribute){
+      _.each(pilotAttributes, function(pilotAttribute){
+        if(vehicleAttribute.get('name') == pilotAttribute.name) {
+          skipThisCharacter = true;
+        }
+      });
+    });
+
+    if(skipThisCharacter) return whisper('This vehicle already has a pilot.');
+
     //add each of the pilot attributes
     _.each(pilotAttributes, function(attribute){
-      createObj("attribute", {
+      createObj('attribute', {
         name: attribute.name,
         current: attribute.value,
         max: attribute.value,
