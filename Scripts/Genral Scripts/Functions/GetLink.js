@@ -1,5 +1,8 @@
 function getLink (Name, Link){
   Link = Link || '';
+  if(typeof Name == 'object' && Name.get) {
+    return '<a href=\"http://journal.roll20.net/' + Name.get('_type') + '/' + Name.id + '\">' + Name.get('name') + '</a>';
+  }
   if(Link == ''){
     var Handouts = findObjs({ _type: 'handout', name: Name });
     var objs = filterObjs(function(obj) {

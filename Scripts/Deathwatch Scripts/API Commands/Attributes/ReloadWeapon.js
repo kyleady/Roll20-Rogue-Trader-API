@@ -4,6 +4,23 @@ function reloadWeapon(matches, msg){
   //save the input variables
   var ammoPhrase = "Ammo - " + matches[1];
   eachCharacter(msg, function(character, graphic){
+    if(ammoPhrase == 'Ammo - all') {
+      var localAttributes = new LocalAttributes(graphic);
+      for(var prop in localAttributes.Attributes) {
+        if(/^Ammo - /.test(prop)) localAttributes.remove(prop);
+      }
+
+      var clips = matchingObjs('attribute', ['Ammo - '], function(obj){
+        return obj.get('_characterid') == character.id;
+      });
+
+      _.each(clips, function(clip){
+        clip.remove();
+      });
+
+      return whisper(getLink(character) + ' has reloaded every clip.', {speakingTo: msg.playerid, gmEcho: true});
+    }
+
     //get a list of all of the ammo attribute names that match
     var ammoNames = matchingAttrNames(graphic.id, ammoPhrase);
     //warn the player that that clip does not exist yet if nothing was found

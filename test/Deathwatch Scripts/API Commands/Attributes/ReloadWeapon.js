@@ -102,4 +102,35 @@ describe('reloadWeapon()', function() {
     });
     player.MOCK20chat('!reload a weapon name');
   });
+	it('should be able to delete every clip at once, local or not', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var player = createObj('player', {_displayname: 'reloadWeapon player'}, {MOCK20override: true});
+    var character = createObj('character', {name: 'reloadWeapon character', controlledby: player.id});
+    var attribute = createObj('attribute', {name: 'Ammo - A Weapon Name', current: 19, max: 100, _characterid: character.id});
+    var attribute2 = createObj('attribute', {name: 'Ammo - A weapon Name', current: 5, max: 30, _characterid: character.id});
+    var page = createObj('page', {name: 'reloadWeapon page'}, {MOCK20override: true});
+    var graphic = createObj('graphic', {name: 'reload graphic', _pageid: page.id, represents: character.id, bar3_link: attribute.id, bar3_value: 10, bar3_max: 20});
+		var localAttributes = new LocalAttributes(graphic);
+		localAttributes.set('Ammo - a Weapon name', 2);
+
+		var attributes = findObjs({_type: 'attribute', _characterid: character.id});
+		expect(attributes).not.to.be.empty;
+		expect(localAttributes.Attributes).not.to.be.empty;
+
+    on('chat:message', function(msg){
+      if (msg.playerid == 'API' && /reloaded every clip/.test(msg.content) && msg.target == player.id) {
+				attributes = findObjs({_type: 'attribute', _characterid: character.id});
+				localAttributes = new LocalAttributes(graphic);
+				expect(attributes).to.be.empty;
+				expect(localAttributes.Attributes).to.be.empty;
+				done();
+      }
+    });
+    player.MOCK20chat('!reload all');
+  });
 });

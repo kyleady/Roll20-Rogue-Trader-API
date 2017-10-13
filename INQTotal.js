@@ -176,6 +176,23 @@ function reloadWeapon(matches, msg){
   //save the input variables
   var ammoPhrase = "Ammo - " + matches[1];
   eachCharacter(msg, function(character, graphic){
+    if(ammoPhrase == 'Ammo - all') {
+      var localAttributes = new LocalAttributes(graphic);
+      for(var prop in localAttributes.Attributes) {
+        if(/^Ammo - /.test(prop)) localAttributes.remove(prop);
+      }
+
+      var clips = matchingObjs('attribute', ['Ammo - '], function(obj){
+        return obj.get('_characterid') == character.id;
+      });
+
+      _.each(clips, function(clip){
+        clip.remove();
+      });
+
+      return whisper(getLink(character) + ' has reloaded every clip.', {speakingTo: msg.playerid, gmEcho: true});
+    }
+
     //get a list of all of the ammo attribute names that match
     var ammoNames = matchingAttrNames(graphic.id, ammoPhrase);
     //warn the player that that clip does not exist yet if nothing was found
@@ -1765,97 +1782,6 @@ on("ready", function(){
   regex += "\\s*$";
   var re = RegExp(regex, "i");
   CentralInput.addCMD(re, INQAttack.addWeapon, true);
-});
-//when a mission ends, the gm needs to
-  //reset all of the attributes of each character
-  //clean out the pile up of ammo notes
-  //take away all of the requisitioned items and weapons
-  //BUT DOES NOT delete any of the abilities associated with the removed weapons
-function endMission(matches, msg){
-  eachCharacter(msg, function(character, graphic){
-    (function(){
-      return new Promise(function(resolve){
-        character.get('bio', function(bio){
-          resolve({bio: bio});
-        });
-      });
-    })().then(function(Notes){
-      return new Promise(function(resolve){
-        character.get('gmnotes', function(gmnotes){
-          Notes.gmnotes = gmnotes;
-          resolve(Notes);
-        });
-      });
-    }).then(function(Notes){
-      //get every attribute the character has
-      var attrObjs = findObjs({_type: "attribute", characterid: character.id});
-      //reset all of the attributes of the character
-      //but delete any ammo attributes first
-      _.each(attrObjs, function(attrObj){
-        if(attrObj.get("name").indexOf("Ammo - ") == 0){
-          attrObj.remove();
-        } else {
-          attrObj.set("current", attrObj.get("max"));
-        }
-      });
-      //delete requisitioned weapons/gear from both the bio and gmnotes
-      var charNotes = _.map(Notes, function(notes){
-        //be sure the notes are not null
-        if(notes == "null"){
-            notes = "";
-        }
-        //break up the notes by line
-        var lines = notes.split(/\s*<br>\s*/);
-        //create a regex for a list header
-        var listRegex = "^\\s*";
-        listRegex += "(?:<(?:strong|em|u)>\\s*)+";
-        listRegex += "([^<>]+)";
-        listRegex += "(?:</(?:strong|em|u)>\\s*)+";
-        listRegex += "$";
-        var listRe = RegExp(listRegex, "i");
-        var inqlinkparser = new INQLinkParser();
-        var linkRe = RegExp(inqlinkparser.regex(), "i");
-
-        //delete (and store) every requisitioned weapon/gear
-        var withinSection = false;
-        for(var i = 0; i < lines.length; i++){
-          //determine if we are entering into a list of requisitioned items
-          if(listRe.test(lines[i])){
-            //get the list name
-            var matches = lines[i].match(listRe);
-            //is the list name requisitioned gear or weapons?
-            var titleMatches = matches[1].match(/^\s*(gear|weapons)\s*\(\s*requisitioned\s*\)\s*$/i);
-            if(titleMatches){
-              withinSection = titleMatches[1].toLowerCase();
-            } else {
-              //we are no longer in requisitioned items
-              withinSection = false;
-            }
-          //work with each link that is within a requisitioned list
-          } else if(withinSection
-                 && linkRe.test(lines[i])){
-            //delete this line
-            lines.splice(i,1);
-            //move back up one line to account for the deleted line
-            i--;
-          //empty lines do not note the end of a list
-          } else if(lines[i] != ""){
-            withinSection = false;
-          }
-        }
-        //reconstruct the bio/gmnotes
-        notes = lines.join("<br>");
-        //return the notes which may or may not have been modified
-        return notes;
-      });
-      //save the modifications to the bio/gmnotes
-      whisper( "*" + character.get("name") + "* has returned their requisitioned gear.");
-    });
-  });
-}
-
-on("ready", function(){
-  CentralInput.addCMD(/^!\s*end\s*mission\s*$/i, endMission);
 });
 function lastWatchWave (matches, msg) {
   var Troops = Number(matches[1]);
@@ -7434,6 +7360,9 @@ function getAttribute(name, options) {
 }
 function getLink (Name, Link){
   Link = Link || '';
+  if(typeof Name == 'object' && Name.get) {
+    return '<a href=\"http://journal.roll20.net/' + Name.get('_type') + '/' + Name.id + '\">' + Name.get('name') + '</a>';
+  }
   if(Link == ''){
     var Handouts = findObjs({ _type: 'handout', name: Name });
     var objs = filterObjs(function(obj) {
