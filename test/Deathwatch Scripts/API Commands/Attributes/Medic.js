@@ -15,9 +15,9 @@ describe('medic()', function() {
     var attribute = createObj('attribute', {name: 'Wounds', current: 10, max: 20, _characterid: character.id});
     var page = createObj('page', {name: 'medic page'}, {MOCK20override: true});
     var graphic = createObj('graphic', {name: 'medic graphic', _pageid: page.id, represents: character.id, bar3_link: attribute.id, bar3_value: 10, bar3_max: 20});
-    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || []).to.be.empty;
+    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id})).to.be.empty;
     player.MOCK20chat('!medic 5');
-    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || []).to.not.be.empty;
+    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id})).to.not.be.empty;
   });
   it('should not be able to heal past the player\'s Max Wounds', function(){
 		Campaign().MOCK20reset();
@@ -47,9 +47,9 @@ describe('medic()', function() {
     var attribute = createObj('attribute', {name: 'Wounds', current: 10, max: 20, _characterid: character.id});
     var page = createObj('page', {name: 'medic page'}, {MOCK20override: true});
     var graphic = createObj('graphic', {name: 'medic graphic', _pageid: page.id, represents: character.id, bar3_link: attribute.id, bar3_value: 10, bar3_max: 20});
-    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || []).to.be.empty;
+    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id})).to.be.empty;
     player.MOCK20chat('!medic 4');
-    var MaxHealingObjs = findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || [];
+    var MaxHealingObjs = findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id});
     expect(MaxHealingObjs[0].get('current')).to.equal(14);
     expect(graphic.get('bar3_value')).to.equal(14);
     graphic.set('bar3_value', 12);
@@ -73,9 +73,9 @@ describe('medic()', function() {
     var attribute = createObj('attribute', {name: 'Wounds', current: 10, max: 20, _characterid: character.id});
     var page = createObj('page', {name: 'medic page'}, {MOCK20override: true});
     var graphic = createObj('graphic', {name: 'medic graphic', _pageid: page.id, represents: character.id, bar3_link: attribute.id, bar3_value: 10, bar3_max: 20});
-    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || []).to.be.empty;
+    expect(findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id})).to.be.empty;
     player.MOCK20chat('!medic 3');
-    var MaxHealingObjs = findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id}) || [];
+    var MaxHealingObjs = findObjs({_type: 'attribute', name: 'Max Healing', _characterid: character.id});
     expect(MaxHealingObjs[0].get('current')).to.equal(13);
     expect(graphic.get('bar3_value')).to.equal(13);
     graphic.set('bar3_value', 17);

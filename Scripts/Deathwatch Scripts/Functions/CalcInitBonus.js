@@ -1,6 +1,8 @@
 //used inside initiativeHandler() multiple times, this calculates the bonus
 //added to the D10 when rolling Initiative for the character/starship
 function calcInitBonus(charObj, graphicObj, initCallback){
+  charObj = charObj || {};
+  graphicObj = graphicObj || {};
   //if this character sheet has Detection, then it is a starship
   if(findObjs({
     _type: "attribute",

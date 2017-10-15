@@ -15,7 +15,7 @@ describe('painSuppress()', function() {
     var attribute = createObj('attribute', {name: 'Wounds', current: 10, max: 20, _characterid: character.id});
     var page = createObj('page', {name: 'painSuppress page'}, {MOCK20override: true});
     var graphic = createObj('graphic', {name: 'painSuppress graphic', _pageid: page.id, represents: character.id, bar3_link: attribute.id, bar3_value: 10, bar3_max: 20});
-    expect(findObjs({_type: 'attribute', name: 'Ammo - Pain Suppressant', _characterid: character.id}) || []).to.be.empty;
+    expect(findObjs({_type: 'attribute', name: 'Ammo - Pain Suppressant', _characterid: character.id})).to.be.empty;
     player.MOCK20chat('!pain suppreSs Custom Msg');
     var painSuppressObjs = findObjs({_type: 'attribute', name: 'Ammo - Pain Suppressant', _characterid: character.id}) || [];
     expect(painSuppressObjs).to.not.be.empty;

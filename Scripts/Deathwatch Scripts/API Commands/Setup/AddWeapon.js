@@ -9,7 +9,7 @@ var INQAttack = INQAttack || {};
   //matches[3] - the clip size of the weapon. If it didn't already have a clip,
                //it will make the assumption that it is the quantity of
                //consumable items and add the note on the player sheet.
-INQAttack.addWeapon = function(matches, msg){
+addWeapon = function(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
@@ -102,24 +102,20 @@ INQAttack.addWeapon = function(matches, msg){
       (function(){
         return new Promise(function(resolve){
           //parse the character
-          INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
-            resolve();
+          new INQCharacter(character, graphic, function(inqcharacter){
+            resolve(inqcharacter);
           });
         });
       })().then(function(inqcharacter){
-        //try to insert the link before continuing
-        /*
-        if(!INQAttack.insertWeaponLink(inqweapon, character, quantityNote)){return;}
-        */
         //only add an ability if it isn't gear
         if(inqweapon.Class != "Gear"){
           //add the token action to the character
-          INQAttack.insertWeaponAbility(inqweapon, character, quantity, ammoNames);
+          insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
         } else {
           whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
         }
         //report the success
-        whisper("*" + INQAttack.inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+        whisper("*" + inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
       });
     });
   });
@@ -136,5 +132,5 @@ on("ready", function(){
   regex += ")?";
   regex += "\\s*$";
   var re = RegExp(regex, "i");
-  CentralInput.addCMD(re, INQAttack.addWeapon, true);
+  CentralInput.addCMD(re, addWeapon, true);
 });

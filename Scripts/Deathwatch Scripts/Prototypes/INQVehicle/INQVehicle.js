@@ -199,31 +199,31 @@ function INQVehicle(vehicle, graphic, callback){
   }
 
   //allow the user to immediately parse a character in the constructor
-  var inqcharacter = this;
+  var inqvehicle = this;
   var myPromise = new Promise(function(resolve){
-    if(character != undefined){
-      if(typeof character == "string"){
-        Object.setPrototypeOf(inqcharacter, new INQVehicleImportParser());
-        inqcharacter.parse(character);
-        resolve(inqcharacter);
+    if(vehicle != undefined){
+      if(typeof vehicle == "string"){
+        Object.setPrototypeOf(inqvehicle, new INQVehicleImportParser());
+        inqvehicle.parse(vehicle);
+        resolve(inqvehicle);
       } else {
-        Object.setPrototypeOf(inqcharacter, new INQVehicleParser());
-        inqcharacter.parse(character, graphic, function(){
-          resolve(inqcharacter);
+        Object.setPrototypeOf(inqvehicle, new INQVehicleParser());
+        inqvehicle.parse(vehicle, graphic, function(){
+          resolve(inqvehicle);
         });
       }
     } else {
-      resolve(inqcharacter);
+      resolve(inqvehicle);
     }
   });
 
-  myPromise.then(function(inqcharacter){
-    if(character != undefined){
-      Object.setPrototypeOf(inqcharacter, new INQVehicle());
+  myPromise.then(function(inqvehicle){
+    if(typeof vehicle != 'undefined'){
+      Object.setPrototypeOf(inqvehicle, new INQVehicle());
     }
 
     if(typeof callback == 'function'){
-      callback(inqcharacter);
+      callback(inqvehicle);
     }
   });
 }

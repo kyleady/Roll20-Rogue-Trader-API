@@ -29,8 +29,10 @@ function saveHitLocation(roll, options){
   }
   //send the total Damage at a 1 second delay
   if (options.whisper) {
+    log('whisper')
     setTimeout(function(location){whisper(location, {speakingAs: 'Location'})}, 100, Location);
   } else {
+    log('announce')
     setTimeout(function(location){announce(location, {speakingAs: 'Location'})}, 100, Location);
   }
 }
