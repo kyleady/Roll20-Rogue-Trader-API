@@ -16,14 +16,13 @@ on("change:graphic:bar3_value", function(obj, prev) {
   if(getObj("character", obj.get("represents")) == undefined){return;}
   //get the current and max wounds in number format
   var Wounds = {
+    prev: Number(prev.get('bar3_value')),
     current: Number(obj.get("bar3_value")),
     max: Number(obj.get("bar3_max"))
   }
-  //quit if either the current or max wounds are not numbers
-  if(Wounds.current == NaN || Wounds.current == NaN){return;}
 
-  //quit if the character was damaged (we care about healing)
-  if(Wounds.current - Number(prev) < 0){return;}
+  if(Wounds.current == NaN || Wounds.max == NaN || Wounds.prev == NaN) return;
+  if(Wounds.current - Wounds.prev <= 0) return;
 
   //find the Max Healing attribute
   var MaxHealing = attributeValue("Max Healing", {graphicid: obj.id, alert: false});
@@ -35,33 +34,14 @@ on("change:graphic:bar3_value", function(obj, prev) {
     MaxHealing = Number(MaxHealing);
 
     //quit if Max Healing is not a number
-    if(MaxHealing == NaN){return;}
+    if(MaxHealing == NaN) return;
 
     //is the new health greater than the current cap?
     if(Wounds.current > MaxHealing){
-      //is the new health greater than the max health?
-      if(Wounds.current > Wounds.max){
-        //the healing cap can only go so far as maxHP, even in extreme circumstances
-        attributeValue("Max Healing", {setTo: Wounds.max, graphicid: obj.id, alert: false});
-        MaxHealing = Wounds.max;
-      } else {
-        //record that the healing cap can only go this far
-        attributeValue("Max Healing", {setTo: Wounds.current, graphicid: obj.id, alert: false});
-        MaxHealing = Wounds.current;
-      }
-      //set the max healing attribute's max value equal to its current value (if it exists!)
-      //if a character has their max healing attribute set to its max value for some reason,
-      //we don't want it to be some old value that we forgot about
-      var MaxHealingobjs = findObjs({
-        name: "Max Healing",
-        _characterid: obj.get("represents"),
-        _type: "attribute"
-      });
-      if(MaxHealingobjs && MaxHealingobjs.length > 0){
-        MaxHealingobjs[0].set("max", MaxHealingobjs[0].get("current"));
-      }
-      //report the new Healing Cap to the gm
-      whisper("Healing Cap set to " + MaxHealing.toString() + "/" + Wounds.max.toString() + ".");
+      MaxHealing = (Wounds.current > Wounds.max) ? Wounds.max : Wounds.current;
+      attributeValue("Max Healing", {setTo: MaxHealing, graphicid: obj.id, alert: false});
+      attributeValue("Max Healing", {setTo: MaxHealing, graphicid: obj.id, alert: false, max: true});
+      whisper("Healing Cap set to " + MaxHealing + "/" + Wounds.max + ".");
     }
   }
 });
