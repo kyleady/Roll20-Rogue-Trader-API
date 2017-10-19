@@ -1263,10 +1263,8 @@ function initiativeHandler(matches,msg,secondAttempt){
 
             whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
               {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
-            //create a turn object
-            var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
             //add the turn
-            turns.addTurn(turnObj);
+            turns.addTurn(graphic, init.Bonus + init.roll);
             resolve();
           });
           return;
@@ -1274,10 +1272,8 @@ function initiativeHandler(matches,msg,secondAttempt){
 
         whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
           {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
-        //create a turn object
-        var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
         //add the turn
-        turns.addTurn(turnObj);
+        turns.addTurn(graphic, init.Bonus + init.roll);
         resolve();
       })
     );
@@ -3980,175 +3976,7 @@ function INQCharacter(character, graphic, callback){
   this.Attributes["Unnatural Corruption"] = 0;
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
-  //check if the character has an inqlink with the given name
-  //and within the given list
-  //if there are no subgroups for the inqlink, just return {Bonus}
-  //if there are, return the inqlink's subgroups with a bonus for each
-  //if nothing was found, return undefined
-  this.has = function(ability, list){
-    if(list == undefined){
-      whisper("Which List are you searching?");
-      return undefined;
-    }
-    var info = undefined;
-    _.each(this.List[list], function(rule){
-      if(rule.Name == ability){
-        //if we have not found the rule yet
-        if(info == undefined){
-          //does the found skill have subgroups?
-          if(rule.Groups.length > 0){
-            //the inklink has subgroups and each will need their own bonus
-            info = [];
-            _.each(rule.Groups, function(subgroups){
-              _.each(subgroups.split(/\s*,\s*/), function(subgroup){
-                info.push({
-                  Name:  subgroup,
-                  Bonus: rule.Bonus
-                });
-              });
-            });
-          } else {
-            //the inqlink does not have subgroups
-            info = {
-              Bonus: rule.Bonus
-            };
-          }
-        //if the rule already has been found
-        //AND the rule has subgroups
-        //AND the previously found rule had subgroups
-        } else if(rule.Groups.length > 0 && info.length > 0){
-          //add the new found subgroups in with their own bonuses
-          _.each(rule.Groups, function(subgroups){
-            _.each(subgroups.split(/\s*,\s*/), function(subgroup){
-              info.push({
-                Name:  subgroup,
-                Bonus: rule.Bonus
-              });
-            });
-          });
-        }
-      }
-    });
 
-    return info;
-  }
-  //return the attribute bonus Stat/10 + Unnatural Stat
-  this.bonus = function(stat){
-    var bonus = 0;
-    //get the bonus from the stat
-    if(this.Attributes[stat]){
-      bonus += Math.floor(this.Attributes[stat]/10);
-    }
-    //add in the unnatural bonus
-    if(this.Attributes["Unnatural " + stat]){
-      bonus += this.Attributes["Unnatural " + stat];
-    }
-    return bonus;
-  }
-
-  this.getCharacterBio = function(){
-    //create the gmnotes of the character
-    var gmnotes = "";
-
-    //Movement
-    //present movement in the form of a table
-    gmnotes += "<table><tbody>";
-    gmnotes += "<tr>"
-    for(var move in this.Movement){
-      gmnotes += "<td><strong>" + move + "</strong></td>";
-    }
-    gmnotes += "</tr>"
-    gmnotes += "<tr>"
-    for(var move in this.Movement){
-      gmnotes += "<td>" + this.Movement[move] + "</td>";
-    }
-    gmnotes += "</tr>";
-    gmnotes += "</tbody></table>";
-
-    //display every list
-    for(var list in this.List){
-      //starting with the name of the list
-      gmnotes += "<br>";
-      gmnotes += "<u><strong>" + list + "</strong></u>";
-      gmnotes += "<br>";
-      //make a note for each item in the list
-      _.each(this.List[list], function(item){
-        gmnotes += item.toNote() + "<br>";
-      });
-    }
-
-    //tack on any Special Rules
-    _.each(this.SpecialRules, function(rule){
-      gmnotes += "<br>";
-      gmnotes += "<strong>" + rule.Name + "</strong>: ";
-      gmnotes += rule.Rule;
-      gmnotes += "<br>";
-    });
-
-    return gmnotes;
-  }
-  //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer, characterid, callback){
-    //get the character
-    var character = undefined;
-    if(characterid){
-      character = getObj("character", characterid);
-    }
-    if(character == undefined){
-      //create the character
-      var character = createObj("character", {});
-    }
-    var oldAttributes = findObjs({
-      _characterid: character.id,
-      _type: "attribute"
-    });
-    _.each(oldAttributes, function(attr){
-      attr.remove();
-    });
-    var oldAbilities = findObjs({
-      _characterid: character.id,
-      _type: "ability"
-    });
-    _.each(oldAbilities, function(ability){
-      ability.remove();
-    });
-    //save the character name
-    character.set("name", this.Name);
-
-
-    //save the object ID
-    this.ObjID = character.id;
-    //create all of the character's attributes
-    for(var name in this.Attributes){
-      createObj('attribute', {
-        name: name,
-        _characterid: this.ObjID,
-        current: this.Attributes[name],
-        max: this.Attributes[name]
-      });
-    }
-
-    //create all of the character's abilities
-    var customWeapon = {custom: true};
-    for(var i = 0; i < this.List.Weapons.length; i++){
-      createObj("ability", {
-        name: this.List.Weapons[i].Name,
-        _characterid: this.ObjID,
-        istokenaction: true,
-        action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
-      });
-    }
-
-    //note who controlls the character
-    character.set("controlledby", this.controlledby);
-
-    //write the character's notes down
-    var gmnotes = this.getCharacterBio();
-    var workingWith = (isPlayer) ? 'bio' : 'gmnotes';
-    character.set(workingWith, gmnotes);
-    //return the resultant character object
-    return character;
-  }
   //allow the user to immediately parse a character in the constructor
   var inqcharacter = this;
   var myPromise = new Promise(function(resolve){
@@ -4178,295 +4006,424 @@ function INQCharacter(character, graphic, callback){
     }
   });
 }
+
+INQCharacter.prototype = new INQObject();
+INQCharacter.prototype.constructor = INQCharacter;
+//return the attribute bonus Stat/10 + Unnatural Stat
+INQCharacter.prototype.bonus = function(stat){
+  var bonus = 0;
+  //get the bonus from the stat
+  if(this.Attributes[stat]){
+    bonus += Math.floor(this.Attributes[stat]/10);
+  }
+  //add in the unnatural bonus
+  if(this.Attributes["Unnatural " + stat]){
+    bonus += this.Attributes["Unnatural " + stat];
+  }
+  return bonus;
+}
+INQCharacter.prototype.getCharacterBio = function(){
+  //create the gmnotes of the character
+  var gmnotes = "";
+
+  //Movement
+  //present movement in the form of a table
+  gmnotes += "<table><tbody>";
+  gmnotes += "<tr>"
+  for(var move in this.Movement){
+    gmnotes += "<td><strong>" + move + "</strong></td>";
+  }
+  gmnotes += "</tr>"
+  gmnotes += "<tr>"
+  for(var move in this.Movement){
+    gmnotes += "<td>" + this.Movement[move] + "</td>";
+  }
+  gmnotes += "</tr>";
+  gmnotes += "</tbody></table>";
+
+  //display every list
+  for(var list in this.List){
+    //starting with the name of the list
+    gmnotes += "<br>";
+    gmnotes += "<u><strong>" + list + "</strong></u>";
+    gmnotes += "<br>";
+    //make a note for each item in the list
+    _.each(this.List[list], function(item){
+      gmnotes += item.toNote() + "<br>";
+    });
+  }
+
+  //tack on any Special Rules
+  _.each(this.SpecialRules, function(rule){
+    gmnotes += "<br>";
+    gmnotes += "<strong>" + rule.Name + "</strong>: ";
+    gmnotes += rule.Rule;
+    gmnotes += "<br>";
+  });
+
+  return gmnotes;
+}
+//check if the character has an inqlink with the given name
+//and within the given list
+//if there are no subgroups for the inqlink, just return {Bonus}
+//if there are, return the inqlink's subgroups with a bonus for each
+//if nothing was found, return undefined
+INQCharacter.prototype.has = function(ability, list){
+  if(list == undefined){
+    whisper("Which List are you searching?");
+    return undefined;
+  }
+  var info = undefined;
+  _.each(this.List[list], function(rule){
+    if(rule.Name == ability){
+      //if we have not found the rule yet
+      if(info == undefined){
+        //does the found skill have subgroups?
+        if(rule.Groups.length > 0){
+          //the inklink has subgroups and each will need their own bonus
+          info = [];
+          _.each(rule.Groups, function(subgroups){
+            _.each(subgroups.split(/\s*,\s*/), function(subgroup){
+              info.push({
+                Name:  subgroup,
+                Bonus: rule.Bonus
+              });
+            });
+          });
+        } else {
+          //the inqlink does not have subgroups
+          info = {
+            Bonus: rule.Bonus
+          };
+        }
+      //if the rule already has been found
+      //AND the rule has subgroups
+      //AND the previously found rule had subgroups
+      } else if(rule.Groups.length > 0 && info.length > 0){
+        //add the new found subgroups in with their own bonuses
+        _.each(rule.Groups, function(subgroups){
+          _.each(subgroups.split(/\s*,\s*/), function(subgroup){
+            info.push({
+              Name:  subgroup,
+              Bonus: rule.Bonus
+            });
+          });
+        });
+      }
+    }
+  });
+
+  return info;
+}
+//create a character object from the prototype
+INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid, callback){
+  //get the character
+  var character = undefined;
+  if(characterid){
+    character = getObj("character", characterid);
+  }
+  if(character == undefined){
+    //create the character
+    var character = createObj("character", {});
+  }
+  var oldAttributes = findObjs({
+    _characterid: character.id,
+    _type: "attribute"
+  });
+  _.each(oldAttributes, function(attr){
+    attr.remove();
+  });
+  var oldAbilities = findObjs({
+    _characterid: character.id,
+    _type: "ability"
+  });
+  _.each(oldAbilities, function(ability){
+    ability.remove();
+  });
+  //save the character name
+  character.set("name", this.Name);
+
+
+  //save the object ID
+  this.ObjID = character.id;
+  //create all of the character's attributes
+  for(var name in this.Attributes){
+    createObj('attribute', {
+      name: name,
+      _characterid: this.ObjID,
+      current: this.Attributes[name],
+      max: this.Attributes[name]
+    });
+  }
+
+  //create all of the character's abilities
+  var customWeapon = {custom: true};
+  for(var i = 0; i < this.List.Weapons.length; i++){
+    createObj("ability", {
+      name: this.List.Weapons[i].Name,
+      _characterid: this.ObjID,
+      istokenaction: true,
+      action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
+    });
+  }
+
+  //note who controlls the character
+  character.set("controlledby", this.controlledby);
+
+  //write the character's notes down
+  var gmnotes = this.getCharacterBio();
+  var workingWith = (isPlayer) ? 'bio' : 'gmnotes';
+  character.set(workingWith, gmnotes);
+  //return the resultant character object
+  return character;
+}
 function INQCharacterImportParser(){
   var StatNames = ["WS", "BS", "S", "T", "Ag", "It", "Per", "Wp", "Fe"];
+}
 
-  this.parse = function(text){
-    var parser = new INQImportParser(this);
-    parser.getList(/^\s*skills\s*$/i, ["List", "Skills"]);
-    parser.getList(/^\s*talents\s*$/i, ["List", "Talents"]);
-    parser.getList(/^\s*traits\s*$/i, ["List", "Traits"]);
-    parser.getList(/^\s*gear\s*$/i, ["List", "Gear"]);
-    parser.getList(/^\s*psychic\s+powers\s*$/i, ["List", "Psychic Powers"]);
-    parser.getNumber(/^\s*move(ment)?\s*$/i, ["Movement", ["Half", "Full", "Charge", "Run"]]);
-    parser.getNumber(/^\s*wounds\s*$/i, ["Attributes", "Wounds"]);
-    parser.getNothing(/^\s*total\s+TB\s*$/i);
-    parser.getWeapons(/^\s*weapons\s*$/i, ["List", "Weapons"]);
-    parser.getArmour(/^\s*armour\s*$/i, ["Attributes", {
-      Armour_H:  /\s*head\s*/i,
-      Armour_RA: /\s*arms\s*/i,
-      Armour_LA: /\s*arms\s*/i,
-      Armour_B:  /\s*body\s*/i,
-      Armour_RL: /\s*legs\s*/i,
-      Armour_LL: /\s*legs\s*/i
-    }]);
-    var unlabeled = parser.parse(text);
-
-    this.interpretUnlabeled(unlabeled);
-    //do final adjustments
-    this.adjustBonus();
-    this.adjustWeapons();
-    this.calcAttributes();
-  }
-
-  this.interpretUnlabeled = function(unlabeled){
-    //search unlabled content for unnaturals and characteristics
-    var addedLines = 0;
-    for(var i = 0; i < unlabeled.length; i++){
-      //only accept lines that are purely numbers, spaces, and parenthesies
-      if(unlabeled[i].match(/^[—–-\s\d\(\)]+$/)){
-        //are we free to fill out the unnaturals?
-        if(addedLines == 0){
-          this.interpretBonus(unlabeled[i]);
-        //are we free to fill out the characteristics?
-        } else if(addedLines == 1) {
-          this.interpretCharacteristics(unlabeled[i]);
-        } else {
-          whisper("Too many numical lines. Stats and Unnatural Stats are likely inaccurate.");
-        }
-        //a numerical line has been interpreted
-        addedLines++;
-      }
-    };
-
-    //if only one numerical line was added, assume the only one added was the statline
-    if(addedLines == 1){
-      this.switchBonusOut();
+INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
+INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
+//Dark Heresy records the total characteristic values, while I need to know
+//just the Unnatural characteristics
+INQCharacterImportParser.prototype.adjustBonus = function(){
+  for(var i = 0; i < StatNames.length; i++){
+    if(this.Attributes["Unnatural " + StatNames[i]] > 0){
+      this.Attributes["Unnatural " + StatNames[i]] -= Math.floor(this.Attributes[StatNames[i]]/10);
     }
   }
-
-  //While Dark Heresy typically lists T Bonus, I want to be sure I get Fatigue right
-  //further, Fate Points are listed as a Trait: Touched by the Fates.
-  this.calcAttributes = function(){
-    this.Attributes.Fatigue = this.bonus("T");
-    var fate = this.has("Touched by the Fates", "Traits");
-    if(fate){
-      this.Attributes.Fate = fate.Bonus;
-    }
-  }
-
-  //Dark Heresy records the total damage for weapons in their Damage Base
-  //including Str Bonus for Melee Weapons and talents
-  this.adjustWeapons = function(){
-    for(var i = 0; i < this.List.Weapons.length; i++){
-      var weapon = this.List.Weapons[i];
-      if(weapon.Class == "Melee"){
+}
+//Dark Heresy records the total damage for weapons in their Damage Base
+//including Str Bonus for Melee Weapons and talents
+INQCharacterImportParser.prototype.adjustWeapons = function(){
+  for(var i = 0; i < this.List.Weapons.length; i++){
+    var weapon = this.List.Weapons[i];
+    if(weapon.Class == "Melee"){
+      weapon.DamageBase -= this.bonus("S");
+      if(weapon.has("Fist")){
         weapon.DamageBase -= this.bonus("S");
-        if(weapon.has("Fist")){
-          weapon.DamageBase -= this.bonus("S");
-        }
-        if(this.has("Crushing Blow", "Talents")){
-          weapon.DamageBase -= 2;
-        }
-      } else if(this.has("Mighty Shot", "Talents")){
+      }
+      if(this.has("Crushing Blow", "Talents")){
         weapon.DamageBase -= 2;
       }
-      weapon.Name = weapon.Name.toTitleCase();
+    } else if(this.has("Mighty Shot", "Talents")){
+      weapon.DamageBase -= 2;
     }
+    weapon.Name = weapon.Name.toTitleCase();
   }
-
-  //Dark Heresy records the total characteristic values, while I need to know
-  //just the Unnatural characteristics
-  this.adjustBonus = function(){
-    for(var i = 0; i < StatNames.length; i++){
-      if(this.Attributes["Unnatural " + StatNames[i]] > 0){
-        this.Attributes["Unnatural " + StatNames[i]] -= Math.floor(this.Attributes[StatNames[i]]/10);
-      }
-    }
+}
+//While Dark Heresy typically lists T Bonus, I want to be sure I get Fatigue right
+//further, Fate Points are listed as a Trait: Touched by the Fates.
+this.calcAttributes = function(){
+  this.Attributes.Fatigue = this.bonus("T");
+  var fate = this.has("Touched by the Fates", "Traits");
+  if(fate){
+    this.Attributes.Fate = fate.Bonus;
   }
-
-  this.switchBonusOut = function(){
-    for(var i = 0; i < StatNames.length; i++){
-      this.Attributes[StatNames[i]] = this.Attributes["Unnatural " + StatNames[i]];
+}
+INQCharacterImportParser.prototype.interpretBonus = function(line){
+  //save every number found
+  var bonus = line.match(/(\d+|-)/g);
+  //correlate the numbers with the named stats
+  for(var i = 0; i < StatNames.length; i++){
+    //default to "0" when no number is given for a stat
+    if(Number(bonus[i])){
+      this.Attributes["Unnatural " + StatNames[i]] = Number(bonus[i]);
+    } else {
       this.Attributes["Unnatural " + StatNames[i]] = 0;
     }
   }
-
-  this.interpretCharacteristics = function(line){
-    //save every number found
-    var stat = line.match(/(\d+|–\s*–|—)/g);
-    //correlate the numbers with the named stats
-    for(var i = 0; i < StatNames.length; i++){
-      //default to "0" when no number is given for a stat
-      if(Number(stat[i])){
-        this.Attributes[StatNames[i]] = Number(stat[i]);
-      } else {
-        this.Attributes[StatNames[i]] = 0;
-      }
+}
+INQCharacterImportParser.prototype.interpretCharacteristics = function(line){
+  //save every number found
+  var stat = line.match(/(\d+|–\s*–|—)/g);
+  //correlate the numbers with the named stats
+  for(var i = 0; i < StatNames.length; i++){
+    //default to "0" when no number is given for a stat
+    if(Number(stat[i])){
+      this.Attributes[StatNames[i]] = Number(stat[i]);
+    } else {
+      this.Attributes[StatNames[i]] = 0;
     }
   }
-
-  this.interpretBonus = function(line){
-    //save every number found
-    var bonus = line.match(/(\d+|-)/g);
-    //correlate the numbers with the named stats
-    for(var i = 0; i < StatNames.length; i++){
-      //default to "0" when no number is given for a stat
-      if(Number(bonus[i])){
-        this.Attributes["Unnatural " + StatNames[i]] = Number(bonus[i]);
+}
+INQCharacterImportParser.prototype.interpretUnlabeled = function(unlabeled){
+  //search unlabled content for unnaturals and characteristics
+  var addedLines = 0;
+  for(var i = 0; i < unlabeled.length; i++){
+    //only accept lines that are purely numbers, spaces, and parenthesies
+    if(unlabeled[i].match(/^[—–-\s\d\(\)]+$/)){
+      //are we free to fill out the unnaturals?
+      if(addedLines == 0){
+        this.interpretBonus(unlabeled[i]);
+      //are we free to fill out the characteristics?
+      } else if(addedLines == 1) {
+        this.interpretCharacteristics(unlabeled[i]);
       } else {
-        this.Attributes["Unnatural " + StatNames[i]] = 0;
+        whisper("Too many numical lines. Stats and Unnatural Stats are likely inaccurate.");
       }
+      //a numerical line has been interpreted
+      addedLines++;
     }
+  };
+
+  //if only one numerical line was added, assume the only one added was the statline
+  if(addedLines == 1){
+    this.switchBonusOut();
+  }
+}
+INQCharacterImportParser.prototype.parse = function(text){
+  var parser = new INQImportParser(this);
+  parser.getList(/^\s*skills\s*$/i, ["List", "Skills"]);
+  parser.getList(/^\s*talents\s*$/i, ["List", "Talents"]);
+  parser.getList(/^\s*traits\s*$/i, ["List", "Traits"]);
+  parser.getList(/^\s*gear\s*$/i, ["List", "Gear"]);
+  parser.getList(/^\s*psychic\s+powers\s*$/i, ["List", "Psychic Powers"]);
+  parser.getNumber(/^\s*move(ment)?\s*$/i, ["Movement", ["Half", "Full", "Charge", "Run"]]);
+  parser.getNumber(/^\s*wounds\s*$/i, ["Attributes", "Wounds"]);
+  parser.getNothing(/^\s*total\s+TB\s*$/i);
+  parser.getWeapons(/^\s*weapons\s*$/i, ["List", "Weapons"]);
+  parser.getArmour(/^\s*armour\s*$/i, ["Attributes", {
+    Armour_H:  /\s*head\s*/i,
+    Armour_RA: /\s*arms\s*/i,
+    Armour_LA: /\s*arms\s*/i,
+    Armour_B:  /\s*body\s*/i,
+    Armour_RL: /\s*legs\s*/i,
+    Armour_LL: /\s*legs\s*/i
+  }]);
+  var unlabeled = parser.parse(text);
+
+  this.interpretUnlabeled(unlabeled);
+  //do final adjustments
+  this.adjustBonus();
+  this.adjustWeapons();
+  this.calcAttributes();
+}
+INQCharacterImportParser.prototype.switchBonusOut = function(){
+  for(var i = 0; i < StatNames.length; i++){
+    this.Attributes[StatNames[i]] = this.Attributes["Unnatural " + StatNames[i]];
+    this.Attributes["Unnatural " + StatNames[i]] = 0;
   }
 }
 //takes the character object and turns it into the INQCharacter Prototype
 function INQCharacterParser(){
   //the text that will be parsed
   this.Text = "";
+}
 
-  //take apart this.Text to find all of the lists
-  //currently it assumes that weapons will be in the form of a link
-  this.parseLists = function(){
-    //empty the previous lists
-    var Lists = {};
-    //work through the parsed lists
-    _.each(this.Content.Lists, function(list){
-      var name = list.Name;
-      //be sure the list name is recognized and in the standard format
-      if(/weapon/i.test(name)){
-        name = "Weapons";
-      } else if(/skill/i.test(name)){
-        name = "Skills";
-      } else if(/talent/i.test(name)){
-        name = "Talents";
-      } else if(/trait/i.test(name)){
-        name = "Traits";
-      } else if(/gear/i.test(name)){
-        name = "Gear";
-      } else if(/psychic\s*power/i.test(name)){
-        name = "Psychic Powers";
-      } else {
-        //quit if the name is not approved
-        return false;
-      }
-      //save the name of the list
-      Lists[name] = Lists[name] || [];
-      _.each(list.Content, function(item){
-        //make the assumption that each item is a link (or just a simple phrase)
-        var inqitem = new INQLink(item);
-        //only add the item if it was succesfully parsed
-        if(inqitem.Name && inqitem.Name != ""){
-          Lists[name].push(inqitem);
-        }
+INQCharacterParser.prototype = Object.create(INQCharacter.prototype);
+INQCharacterParser.prototype.constructor = INQCharacterParser;
+//the full parsing of the character
+INQCharacterParser.prototype.parse = function(character, graphic, callback){
+  (function(parser){
+    return new Promise(function(resolve){
+      parser.Content = new INQParser(character, function(){
+        resolve(parser);
       });
     });
-    this.List = Lists;
-  }
-  //parse out the movement of the character
-  //assumes movement will be in the form of a table and in a specific order
-  this.parseMovement = function(){
-    var Movement = {};
-    //search the parsed tables for movement
-    _.each(this.Content.Tables, function(table){
-      //be sure the name doesn't exist or that it's about movement
-      if(/Move/i.test(table.Name) || table.Name == ""){
-        _.each(table.Content, function(column){
-          //be sure the column is the expected length of 2. Label + value
-          if(column.length == 2){
-            //trim out any bold tags
-            column[0] = column[0].replace(/<\/?(?:strong|em)>/g, "");
-            Movement[column[0]] = column[1];
-          }
-        });
-      }
-    });
-    this.Movement = Movement;
-  }
-  //saves any notes on the character
-  this.parseSpecialRules = function(){
-    this.SpecialRules = this.Content.Rules;
-  }
-  //saves every attribute the character has
-  this.parseAttributes = function(graphic){
-    //start with the character sheet attributes
-    var attributes = findObjs({
-      _type: "attribute",
-      characterid: this.ObjID
-    });
-    for(var i = 0; i < attributes.length; i++){
-      this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
+  })(this).then(function(parser){
+    parser.Name = character.get("name");
+    parser.ObjID = character.id;
+    parser.ObjType = character.get("_type");
+
+    if(graphic){
+      parser.GraphicID = graphic.id;
     }
-    //when working with a generic enemy's current stats, we need to check for temporary values
-    //generic enemies are those who represent a character, yet none of their stats are linked
-    if(graphic != undefined
-    && graphic.get("bar1_link") == ""
-    && graphic.get("bar2_link") == ""
-    && graphic.get("bar3_link") == ""){
-      var localAttributes = new LocalAttributes(graphic);
-      for(var attr in localAttributes.Attributes){
-        this.Attributes[attr] = Number(localAttributes.Attributes[attr]);
-      }
+
+    parser.controlledby = character.get("controlledby");
+
+    parser.parseLists();
+    parser.parseMovement();
+    parser.parseSpecialRules();
+    parser.parseAttributes(graphic);
+    if(typeof callback == 'function'){
+      callback(parser);
     }
+  });
+}
+//saves every attribute the character has
+INQCharacterParser.prototype.parseAttributes = function(graphic){
+  //start with the character sheet attributes
+  var attributes = findObjs({
+    _type: "attribute",
+    characterid: this.ObjID
+  });
+  for(var i = 0; i < attributes.length; i++){
+    this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
   }
-  //the full parsing of the character
-  this.parse = function(character, graphic, callback){
-    (function(parser){
-      return new Promise(function(resolve){
-        parser.Content = new INQParser(character, function(){
-          resolve(parser);
-        });
-      });
-    })(this).then(function(parser){
-      parser.Name = character.get("name");
-      parser.ObjID = character.id;
-      parser.ObjType = character.get("_type");
-
-      if(graphic){
-        parser.GraphicID = graphic.id;
-      }
-
-      parser.controlledby = character.get("controlledby");
-
-      parser.parseLists();
-      parser.parseMovement();
-      parser.parseSpecialRules();
-      parser.parseAttributes(graphic);
-      if(typeof callback == 'function'){
-        callback(parser);
-      }
-    });
+  //when working with a generic enemy's current stats, we need to check for temporary values
+  //generic enemies are those who represent a character, yet none of their stats are linked
+  if(graphic != undefined
+  && graphic.get("bar1_link") == ""
+  && graphic.get("bar2_link") == ""
+  && graphic.get("bar3_link") == ""){
+    var localAttributes = new LocalAttributes(graphic);
+    for(var attr in localAttributes.Attributes){
+      this.Attributes[attr] = Number(localAttributes.Attributes[attr]);
+    }
   }
 }
-//be sure the inherited objects are ready
-on("ready",function(){
-  //INQCharacter, INQWeapon, and INQLink inherit from INQObject
-  INQCharacter.prototype = new INQObject();
-  INQCharacter.prototype.constructor = INQCharacter;
-
-  INQVehicle.prototype = new INQObject();
-  INQVehicle.prototype.constructor = INQVehicle;
-
-  INQStarship.prototype = new INQObject();
-  INQStarship.prototype.constructor = INQStarship;
-
-  INQWeapon.prototype = new INQObject();
-  INQWeapon.prototype.constructor = INQWeapon;
-
-  INQLink.prototype = new INQObject();
-  INQLink.prototype.constructor = INQLink;
-
-  INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
-  INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
-
-  INQVehicleParser.prototype = Object.create(INQVehicle.prototype);
-  INQVehicleParser.prototype.constructor = INQVehicleParser;
-
-  INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);
-  INQCharacterImportParser.prototype.constructor = INQCharacterImportParser;
-
-  INQCharacterParser.prototype = Object.create(INQCharacter.prototype);
-  INQCharacterParser.prototype.constructor = INQCharacterParser;
-
-  INQWeaponNoteParser.prototype = Object.create(INQWeapon.prototype);
-  INQWeaponNoteParser.prototype.constructor = INQWeaponNoteParser;
-
-  INQWeaponParser.prototype = Object.create(INQWeapon.prototype);
-  INQWeaponParser.prototype.constructor = INQWeaponParser;
-
-  INQLinkParser.prototype = new INQLink();
-  INQLinkParser.prototype.constructor = INQLinkParser;
-});
+//take apart this.Text to find all of the lists
+//currently it assumes that weapons will be in the form of a link
+INQCharacterParser.prototype.parseLists = function(){
+  //empty the previous lists
+  var Lists = {};
+  //work through the parsed lists
+  _.each(this.Content.Lists, function(list){
+    var name = list.Name;
+    //be sure the list name is recognized and in the standard format
+    if(/weapon/i.test(name)){
+      name = "Weapons";
+    } else if(/skill/i.test(name)){
+      name = "Skills";
+    } else if(/talent/i.test(name)){
+      name = "Talents";
+    } else if(/trait/i.test(name)){
+      name = "Traits";
+    } else if(/gear/i.test(name)){
+      name = "Gear";
+    } else if(/psychic\s*power/i.test(name)){
+      name = "Psychic Powers";
+    } else {
+      //quit if the name is not approved
+      return false;
+    }
+    //save the name of the list
+    Lists[name] = Lists[name] || [];
+    _.each(list.Content, function(item){
+      //make the assumption that each item is a link (or just a simple phrase)
+      var inqitem = new INQLink(item);
+      //only add the item if it was succesfully parsed
+      if(inqitem.Name && inqitem.Name != ""){
+        Lists[name].push(inqitem);
+      }
+    });
+  });
+  this.List = Lists;
+}
+//parse out the movement of the character
+//assumes movement will be in the form of a table and in a specific order
+INQCharacterParser.prototype.parseMovement = function(){
+  var Movement = {};
+  //search the parsed tables for movement
+  _.each(this.Content.Tables, function(table){
+    //be sure the name doesn't exist or that it's about movement
+    if(/Move/i.test(table.Name) || table.Name == ""){
+      _.each(table.Content, function(column){
+        //be sure the column is the expected length of 2. Label + value
+        if(column.length == 2){
+          //trim out any bold tags
+          column[0] = column[0].replace(/<\/?(?:strong|em)>/g, "");
+          Movement[column[0]] = column[1];
+        }
+      });
+    }
+  });
+  this.Movement = Movement;
+}
+//saves any notes on the character
+INQCharacterParser.prototype.parseSpecialRules = function(){
+  this.SpecialRules = this.Content.Rules;
+}
 //the prototype for Skills, Gear, Talents, etc anything that has a link
 function INQLink(text){
   //the details of the skill
@@ -4481,72 +4438,75 @@ function INQLink(text){
     Object.setPrototypeOf(this, new INQLink());
   }
 
-  //display the handout as a link with details
-  this.toNote = function(justText){
-    var output = "";
-    //do we already know the link?
-    if(this.ObjID != "" || justText){
-      output += this.toLink();
-    } else {
-      output += getLink(this.Name);
-    }
-    _.each(this.Groups,function(group){
-      output += "(" + group + ")";
-    });
-    if(this.Quantity > 0){
-      output += "(x" + this.Quantity.toString() + ")";
-    }
-    if(this.Bonus > 0){
-      output += "+" + this.Bonus.toString();
-    } else if (this.Bonus < 0) {
-      output += "–" + Math.abs(this.Bonus).toString();
-    }
-    return output;
-  }
-
   this.valueOf = this.toNote;
 }
-//takes the text of a link (and its adjacent notes) and stores them within an object
-function INQLinkParser(){
 
-  //save the regex for the link and its adjoining notes
-  this.regex = function(){
-    var regex = "\\s*(?:<a href=\"http:\\//journal\\.roll20\\.net\\/handout\\/[-\\w\\d]+\">)?"
-    regex += "([^+<>\\(\\),; –-][^+<>;\\(\\)–]*)";
-    regex += "(?:<\\/a>)?";
-    regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
-    regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
-    regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
-
-    return regex;
+INQLink.prototype = new INQObject();
+INQLink.prototype.constructor = INQLink;
+//display the handout as a link with details
+INQLink.prototype.toNote = function(justText){
+  var output = "";
+  //do we already know the link?
+  if(this.ObjID != "" || justText){
+    output += this.toLink();
+  } else {
+    output += getLink(this.Name);
   }
-  //take text and turn it into an INQLink
-  this.parse = function(text){
-    var re = RegExp("^" + this.regex() + "$", "");
-    var matches = text.match(re);
-    if(matches){
-      if(matches[1]){
-        this.Name = matches[1].trim();
-      }
-      //parse out each group
-      if(matches[2]){
-        var regex = "\\(([^x\\(\\)][^\\(\\)]*)\\)";
-        re = RegExp(regex, "g");
-        var groups = matches[2].match(re);
-        re = RegExp(regex, "");
-        this.Groups = _.map(groups, function(group){
-          groupMatches = group.match(re);
-          return groupMatches[1];
-        });
-      }
-      if(matches[3]){
-        this.Quantity = Number(matches[3]);
-      }
-      if(matches[4] && matches[5]){
-        this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
-      }
+  _.each(this.Groups,function(group){
+    output += "(" + group + ")";
+  });
+  if(this.Quantity > 0){
+    output += "(x" + this.Quantity.toString() + ")";
+  }
+  if(this.Bonus > 0){
+    output += "+" + this.Bonus.toString();
+  } else if (this.Bonus < 0) {
+    output += "–" + Math.abs(this.Bonus).toString();
+  }
+  return output;
+}
+//takes the text of a link (and its adjacent notes) and stores them within an object
+function INQLinkParser(){}
+
+INQLinkParser.prototype = new INQLink();
+INQLinkParser.prototype.constructor = INQLinkParser;
+//take text and turn it into an INQLink
+INQLinkParser.prototype.parse = function(text){
+  var re = RegExp("^" + this.regex() + "$", "");
+  var matches = text.match(re);
+  if(matches){
+    if(matches[1]){
+      this.Name = matches[1].trim();
+    }
+    //parse out each group
+    if(matches[2]){
+      var regex = "\\(([^x\\(\\)][^\\(\\)]*)\\)";
+      re = RegExp(regex, "g");
+      var groups = matches[2].match(re);
+      re = RegExp(regex, "");
+      this.Groups = _.map(groups, function(group){
+        groupMatches = group.match(re);
+        return groupMatches[1];
+      });
+    }
+    if(matches[3]){
+      this.Quantity = Number(matches[3]);
+    }
+    if(matches[4] && matches[5]){
+      this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
     }
   }
+}
+//save the regex for the link and its adjoining notes
+INQLinkParser.prototype.regex = function(){
+  var regex = "\\s*(?:<a href=\"http:\\//journal\\.roll20\\.net\\/handout\\/[-\\w\\d]+\">)?"
+  regex += "([^+<>\\(\\),; –-][^+<>;\\(\\)–]*)";
+  regex += "(?:<\\/a>)?";
+  regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
+  regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
+  regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
+
+  return regex;
 }
 //the prototype for characters
 function INQObject(){
@@ -4572,449 +4532,193 @@ function INQObject(){
   }
 }
 function INQImportParser(targetObj){
-
   var target = targetObj;
   var Patterns = [];
-
-  this.parse = function(text){
-    //split the input by line
-    var lines = text.split(/\s*<br>\s*/);
-    //disect each line into label and content (by the colon)
-    var labeled = [];
-    var unlabeled = [];
-    this.SpecialRules = [];
-    _.each(lines,function(line){
-      if(line.match(/:/g)){
-        //disect the content by label
-        var label = line.substring(0,line.indexOf(":"));
-        var content = line.substring(line.indexOf(":")+1);
-        labeled.push({label: label, content: content});
+}
+INQImportParser.prototype.getArmour = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: this.interpretArmour});
+}
+INQImportParser.prototype.getContent = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: this.interpretContent});
+}
+INQImportParser.prototype.getList = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: this.interpretList});
+}
+INQImportParser.prototype.getNothing = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: function(){}});
+}
+INQImportParser.prototype.getNumber = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: this.interpretNumber});
+}
+INQImportParser.prototype.getUnlabled = function(regex, property){
+  UnlabledPatterns.push({regex: regex, property: property});
+}
+INQImportParser.prototype.getWeapons = function(regex, property){
+  Patterns.push({regex: regex, property: property, interpret: this.interpretWeapons});
+}
+INQImportParser.prototype.interpretArmour = function(content, properties){
+  //all the details about the locations are contained in the last property
+  var locations = properties.pop();
+  //parse out each location with its armour value
+  var matches = content.match(/\d*[\sa-z]{2,}\d*/gi);
+  //step through each parsed location
+  for(var i = 0; i < matches.length; i++){
+    //step through each location
+    for(var k in locations){
+      if(locations[k].test(matches[i])){
+        var number = matches[i].match(/\d+/);
+        this.saveProperty(number[0], properties.concat(k));
+      }
+      if(/all/i.test(matches[i])){
+        var number = matches[i].match(/\d+/);
+        this.saveProperty(number[0], properties.concat(k));
+      }
+    }
+  }
+}
+INQImportParser.prototype.interpretContent = function(content, properties){
+  var inqlink = new INQLink(content);
+  this.saveProperty(inqlink, properties);
+}
+INQImportParser.prototype.interpretLabeled = function(labeled){
+  for(var i = 0; i < labeled.length; i++){
+    labeled[i].content = labeled[i].content.replace(/\.\s*$/, "");
+    var matched = false;
+    for(var j = 0; j < Patterns.length; j++){
+      if(Patterns[j].regex.test(labeled[i].label)){
+        matched = true;
+        Patterns[j].interpret.call(this, labeled[i].content, Patterns[j].property);
+      }
+    }
+    if(!matched){
+      this.SpecialRules.push({Name: labeled[i].label, Rule: labeled[i].content});
+    }
+  }
+}
+INQImportParser.prototype.interpretList = function(content, properties){
+  var List = [];
+  //remove any occurance of a grammatical 'and' in the list
+  content = content.replace(/,\s+and\s+/g, ', ');
+  //replace commas that are outside parenthesies with semicolon
+  var parenthesiesDepth = 0;
+  content = content.split('');
+  for(var i = 0; i < content.length; i++){
+    if(content[i] == "("){
+      parenthesiesDepth++;
+    } else if(content[i] == ")"){
+      parenthesiesDepth--;
+    } else if(content[i] == "," && parenthesiesDepth <= 0){
+      content[i] = ";";
+    }
+  }
+  content = content.join('');
+  //clean out any skill characteristic suggestions
+  content = content.replace(/\((?:WS|BS|S|T|Ag|Per|WP|Int|Fel)\)/g, '');
+  //create a pattern for items in the list
+  var inqlink = new INQLinkParser();
+  var itemregex = new RegExp(inqlink.regex(),"g");
+  //create a list of all the items
+  var itemList = content.match(itemregex);
+  //break up each item into its parts and save those parts
+  _.each(itemList, function(item){
+    var inqlink = new INQLink(item);
+    List.push(inqlink);
+  });
+  this.saveProperty(List, properties);
+}
+INQImportParser.prototype.interpretNumber = function(content, properties){
+  var matches = content.match(/(?:\+\s*|-\s*|)\d+/g);
+  if(!matches){return;}
+  if(matches.length == 1){
+    this.saveProperty(matches[0], properties);
+  } else {
+    this.saveProperty(matches, properties);
+  }
+}
+INQImportParser.prototype.interpretWeapons = function(content, properties){
+  var List = [];
+  //replace parenthesies that are inside parenthesies with square brackets
+  var parenthesiesDepth = 0;
+  content = content.split('');
+  for(var i = 0; i < content.length; i++){
+    if(content[i] == "("){
+      if(parenthesiesDepth > 0){
+        content[i] = "[";
+      }
+      parenthesiesDepth++;
+    } else if(content[i] == ")"){
+      parenthesiesDepth--;
+      if(parenthesiesDepth > 0){
+        content[i] = "]";
+      }
+    }
+  }
+  content = content.join('');
+  //separate each weapon out
+  var inqlink = new INQLinkParser();
+  var re = RegExp(inqlink.regex(), "gi");
+  var weaponMatches = content.match(re);
+  //parse the weapons
+  re = RegExp(inqlink.regex(), "i");
+  for(var i = 0; i < weaponMatches.length; i++){
+    var weapon = new INQWeapon(weaponMatches[i]);
+    weapon.Name = weapon.Name.replace(/(?:^| )or /, "").replace(",", "");
+    weapon.Name = weapon.Name.toTitleCase();
+    List.push(weapon);
+  }
+  this.saveProperty(List, properties);
+}
+INQImportParser.prototype.parse = function(text){
+  //split the input by line
+  var lines = text.split(/\s*<br>\s*/);
+  //disect each line into label and content (by the colon)
+  var labeled = [];
+  var unlabeled = [];
+  this.SpecialRules = [];
+  _.each(lines,function(line){
+    if(line.match(/:/g)){
+      //disect the content by label
+      var label = line.substring(0,line.indexOf(":"));
+      var content = line.substring(line.indexOf(":")+1);
+      labeled.push({label: label, content: content});
+    } else {
+      //this line is not labeled
+      //check if we can add this to the last labeled line
+      if(labeled.length > 0){
+        //attach this to the last bit of content
+        labeled[labeled.length-1].content += " " + line;
       } else {
-        //this line is not labeled
-        //check if we can add this to the last labeled line
-        if(labeled.length > 0){
-          //attach this to the last bit of content
-          labeled[labeled.length-1].content += " " + line;
-        } else {
-          //there is no label to attach this content to
-          unlabeled.push(line);
-        }
-      }
-    });
-
-    //interpret the lines
-    this.interpretLabeled(labeled);
-    this.saveProperty(this.SpecialRules, "SpecialRules");
-    return unlabeled;
-  }
-
-  this.getNumber = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: this.interpretNumber});
-  }
-
-  this.getContent = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: this.interpretContent});
-  }
-
-  this.getList = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: this.interpretList});
-  }
-
-  this.getWeapons = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: this.interpretWeapons});
-  }
-
-  this.getArmour = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: this.interpretArmour});
-  }
-
-  this.getNothing = function(regex, property){
-    Patterns.push({regex: regex, property: property, interpret: function(){}});
-  }
-
-  this.getUnlabled = function(regex, property){
-    UnlabledPatterns.push({regex: regex, property: property});
-  }
-
-  this.interpretLabeled = function(labeled){
-    for(var i = 0; i < labeled.length; i++){
-      labeled[i].content = labeled[i].content.replace(/\.\s*$/, "");
-      var matched = false;
-      for(var j = 0; j < Patterns.length; j++){
-        if(Patterns[j].regex.test(labeled[i].label)){
-          matched = true;
-          Patterns[j].interpret.call(this, labeled[i].content, Patterns[j].property);
-        }
-      }
-      if(!matched){
-        this.SpecialRules.push({Name: labeled[i].label, Rule: labeled[i].content});
+        //there is no label to attach this content to
+        unlabeled.push(line);
       }
     }
+  });
+
+  //interpret the lines
+  this.interpretLabeled(labeled);
+  this.saveProperty(this.SpecialRules, "SpecialRules");
+  return unlabeled;
+}
+INQImportParser.prototype.saveProperty = function(content, properties){
+  if(!Array.isArray(properties)){
+    properties = [properties];
   }
-
-  this.saveProperty = function(content, properties){
-    if(!Array.isArray(properties)){
-      properties = [properties];
-    }
-    var propertyTarget = target;
-    for(var i = 0; i < properties.length-1; i++){
-      propertyTarget = propertyTarget[properties[i]];
-    }
-    if(Array.isArray(properties[properties.length-1])){
-      for(var i = 0; i < properties[properties.length-1].length && i < content.length; i++){
-        propertyTarget[properties[properties.length-1][i]] = content[i];
-      }
-    } else {
-      propertyTarget[properties[properties.length-1]] = content;
-    }
+  var propertyTarget = target;
+  for(var i = 0; i < properties.length-1; i++){
+    propertyTarget = propertyTarget[properties[i]];
   }
-
-  this.interpretNumber = function(content, properties){
-    var matches = content.match(/(?:\+\s*|-\s*|)\d+/g);
-    if(!matches){return;}
-    if(matches.length == 1){
-      this.saveProperty(matches[0], properties);
-    } else {
-      this.saveProperty(matches, properties);
+  if(Array.isArray(properties[properties.length-1])){
+    for(var i = 0; i < properties[properties.length-1].length && i < content.length; i++){
+      propertyTarget[properties[properties.length-1][i]] = content[i];
     }
-
-  }
-
-  this.interpretContent = function(content, properties){
-    var inqlink = new INQLink(content);
-    this.saveProperty(inqlink, properties);
-  }
-
-  this.interpretList = function(content, properties){
-    var List = [];
-    //remove any occurance of a grammatical 'and' in the list
-    content = content.replace(/,\s+and\s+/g, ', ');
-    //replace commas that are outside parenthesies with semicolon
-    var parenthesiesDepth = 0;
-    content = content.split('');
-    for(var i = 0; i < content.length; i++){
-      if(content[i] == "("){
-        parenthesiesDepth++;
-      } else if(content[i] == ")"){
-        parenthesiesDepth--;
-      } else if(content[i] == "," && parenthesiesDepth <= 0){
-        content[i] = ";";
-      }
-    }
-    content = content.join('');
-    //clean out any skill characteristic suggestions
-    content = content.replace(/\((?:WS|BS|S|T|Ag|Per|WP|Int|Fel)\)/g, '');
-    //create a pattern for items in the list
-    var inqlink = new INQLinkParser();
-    var itemregex = new RegExp(inqlink.regex(),"g");
-    //create a list of all the items
-    var itemList = content.match(itemregex);
-    //break up each item into its parts and save those parts
-    _.each(itemList, function(item){
-      var inqlink = new INQLink(item);
-      List.push(inqlink);
-    });
-    this.saveProperty(List, properties);
-  }
-
-
-  this.interpretArmour = function(content, properties){
-    //all the details about the locations are contained in the last property
-    var locations = properties.pop();
-    //parse out each location with its armour value
-    var matches = content.match(/\d*[\sa-z]{2,}\d*/gi);
-    //step through each parsed location
-    for(var i = 0; i < matches.length; i++){
-      //step through each location
-      for(var k in locations){
-        if(locations[k].test(matches[i])){
-          var number = matches[i].match(/\d+/);
-          this.saveProperty(number[0], properties.concat(k));
-        }
-        if(/all/i.test(matches[i])){
-          var number = matches[i].match(/\d+/);
-          this.saveProperty(number[0], properties.concat(k));
-        }
-      }
-    }
-  }
-
-  this.interpretWeapons = function(content, properties){
-    var List = [];
-    //replace parenthesies that are inside parenthesies with square brackets
-    var parenthesiesDepth = 0;
-    content = content.split('');
-    for(var i = 0; i < content.length; i++){
-      if(content[i] == "("){
-        if(parenthesiesDepth > 0){
-          content[i] = "[";
-        }
-        parenthesiesDepth++;
-      } else if(content[i] == ")"){
-        parenthesiesDepth--;
-        if(parenthesiesDepth > 0){
-          content[i] = "]";
-        }
-      }
-    }
-    content = content.join('');
-    //separate each weapon out
-    var inqlink = new INQLinkParser();
-    var re = RegExp(inqlink.regex(), "gi");
-    var weaponMatches = content.match(re);
-    //parse the weapons
-    re = RegExp(inqlink.regex(), "i");
-    for(var i = 0; i < weaponMatches.length; i++){
-      var weapon = new INQWeapon(weaponMatches[i]);
-      weapon.Name = weapon.Name.replace(/(?:^| )or /, "").replace(",", "");
-      weapon.Name = weapon.Name.toTitleCase();
-      List.push(weapon);
-    }
-    this.saveProperty(List, properties);
+  } else {
+    propertyTarget[properties[properties.length-1]] = content;
   }
 }
 //a prototype the will parse handouts and character sheets for use by other prototypes
 function INQParser(object, mainCallback){
   //the text that will be parsed
   this.Text = "";
-  //the parsing function
-  this.parse = function(){
-    //empty out any old content
-    this.Tables = [];
-    this.Rules  = [];
-    this.Lists  = [];
-    this.Misc   = [];
-
-    //break the text up by lines
-    var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
-    Lines = this.balanceLinkTags(Lines);
-    for(var i = 0; i < Lines.length; i++){
-      //log(Lines[i]);
-      this.parseLine(Lines[i]);
-    }
-    //finish off any in-progress lists
-    this.completeOldList();
-  }
-
-  //disect a single line
-  this.parseLine = function(line){
-    //be sure there is a line to work with
-    if(line == undefined || line == "" || line == null){return;}
-    var parenthesiesDepth = 0;
-    line = line.split('');
-    for(var i = 0; i < line.length; i++){
-      if(line[i] == "("){
-        if(parenthesiesDepth > 0){
-          line[i] = "[";
-        }
-        parenthesiesDepth++;
-      } else if(line[i] == ")"){
-        parenthesiesDepth--;
-        if(parenthesiesDepth > 0){
-          line[i] = "]";
-        }
-      }
-    }
-    line = line.join('');
-    //complete any bold tags separated by lines
-    line = this.closeBoldTags(line);
-    //try each way of parsing the line and quit when it is successful
-    if(this.parseRule(line)){return;}
-    if(this.parseTable(line)){return;}
-    if(this.parseBeginningOfList(line)){return;}
-    if(this.addToList(line)){return;}
-    //if nothing fits, add the line to the misc content
-    this.addMisc(line);
-  }
-
-  //sometimes a link tag can be split onto multiple lines
-  //close every link tag that is imbalanced
-  this.balanceLinkTags = function(Lines){
-    var opener = undefined;
-    return _.map(Lines, function(line){
-      var matches = line.match(/<\/a>/g);
-      if(matches == null){matches = [];}
-      var closers = matches.length;
-
-      matches = line.match(/<a href=\"https?:\/\/[^\s>]*\">/g);
-      if(matches == null){matches = [];}
-      var openers = matches.length;
-
-      //close up any links that may have been extend to another line
-      while(openers > closers){
-        line += "</a>";
-        closers++;
-      }
-
-      //remove any link closers that have been pushed to this line
-      while(closers > openers){
-        line = line.replace(/<\/a>/, "");
-        closers--;
-      }
-
-      return line;
-    });
-  }
-
-  //if there is an imbalance of bold tags, balance it out
-  this.closeBoldTags = function(line){
-    //count the number of tags beginning a bold section
-    var matches = line.match(/<(?:strong|em)>/g);
-    if(matches == null){matches = [];}
-    var openers = matches.length;
-
-    //count the number of tags ending a bold section
-    var matches = line.match(/<\/(?:strong|em)>/g);
-    if(matches == null){matches = [];}
-    var closers = matches.length;
-
-    //check for imbalances and rectify them
-    while(openers > closers){
-      line += "</strong>";
-      closers++;
-    }
-    while(closers > openers){
-      line = "<strong>" + line;
-      openers++;
-    }
-    //return the balanced line
-    return line;
-  }
-
-  //if this line is a rule, save it
-  this.parseRule = function(line){
-    var re = /^\s*<(?:strong|em)>(.+?)<\/(?:strong|em)>\s*:\s*(.+)$/;
-    var matches = line.match(re);
-    if(matches){
-      //finish off any in-progress lists
-      this.completeOldList();
-      //add the rule
-      this.Rules.push({
-        Name:    matches[1],
-        Content: matches[2]
-      });
-      //this line has been properly parsed
-      return true;
-    }
-    return false;
-  }
-  //if this is the beginning of a new list, start a new list
-  this.parseBeginningOfList = function(line){
-    var re = /^\s*(?:<(?:strong|em|u)>)+([^:]+)(?:<\/(?:strong|em|u)>)+\s*$/;
-    var matches = line.match(re);
-    if(matches){
-      //tidy up the last list first
-      this.completeOldList();
-      //start the new list
-      this.newList = {
-        Name: matches[1],
-        Content: [],
-        Type: "List"
-      }
-      //this line has been properly parsed
-      return true;
-    }
-    return false;
-  }
-
-  //complete the old list and save it, preparing for a new list
-  this.completeOldList = function(){
-    if(this.newList != undefined){
-      this.Lists.push(this.newList);
-      this.newList = undefined;
-    }
-  }
-
-  //if this line is a table, save it
-  this.parseTable = function(line){
-    var re = /^\s*(.*)\s*<table>(.*)<\/table>\s*$/;
-    var matches = line.match(re);
-    if(matches){
-      //finish off any in-progress lists
-      this.completeOldList();
-      //store the content of the tables here
-      var table = [];
-      //break the table into rows
-      re = /<tr>(.*?)<\/tr>/g
-      var rows = matches[2].match(re);
-      if(rows == null){rows = [];}
-      for(var i = 0; i < rows.length; i++){
-        //break each row into cells, while maintaining the overall structure
-        re = /<td>(.*?)<\/td>/g
-        var cells = rows[i].match(re);
-        if(cells == null){cells = [];}
-        for(var j = 0; j < cells.length; j++){
-          //trim down each cell to just the content
-          cells[j] = cells[j].replace(/<\/?td>/g, "");
-          //be sure a column exists for the content
-          table[j] = table[j] || [];
-          //save the content
-          table[j][i] = cells[j];
-        }
-      }
-      //the table has been disected, save it
-      this.Tables.push({
-        Name:    matches[1],
-        Content: table
-      });
-      //the line was properly parsed
-      return true;
-    }
-    return false;
-  }
-
-  //add misc content to the current list (if it exists)
-  this.addToList = function(line){
-    //be sure there is a list to add to
-    if(this.newList != undefined){
-      this.newList.Content.push(line);
-      //this line was accepted
-      return true;
-    }
-    return false;
-  }
-
-  //if there was no place for this line, add it as misc content
-  this.addMisc = function(line){
-    this.Misc.push({
-      Name:    "",
-      Content: line
-    })
-  }
-
-  //extract the text out of an object
-  this.objectToText = function(obj, callback){
-    var parser = this;
-    var toTextPromise = new Promise(function(resolve){
-      switch(obj.get("_type")){
-        case 'handout':
-          obj.get('notes', function(notes){resolve({notes: notes});});
-          break;
-        case 'character':
-          obj.get('bio', function(bio){resolve({notes: bio});});
-          break;
-      }
-    });
-    toTextPromise.then(function(Notes){
-      return new Promise(function(resolve){
-        obj.get('gmnotes', function(gmnotes){
-          Notes.gmnotes = gmnotes;
-          resolve(Notes);
-        });
-      });
-    }).then(function(Notes){
-      //be sure a null result was not given
-      if(Notes.notes == 'null'){
-        Notes.notes = '';
-      }
-      if(Notes.gmnotes == 'null'){
-        Notes.gmnotes = '';
-      }
-      //save the result
-      parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
-      if(typeof callback == 'function') callback(parser);
-    });
-  }
 
   //allow the user to specify the object to parse in the constructor
   var parser = this;
@@ -5036,6 +4740,234 @@ function INQParser(object, mainCallback){
       mainCallback(parser);
     }
   });
+}
+//if there was no place for this line, add it as misc content
+INQParser.prototype.addMisc = function(line){
+  this.Misc.push({
+    Name:    "",
+    Content: line
+  })
+}
+//add misc content to the current list (if it exists)
+INQParser.prototype.addToList = function(line){
+  //be sure there is a list to add to
+  if(this.newList != undefined){
+    this.newList.Content.push(line);
+    //this line was accepted
+    return true;
+  }
+  return false;
+}
+//sometimes a link tag can be split onto multiple lines
+//close every link tag that is imbalanced
+INQParser.prototype.balanceLinkTags = function(Lines){
+  var opener = undefined;
+  return _.map(Lines, function(line){
+    var matches = line.match(/<\/a>/g);
+    if(matches == null){matches = [];}
+    var closers = matches.length;
+
+    matches = line.match(/<a href=\"https?:\/\/[^\s>]*\">/g);
+    if(matches == null){matches = [];}
+    var openers = matches.length;
+
+    //close up any links that may have been extend to another line
+    while(openers > closers){
+      line += "</a>";
+      closers++;
+    }
+
+    //remove any link closers that have been pushed to this line
+    while(closers > openers){
+      line = line.replace(/<\/a>/, "");
+      closers--;
+    }
+
+    return line;
+  });
+}
+//if there is an imbalance of bold tags, balance it out
+INQParser.prototype.closeBoldTags = function(line){
+  //count the number of tags beginning a bold section
+  var matches = line.match(/<(?:strong|em)>/g);
+  if(matches == null){matches = [];}
+  var openers = matches.length;
+
+  //count the number of tags ending a bold section
+  var matches = line.match(/<\/(?:strong|em)>/g);
+  if(matches == null){matches = [];}
+  var closers = matches.length;
+
+  //check for imbalances and rectify them
+  while(openers > closers){
+    line += "</strong>";
+    closers++;
+  }
+  while(closers > openers){
+    line = "<strong>" + line;
+    openers++;
+  }
+  //return the balanced line
+  return line;
+}
+//complete the old list and save it, preparing for a new list
+INQParser.prototype.completeOldList = function(){
+  if(this.newList != undefined){
+    this.Lists.push(this.newList);
+    this.newList = undefined;
+  }
+}
+//extract the text out of an object
+INQParser.prototype.objectToText = function(obj, callback){
+  var parser = this;
+  var toTextPromise = new Promise(function(resolve){
+    switch(obj.get("_type")){
+      case 'handout':
+        obj.get('notes', function(notes){resolve({notes: notes});});
+        break;
+      case 'character':
+        obj.get('bio', function(bio){resolve({notes: bio});});
+        break;
+    }
+  });
+  toTextPromise.then(function(Notes){
+    return new Promise(function(resolve){
+      obj.get('gmnotes', function(gmnotes){
+        Notes.gmnotes = gmnotes;
+        resolve(Notes);
+      });
+    });
+  }).then(function(Notes){
+    //be sure a null result was not given
+    if(Notes.notes == 'null'){
+      Notes.notes = '';
+    }
+    if(Notes.gmnotes == 'null'){
+      Notes.gmnotes = '';
+    }
+    //save the result
+    parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
+    if(typeof callback == 'function') callback(parser);
+  });
+}
+INQParser.prototype.parse = function(){
+  //empty out any old content
+  this.Tables = [];
+  this.Rules  = [];
+  this.Lists  = [];
+  this.Misc   = [];
+
+  //break the text up by lines
+  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
+  Lines = this.balanceLinkTags(Lines);
+  for(var i = 0; i < Lines.length; i++){
+    //log(Lines[i]);
+    this.parseLine(Lines[i]);
+  }
+  //finish off any in-progress lists
+  this.completeOldList();
+}
+//if this is the beginning of a new list, start a new list
+INQParser.prototype.parseBeginningOfList = function(line){
+  var re = /^\s*(?:<(?:strong|em|u)>)+([^:]+)(?:<\/(?:strong|em|u)>)+\s*$/;
+  var matches = line.match(re);
+  if(matches){
+    //tidy up the last list first
+    this.completeOldList();
+    //start the new list
+    this.newList = {
+      Name: matches[1],
+      Content: [],
+      Type: "List"
+    }
+    //this line has been properly parsed
+    return true;
+  }
+  return false;
+}
+//disect a single line
+INQParser.prototype.parseLine = function(line){
+  //be sure there is a line to work with
+  if(line == undefined || line == "" || line == null){return;}
+  var parenthesiesDepth = 0;
+  line = line.split('');
+  for(var i = 0; i < line.length; i++){
+    if(line[i] == "("){
+      if(parenthesiesDepth > 0){
+        line[i] = "[";
+      }
+      parenthesiesDepth++;
+    } else if(line[i] == ")"){
+      parenthesiesDepth--;
+      if(parenthesiesDepth > 0){
+        line[i] = "]";
+      }
+    }
+  }
+  line = line.join('');
+  //complete any bold tags separated by lines
+  line = this.closeBoldTags(line);
+  //try each way of parsing the line and quit when it is successful
+  if(this.parseRule(line)){return;}
+  if(this.parseTable(line)){return;}
+  if(this.parseBeginningOfList(line)){return;}
+  if(this.addToList(line)){return;}
+  //if nothing fits, add the line to the misc content
+  this.addMisc(line);
+}
+//if this line is a rule, save it
+INQParser.prototype.parseRule = function(line){
+  var re = /^\s*<(?:strong|em)>(.+?)<\/(?:strong|em)>\s*:\s*(.+)$/;
+  var matches = line.match(re);
+  if(matches){
+    //finish off any in-progress lists
+    this.completeOldList();
+    //add the rule
+    this.Rules.push({
+      Name:    matches[1],
+      Content: matches[2]
+    });
+    //this line has been properly parsed
+    return true;
+  }
+  return false;
+}
+//if this line is a table, save it
+INQParser.prototype.parseTable = function(line){
+  var re = /^\s*(.*)\s*<table>(.*)<\/table>\s*$/;
+  var matches = line.match(re);
+  if(matches){
+    //finish off any in-progress lists
+    this.completeOldList();
+    //store the content of the tables here
+    var table = [];
+    //break the table into rows
+    re = /<tr>(.*?)<\/tr>/g
+    var rows = matches[2].match(re);
+    if(rows == null){rows = [];}
+    for(var i = 0; i < rows.length; i++){
+      //break each row into cells, while maintaining the overall structure
+      re = /<td>(.*?)<\/td>/g
+      var cells = rows[i].match(re);
+      if(cells == null){cells = [];}
+      for(var j = 0; j < cells.length; j++){
+        //trim down each cell to just the content
+        cells[j] = cells[j].replace(/<\/?td>/g, "");
+        //be sure a column exists for the content
+        table[j] = table[j] || [];
+        //save the content
+        table[j][i] = cells[j];
+      }
+    }
+    //the table has been disected, save it
+    this.Tables.push({
+      Name:    matches[1],
+      Content: table
+    });
+    //the line was properly parsed
+    return true;
+  }
+  return false;
 }
 //the prototype for characters
 function INQStarship(){
@@ -5081,171 +5013,140 @@ function INQStarship(){
   this.Attributes.Turret = 1;
   this.Attributes.Crew = 10;
   this.Attributes.Manoeuvrability = 0;
+}
 
-  //return the attribute bonus Stat/10 + Unnatural Stat
-  this.bonus = function(stat){
-    var bonus = 0;
-    //get the bonus from the stat
-    if(this.Attributes[stat]){
-      bonus += Math.floor(this.Attributes[stat]/10);
-    }
-    //add in the unnatural bonus
-    if(this.Attributes["Unnatural " + stat]){
-      bonus += this.Attributes["Unnatural " + stat];
-    }
-    return bonus;
+INQStarship.prototype = new INQObject();
+INQStarship.prototype.constructor = INQStarship;
+//return the attribute bonus Stat/10 + Unnatural Stat
+INQStarship.prototype.bonus = function(stat){
+  var bonus = 0;
+  //get the bonus from the stat
+  if(this.Attributes[stat]){
+    bonus += Math.floor(this.Attributes[stat]/10);
+  }
+  //add in the unnatural bonus
+  if(this.Attributes["Unnatural " + stat]){
+    bonus += this.Attributes["Unnatural " + stat];
+  }
+  return bonus;
+}
+//create a character object from the prototype
+INQStarship.prototype.toCharacterObj = function(isPlayer){
+  //create the gmnotes of the character
+  var gmnotes = "";
+
+  //write down the vehicle details
+  for(var k in this.Details){
+    gmnotes += "<i>" + k + ": " + this.Details[k] + "</i><br>";
   }
 
-  //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer){
-    //create the gmnotes of the character
-    var gmnotes = "";
+  gmnotes += "<br>";
 
-    //write down the vehicle details
-    for(var k in this.Details){
-      gmnotes += "<i>" + k + ": " + this.Details[k] + "</i><br>";
-    }
+  gmnotes += "<strong>Speed</strong>: ";
+  gmnotes += this.Speed;
+  gmnotes += "<br>";
 
+  gmnotes += "<strong>Weapon Capacity</strong>: ";
+  gmnotes += this.WeaponCapacity;
+  gmnotes += "<br>";
+
+  //display every list
+  for(var list in this.List){
+    //starting with the name of the list
     gmnotes += "<br>";
-
-    gmnotes += "<strong>Speed</strong>: ";
-    gmnotes += this.Speed;
+    gmnotes += "<u><strong>" + list + "</strong></u>";
     gmnotes += "<br>";
-
-    gmnotes += "<strong>Weapon Capacity</strong>: ";
-    gmnotes += this.WeaponCapacity;
-    gmnotes += "<br>";
-
-    //display every list
-    for(var list in this.List){
-      //starting with the name of the list
-      gmnotes += "<br>";
-      gmnotes += "<u><strong>" + list + "</strong></u>";
-      gmnotes += "<br>";
-      //make a note for each item in the list
-      _.each(this.List[list], function(item){
-        gmnotes += item.toNote() + "<br>";
-      });
-    }
-
-    //tack on any Special Rules
-    _.each(this.SpecialRules, function(rule){
-      gmnotes += "<br>";
-      gmnotes += "<strong>" + rule.Name + "</strong>: ";
-      gmnotes += rule.Rule;
-      gmnotes += "<br>";
+    //make a note for each item in the list
+    _.each(this.List[list], function(item){
+      gmnotes += item.toNote() + "<br>";
     });
-
-    //create the character
-    var character = createObj("character", {
-      name: this.Name
-    });
-
-    //save the object ID
-    this.ObjID = character.id;
-
-    //write the character's notes down
-    if(isPlayer){
-      character.set("bio", gmnotes);
-    } else {
-      character.set("gmnotes", gmnotes);
-    }
-
-    //create all of the character's attributes
-    for(var name in this.Attributes){
-      createObj("attribute",{
-        name: name,
-        _characterid: this.ObjID,
-        current: this.Attributes[name],
-        max: this.Attributes[name]
-      });
-    }
-
-    //create all of the character's abilities
-    _.each(this.List["Weapon Components"], function(weapon){
-      createObj("ability", {
-        name: weapon.Name,
-        _characterid: this.ObjID,
-        istokenaction: true,
-        action: weapon.toAbility()
-      });
-    });
-
-    //note who controlls the character
-    character.set("controlledby", this.controlledby);
-
-    //return the resultant character object
-    return character;
   }
+
+  //tack on any Special Rules
+  _.each(this.SpecialRules, function(rule){
+    gmnotes += "<br>";
+    gmnotes += "<strong>" + rule.Name + "</strong>: ";
+    gmnotes += rule.Rule;
+    gmnotes += "<br>";
+  });
+
+  //create the character
+  var character = createObj("character", {
+    name: this.Name
+  });
+
+  //save the object ID
+  this.ObjID = character.id;
+
+  //write the character's notes down
+  if(isPlayer){
+    character.set("bio", gmnotes);
+  } else {
+    character.set("gmnotes", gmnotes);
+  }
+
+  //create all of the character's attributes
+  for(var name in this.Attributes){
+    createObj("attribute",{
+      name: name,
+      _characterid: this.ObjID,
+      current: this.Attributes[name],
+      max: this.Attributes[name]
+    });
+  }
+
+  //create all of the character's abilities
+  _.each(this.List["Weapon Components"], function(weapon){
+    createObj("ability", {
+      name: weapon.Name,
+      _characterid: this.ObjID,
+      istokenaction: true,
+      action: weapon.toAbility()
+    });
+  });
+
+  //note who controlls the character
+  character.set("controlledby", this.controlledby);
+
+  //return the resultant character object
+  return character;
 }
 function INQTurns(){
-
-  //determine if the turn order is in descending order, but treat it as a loop
-  this.isDescending = function(){
-    var prev = undefined;
-    var first = undefined;
-    var LargestIndex = this.largestIndex();
-    for(var i = 0; i < this.turnorder.length; i++){
-      if(!(prev == undefined ||
-        Number(this.turnorder[i].pr) <= prev ||
-        i == LargestIndex)){
-        return false;
-      }
-      if(first == undefined){
-        first = Number(this.turnorder[i].pr);
-      }
-      prev = Number(this.turnorder[i].pr);
-    }
-    if(LargestIndex == 0 || first <= prev || this.turnorder.length == 0){
-      return true;
-    } else {
-      return false;
-    }
+  //get the JSON string of the turn order and make it into an array
+  if(!Campaign().get("turnorder")){
+    //We check to make sure that the turnorder isn't just an empty string first. If it is treat it like an empty array.
+    this.turnorder = [];
+  } else {
+    //otherwise turn the turn order into an array
+    this.turnorder = carefulParse(Campaign().get("turnorder")) || {};
   }
+}
 
-  //delete any turns that share the given graphic id
-  this.removeTurn = function(graphicid){
-    //step through the turn order and delete any previous initiative rolls
-    for(var i = 0; i < this.turnorder.length; i++){
-      //has this token already been included?
-      if(graphicid == this.turnorder[i].id){
-        //remove this entry
-        this.turnorder.splice(i, 1);
-        //the array has shrunken, take a step back
-        i--;
-      }
+//add or replace a turn
+INQTurns.prototype.addTurn = function(graphic, initiative, custom){
+  var turnobj = this.toTurnObj(graphic, initiative, custom);
+  //delete any previous instances of this character
+  this.removeTurn(turnobj.id);
+  //be sure the turns are properly ordered
+  if(this.isDescending()){
+    //determine where a new turn starts
+    var startIndex = this.largestIndex();
+    //if the array is empty, just add the turn
+    if(startIndex == undefined){
+      return this.turnorder.push(turnobj);
     }
-  }
-
-  //return the index of the largest turn value
-  this.largestIndex = function(){
-    var largestIndex = undefined;
-    var largest = undefined;
-
-    for(var i = 0; i < this.turnorder.length; i++){
-      if(largest == undefined || Number(this.turnorder[i].pr) > largest){
-        largest = Number(this.turnorder[i].pr);
-        largestIndex = i;
+    var turnAdded = false;
+    for(var i = startIndex; i < this.turnorder.length; i++){
+      if(this.higherInit(turnobj, this.turnorder[i])){
+        //insert the turn here
+        this.turnorder.splice(i, 0, turnobj);
+        turnAdded = true;
+        break;
       }
     }
 
-    return largestIndex;
-  }
-
-  //add or replace a turn
-  this.addTurn = function(turnobj){
-    //delete any previous instances of this character
-    this.removeTurn(turnobj.id);
-    //be sure the turns are properly ordered
-    if(this.isDescending()){
-      //determine where a new turn starts
-      var startIndex = this.largestIndex();
-      //if the array is empty, just add the turn
-      if(startIndex == undefined){
-        return this.turnorder.push(turnobj);
-      }
-      var turnAdded = false;
-      for(var i = startIndex; i < this.turnorder.length; i++){
+    if(!turnAdded){
+      for(var i = 0; i < startIndex; i++){
         if(this.higherInit(turnobj, this.turnorder[i])){
           //insert the turn here
           this.turnorder.splice(i, 0, turnobj);
@@ -5253,114 +5154,136 @@ function INQTurns(){
           break;
         }
       }
-
-      if(!turnAdded){
-        for(var i = 0; i < startIndex; i++){
-          if(this.higherInit(turnobj, this.turnorder[i])){
-            //insert the turn here
-            this.turnorder.splice(i, 0, turnobj);
-            turnAdded = true;
-            break;
-          }
-        }
+    }
+    if(!turnAdded){
+      if(startIndex == 0){
+        this.turnorder.push(turnobj);
+      } else {
+        this.turnorder.splice(startIndex, 0, turnobj);
       }
-      if(!turnAdded){
-        if(startIndex == 0){
-          this.turnorder.push(turnobj);
-        } else {
-          this.turnorder.splice(startIndex, 0, turnobj);
-        }
+    }
+  } else {
+    //just add the turn on the end
+    this.turnorder.push(turnobj);
+  }
+}
+//get the initiative roll of a turn already in the turn order
+INQTurns.prototype.getInit = function(graphicid){
+  for(var i = 0; i < this.turnorder.length; i++){
+    if(graphicid == this.turnorder[i].id){
+      return Number(this.turnorder[i].pr);
+    }
+  }
+  //nothing was found, return undefined
+  return undefined;
+}
+INQTurns.prototype.higherInit = function(newTurn, turn){
+  //does the turn we are inserting (newTurn) have greater initiative than the currently examined turn (turn)?
+  if(Number(newTurn.pr) > Number(turn.pr)){
+    return true;
+  //is their initiative the same?
+  } else if(Number(newTurn.pr) == Number(turn.pr)){
+    //be sure the tokens represent characters
+    var challengerAg = undefined;
+    var championAg = undefined;
+    var challengerCharacter = undefined;
+    var championCharacter = undefined;
+    var challengerID = newTurn.id;
+    var championID = turn.id;
+    //only load up the Ag/Detection if the characters exist
+    if(challengerID != undefined && championID != undefined){
+      challengerAg = attributeValue("Ag", {graphicid: challengerID});
+      championAg = attributeValue("Ag", {graphicid: championID});
+      //the character may not have an Agility attribute, try Detection
+      if(challengerAg == undefined){
+        challengerAg = attributeValue("Detection", {graphicid: challengerID});
       }
-    } else {
-      //just add the turn on the end
-      this.turnorder.push(turnobj);
+      //the character may not have an Agility attribute, try Detection
+      if(championAg == undefined){
+        championAg = attributeValue("Ag", {graphicid: championID});
+      }
+    }
+    //if actual values were found for Ag/Detection for both of them, compare the two
+    if(championAg != undefined && challengerAg != undefined){
+      //if the challenger has greater agility (or == and rolling a 2 on a D2)
+      if(challengerAg > championAg
+      || challengerAg == championAg && randomInteger(2) == 1){
+        return true;
+      }
     }
   }
 
-  this.higherInit = function(newTurn, turn){
-    //does the turn we are inserting (newTurn) have greater initiative than the currently examined turn (turn)?
-    if(Number(newTurn.pr) > Number(turn.pr)){
-      return true;
-    //is their initiative the same?
-    } else if(Number(newTurn.pr) == Number(turn.pr)){
-      //be sure the tokens represent characters
-      var challengerAg = undefined;
-      var championAg = undefined;
-      var challengerCharacter = undefined;
-      var championCharacter = undefined;
-      var challengerID = newTurn.id;
-      var championID = turn.id;
-      //only load up the Ag/Detection if the characters exist
-      if(challengerID != undefined && championID != undefined){
-        challengerAg = attributeValue("Ag", {graphicid: challengerID});
-        championAg = attributeValue("Ag", {graphicid: championID});
-        //the character may not have an Agility attribute, try Detection
-        if(challengerAg == undefined){
-          challengerAg = attributeValue("Detection", {graphicid: challengerID});
-        }
-        //the character may not have an Agility attribute, try Detection
-        if(championAg == undefined){
-          championAg = attributeValue("Ag", {graphicid: championID});
-        }
-      }
-      //if actual values were found for Ag/Detection for both of them, compare the two
-      if(championAg != undefined && challengerAg != undefined){
-        //if the challenger has greater agility (or == and rolling a 2 on a D2)
-        if(challengerAg > championAg
-        || challengerAg == championAg && randomInteger(2) == 1){
-          return true;
-        }
-      }
+  //if it has not returned true yet, return false
+  return false;
+}
+INQTurns.prototype.isDescending = function(){
+  var prev = undefined;
+  var first = undefined;
+  var LargestIndex = this.largestIndex();
+  for(var i = 0; i < this.turnorder.length; i++){
+    if(!(prev == undefined ||
+      Number(this.turnorder[i].pr) <= prev ||
+      i == LargestIndex)){
+      return false;
     }
-
-    //if it has not returned true yet, return false
+    if(first == undefined){
+      first = Number(this.turnorder[i].pr);
+    }
+    prev = Number(this.turnorder[i].pr);
+  }
+  if(LargestIndex == 0 || first <= prev || this.turnorder.length == 0){
+    return true;
+  } else {
     return false;
   }
+}
+INQTurns.prototype.largestIndex = function(){
+  var result = undefined;
+  var largest = undefined;
 
-  //creates a turn object for the listed graphic and initiative roll
-  this.toTurnObj = function(graphic, initiative, custom){
-    //create a turn object
-    var turnObj = {};
-    //default to no custom text
-    turnObj.custom = custom || "";
-    //record the id of the token
-    turnObj.id = graphic.id;
-    //record the total initiative roll
-    turnObj.pr = initiative;
-    if(typeof turnObj.pr == "number"){
-      //record it as a string (as that is what it normally is)
-      turnObj.pr = turnObj.pr.toString();
+  for(var i = 0; i < this.turnorder.length; i++){
+    if(largest == undefined || Number(this.turnorder[i].pr) > largest){
+      largest = Number(this.turnorder[i].pr);
+      result = i;
     }
-    //record the page id
-    turnObj._pageid = graphic.get("_pageid");
-
-    return turnObj;
   }
 
-  //get the initiative roll of a turn already in the turn order
-  this.getInit = function(graphicid){
-    for(var i = 0; i < this.turnorder.length; i++){
-      if(graphicid == this.turnorder[i].id){
-        return Number(this.turnorder[i].pr);
-      }
+  return result;
+}
+INQTurns.prototype.removeTurn = function(graphicid){
+  //step through the turn order and delete any previous initiative rolls
+  for(var i = 0; i < this.turnorder.length; i++){
+    //has this token already been included?
+    if(graphicid == this.turnorder[i].id){
+      //remove this entry
+      this.turnorder.splice(i, 1);
+      //the array has shrunken, take a step back
+      i--;
     }
-    //nothing was found, return undefined
-    return undefined;
   }
+}
+//save the turn order in the Campaign
+INQTurns.prototype.save = function(){
+  Campaign().set("turnorder", JSON.stringify(this.turnorder));
+}
+//creates a turn object for the listed graphic and initiative roll
+INQTurns.prototype.toTurnObj = function(graphic, initiative, custom){
+  //create a turn object
+  var turnObj = {};
+  //default to no custom text
+  turnObj.custom = custom || "";
+  //record the id of the token
+  turnObj.id = graphic.id;
+  //record the total initiative roll
+  turnObj.pr = initiative;
+  if(typeof turnObj.pr == "number"){
+    //record it as a string (as that is what it normally is)
+    turnObj.pr = turnObj.pr.toString();
+  }
+  //record the page id
+  turnObj._pageid = graphic.get("_pageid");
 
-  //save the turn order in the Campaign
-  this.save = function(){
-    Campaign().set("turnorder", JSON.stringify(this.turnorder));
-  }
-
-  //get the JSON string of the turn order and make it into an array
-  if(Campaign().get("turnorder") == ""){
-    //We check to make sure that the turnorder isn't just an empty string first. If it is treat it like an empty array.
-    this.turnorder = [];
-  } else{
-    //otherwise turn the turn order into an array
-    this.turnorder = carefulParse(Campaign().get("turnorder")) || {};
-  }
+  return turnObj;
 }
 //the prototype for characters
 function INQVehicle(vehicle, graphic, callback){
@@ -5400,168 +5323,6 @@ function INQVehicle(vehicle, graphic, callback){
 
   this.Attributes.Manoeuvrability = 0;
 
-  //check if the character has an inqlink with the given name
-  //and within the given list
-  //if there are no subgroups for the inqlink, just return {Bonus}
-  //if there are, return the inqlink's subgroups with a bonus for each
-  //if nothing was found, return undefined
-  this.has = function(ability, list){
-    var info = undefined;
-    if(list == undefined){
-      list = "Vehicle Traits";
-    }
-    _.each(this.List[list], function(rule){
-      if(rule.Name == ability){
-        //if we have not found the rule yet
-        if(info == undefined){
-          //does the found skill have subgroups?
-          if(rule.Groups.length > 0){
-            //the inklink has subgroups and each will need their own bonus
-            info = [];
-            _.each(rule.Groups, function(subgroup){
-              info.push({
-                Name:  subgroup,
-                Bonus: rule.Bonus
-              });
-            });
-          } else {
-            //the inqlink does not have subgroups
-            info = {
-              Bonus: rule.Bonus
-            };
-          }
-        //if the rule already has been found
-        //AND the rule has subgroups
-        //AND the previously found rule had subgroups
-        } else if(rule.Groups.length > 0 && info.length > 0){
-          //add the new found subgroups in with their own bonuses
-          _.each(rule.Groups, function(){
-            info.push({
-              Name:  subgroup,
-              Bonus: rule.Bonus
-            });
-          });
-        }
-      }
-    });
-    return info;
-  }
-
-  //return the attribute bonus Stat/10 + Unnatural Stat
-  this.bonus = function(stat){
-    var bonus = 0;
-    //get the bonus from the stat
-    if(this.Attributes[stat]){
-      bonus += Math.floor(this.Attributes[stat]/10);
-    }
-    //add in the unnatural bonus
-    if(this.Attributes["Unnatural " + stat]){
-      bonus += this.Attributes["Unnatural " + stat];
-    }
-    return bonus;
-  }
-
-  //create a character object from the prototype
-  this.getCharacterBio = function(){
-    //create the gmnotes of the character
-    var gmnotes = "";
-
-    //write down the vehicle details
-    for(var k in this.Bio){
-      gmnotes += "<strong>" + k + "</strong>: ";
-      gmnotes += this.Bio[k] + "<br>";
-    }
-
-    //display every list
-    for(var list in this.List){
-      //starting with the name of the list
-      gmnotes += "<br>";
-      gmnotes += "<u><strong>" + list + "</strong></u>";
-      gmnotes += "<br>";
-      //make a note for each item in the list
-      _.each(this.List[list], function(item){
-        gmnotes += item + "<br>";
-      });
-    }
-
-    //tack on any Special Rules
-    _.each(this.SpecialRules, function(rule){
-      gmnotes += "<br>";
-      gmnotes += "<strong>" + rule.Name + "</strong>: ";
-      gmnotes += rule.Rule;
-      gmnotes += "<br>";
-    });
-
-    return gmnotes;
-  }
-
-  //create a character object from the prototype
-  this.toCharacterObj = function(isPlayer, characterid){
-    //get the character
-    var character = undefined;
-    if(characterid){
-      character = getObj("character", characterid);
-    }
-    if(character == undefined){
-      //create the character
-      var character = createObj("character", {});
-    }
-    var oldAttributes = findObjs({
-      _characterid: character.id,
-      _type: "attribute"
-    });
-    _.each(oldAttributes, function(attr){
-      attr.remove();
-    });
-    var oldAbilities = findObjs({
-      _characterid: character.id,
-      _type: "ability"
-    });
-    _.each(oldAbilities, function(ability){
-      ability.remove();
-    });
-    //save the character name
-    character.set("name", this.Name);
-
-
-    //save the object ID
-    this.ObjID = character.id;
-    //write the character's notes down
-    var gmnotes = this.getCharacterBio();
-    if(isPlayer){
-      character.set("bio", gmnotes);
-    } else {
-      character.set("gmnotes", gmnotes);
-    }
-
-    //create all of the character's attributes
-    for(var name in this.Attributes){
-      createObj("attribute",{
-        name: name,
-        _characterid: this.ObjID,
-        current: this.Attributes[name],
-        max: this.Attributes[name]
-      });
-    }
-
-    //create all of the character's abilities
-    var customWeapon = {custom: true};
-    for(var i = 0; i < this.List.Weapons.length; i++){
-      createObj("ability", {
-        name: this.List.Weapons[i].Name,
-        _characterid: this.ObjID,
-        istokenaction: true,
-        action: this.List.Weapons[i].toAbility(undefined, undefined, customWeapon)
-      });
-    }
-
-    //note who controlls the character
-    character.set("controlledby", this.controlledby);
-
-    //return the resultant character object
-    return character;
-  }
-
   //allow the user to immediately parse a character in the constructor
   var inqvehicle = this;
   var myPromise = new Promise(function(resolve){
@@ -5591,186 +5352,341 @@ function INQVehicle(vehicle, graphic, callback){
     }
   });
 }
-function INQVehicleImportParser(){
-  this.parse = function(text){
-    var parser = new INQImportParser(this);
-    parser.getContent(/^\s*type\s*$/i, ["Bio", "Type"]);
-    parser.getContent(/^\s*tactical\s+speed\s*$/i, ["Bio", "Tactical Speed"]);
-    parser.getContent(/^\s*cruising\s+speed\s*$/i, ["Bio", "Cruising Speed"]);
-    parser.getContent(/^\s*size\s*$/i, ["Bio", "Size"]);
-    parser.getContent(/^\s*crew\s*$/i, ["Bio", "Crew"]);
-    parser.getNumber(/^\s*manoeuvrability\s*$/i, ["Attributes", "Manoeuvrability"]);
-    parser.getNumber(/^\s*structural\s+integrity\s*$/i, ["Attributes", "Structural Integrity"]);
-    parser.getContent(/^\s*carry(ing)?\s+capacity\s*$/i, ["Bio", "Carry Capacity"]);
-    parser.getList(/^\s*vehicle\s+traits\s*$/i, ["List", "Vehicle Traits"]);
-    parser.getWeapons(/^\s*weapons\s*$/i, ["List", "Weapons"]);
-    parser.getArmour(/^\s*armour\s*$/i, ["Attributes", {
-      Armour_F: /\s*front\s*/i,
-      Armour_S: /\s*side\s*/i,
-      Armour_R: /\s*rear\s*/i
-    }]);
-    parser.parse(text);
 
-    this.getSpeeds();
+INQVehicle.prototype = new INQObject();
+INQVehicle.prototype.constructor = INQVehicle;
+//return the attribute bonus Stat/10 + Unnatural Stat
+INQVehicle.prototype.bonus = function(stat){
+  var bonus = 0;
+  //get the bonus from the stat
+  if(this.Attributes[stat]){
+    bonus += Math.floor(this.Attributes[stat]/10);
+  }
+  //add in the unnatural bonus
+  if(this.Attributes["Unnatural " + stat]){
+    bonus += this.Attributes["Unnatural " + stat];
+  }
+  return bonus;
+}
+//create a character object from the prototype
+INQVehicle.prototype.getCharacterBio = function(){
+  //create the gmnotes of the character
+  var gmnotes = "";
+
+  //write down the vehicle details
+  for(var k in this.Bio){
+    gmnotes += "<strong>" + k + "</strong>: ";
+    gmnotes += this.Bio[k] + "<br>";
   }
 
-  this.getSpeeds = function(){
-    var speed = this.Bio["Tactical Speed"] + "";
-    log(typeof speed)
-    var matches = speed.match(/(\d+)\s*m/);
-    if(matches){
-      this.Attributes["Tactical Speed"] = Number(matches[1]);
-    }
-    matches = speed.match(/(\d+)\s*(?:<[^>]+>)?AUs/);
-    if(matches){
-      this.Attributes["Aerial Speed"] = Number(matches[1]);
-    }
+  //display every list
+  for(var list in this.List){
+    //starting with the name of the list
+    gmnotes += "<br>";
+    gmnotes += "<u><strong>" + list + "</strong></u>";
+    gmnotes += "<br>";
+    //make a note for each item in the list
+    _.each(this.List[list], function(item){
+      gmnotes += item + "<br>";
+    });
   }
+
+  //tack on any Special Rules
+  _.each(this.SpecialRules, function(rule){
+    gmnotes += "<br>";
+    gmnotes += "<strong>" + rule.Name + "</strong>: ";
+    gmnotes += rule.Rule;
+    gmnotes += "<br>";
+  });
+
+  return gmnotes;
+}
+//check if the character has an inqlink with the given name
+//and within the given list
+//if there are no subgroups for the inqlink, just return {Bonus}
+//if there are, return the inqlink's subgroups with a bonus for each
+//if nothing was found, return undefined
+INQVehicle.prototype.has = function(ability, list){
+  var info = undefined;
+  if(list == undefined){
+    list = "Vehicle Traits";
+  }
+  _.each(this.List[list], function(rule){
+    if(rule.Name == ability){
+      //if we have not found the rule yet
+      if(info == undefined){
+        //does the found skill have subgroups?
+        if(rule.Groups.length > 0){
+          //the inklink has subgroups and each will need their own bonus
+          info = [];
+          _.each(rule.Groups, function(subgroup){
+            info.push({
+              Name:  subgroup,
+              Bonus: rule.Bonus
+            });
+          });
+        } else {
+          //the inqlink does not have subgroups
+          info = {
+            Bonus: rule.Bonus
+          };
+        }
+      //if the rule already has been found
+      //AND the rule has subgroups
+      //AND the previously found rule had subgroups
+      } else if(rule.Groups.length > 0 && info.length > 0){
+        //add the new found subgroups in with their own bonuses
+        _.each(rule.Groups, function(){
+          info.push({
+            Name:  subgroup,
+            Bonus: rule.Bonus
+          });
+        });
+      }
+    }
+  });
+  return info;
+}
+//create a character object from the prototype
+INQVehicle.prototype.toCharacterObj = function(isPlayer, characterid){
+  //get the character
+  var character = undefined;
+  if(characterid){
+    character = getObj("character", characterid);
+  }
+  if(character == undefined){
+    //create the character
+    var character = createObj("character", {});
+  }
+  var oldAttributes = findObjs({
+    _characterid: character.id,
+    _type: "attribute"
+  });
+  _.each(oldAttributes, function(attr){
+    attr.remove();
+  });
+  var oldAbilities = findObjs({
+    _characterid: character.id,
+    _type: "ability"
+  });
+  _.each(oldAbilities, function(ability){
+    ability.remove();
+  });
+  //save the character name
+  character.set("name", this.Name);
+
+
+  //save the object ID
+  this.ObjID = character.id;
+  //write the character's notes down
+  var gmnotes = this.getCharacterBio();
+  if(isPlayer){
+    character.set("bio", gmnotes);
+  } else {
+    character.set("gmnotes", gmnotes);
+  }
+
+  //create all of the character's attributes
+  for(var name in this.Attributes){
+    createObj("attribute",{
+      name: name,
+      _characterid: this.ObjID,
+      current: this.Attributes[name],
+      max: this.Attributes[name]
+    });
+  }
+
+  //create all of the character's abilities
+  var customWeapon = {custom: true};
+  for(var i = 0; i < this.List.Weapons.length; i++){
+    createObj("ability", {
+      name: this.List.Weapons[i].Name,
+      _characterid: this.ObjID,
+      istokenaction: true,
+      action: this.List.Weapons[i].toAbility(undefined, undefined, customWeapon)
+    });
+  }
+
+  //note who controlls the character
+  character.set("controlledby", this.controlledby);
+
+  //return the resultant character object
+  return character;
+}
+function INQVehicleImportParser(){}
+
+INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
+INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
+INQVehicleImportParser.prototype.getSpeeds = function(){
+  var speed = this.Bio["Tactical Speed"] + "";
+  log(typeof speed)
+  var matches = speed.match(/(\d+)\s*m/);
+  if(matches){
+    this.Attributes["Tactical Speed"] = Number(matches[1]);
+  }
+  matches = speed.match(/(\d+)\s*(?:<[^>]+>)?AUs/);
+  if(matches){
+    this.Attributes["Aerial Speed"] = Number(matches[1]);
+  }
+}
+INQVehicleImportParser.prototype.parse = function(text){
+  var parser = new INQImportParser(this);
+  parser.getContent(/^\s*type\s*$/i, ["Bio", "Type"]);
+  parser.getContent(/^\s*tactical\s+speed\s*$/i, ["Bio", "Tactical Speed"]);
+  parser.getContent(/^\s*cruising\s+speed\s*$/i, ["Bio", "Cruising Speed"]);
+  parser.getContent(/^\s*size\s*$/i, ["Bio", "Size"]);
+  parser.getContent(/^\s*crew\s*$/i, ["Bio", "Crew"]);
+  parser.getNumber(/^\s*manoeuvrability\s*$/i, ["Attributes", "Manoeuvrability"]);
+  parser.getNumber(/^\s*structural\s+integrity\s*$/i, ["Attributes", "Structural Integrity"]);
+  parser.getContent(/^\s*carry(ing)?\s+capacity\s*$/i, ["Bio", "Carry Capacity"]);
+  parser.getList(/^\s*vehicle\s+traits\s*$/i, ["List", "Vehicle Traits"]);
+  parser.getWeapons(/^\s*weapons\s*$/i, ["List", "Weapons"]);
+  parser.getArmour(/^\s*armour\s*$/i, ["Attributes", {
+    Armour_F: /\s*front\s*/i,
+    Armour_S: /\s*side\s*/i,
+    Armour_R: /\s*rear\s*/i
+  }]);
+  parser.parse(text);
+
+  this.getSpeeds();
 }
 //takes the character object and turns it into the INQCharacter Prototype
 function INQVehicleParser(){
   //the text that will be parsed
   this.Text = "";
+}
 
-  //take apart this.Text to find all of the lists
-  //currently it assumes that weapons will be in the form of a link
-  this.parseLists = function(){
-    //empty the previous lists
-    var Lists = {};
-    //work through the parsed lists
-    _.each(this.Content.Lists, function(list){
-      var name = list.Name;
-      //be sure the list name is recognized and in the standard format
-      if(/weapon/i.test(name)){
-        name = "Weapons";
-      } else if(/trait/i.test(name)){
-        name = "Vehicle Traits";
-      } else {
-        //quit if the name is not approved
-        return false;
-      }
-      //save the name of the list
-      Lists[name] = Lists[name] || [];
-      _.each(list.Content, function(item){
-        //make the assumption that each item is a link (or just a simple phrase)
-        var inqitem = new INQLink(item);
-        //only add the item if it was succesfully parsed
-        if(inqitem.Name && inqitem.Name != ""){
-          Lists[name].push(inqitem);
-        }
+INQVehicleParser.prototype = Object.create(INQVehicle.prototype);
+INQVehicleParser.prototype.constructor = INQVehicleParser;
+//the full parsing of the character
+INQVehicleParser.prototype.parse = function(character, graphic, callback){
+  (function(parser){
+    return new Promise(function(resolve){
+      parser.Content = new INQParser(character, function(){
+        resolve(parser);
       });
     });
-    this.List = Lists;
-  }
-  //saves any notes on the character
-  this.parseLabels = function(){
-    for(var i = 0; i < this.Content.Rules.length; i++){
-      var label = this.Content.Rules[i].Name;
-      var content = this.Content.Rules[i].Content;
-      if(/^\s*type\s*$/i.test(label)){
-        this.parseType(content);
-      } else if(/^\s*tactical\s+speed\s*$/i.test(label)){
-        this.parseTacticalSpeed(content);
-      } else if(/^\s*cruising\s+speed\s*$/i.test(label)){
-        this.parseCruisingSpeed(content);
-      } else if(/^\s*size\s*$/i.test(label)){
-        this.parseSize(content);
-      } else if(/^\s*vehicle\s+traits\s*$/i.test(label)){
-        this.parseVehicleTraits(content);
-      } else if(/^\s*crew\s*$/i.test(label)){
-        this.parseCrew(content);
-      } else if(/^\s*carrying\s+capacity\s*$/i.test(label)){
-        this.parseCarryingCapacity(content);
-      } else if(/^\s*renown\s*$/i.test(label)){
-        this.parseRenown(content);
-      } else {
-        this.SpecialRules.push(this.Content.Rules[i]);
-      }
+  })(this).then(function(parser){
+    parser.Name = character.get("name");
+    parser.ObjID = character.id;
+    parser.ObjType = character.get("_type");
+
+    if(graphic){
+      parser.GraphicID = graphic.id;
     }
-  }
-  //saves every attribute the character has
-  this.parseAttributes = function(graphic){
-    //start with the character sheet attributes
-    var attributes = findObjs({
-      _type: "attribute",
-      characterid: this.ObjID
-    });
-    for(var i = 0; i < attributes.length; i++){
-      this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
+
+    parser.controlledby = character.get("controlledby");
+
+    parser.parseLists();
+    parser.parseLabels();
+    parser.parseAttributes(graphic);
+    if(typeof callback == 'function'){
+      callback(parser);
     }
-    //when working with a generic enemy's current stats, we need to check for temporary values
-    //generic enemies are those who represent a character, yet none of their stats are linked
-    if(graphic != undefined
-    && graphic.get("bar1_link") == ""
-    && graphic.get("bar2_link") == ""
-    && graphic.get("bar3_link") == ""){
-      //roll20 stores token gmnotes in URI component
-      var localAttributes = new LocalAttributes(graphic);
-      for(var k in localAttributes.Attributes){
-        this.Attributes[k] = Number(localAttributes.Attributes[k]);
-      }
+  });
+}
+//saves every attribute the character has
+INQVehicleParser.prototype.parseAttributes = function(graphic){
+  //start with the character sheet attributes
+  var attributes = findObjs({
+    _type: "attribute",
+    characterid: this.ObjID
+  });
+  for(var i = 0; i < attributes.length; i++){
+    this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
+  }
+  //when working with a generic enemy's current stats, we need to check for temporary values
+  //generic enemies are those who represent a character, yet none of their stats are linked
+  if(graphic != undefined
+  && graphic.get("bar1_link") == ""
+  && graphic.get("bar2_link") == ""
+  && graphic.get("bar3_link") == ""){
+    //roll20 stores token gmnotes in URI component
+    var localAttributes = new LocalAttributes(graphic);
+    for(var k in localAttributes.Attributes){
+      this.Attributes[k] = Number(localAttributes.Attributes[k]);
     }
-  }
-
-  this.parseType = function(content){
-    this.Type = new INQLink(content);
-  }
-
-  this.parseTacticalSpeed = function(content){
-    this.Bio.TacticalSpeed = content.trim();
-  }
-
-  this.parseCruisingSpeed = function(content){
-    this.Bio.CruisingSpeed = content.trim();
-  }
-
-  this.parseSize = function(content){
-    this.Bio.Size = content.trim();
-  }
-
-  this.parseCrew = function(content){
-    this.Bio.Crew = content.trim();
-  }
-
-  this.parseCarryingCapacity = function(content){
-    this.Bio.CarryingCapacity = content.trim();
-  }
-
-  this.parseRenown = function(content){
-    this.Bio.Renown = content.trim();
-  }
-
-  //the full parsing of the character
-  this.parse = function(character, graphic, callback){
-    (function(parser){
-      return new Promise(function(resolve){
-        parser.Content = new INQParser(character, function(){
-          resolve(parser);
-        });
-      });
-    })(this).then(function(parser){
-      parser.Name = character.get("name");
-      parser.ObjID = character.id;
-      parser.ObjType = character.get("_type");
-
-      if(graphic){
-        parser.GraphicID = graphic.id;
-      }
-
-      parser.controlledby = character.get("controlledby");
-
-      parser.parseLists();
-      parser.parseLabels();
-      parser.parseAttributes(graphic);
-      if(typeof callback == 'function'){
-        callback(parser);
-      }
-    });
   }
 }
+INQVehicleParser.prototype.parseCarryingCapacity = function(content){
+  this.Bio.CarryingCapacity = content.trim();
+}
+INQVehicleParser.prototype.parseCrew = function(content){
+  this.Bio.Crew = content.trim();
+}
+INQVehicleParser.prototype.parseCruisingSpeed = function(content){
+  this.Bio.CruisingSpeed = content.trim();
+}
+//saves any notes on the character
+INQVehicleParser.prototype.parseLabels = function(){
+  for(var i = 0; i < this.Content.Rules.length; i++){
+    var label = this.Content.Rules[i].Name;
+    var content = this.Content.Rules[i].Content;
+    if(/^\s*type\s*$/i.test(label)){
+      this.parseType(content);
+    } else if(/^\s*tactical\s+speed\s*$/i.test(label)){
+      this.parseTacticalSpeed(content);
+    } else if(/^\s*cruising\s+speed\s*$/i.test(label)){
+      this.parseCruisingSpeed(content);
+    } else if(/^\s*size\s*$/i.test(label)){
+      this.parseSize(content);
+    } else if(/^\s*vehicle\s+traits\s*$/i.test(label)){
+      this.parseVehicleTraits(content);
+    } else if(/^\s*crew\s*$/i.test(label)){
+      this.parseCrew(content);
+    } else if(/^\s*carrying\s+capacity\s*$/i.test(label)){
+      this.parseCarryingCapacity(content);
+    } else if(/^\s*renown\s*$/i.test(label)){
+      this.parseRenown(content);
+    } else {
+      this.SpecialRules.push(this.Content.Rules[i]);
+    }
+  }
+}
+//take apart this.Text to find all of the lists
+//currently it assumes that weapons will be in the form of a link
+INQVehicleParser.prototype.parseLists = function(){
+  //empty the previous lists
+  var Lists = {};
+  //work through the parsed lists
+  _.each(this.Content.Lists, function(list){
+    var name = list.Name;
+    //be sure the list name is recognized and in the standard format
+    if(/weapon/i.test(name)){
+      name = "Weapons";
+    } else if(/trait/i.test(name)){
+      name = "Vehicle Traits";
+    } else {
+      //quit if the name is not approved
+      return false;
+    }
+    //save the name of the list
+    Lists[name] = Lists[name] || [];
+    _.each(list.Content, function(item){
+      //make the assumption that each item is a link (or just a simple phrase)
+      var inqitem = new INQLink(item);
+      //only add the item if it was succesfully parsed
+      if(inqitem.Name && inqitem.Name != ""){
+        Lists[name].push(inqitem);
+      }
+    });
+  });
+  this.List = Lists;
+}
+INQVehicleParser.prototype.parseRenown = function(content){
+  this.Bio.Renown = content.trim();
+}
+INQVehicleParser.prototype.parseSize = function(content){
+  this.Bio.Size = content.trim();
+}
+INQVehicleParser.prototype.parseTacticalSpeed = function(content){
+  this.Bio.TacticalSpeed = content.trim();
+}
+INQVehicleParser.prototype.parseType = function(content){
+  this.Type = new INQLink(content);
+}
 //the prototype for weapons
-function INQWeapon(obj, callback){
-
+function INQWeapon(weapon, callback){
   //default weapon stats
   this.Class          = "Melee";
   this.Range          = 0;
@@ -5796,25 +5712,26 @@ function INQWeapon(obj, callback){
   this.FocusStat      = "Wp";
 
   //allow the user to immediately parse a weapon in the constructor
-  (function(inqweapon){
-    return new Promise(function(resolve){
-      if(obj != undefined){
-        if(typeof obj == "string"){
-          Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
-          inqweapon.parse(obj);
-          resolve(inqweapon);
-        } else {
-          Object.setPrototypeOf(inqweapon, new INQWeaponParser());
-          inqweapon.parse(obj, function(){
-            resolve(inqweapon);
-          });
-        }
-      } else {
+  var inqweapon = this;
+  var myPromise = new Promise(function(resolve){
+    if(weapon != undefined){
+      if(typeof weapon == "string"){
+        Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
+        inqweapon.parse(weapon);
         resolve(inqweapon);
+      } else {
+        Object.setPrototypeOf(inqweapon, new INQWeaponParser());
+        inqweapon.parse(weapon, graphic, function(){
+          resolve(inqweapon);
+        });
       }
-    });
-  })(this).then(function(inqweapon){
-    if(obj != undefined){
+    } else {
+      resolve(inqweapon);
+    }
+  });
+
+  myPromise.then(function(inqweapon){
+    if(typeof weapon != 'undefined'){
       Object.setPrototypeOf(inqweapon, new INQWeapon());
     }
 
@@ -5823,780 +5740,772 @@ function INQWeapon(obj, callback){
     }
   });
 
-  //check if the weapon has an inqlink with the given name
-  //if there are no subgroups for the inqlink, just return {Bonus}
-  //if there are, return the inqlink's subgroups with a bonus for each
-  //if nothing was found, return undefined
-  this.has = function(ability){
-    var info = undefined;
-    _.each(this.Special, function(rule){
-      if(rule.Name == ability){
-        //if we have not found the rule yet
-        if(info == undefined){
-          //does the found skill have subgroups?
-          if(rule.Groups.length > 0){
-            //the inklink has subgroups and each will need their own bonus
-            info = [];
-            _.each(rule.Groups, function(subgroup){
-              info.push({
-                Name:  subgroup,
-                Bonus: rule.Bonus
-              });
-            });
-          } else {
-            //the inqlink does not have subgroups
-            info = {
-              Bonus: rule.Bonus
-            };
-          }
-        //if the rule already has been found
-        //AND the rule has subgroups
-        //AND the previously found rule had subgroups
-        } else if(rule.Groups.length > 0 && info.length > 0){
-          //add the new found subgroups in with their own bonuses
-          _.each(rule.Groups, function(){
+  this.valueOf = this.toNote;
+};
+
+INQWeapon.prototype = new INQObject();
+INQWeapon.prototype.constructor = INQWeapon;
+//check if the weapon has an inqlink with the given name
+//if there are no subgroups for the inqlink, just return {Bonus}
+//if there are, return the inqlink's subgroups with a bonus for each
+//if nothing was found, return undefined
+INQWeapon.prototype.has = function(ability){
+  var info = undefined;
+  _.each(this.Special, function(rule){
+    if(rule.Name == ability){
+      //if we have not found the rule yet
+      if(info == undefined){
+        //does the found skill have subgroups?
+        if(rule.Groups.length > 0){
+          //the inklink has subgroups and each will need their own bonus
+          info = [];
+          _.each(rule.Groups, function(subgroup){
             info.push({
               Name:  subgroup,
               Bonus: rule.Bonus
             });
           });
+        } else {
+          //the inqlink does not have subgroups
+          info = {
+            Bonus: rule.Bonus
+          };
         }
+      //if the rule already has been found
+      //AND the rule has subgroups
+      //AND the previously found rule had subgroups
+      } else if(rule.Groups.length > 0 && info.length > 0){
+        //add the new found subgroups in with their own bonuses
+        _.each(rule.Groups, function(){
+          info.push({
+            Name:  subgroup,
+            Bonus: rule.Bonus
+          });
+        });
       }
-    });
-    return info;
+    }
+  });
+  return info;
+}
+//replace every instance of PR with the effectove psy rating of the character
+INQWeapon.prototype.setPR = function(effectivePR){
+  //start with the basic stats of the weapon
+  var psyStats = ["Range", "DiceMultiplier", "DamageBase", "Penetration", "Semi", "Full"];
+  for(var i = 0; i < psyStats.length; i++){
+    //these should be strings, waiting to be transformed into integers
+    if(typeof this[psyStats[i]] == 'string'){
+      //does this stat rely on Psy Rating?
+      if(/PR/.test(this[psyStats[i]])){
+        //find the Psy Rating coefficient
+        var coefficient = 1;
+        var matches = this[psyStats[i]].match(/\d+/);
+        if(matches){
+          coefficient = Number(matches[0]);
+        }
+        //transform the string formula into an integer
+        this[psyStats[i]] = coefficient * effectivePR
+      }
+    }
   }
-
-  //functions that take input from the character wielding the weapon
-  this.setSB = function(strBonus){
-    //only add the strength bonus to melee weapons
-    if(this.Class == "Melee"){
+  //next check every group value of every special rule
+  this.Special = _.map(this.Special, function(rule){
+    rule.Groups = _.map(rule.Groups, function(group){
+      if(/^\s*\d*\s*PR\s*$/.test(group)){
+        //find the Psy Rating coefficient in this group
+        var coefficient = 1;
+        var matches = group.match(/\d+/);
+        if(matches){
+          coefficient = Number(matches[0]);
+        }
+        //do the multiplication but keep it as a string
+        group = (coefficient * effectivePR).toString();
+      }
+      return group;
+    });
+    return rule;
+  });
+}
+//functions that take input from the character wielding the weapon
+INQWeapon.prototype.setSB = function(strBonus){
+  //only add the strength bonus to melee weapons
+  if(this.Class == "Melee"){
+    this.DamageBase += strBonus;
+    //fist weapons add the SB twice
+    if(this.has("Fist")){
       this.DamageBase += strBonus;
-      //fist weapons add the SB twice
-      if(this.has("Fist")){
-        this.DamageBase += strBonus;
-      }
     }
+  }
 
-    //replace every instance of SB with the strength bonus of the character
-    var strStats = ["Range"];
-    for(var i = 0; i < strStats.length; i++){
-      //these should be strings, waiting to be transformed into integers
-      if(typeof this[strStats[i]] == 'string'){
-        //does this stat rely on the strength bonus?
-        if(/SB/.test(this[strStats[i]])){
-          //find the Strength Bonus coefficient
-          var coefficient = 1;
-          var matches = this[strStats[i]].match(/\d+/);
-          if(matches){
-            coefficient = Number(matches[0]);
-          }
-          //transform the string formula into an integer
-          this[strStats[i]] = coefficient * strBonus;
+  //replace every instance of SB with the strength bonus of the character
+  var strStats = ["Range"];
+  for(var i = 0; i < strStats.length; i++){
+    //these should be strings, waiting to be transformed into integers
+    if(typeof this[strStats[i]] == 'string'){
+      //does this stat rely on the strength bonus?
+      if(/SB/.test(this[strStats[i]])){
+        //find the Strength Bonus coefficient
+        var coefficient = 1;
+        var matches = this[strStats[i]].match(/\d+/);
+        if(matches){
+          coefficient = Number(matches[0]);
         }
-      }
-    }
-  }
-
-  //replace every instance of PR with the effectove psy rating of the character
-  this.setPR = function(effectivePR){
-    //start with the basic stats of the weapon
-    var psyStats = ["Range", "DiceMultiplier", "DamageBase", "Penetration", "Semi", "Full"];
-    for(var i = 0; i < psyStats.length; i++){
-      //these should be strings, waiting to be transformed into integers
-      if(typeof this[psyStats[i]] == 'string'){
-        //does this stat rely on Psy Rating?
-        if(/PR/.test(this[psyStats[i]])){
-          //find the Psy Rating coefficient
-          var coefficient = 1;
-          var matches = this[psyStats[i]].match(/\d+/);
-          if(matches){
-            coefficient = Number(matches[0]);
-          }
-          //transform the string formula into an integer
-          this[psyStats[i]] = coefficient * effectivePR
-        }
-      }
-    }
-    //next check every group value of every special rule
-    this.Special = _.map(this.Special, function(rule){
-      rule.Groups = _.map(rule.Groups, function(group){
-        if(/^\s*\d*\s*PR\s*$/.test(group)){
-          //find the Psy Rating coefficient in this group
-          var coefficient = 1;
-          var matches = group.match(/\d+/);
-          if(matches){
-            coefficient = Number(matches[0]);
-          }
-          //do the multiplication but keep it as a string
-          group = (coefficient * effectivePR).toString();
-        }
-        return group;
-      });
-      return rule;
-    });
-  }
-
-  //prototype -> text functions
-
-  //turns the weapon prototype into text for use within a character's macros
-  this.toAbility = function(inqcharacter, ammo, options){
-    var output = "!useWeapon ";
-    //start with the weapon's exact name
-    output += this.Name;
-    //create the options hash
-    var options = options || {};
-    //include a toHit modifier unless the weapon auto hits
-    //include RoF options unless it auto hits
-    if(!this.has("Spray") || this.Class == "Psychic"){
-      options.Modifier = "?{Modifier|0}";
-
-      var rates = [];
-      //if single, add Called Shot as well
-      if(this.Single || !(this.Semi || this.Full) ){
-        rates.push("Single");
-        //psychic attacks cannot make called shots
-        if(this.Class != "Psychic"){
-          rates.push("Called Shot");
-          if(this.Class == "Melee"){
-            rates.push("All Out Attack");
-          }
-        }
-      }
-      if(this.Semi){
-        rates.push("Semi Auto(" + this.Semi.toString() + ")");
-      }
-      if(this.Full){
-        rates.push("Full Auto(" + this.Full.toString() + ")");
-      }
-      if(inqcharacter && this.Class == "Melee"){
-        if(inqcharacter.has("Swift Attack", "Talents")){
-          rates.push("Swift Attack");
-        }
-        if(inqcharacter.has("Lightning Attack", "Talents")){
-          rates.push("Lightning Attack");
-        }
-      }
-      //if only one option, don't give the user a choice
-      if(rates.length > 1){
-        options.RoF = "?{Rate of Fire|";
-        _.each(rates, function(rate){
-          options.RoF += rate + "|";
-        });
-        options.RoF = options.RoF.replace(/\|$/,"");
-        options.RoF += "}";
-      } else if(rates.length == 1){
-        options.RoF = rates[0];
-      }
-    }
-    //allow the player to specify their effective psy rating
-    //but only for psychic powers
-    if(inqcharacter && this.Class == "Psychic"){
-      //by default offer their base PsyRating
-      options.EffectivePR = "?{Effective PsyRating|@{" + inqcharacter.Name + "|PR}}";
-    }
-    //allow the player to specify the ammo they are using
-    if(ammo){
-      if(ammo.length == 1){
-        options.Ammo = ammo[0];
-      } else if (ammo.length > 1){
-        options.Ammo = "?{Special Ammunition|"
-        _.each(ammo, function(choice){
-          options.Ammo += choice + "|"
-        });
-        options.Ammo = options.Ammo.replace(/\|$/,"");
-        options.Ammo += "}";
-      }
-    }
-
-    //custom weapons need all of their unique details stored in the ability
-    if(options.custom){
-      for(var k in this){
-        if(typeof this[k] != 'function'){
-          if(this[k] == this.__proto__[k]){continue;}
-          if(typeof this[k] == 'object'){
-            if(Array.isArray(this[k])){
-              var specialRules = "";
-              _.each(this[k], function(rule){
-                specialRules += rule.toNote(true) + ", ";
-              });
-              specialRules = specialRules.replace(/, $/,"");
-              options[k] = specialRules;
-            } else {
-              options[k] = this[k].toNote(true);
-            }
-          } else {
-            options[k] = this[k].toString();
-          }
-        }
-      }
-    }
-    //allow the player to specify if they are firing on Maximal
-    if(this.has("Maximal")){
-      if(!options.Special){
-        options.Special = "?{Fire on Maximal?|Use Maximal|}";
-      } else {
-        options.Special += ", ?{Fire on Maximal?|Use Maximal|}";
-      }
-    }
-    output += JSON.stringify(options);
-    return output;
-  }
-
-  //turns the weapon prototype into text for an NPC's notes
-  this.toNote = function(){
-    var output = "";
-    //The output will aim for the following format (ignorning fields that are irrelevant)
-    //Name (Class; Range; RoF; Damage Damage Type; Pen; Clip; Reload; Special Rules)
-    //begin with the name
-    output += this.Name;
-    //detail the weapon
-    output += " (";
-    //weapon class
-    output += this.Class + "; ";
-    //is this a ranged weapon?
-    if(this.Range > 0){
-      //what units are we using?
-      if(this.Range < 1000){
-        output += this.Range.toString() + "m; ";
-      } else {
-        output += Math.round(this.Range/1000).toString() + "km; ";
-      }
-    //is this a thrown weapon?
-    } else if(this.Range < 0){
-      output += "SB x " + (this.Range*-1).toString() + "; ";
-    }
-    //does this weapon have a Rate of Fire?
-    if(this.Class != "Melee" && (this.Single > 0 || this.Semi > 0 || this.Full > 0)){
-      if(this.Single){
-        output += "S";
-      } else {
-        output += "-";
-      }
-      output += "/";
-      if(this.Semi > 0){
-        output += this.Semi.toString();
-      } else {
-        output += "-";
-      }
-      output += "/";
-      if(this.Full > 0){
-        output += this.Full.toString();
-      } else {
-        output += "-";
-      }
-      output += "; ";
-    }
-    //damage section
-    //damage multiplier
-    if(this.DiceMultiplier == "PR" || this.DiceMultiplier > 1){
-      output += this.DiceMultiplier + " x ";
-    }
-    //damage roll
-    if(this.DiceNumber > 0){
-      if(this.DiceNumber != 1){
-        output += this.DiceNumber.toString();
-      }
-      output += "D" + this.DiceType.toString();
-    }
-    //damage base
-    if(this.DamageBase > 0){
-      output += "+" + this.DamageBase.toString();
-    } else if(this.DamageBase < 0){
-      output += this.DamageBase.toString();
-    }
-    //damage type
-    output += " " + this.DamageType + "; ";
-    //Penetration
-    output += "Pen " + this.Penetration.toString() + "; ";
-    //Clip
-    if(this.Clip > 0){
-      output += "Clip " + this.Clip.toString() + "; ";
-    }
-    //Reload
-    if(this.Reload == 0){
-      output += "Reload Free; ";
-    } else if(this.Reload == 0.5){
-      output += "Reload Half; ";
-    } else if(this.Reload == 1){
-      output += "Reload Full; ";
-    } else if(this.Reload > 1) {
-      output += "Reload " + Math.floor(this.Reload).toString() + " Full; ";
-    }
-    //Special Rules
-    _.each(this.Special, function(rule){
-      output += rule + ", ";
-    });
-    //get rid of the last separator
-    output = output.replace(/(;|,)\s*$/, "");
-    //close up the notes
-    output += ")";
-    //return the note in text form
-    return output;
-  }
-
-  this.valueOf = this.toNote;
-};
-//takes the a weapon note from a character sheet and turns it into the INQWeapon Prototype
-function INQWeaponNoteParser(){
-  this.parse = function(text){
-    var inqlink = new INQLink(text);
-    this.Name = inqlink.Name.trim();
-    var details = [];
-    _.each(inqlink.Groups, function(group){
-      _.each(group.split(/\s*(?:;|,)\s*/), function(detail){
-        details.push(detail);
-      });
-    });
-    this.parseDetails(details);
-    log(this)
-  }
-
-  this.parseClass = function(detail){
-    this.Class = detail.toTitleCase();
-  }
-
-  this.parseRange = function(detail){
-    this.Range = Number(detail.match(/^(\d+)\s*k?m$/)[1]);
-  }
-
-  this.parseRoF = function(detail){
-    var RoFmatches = detail.match(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/);
-    this.Single = RoFmatches[1] == "S";
-    if(Number(RoFmatches[2])){
-      this.Semi = Number(RoFmatches[2]);
-    }
-    if(Number(RoFmatches[3])){
-      this.Full = Number(RoFmatches[3]);
-    }
-    //RoF means not a Melee weapon
-    if(this.Class == "Melee"){
-      this.Class = "Basic";
-    }
-  }
-
-  this.parseDamage = function(detail){
-    var DamageMatches = detail.match(/^(\d*)\s*(?:d|D)\s*(\d+)\s*\+?\s*(\d*)/);
-    if(DamageMatches[1] != ""){
-      this.DiceNumber = Number(DamageMatches[1]);
-    } else {
-      this.DiceNumber = 1;
-    }
-    this.DiceType = Number(DamageMatches[2]);
-    if(DamageMatches[3] != ""){
-      this.DamageBase = Number(DamageMatches[3]);
-    }
-    var damType = detail.replace(DamageMatches[0], "");
-    if(damType != ""){
-      this.DamageType = new INQLink(damType.trim());
-    }
-  }
-
-  this.parsePenetration = function(detail){
-     var PenMatches = detail.match(/^Pen(?:etration)?:?\s*(?:(\d*)\s*(?:d|D)\s*(\d+)\s*\+?)?\s*(\d*)$/);
-
-     if(PenMatches[1] && Number(PenMatches[1])){
-       this.PenDiceNumber = Number(PenMatches[1]);
-     }
-     if(PenMatches[2] && Number(PenMatches[2])){
-       this.PenDiceType = Number(PenMatches[2]);
-     }
-     if(PenMatches[3] && Number(PenMatches[3])){
-       this.Penetration = Number(PenMatches[3]);
-     }
-  }
-
-  this.parseClip = function(detail){
-    this.Clip = Number(detail.match(/^Clip\s*(\d+)$/)[1]);
-  }
-
-  this.parseReload = function(detail){
-    var ReloadMatches = detail.match(/^(?:Reload|Rld):?\s*(\d*)\s*(Free|Half|Full)$/i);
-    switch(ReloadMatches[2].toTitleCase()){
-      case 'Free':
-        this.Reload = 0;
-      break;
-      case 'Half':
-        this.Reload = 0.5;
-      break;
-      case 'Full':
-        this.Reload = 1;
-      break;
-    }
-    if(ReloadMatches[1] != ""){
-      this.Reload *= Number(ReloadMatches[1]);
-    }
-  }
-
-  this.parseDetails = function(details){
-    //parse each detail of the weapon
-    for(var i = 0; i < details.length; i++){
-      var detail = details[i].trim();
-      //class
-      if(/^(melee|pistol|basic|heavy)$/i.test(detail)){
-        this.parseClass(detail);
-      //Range
-      } else if(/^\d+\s*k?m$/i.test(detail)){
-        this.parseRange(detail);
-      //Rate of Fire
-      } else if(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/.test(detail)){
-        this.parseRoF(detail);
-      //Damage
-      } else if(/^\d*\s*(d|D)\s*\d+\s*\+?\s*\d*/.test(detail)) {
-        this.parseDamage(detail);
-      //Penetration
-      } else if(/^Pen(etration)?:?\s*(?:\d*\s*(?:d|D)\s*\d+\s*\+?)?\s*\d*$/.test(detail)){
-        this.parsePenetration(detail);
-      //Clip
-      } else if(/^Clip\s*\d+$/i.test(detail)) {
-        this.parseClip(detail);
-      //Reload
-      } else if(/^(?:Reload|Rld):?\s*(\d*)\s*(Free|Half|Full)$/i.test(detail)) {
-        this.parseReload(detail);
-      //Special Rules
-      } else {
-        this.Special.push(new INQLink(detail.trim().replace("[","(").replace("]",")")));
+        //transform the string formula into an integer
+        this[strStats[i]] = coefficient * strBonus;
       }
     }
   }
 }
-//takes the handout object of a weapon and turns it into the INQWeapon Prototype
-function INQWeaponParser(){
-  //the individual rule parsing functions
-  this.parseClass = function(content){
-    var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic)\s*$/i);
-    if(matches){
-      this.Class = matches[1].toTitleCase();
-    } else {
-      whisper("Invalid Class");
-    }
-  }
-  this.parseRange = function(content){
-    var regex = "^\\s*(?:"
-    regex += "(\\d+)\\s*k?(?:|m|metres|meters)";
-    regex += "|";
-    regex += "(?:SB|Strength\\s*Bonus)\\s*x?\\s*(\\d*)\s*k?(?:|m|metres|meters)";
-    regex += "|";
-    regex += "(\\d*)\\s*k?(?:|m|metres|meters)\\s*x?\\s*(?:PR|Psy\\s*Rating)\\s*x?\\s*(\\d*)";
-    regex += "|"
-    regex += "Self"
-    regex += ")\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      if(matches[1] != null){
-        this.Range = Number(matches[1]);
-      }
-      if(matches[2] != null){
-        this.Range = matches[2] + "SB";
-      }
-      if(matches[3] != null){
-        this.Range = matches[3] + "PR";
-      }
-      if(matches[4] != null){
-        this.Range = 0;
-      }
-    } else {
-      whisper("Invalid Range");
-    }
-  }
-  this.parseRoF = function(content){
-    var regex = "^\\s*";
-    regex += "(S|-)";
-    regex += "\\s*\\/\\s*";
-    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
-    regex += "\\s*\\/\\s*";
-    regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
-    regex += "\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      this.Single = matches[1].toUpperCase() == "S";
-      if(matches[2] == "-"){
-        this.Semi = 0;
-      } else if(Number(matches[2])){
-        this.Semi = Number(matches[2]);
-      } else {
-        this.Semi = matches[2].replace(/[ x]/gi,"");
-      }
-      if(matches[3] == "-"){
-        this.Full = 0;
-      } else if(Number(matches[3])){
-        this.Full = Number(matches[3]);
-      } else {
-        this.Full = matches[3].replace(/[ x]/gi,"");
-      }
-    } else {
-      whisper("Invalid RoF");
-    }
-  }
-  this.parseDamage = function(content){
-    var link = new INQLinkParser();
-    var regex = "^\\s*";
-    regex += "(?:(\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?";
-    regex += "(\\d*)\\s*D\\s*(\\d+)";
-    regex += "(?:\\s*(\\+|-)\\s*(\\d+|\\d*\\s*x?\\s*PR))?";
-    regex += "(" + link.regex() + ")";
-    regex += "\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      if(matches[1]){
-        if(Number(matches[1])){
-          this.DiceMultiplier = Number(matches[1]);
-        } else {
-          this.DiceMultiplier = matches[1].replace(/[ x]/gi,"");
-        }
-      }
-      if(matches[2] == ""){
-        this.DiceNumber = 1;
-      } else {
-        this.DiceNumber = Number(matches[2]);
-      }
-      this.DiceType = Number(matches[3]);
-      if(matches[4] && matches[5]){
-        if(Number(matches[5])){
-          this.DamageBase = Number(matches[4] + matches[5]);
-        } else {
-          this.DamageBase = matches[5].replace(/[ x]/gi,"");
-        }
-      }
-      if(matches[6]){
-        this.DamageType = new INQLink(matches[6]);
-      }
-    } else {
-      whisper("Invalid Damage");
-    }
-  }
-  this.parsePenetration = function(content){
-    var regex = "^\\s*";
-    regex += "(\\d*\\s*x?\\s*PR|\\d+)";
-    regex += "\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      if(Number(matches[1])){
-        this.Penetration = Number(matches[1]);
-      } else {
-        this.Penetration = matches[1].replace(/[ x]/gi,"");
-      }
-    } else {
-      whisper("Invalid Penetration");
-    }
-  }
-  this.parseClip = function(content){
-    var matches = content.match(/^\s*(\d+)\s*$/);
-    if(matches){
-      this.Clip = Number(matches[1]);
-    } else {
-      whisper("Invalid Clip")
-    }
-  }
-  this.parseReload = function(content){
-    var matches = content.match(/^\s*(Free|Half|Full|\d+\s+Full)\s*$/i);
-    if(matches){
-      if(matches[1].toLowerCase() == "free"){
-        this.Reload = 0;
-      } else if(matches[1].toLowerCase() == "half"){
-        this.Reload = 0.5;
-      } else if(matches[1].toLowerCase() == "full"){
-        this.Reload = 1;
-      } else {
-        matches = matches[1].match(/\d+/i);
-        this.Reload = Number(matches[0]);
-      }
-    } else {
-      whisper("Invalid Reload");
-    }
-  }
-  this.parseSpecialRules = function(content){
-    var link = new INQLinkParser();
-    var regex = "^\\s*(?:-|((?:" + link.regex() + ",)*" + link.regex()  + "))$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      if(matches[1]){
-        this.Special = _.map(matches[1].split(","), function(rule){
-          return new INQLink(rule);
-        });
-      }
-    } else {
-      whisper("Invalid Special Rules")
-    }
-  }
-  this.parseWeight = function(content){
-    var matches = content.match(/^\s*(\d+)(?:\.(\d+))?\s*(?:kg)?s?\s*$/i);
-    if(matches){
-      this.Weight = Number(matches[1]);
-      if(matches[2]){
-        var fraction = Number(matches[2]);
-        while(fraction > 1){
-          fraction /= 10;
-        }
-        this.Weight += fraction;
-      }
-    } else {
-      whisper("Invalid Weight")
-    }
-  }
-  this.parseRequisition = function(content){
-    var matches = content.match(/^\s*(\d+)\s*$/);
-    if(matches){
-      this.Requisition = Number(matches[1]);
-    } else {
-      whisper("Invalid Requisition")
-    }
-  }
-  this.parseRenown = function(content){
-    var regex = "^\\s*";
-    regex += "(-|Initiate|Respected|Distinguished|Famed|Hero)";
-    regex += "\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      if(matches[1] == "-"){
-        this.Renown = "Initiate";
-      } else {
-        this.Renown = matches[1].toTitleCase();
-      }
-    } else {
-      whisper("Invalid Renown")
-    }
-  }
-  this.parseAvailability = function(content){
-    var regex = "^\\s*";
-    regex += "(Ubiquitous|Abundant|Plentiful|Common|Average|Scarce|Rare|Very\s*Rare|Extremely\s*Rare|Near\s*Unique|Unique)";
-    regex += "\\s*$";
-    var re = new RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      this.Availability = matches[1].toTitleCase();
-    } else {
-      whisper("Invalid Availability")
-    }
-  }
-  this.parseFocusPower = function(content){
-    var regex = "^\\s*"
-    regex += "(Opposed)?\\s*"
-    regex += "\\w+\\s*"
-    regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
+//turns the weapon prototype into text for use within a character's macros
+INQWeapon.prototype.toAbility = function(inqcharacter, ammo, options){
+  var output = "!useWeapon ";
+  //start with the weapon's exact name
+  output += this.Name;
+  //create the options hash
+  var options = options || {};
+  //include a toHit modifier unless the weapon auto hits
+  //include RoF options unless it auto hits
+  if(!this.has("Spray") || this.Class == "Psychic"){
+    options.Modifier = "?{Modifier|0}";
 
-    regex += "("
-    regex += "Weapon\\s+Skill|";
-    regex += "Ballistic\\s+Skill|";
-    regex += "Strength|";
-    regex += "Toughness|";
-    regex += "Agility|";
-    regex += "Intelligence|";
-    regex += "Perception|";
-    regex += "Willpower|";
-    regex += "Fellowship|";
-    regex += "Corruption|";
-    regex += "Psyniscience";
-    regex += ")"
-
-    regex += "\\s*Test\\s*$"
-    var re = RegExp(regex, "i");
-    var matches = content.match(re);
-    if(matches){
-      this.Class = "Psychic";
-      if(matches[1]){
-        this.Opposed = true;
+    var rates = [];
+    //if single, add Called Shot as well
+    if(this.Single || !(this.Semi || this.Full) ){
+      rates.push("Single");
+      //psychic attacks cannot make called shots
+      if(this.Class != "Psychic"){
+        rates.push("Called Shot");
+        if(this.Class == "Melee"){
+          rates.push("All Out Attack");
+        }
       }
-      this.FocusModifier = Number(matches[2].replace("–","-") + matches[3]);
-      if(/Weapon\s+Skill/i.test(matches[4])){
-        this.FocusStat = "WS";
-      } else if(/Ballistic\s+Skill/i.test(matches[4])){
-        this.FocusStat = "BS";
-      } else if(/Strength/i.test(matches[4])){
-        this.FocusStat = "S";
-      } else if(/Toughness/i.test(matches[4])){
-        this.FocusStat = "T";
-      } else if(/Agility/i.test(matches[4])){
-        this.FocusStat = "Ag";
-      } else if(/Intelligence/i.test(matches[4])){
-        this.FocusStat = "It";
-      } else if(/Perception/i.test(matches[4])){
-        this.FocusStat = "Per";
-      } else if(/Willpower/i.test(matches[4])){
-        this.FocusStat = "Wp";
-      } else if(/Fellowship/i.test(matches[4])){
-        this.FocusStat = "Fe";
-      } else if(/Corruption/i.test(matches[4])){
-        this.FocusStat = "Corruption";
-      } else if(/Psyniscience/i.test(matches[4])){
-        this.FocusStat  = "Per";
-        this.FocusSkill = "Psyniscience";
+    }
+    if(this.Semi){
+      rates.push("Semi Auto(" + this.Semi.toString() + ")");
+    }
+    if(this.Full){
+      rates.push("Full Auto(" + this.Full.toString() + ")");
+    }
+    if(inqcharacter && this.Class == "Melee"){
+      if(inqcharacter.has("Swift Attack", "Talents")){
+        rates.push("Swift Attack");
       }
-    } else {
-      whisper("Invalid Focus Power")
+      if(inqcharacter.has("Lightning Attack", "Talents")){
+        rates.push("Lightning Attack");
+      }
     }
-  }
-  this.parseOpposed = function(content){
-    var matches = content.match(/^\s*(Yes|No)\s*$/i);
-    if(matches){
-      this.Opposed = matches[1].toLowerCase() == "yes";
-      this.Class = "Psychic";
-    } else {
-      whisper("Invalid Opposed")
-    }
-  }
-  //use all of the above parsing functions to transform text into the INQWeapon prototype
-  this.parse = function(obj, callback){
-    (function(parser){
-      return new Promise(function(resolve){
-        parser.Content = new INQParser(obj, function(){
-          resolve(parser);
-        });
+    //if only one option, don't give the user a choice
+    if(rates.length > 1){
+      options.RoF = "?{Rate of Fire|";
+      _.each(rates, function(rate){
+        options.RoF += rate + "|";
       });
-    })(this).then(function(parser){
-      //save the non-text details of the handout
-      parser.Name = obj.get("name");
-      parser.ObjID = obj.id;
-      parser.ObjType = obj.get("_type");
+      options.RoF = options.RoF.replace(/\|$/,"");
+      options.RoF += "}";
+    } else if(rates.length == 1){
+      options.RoF = rates[0];
+    }
+  }
+  //allow the player to specify their effective psy rating
+  //but only for psychic powers
+  if(inqcharacter && this.Class == "Psychic"){
+    //by default offer their base PsyRating
+    options.EffectivePR = "?{Effective PsyRating|@{" + inqcharacter.Name + "|PR}}";
+  }
+  //allow the player to specify the ammo they are using
+  if(ammo){
+    if(ammo.length == 1){
+      options.Ammo = ammo[0];
+    } else if (ammo.length > 1){
+      options.Ammo = "?{Special Ammunition|"
+      _.each(ammo, function(choice){
+        options.Ammo += choice + "|"
+      });
+      options.Ammo = options.Ammo.replace(/\|$/,"");
+      options.Ammo += "}";
+    }
+  }
 
-      //parse all the rules of the weapon based on the rule name
-      for(var i = 0; i < parser.Content.Rules.length; i++){
-        var name = parser.Content.Rules[i].Name;
-        var content = parser.Content.Rules[i].Content;
-        if(/class/i.test(name)){
-          parser.parseClass(content);
-        } else if(/^\s*range\s*$/i.test(name)){
-          parser.parseRange(content);
-        } else if(/^\s*(rof|rate\s+of\s+fire)\s*$/i.test(name)){
-          parser.parseRoF(content);
-        } else if(/^\s*dam(age)?\s*$/i.test(name)){
-          parser.parseDamage(content);
-        } else if(/^\s*pen(etration)?\s*$/i.test(name)){
-          parser.parsePenetration(content);
-        } else if(/^\s*clip\s*$/i.test(name)){
-          parser.parseClip(content);
-        } else if(/^\s*reload\s*$/i.test(name)){
-          parser.parseReload(content);
-        } else if(/^\s*special\s*(rules)?\s*$/i.test(name)){
-          parser.parseSpecialRules(content);
-        } else if(/^\s*weight\s*$/i.test(name)){
-          parser.parseWeight(content);
-        } else if(/^\s*req(uisition)?\s*$/i.test(name)){
-          parser.parseRequisition(content);
-        } else if(/^\s*renown/i.test(name)){
-          parser.parseRenown(content);
-        } else if(/^\s*availability/i.test(name)){
-          parser.parseAvailability(content);
-        } else if(/^\s*focus\s*power\s*$/i.test(name)){
-          parser.parseFocusPower(content);
-        } else if(/^\s*Opposed\s*$/i.test(name)){
-          parser.parseOpposed(content);
+  //custom weapons need all of their unique details stored in the ability
+  if(options.custom){
+    for(var k in this){
+      if(typeof this[k] != 'function'){
+        if(this[k] == this.__proto__[k]){continue;}
+        if(typeof this[k] == 'object'){
+          if(Array.isArray(this[k])){
+            var specialRules = "";
+            _.each(this[k], function(rule){
+              specialRules += rule.toNote(true) + ", ";
+            });
+            specialRules = specialRules.replace(/, $/,"");
+            options[k] = specialRules;
+          } else {
+            options[k] = this[k].toNote(true);
+          }
+        } else {
+          options[k] = this[k].toString();
         }
       }
-      //if the weapon still has no damage and it isn't a psychic power, it is gear
-      if(parser.DamageBase == 0 && parser.DiceNumber == 0 && parser.Class != "Psychic"){
-        parser.Class = "Gear";
-      }
-      delete parser.Content;
-      if(typeof callback == 'function'){
-        callback(parser);
-      }
+    }
+  }
+  //allow the player to specify if they are firing on Maximal
+  if(this.has("Maximal")){
+    if(!options.Special){
+      options.Special = "?{Fire on Maximal?|Use Maximal|}";
+    } else {
+      options.Special += ", ?{Fire on Maximal?|Use Maximal|}";
+    }
+  }
+  output += JSON.stringify(options);
+  return output;
+}
+//turns the weapon prototype into text for an NPC's notes
+INQWeapon.prototype.toNote = function(){
+  var output = "";
+  //The output will aim for the following format (ignorning fields that are irrelevant)
+  //Name (Class; Range; RoF; Damage Damage Type; Pen; Clip; Reload; Special Rules)
+  //begin with the name
+  output += this.Name;
+  //detail the weapon
+  output += " (";
+  //weapon class
+  output += this.Class + "; ";
+  //is this a ranged weapon?
+  if(this.Range > 0){
+    //what units are we using?
+    if(this.Range < 1000){
+      output += this.Range.toString() + "m; ";
+    } else {
+      output += Math.round(this.Range/1000).toString() + "km; ";
+    }
+  //is this a thrown weapon?
+  } else if(this.Range < 0){
+    output += "SB x " + (this.Range*-1).toString() + "; ";
+  }
+  //does this weapon have a Rate of Fire?
+  if(this.Class != "Melee" && (this.Single > 0 || this.Semi > 0 || this.Full > 0)){
+    if(this.Single){
+      output += "S";
+    } else {
+      output += "-";
+    }
+    output += "/";
+    if(this.Semi > 0){
+      output += this.Semi.toString();
+    } else {
+      output += "-";
+    }
+    output += "/";
+    if(this.Full > 0){
+      output += this.Full.toString();
+    } else {
+      output += "-";
+    }
+    output += "; ";
+  }
+  //damage section
+  //damage multiplier
+  if(this.DiceMultiplier == "PR" || this.DiceMultiplier > 1){
+    output += this.DiceMultiplier + " x ";
+  }
+  //damage roll
+  if(this.DiceNumber > 0){
+    if(this.DiceNumber != 1){
+      output += this.DiceNumber.toString();
+    }
+    output += "D" + this.DiceType.toString();
+  }
+  //damage base
+  if(this.DamageBase > 0){
+    output += "+" + this.DamageBase.toString();
+  } else if(this.DamageBase < 0){
+    output += this.DamageBase.toString();
+  }
+  //damage type
+  output += " " + this.DamageType + "; ";
+  //Penetration
+  output += "Pen " + this.Penetration.toString() + "; ";
+  //Clip
+  if(this.Clip > 0){
+    output += "Clip " + this.Clip.toString() + "; ";
+  }
+  //Reload
+  if(this.Reload == 0){
+    output += "Reload Free; ";
+  } else if(this.Reload == 0.5){
+    output += "Reload Half; ";
+  } else if(this.Reload == 1){
+    output += "Reload Full; ";
+  } else if(this.Reload > 1) {
+    output += "Reload " + Math.floor(this.Reload).toString() + " Full; ";
+  }
+  //Special Rules
+  _.each(this.Special, function(rule){
+    output += rule + ", ";
+  });
+  //get rid of the last separator
+  output = output.replace(/(;|,)\s*$/, "");
+  //close up the notes
+  output += ")";
+  //return the note in text form
+  return output;
+}
+//takes the a weapon note from a character sheet and turns it into the INQWeapon Prototype
+function INQWeaponNoteParser(){}
+
+INQWeaponNoteParser.prototype = Object.create(INQWeapon.prototype);
+INQWeaponNoteParser.prototype.constructor = INQWeaponNoteParser;
+INQWeaponNoteParser.prototype.parse = function(text){
+  var inqlink = new INQLink(text);
+  this.Name = inqlink.Name.trim();
+  var details = [];
+  _.each(inqlink.Groups, function(group){
+    _.each(group.split(/\s*(?:;|,)\s*/), function(detail){
+      details.push(detail);
     });
+  });
+  this.parseDetails(details);
+  log(this)
+}
+INQWeaponNoteParser.prototype.parseClass = function(detail){
+  this.Class = detail.toTitleCase();
+}
+INQWeaponNoteParser.prototype.parseClip = function(detail){
+  this.Clip = Number(detail.match(/^Clip\s*(\d+)$/)[1]);
+}
+INQWeaponNoteParser.prototype.parseDamage = function(detail){
+  var DamageMatches = detail.match(/^(\d*)\s*(?:d|D)\s*(\d+)\s*\+?\s*(\d*)/);
+  if(DamageMatches[1] != ""){
+    this.DiceNumber = Number(DamageMatches[1]);
+  } else {
+    this.DiceNumber = 1;
+  }
+  this.DiceType = Number(DamageMatches[2]);
+  if(DamageMatches[3] != ""){
+    this.DamageBase = Number(DamageMatches[3]);
+  }
+  var damType = detail.replace(DamageMatches[0], "");
+  if(damType != ""){
+    this.DamageType = new INQLink(damType.trim());
+  }
+}
+INQWeaponNoteParser.prototype.parseDetails = function(details){
+  //parse each detail of the weapon
+  for(var i = 0; i < details.length; i++){
+    var detail = details[i].trim();
+    //class
+    if(/^(melee|pistol|basic|heavy)$/i.test(detail)){
+      this.parseClass(detail);
+    //Range
+    } else if(/^\d+\s*k?m$/i.test(detail)){
+      this.parseRange(detail);
+    //Rate of Fire
+    } else if(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/.test(detail)){
+      this.parseRoF(detail);
+    //Damage
+    } else if(/^\d*\s*(d|D)\s*\d+\s*\+?\s*\d*/.test(detail)) {
+      this.parseDamage(detail);
+    //Penetration
+    } else if(/^Pen(etration)?:?\s*(?:\d*\s*(?:d|D)\s*\d+\s*\+?)?\s*\d*$/.test(detail)){
+      this.parsePenetration(detail);
+    //Clip
+    } else if(/^Clip\s*\d+$/i.test(detail)) {
+      this.parseClip(detail);
+    //Reload
+    } else if(/^(?:Reload|Rld):?\s*(\d*)\s*(Free|Half|Full)$/i.test(detail)) {
+      this.parseReload(detail);
+    //Special Rules
+    } else {
+      this.Special.push(new INQLink(detail.trim().replace("[","(").replace("]",")")));
+    }
+  }
+}
+INQWeaponNoteParser.prototype.parsePenetration = function(detail){
+   var PenMatches = detail.match(/^Pen(?:etration)?:?\s*(?:(\d*)\s*(?:d|D)\s*(\d+)\s*\+?)?\s*(\d*)$/);
+
+   if(PenMatches[1] && Number(PenMatches[1])){
+     this.PenDiceNumber = Number(PenMatches[1]);
+   }
+   if(PenMatches[2] && Number(PenMatches[2])){
+     this.PenDiceType = Number(PenMatches[2]);
+   }
+   if(PenMatches[3] && Number(PenMatches[3])){
+     this.Penetration = Number(PenMatches[3]);
+   }
+}
+INQWeaponNoteParser.prototype.parseRange = function(detail){
+  this.Range = Number(detail.match(/^(\d+)\s*k?m$/)[1]);
+}
+INQWeaponNoteParser.prototype.parseReload = function(detail){
+  var ReloadMatches = detail.match(/^(?:Reload|Rld):?\s*(\d*)\s*(Free|Half|Full)$/i);
+  switch(ReloadMatches[2].toTitleCase()){
+    case 'Free':
+      this.Reload = 0;
+    break;
+    case 'Half':
+      this.Reload = 0.5;
+    break;
+    case 'Full':
+      this.Reload = 1;
+    break;
+  }
+  if(ReloadMatches[1] != ""){
+    this.Reload *= Number(ReloadMatches[1]);
+  }
+}
+INQWeaponNoteParser.prototype.parseRoF = function(detail){
+  var RoFmatches = detail.match(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/);
+  this.Single = RoFmatches[1] == "S";
+  if(Number(RoFmatches[2])){
+    this.Semi = Number(RoFmatches[2]);
+  }
+  if(Number(RoFmatches[3])){
+    this.Full = Number(RoFmatches[3]);
+  }
+  //RoF means not a Melee weapon
+  if(this.Class == "Melee"){
+    this.Class = "Basic";
+  }
+}
+//takes the handout object of a weapon and turns it into the INQWeapon Prototype
+function INQWeaponParser(){}
+
+INQWeaponParser.prototype = Object.create(INQWeapon.prototype);
+INQWeaponParser.prototype.constructor = INQWeaponParser;
+//use all of the above parsing functions to transform text into the INQWeapon prototype
+INQWeaponParser.prototype.parse = function(obj, callback){
+  var parser = this;
+  var myPromise = new Promise(function(resolve){
+    parser.Content = new INQParser(obj, function(){
+      resolve(parser);
+    });
+  });
+
+  myPromise.then(function(inqweapon){
+    //save the non-text details of the handout
+    parser.Name = obj.get("name");
+    parser.ObjID = obj.id;
+    parser.ObjType = obj.get("_type");
+
+    //parse all the rules of the weapon based on the rule name
+    for(var i = 0; i < parser.Content.Rules.length; i++){
+      var name = parser.Content.Rules[i].Name;
+      var content = parser.Content.Rules[i].Content;
+      if(/class/i.test(name)){
+        parser.parseClass(content);
+      } else if(/^\s*range\s*$/i.test(name)){
+        parser.parseRange(content);
+      } else if(/^\s*(rof|rate\s+of\s+fire)\s*$/i.test(name)){
+        parser.parseRoF(content);
+      } else if(/^\s*dam(age)?\s*$/i.test(name)){
+        parser.parseDamage(content);
+      } else if(/^\s*pen(etration)?\s*$/i.test(name)){
+        parser.parsePenetration(content);
+      } else if(/^\s*clip\s*$/i.test(name)){
+        parser.parseClip(content);
+      } else if(/^\s*reload\s*$/i.test(name)){
+        parser.parseReload(content);
+      } else if(/^\s*special\s*(rules)?\s*$/i.test(name)){
+        parser.parseSpecialRules(content);
+      } else if(/^\s*weight\s*$/i.test(name)){
+        parser.parseWeight(content);
+      } else if(/^\s*req(uisition)?\s*$/i.test(name)){
+        parser.parseRequisition(content);
+      } else if(/^\s*renown/i.test(name)){
+        parser.parseRenown(content);
+      } else if(/^\s*availability/i.test(name)){
+        parser.parseAvailability(content);
+      } else if(/^\s*focus\s*power\s*$/i.test(name)){
+        parser.parseFocusPower(content);
+      } else if(/^\s*Opposed\s*$/i.test(name)){
+        parser.parseOpposed(content);
+      }
+    }
+    //if the weapon still has no damage and it isn't a psychic power, it is gear
+    if(parser.DamageBase == 0 && parser.DiceNumber == 0 && parser.Class != "Psychic"){
+      parser.Class = "Gear";
+    }
+    delete parser.Content;
+    if(typeof callback == 'function'){
+      callback(parser);
+    }
+  });
+}
+INQWeaponParser.prototype.parseAvailability = function(content){
+  var regex = "^\\s*";
+  regex += "(Ubiquitous|Abundant|Plentiful|Common|Average|Scarce|Rare|Very\s*Rare|Extremely\s*Rare|Near\s*Unique|Unique)";
+  regex += "\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    this.Availability = matches[1].toTitleCase();
+  } else {
+    whisper("Invalid Availability")
+  }
+}
+INQWeaponParser.prototype.parseClass = function(content){
+  var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic)\s*$/i);
+  if(matches){
+    this.Class = matches[1].toTitleCase();
+  } else {
+    whisper("Invalid Class");
+  }
+}
+INQWeaponParser.prototype.parseClip = function(content){
+  var matches = content.match(/^\s*(\d+)\s*$/);
+  if(matches){
+    this.Clip = Number(matches[1]);
+  } else {
+    whisper("Invalid Clip")
+  }
+}
+INQWeaponParser.prototype.parseDamage = function(content){
+  var link = new INQLinkParser();
+  var regex = "^\\s*";
+  regex += "(?:(\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?";
+  regex += "(\\d*)\\s*D\\s*(\\d+)";
+  regex += "(?:\\s*(\\+|-)\\s*(\\d+|\\d*\\s*x?\\s*PR))?";
+  regex += "(" + link.regex() + ")";
+  regex += "\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    if(matches[1]){
+      if(Number(matches[1])){
+        this.DiceMultiplier = Number(matches[1]);
+      } else {
+        this.DiceMultiplier = matches[1].replace(/[ x]/gi,"");
+      }
+    }
+    if(matches[2] == ""){
+      this.DiceNumber = 1;
+    } else {
+      this.DiceNumber = Number(matches[2]);
+    }
+    this.DiceType = Number(matches[3]);
+    if(matches[4] && matches[5]){
+      if(Number(matches[5])){
+        this.DamageBase = Number(matches[4] + matches[5]);
+      } else {
+        this.DamageBase = matches[5].replace(/[ x]/gi,"");
+      }
+    }
+    if(matches[6]){
+      this.DamageType = new INQLink(matches[6]);
+    }
+  } else {
+    whisper("Invalid Damage");
+  }
+}
+INQWeaponParser.prototype.parseFocusPower = function(content){
+  var regex = "^\\s*"
+  regex += "(Opposed)?\\s*"
+  regex += "\\w+\\s*"
+  regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
+
+  regex += "("
+  regex += "Weapon\\s+Skill|";
+  regex += "Ballistic\\s+Skill|";
+  regex += "Strength|";
+  regex += "Toughness|";
+  regex += "Agility|";
+  regex += "Intelligence|";
+  regex += "Perception|";
+  regex += "Willpower|";
+  regex += "Fellowship|";
+  regex += "Corruption|";
+  regex += "Psyniscience";
+  regex += ")"
+
+  regex += "\\s*Test\\s*$"
+  var re = RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    this.Class = "Psychic";
+    if(matches[1]){
+      this.Opposed = true;
+    }
+    this.FocusModifier = Number(matches[2].replace("–","-") + matches[3]);
+    if(/Weapon\s+Skill/i.test(matches[4])){
+      this.FocusStat = "WS";
+    } else if(/Ballistic\s+Skill/i.test(matches[4])){
+      this.FocusStat = "BS";
+    } else if(/Strength/i.test(matches[4])){
+      this.FocusStat = "S";
+    } else if(/Toughness/i.test(matches[4])){
+      this.FocusStat = "T";
+    } else if(/Agility/i.test(matches[4])){
+      this.FocusStat = "Ag";
+    } else if(/Intelligence/i.test(matches[4])){
+      this.FocusStat = "It";
+    } else if(/Perception/i.test(matches[4])){
+      this.FocusStat = "Per";
+    } else if(/Willpower/i.test(matches[4])){
+      this.FocusStat = "Wp";
+    } else if(/Fellowship/i.test(matches[4])){
+      this.FocusStat = "Fe";
+    } else if(/Corruption/i.test(matches[4])){
+      this.FocusStat = "Corruption";
+    } else if(/Psyniscience/i.test(matches[4])){
+      this.FocusStat  = "Per";
+      this.FocusSkill = "Psyniscience";
+    }
+  } else {
+    whisper("Invalid Focus Power")
+  }
+}
+INQWeaponParser.prototype.parseOpposed = function(content){
+  var matches = content.match(/^\s*(Yes|No)\s*$/i);
+  if(matches){
+    this.Opposed = matches[1].toLowerCase() == "yes";
+    this.Class = "Psychic";
+  } else {
+    whisper("Invalid Opposed")
+  }
+}
+INQWeaponParser.prototype.parsePenetration = function(content){
+  var regex = "^\\s*";
+  regex += "(\\d*\\s*x?\\s*PR|\\d+)";
+  regex += "\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    if(Number(matches[1])){
+      this.Penetration = Number(matches[1]);
+    } else {
+      this.Penetration = matches[1].replace(/[ x]/gi,"");
+    }
+  } else {
+    whisper("Invalid Penetration");
+  }
+}
+INQWeaponParser.prototype.parseRange = function(content){
+  var regex = "^\\s*(?:"
+  regex += "(\\d+)\\s*k?(?:|m|metres|meters)";
+  regex += "|";
+  regex += "(?:SB|Strength\\s*Bonus)\\s*x?\\s*(\\d*)\s*k?(?:|m|metres|meters)";
+  regex += "|";
+  regex += "(\\d*)\\s*k?(?:|m|metres|meters)\\s*x?\\s*(?:PR|Psy\\s*Rating)\\s*x?\\s*(\\d*)";
+  regex += "|"
+  regex += "Self"
+  regex += ")\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    if(matches[1] != null){
+      this.Range = Number(matches[1]);
+    }
+    if(matches[2] != null){
+      this.Range = matches[2] + "SB";
+    }
+    if(matches[3] != null){
+      this.Range = matches[3] + "PR";
+    }
+    if(matches[4] != null){
+      this.Range = 0;
+    }
+  } else {
+    whisper("Invalid Range");
+  }
+}
+INQWeaponParser.prototype.parseReload = function(content){
+  var matches = content.match(/^\s*(Free|Half|Full|\d+\s+Full)\s*$/i);
+  if(matches){
+    if(matches[1].toLowerCase() == "free"){
+      this.Reload = 0;
+    } else if(matches[1].toLowerCase() == "half"){
+      this.Reload = 0.5;
+    } else if(matches[1].toLowerCase() == "full"){
+      this.Reload = 1;
+    } else {
+      matches = matches[1].match(/\d+/i);
+      this.Reload = Number(matches[0]);
+    }
+  } else {
+    whisper("Invalid Reload");
+  }
+}
+INQWeaponParser.prototype.parseRenown = function(content){
+  var regex = "^\\s*";
+  regex += "(-|Initiate|Respected|Distinguished|Famed|Hero)";
+  regex += "\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    if(matches[1] == "-"){
+      this.Renown = "Initiate";
+    } else {
+      this.Renown = matches[1].toTitleCase();
+    }
+  } else {
+    whisper("Invalid Renown")
+  }
+}
+INQWeaponParser.prototype.parseRequisition = function(content){
+  var matches = content.match(/^\s*(\d+)\s*$/);
+  if(matches){
+    this.Requisition = Number(matches[1]);
+  } else {
+    whisper("Invalid Requisition")
+  }
+}
+INQWeaponParser.prototype.parseRoF = function(content){
+  var regex = "^\\s*";
+  regex += "(S|-)";
+  regex += "\\s*\\/\\s*";
+  regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
+  regex += "\\s*\\/\\s*";
+  regex += "(\\d+|-|\\d*\\s*x?\\s*PR)";
+  regex += "\\s*$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    this.Single = matches[1].toUpperCase() == "S";
+    if(matches[2] == "-"){
+      this.Semi = 0;
+    } else if(Number(matches[2])){
+      this.Semi = Number(matches[2]);
+    } else {
+      this.Semi = matches[2].replace(/[ x]/gi,"");
+    }
+    if(matches[3] == "-"){
+      this.Full = 0;
+    } else if(Number(matches[3])){
+      this.Full = Number(matches[3]);
+    } else {
+      this.Full = matches[3].replace(/[ x]/gi,"");
+    }
+  } else {
+    whisper("Invalid RoF");
+  }
+}
+INQWeaponParser.prototype.parseSpecialRules = function(content){
+  var link = new INQLinkParser();
+  var regex = "^\\s*(?:-|((?:" + link.regex() + ",)*" + link.regex()  + "))$";
+  var re = new RegExp(regex, "i");
+  var matches = content.match(re);
+  if(matches){
+    if(matches[1]){
+      this.Special = _.map(matches[1].split(","), function(rule){
+        return new INQLink(rule);
+      });
+    }
+  } else {
+    whisper("Invalid Special Rules")
+  }
+}
+INQWeaponParser.prototype.parseWeight = function(content){
+  var matches = content.match(/^\s*(\d+)(?:\.(\d+))?\s*(?:kg)?s?\s*$/i);
+  if(matches){
+    this.Weight = Number(matches[1]);
+    if(matches[2]){
+      var fraction = Number(matches[2]);
+      while(fraction > 1){
+        fraction /= 10;
+      }
+      this.Weight += fraction;
+    }
+  } else {
+    whisper("Invalid Weight")
   }
 }
 function addCounter(matches, msg) {
@@ -7377,6 +7286,12 @@ function whisper(content, options){
   for(var k in options) new_options[k] = options[k];
   delete new_options.speakingTo;
   if (Array.isArray(options.speakingTo)) {
+    for(var i = 0; i < options.speakingTo.length; i++){
+      if(options.speakingTo[i] == '') {
+        options.speakingTo.splice(i, 1);
+        i--;
+      }
+    }
     if (options.speakingTo.indexOf('all') != -1) return announce(content, new_options);
     if (options.gmEcho) {
       var gmIncluded = false;

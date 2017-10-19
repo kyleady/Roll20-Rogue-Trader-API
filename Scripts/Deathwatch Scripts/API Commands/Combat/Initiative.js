@@ -90,10 +90,8 @@ function initiativeHandler(matches,msg,secondAttempt){
 
             whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
               {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
-            //create a turn object
-            var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
             //add the turn
-            turns.addTurn(turnObj);
+            turns.addTurn(graphic, init.Bonus + init.roll);
             resolve();
           });
           return;
@@ -101,10 +99,8 @@ function initiativeHandler(matches,msg,secondAttempt){
 
         whisper(graphic.get('name') + ' rolls a [[(' + init.roll.toString() + ')+' + init.Bonus.toString() + ']] for Initiative.',
           {speakingTo: character.get('inplayerjournals').split(','), gmEcho: true});
-        //create a turn object
-        var turnObj = turns.toTurnObj(graphic, init.Bonus + init.roll);
         //add the turn
-        turns.addTurn(turnObj);
+        turns.addTurn(graphic, init.Bonus + init.roll);
         resolve();
       })
     );

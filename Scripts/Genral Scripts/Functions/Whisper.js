@@ -7,6 +7,12 @@ function whisper(content, options){
   for(var k in options) new_options[k] = options[k];
   delete new_options.speakingTo;
   if (Array.isArray(options.speakingTo)) {
+    for(var i = 0; i < options.speakingTo.length; i++){
+      if(options.speakingTo[i] == '') {
+        options.speakingTo.splice(i, 1);
+        i--;
+      }
+    }
     if (options.speakingTo.indexOf('all') != -1) return announce(content, new_options);
     if (options.gmEcho) {
       var gmIncluded = false;
