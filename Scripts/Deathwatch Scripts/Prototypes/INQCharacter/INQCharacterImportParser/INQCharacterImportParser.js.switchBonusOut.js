@@ -1,6 +1,6 @@
 INQCharacterImportParser.prototype.switchBonusOut = function(){
-  for(var i = 0; i < StatNames.length; i++){
-    this.Attributes[StatNames[i]] = this.Attributes["Unnatural " + StatNames[i]];
-    this.Attributes["Unnatural " + StatNames[i]] = 0;
+  for(var stat of this.StatNames){
+    this.Attributes[stat] = this.Attributes["Unnatural " + stat];
+    this.Attributes["Unnatural " + stat] = 0;
   }
 }

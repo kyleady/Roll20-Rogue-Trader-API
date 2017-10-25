@@ -1,9 +1,9 @@
 //Dark Heresy records the total characteristic values, while I need to know
 //just the Unnatural characteristics
 INQCharacterImportParser.prototype.adjustBonus = function(){
-  for(var i = 0; i < StatNames.length; i++){
-    if(this.Attributes["Unnatural " + StatNames[i]] > 0){
-      this.Attributes["Unnatural " + StatNames[i]] -= Math.floor(this.Attributes[StatNames[i]]/10);
+  for(var stat of this.StatNames){
+    if(this.Attributes["Unnatural " + stat] > 0){
+      this.Attributes["Unnatural " + stat] -= Math.floor(this.Attributes[stat]/10);
     }
   }
 }

@@ -8,5 +8,4 @@ INQWeaponNoteParser.prototype.parse = function(text){
     });
   });
   this.parseDetails(details);
-  log(this)
 }

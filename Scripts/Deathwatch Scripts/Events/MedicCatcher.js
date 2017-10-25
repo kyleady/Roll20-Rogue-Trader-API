@@ -16,7 +16,7 @@ on("change:graphic:bar3_value", function(obj, prev) {
   if(getObj("character", obj.get("represents")) == undefined){return;}
   //get the current and max wounds in number format
   var Wounds = {
-    prev: Number(prev.get('bar3_value')),
+    prev: Number(prev.bar3_value),
     current: Number(obj.get("bar3_value")),
     max: Number(obj.get("bar3_max"))
   }

@@ -1,5 +1,5 @@
 function INQCharacterImportParser(){
-  var StatNames = ["WS", "BS", "S", "T", "Ag", "It", "Per", "Wp", "Fe"];
+  this.StatNames = ["WS", "BS", "S", "T", "Ag", "It", "Per", "Wp", "Fe"];
 }
 
 INQCharacterImportParser.prototype = Object.create(INQCharacter.prototype);

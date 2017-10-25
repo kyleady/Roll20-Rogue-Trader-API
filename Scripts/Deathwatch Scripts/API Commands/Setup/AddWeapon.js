@@ -9,7 +9,7 @@ var INQAttack = INQAttack || {};
   //matches[3] - the clip size of the weapon. If it didn't already have a clip,
                //it will make the assumption that it is the quantity of
                //consumable items and add the note on the player sheet.
-addWeapon = function(matches, msg){
+ function addWeapon(matches, msg){
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
@@ -51,13 +51,12 @@ addWeapon = function(matches, msg){
     //don't continue unless you are certain what the user wants
     return false;
   }
-  (function(){
-    return new Promise(function(resolve){
-      var inqweapon = new INQWeapon(weapons[0], function(){
-        resolve(inqweapon);
-      });
+  var myPromise = new Promise(function(resolve){
+    var inqweapon = new INQWeapon(weapons[0], function(){
+      resolve(inqweapon);
     });
-  })().then(function(inqweapon){
+  });
+  myPromise.then(function(inqweapon){
     //was there any ammo to load?
     if(ammoStr){
       //get the exact name of every clip
@@ -99,14 +98,13 @@ addWeapon = function(matches, msg){
     }
     //add this weapon to each of the selected characters
     eachCharacter(msg, function(character, graphic){
-      (function(){
-        return new Promise(function(resolve){
-          //parse the character
-          new INQCharacter(character, graphic, function(inqcharacter){
-            resolve(inqcharacter);
-          });
+      var myPromise = new Promise(function(resolve){
+        //parse the character
+        new INQCharacter(character, graphic, function(inqcharacter){
+          resolve(inqcharacter);
         });
-      })().then(function(inqcharacter){
+      });
+      myPromise.then(function(inqcharacter){
         //only add an ability if it isn't gear
         if(inqweapon.Class != "Gear"){
           //add the token action to the character

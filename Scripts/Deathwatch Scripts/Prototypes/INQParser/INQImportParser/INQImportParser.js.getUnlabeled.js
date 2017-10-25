@@ -1,3 +1,3 @@
 INQImportParser.prototype.getUnlabled = function(regex, property){
-  UnlabledPatterns.push({regex: regex, property: property});
+  this.UnlabledPatterns.push({regex: regex, property: property});
 }

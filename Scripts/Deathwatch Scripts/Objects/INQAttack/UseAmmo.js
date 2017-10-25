@@ -1,14 +1,13 @@
 INQAttack = INQAttack || {};
 //parse the special ammo and use it to customize the inqweaon
 INQAttack.useAmmo = function(ammo, callback){
-  (function(){
-    return new Promise(function(resolve){
-      //parse the special ammunition
-      INQAttack.inqammo = new INQWeapon(ammo, function(){
-        resolve();
-      });
+  var myPromise = new Promise(function(resolve){
+    //parse the special ammunition
+    INQAttack.inqammo = new INQWeapon(ammo, function(){
+      resolve();
     });
-  })().then(function(){
+  });
+  myPromise.then(function(){
     //only add the special rules of the ammo to the inqweapon, we want every
     //modification to be highly visible to the player
     for(var k in INQAttack.inqammo){

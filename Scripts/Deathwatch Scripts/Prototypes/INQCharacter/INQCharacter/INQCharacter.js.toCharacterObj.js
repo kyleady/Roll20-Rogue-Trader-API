@@ -1,5 +1,5 @@
 //create a character object from the prototype
-INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid, callback){
+INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
   //get the character
   var character = undefined;
   if(characterid){

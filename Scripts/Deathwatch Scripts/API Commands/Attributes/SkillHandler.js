@@ -60,7 +60,7 @@ function skillHandler(matches, msg){
           var matchingSubgroup = false;
           var subgroupModifier = -20;
           _.each(skill, function(subgroup){
-            if(re.test(subgroup.Name) || /^\s*all\s*$/i.test(subgroup.Name)){
+            if(re.test(subgroup.Name) || /\s*all\s*/.test(subgroup.Name)){
               //overwrite the subgroup's modifier if it is better
               if(subgroup.Bonus > subgroupModifier){
                 subgroupModifier = subgroup.Bonus;

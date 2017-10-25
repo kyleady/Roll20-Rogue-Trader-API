@@ -1,4 +1,4 @@
 function INQImportParser(targetObj){
-  var target = targetObj;
-  var Patterns = [];
+  this.target = targetObj;
+  this.Patterns = [];
 }

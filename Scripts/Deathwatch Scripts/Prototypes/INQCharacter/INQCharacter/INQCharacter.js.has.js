@@ -8,45 +8,49 @@ INQCharacter.prototype.has = function(ability, list){
     whisper("Which List are you searching?");
     return undefined;
   }
-  var info = undefined;
+  var info = [];
   _.each(this.List[list], function(rule){
     if(rule.Name == ability){
-      //if we have not found the rule yet
-      if(info == undefined){
-        //does the found skill have subgroups?
-        if(rule.Groups.length > 0){
-          //the inklink has subgroups and each will need their own bonus
-          info = [];
-          _.each(rule.Groups, function(subgroups){
-            _.each(subgroups.split(/\s*,\s*/), function(subgroup){
-              info.push({
-                Name:  subgroup,
-                Bonus: rule.Bonus
-              });
-            });
-          });
-        } else {
-          //the inqlink does not have subgroups
-          info = {
-            Bonus: rule.Bonus
-          };
-        }
-      //if the rule already has been found
-      //AND the rule has subgroups
-      //AND the previously found rule had subgroups
-      } else if(rule.Groups.length > 0 && info.length > 0){
-        //add the new found subgroups in with their own bonuses
+      //does the found skill have subgroups?
+      var newRules = [];
+      if(rule.Groups.length > 0){
+        //the inklink has subgroups and each will need their own bonus
         _.each(rule.Groups, function(subgroups){
           _.each(subgroups.split(/\s*,\s*/), function(subgroup){
-            info.push({
+            newRules.push({
               Name:  subgroup,
               Bonus: rule.Bonus
             });
           });
         });
+      } else {
+        //the inqlink does not have subgroups
+        newRules.push({
+          Name: 'all',
+          Bonus: rule.Bonus
+        });
       }
+      _.each(newRules, function(newRule){
+        _.each(info, function(oldRule){
+          if(newRule.Name == oldRule.Name){
+            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
+            newRule.Repeat = true;
+          }
+        });
+        if(!newRule.Repeat) info.push(newRule);
+      });
     }
   });
+  var highestAll = -99999;
+  _.each(info, function(oldRule){
+    if(oldRule.Name == 'all' && oldRule.Bonus > highestAll) highestAll = oldRule.Bonus;
+  });
+  _.each(info, function(oldRule){
+    if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
+  });
 
+
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
+  if(info.length == 0) return undefined;
   return info;
 }
