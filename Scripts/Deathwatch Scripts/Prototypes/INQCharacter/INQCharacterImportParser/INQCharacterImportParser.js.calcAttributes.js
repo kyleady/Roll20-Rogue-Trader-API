@@ -4,6 +4,10 @@ INQCharacterImportParser.prototype.calcAttributes = function(){
   this.Attributes.Fatigue = this.bonus("T");
   var fate = this.has("Touched by the Fates", "Traits");
   if(fate){
-    this.Attributes.Fate = fate.Bonus;
+    if(fate.length){
+      this.Attributes.Fate = fate[0].Name;
+    } else {
+      this.Attributes.Fate = fate.Bonus;
+    }
   }
 }

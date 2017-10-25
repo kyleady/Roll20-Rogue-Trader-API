@@ -2,7 +2,7 @@ var expect = require('chai').expect;
 var fs = require('fs');
 var path = require('path');
 require('mock20');
-describe.only('INQCharacter.prototype.toCharacterObj()', function() {
+describe('INQCharacter.prototype.toCharacterObj()', function() {
 	it('should convert an INQ characer object into a Roll20 character object', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');

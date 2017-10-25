@@ -4214,12 +4214,16 @@ INQCharacterImportParser.prototype.calcAttributes = function(){
   this.Attributes.Fatigue = this.bonus("T");
   var fate = this.has("Touched by the Fates", "Traits");
   if(fate){
-    this.Attributes.Fate = fate.Bonus;
+    if(fate.length){
+      this.Attributes.Fate = fate[0].Name;
+    } else {
+      this.Attributes.Fate = fate.Bonus;
+    }
   }
 }
 INQCharacterImportParser.prototype.interpretBonus = function(line){
   //save every number found
-  var bonus = line.match(/(\d+|-)/g);
+  var bonus = line.match(/(\d+|[—–-])/g);
   //correlate the numbers with the named stats
   for(var i = 0; i < this.StatNames.length; i++){
     //default to "0" when no number is given for a stat
@@ -4232,7 +4236,7 @@ INQCharacterImportParser.prototype.interpretBonus = function(line){
 }
 INQCharacterImportParser.prototype.interpretCharacteristics = function(line){
   //save every number found
-  var stat = line.match(/(\d+|–\s*–|—)/g);
+  var stat = line.match(/(\d+|–\s*–|[—-])/g);
   //correlate the numbers with the named stats
   for(var i = 0; i < this.StatNames.length; i++){
     //default to "0" when no number is given for a stat
