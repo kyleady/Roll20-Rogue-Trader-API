@@ -7,6 +7,7 @@ INQAttack.useAmmo = function(ammo, callback){
       resolve();
     });
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(){
     //only add the special rules of the ammo to the inqweapon, we want every
     //modification to be highly visible to the player

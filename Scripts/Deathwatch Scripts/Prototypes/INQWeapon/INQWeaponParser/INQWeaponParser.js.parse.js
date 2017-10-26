@@ -7,6 +7,7 @@ INQWeaponParser.prototype.parse = function(obj, callback){
     });
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     //save the non-text details of the handout
     parser.Name = obj.get("name");

@@ -43,6 +43,7 @@ function INQWeapon(weapon, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     if(typeof weapon != 'undefined'){
       Object.setPrototypeOf(inqweapon, new INQWeapon());

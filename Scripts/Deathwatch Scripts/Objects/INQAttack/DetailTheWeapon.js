@@ -10,6 +10,7 @@ INQAttack.detailTheWeapon = function(callback){
       resolve(valid);
     });
   });
+  weaponPromise.catch(function(e){log(e)});
   weaponPromise.then(function(valid){
     var ammoPromise = new Promise(function(resolve){
       if(!valid) return resolve(false);
@@ -18,6 +19,7 @@ INQAttack.detailTheWeapon = function(callback){
         resolve(validAmmo);
       });
     });
+    ammoPromise.catch(function(e){log(e)});
     ammoPromise.then(function(validAmmo){
       if(validAmmo) {
         //overwrite any detail with user options

@@ -11,6 +11,8 @@ INQParser.prototype.objectToText = function(obj, callback){
         break;
     }
   });
+
+  toTextPromise.catch(function(e){log(e)});
   toTextPromise.then(function(Notes){
     return new Promise(function(resolve){
       obj.get('gmnotes', function(gmnotes){
@@ -29,5 +31,5 @@ INQParser.prototype.objectToText = function(obj, callback){
     //save the result
     parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
     if(typeof callback == 'function') callback(parser);
-  });
+  }).catch(function(e){log(e)});
 }

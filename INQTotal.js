@@ -269,6 +269,7 @@ function skillHandler(matches, msg){
       });
     });
 
+    skillPromise.catch(function(e){log(e)});
     skillPromise.then(function(inqcharacter){
       //determine if the character has this skill
       var skill = inqcharacter.has(skillName, "Skills");
@@ -1279,6 +1280,7 @@ function initiativeHandler(matches,msg,secondAttempt){
     );
   });
 
+  Promise.all(Promises).catch(function(e){log(e)});
   Promise.all(Promises).then(function(){
     turns.save();
   });
@@ -1514,6 +1516,7 @@ function useWeapon (matches, msg) {
         resolve(valid);
       });
     });
+    Promise.all([characterPromise, weaponPromise]).catch(function(e){log(e)});
     Promise.all([characterPromise, weaponPromise]).then(function(valid){
       if(valid.includes(false)) return;
       if(character != undefined){
@@ -1694,6 +1697,7 @@ var INQAttack = INQAttack || {};
       resolve(inqweapon);
     });
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     //was there any ammo to load?
     if(ammoStr){
@@ -1736,13 +1740,14 @@ var INQAttack = INQAttack || {};
     }
     //add this weapon to each of the selected characters
     eachCharacter(msg, function(character, graphic){
-      var myPromise = new Promise(function(resolve){
+      var characterPromise = new Promise(function(resolve){
         //parse the character
         new INQCharacter(character, graphic, function(inqcharacter){
           resolve(inqcharacter);
         });
       });
-      myPromise.then(function(inqcharacter){
+      characterPromise.catch(function(e){log(e)});
+      characterPromise.then(function(inqcharacter){
         //only add an ability if it isn't gear
         if(inqweapon.Class != "Gear"){
           //add the token action to the character
@@ -2860,6 +2865,7 @@ INQAttack.detailTheCharacter = function(character, graphic, callback){
     }
     resolve();
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(){
     if(INQAttack.inqcharacter == undefined){
       INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
@@ -2882,6 +2888,7 @@ INQAttack.detailTheWeapon = function(callback){
       resolve(valid);
     });
   });
+  weaponPromise.catch(function(e){log(e)});
   weaponPromise.then(function(valid){
     var ammoPromise = new Promise(function(resolve){
       if(!valid) return resolve(false);
@@ -2890,6 +2897,7 @@ INQAttack.detailTheWeapon = function(callback){
         resolve(validAmmo);
       });
     });
+    ammoPromise.catch(function(e){log(e)});
     ammoPromise.then(function(validAmmo){
       if(validAmmo) {
         //overwrite any detail with user options
@@ -3548,6 +3556,7 @@ INQAttack.useAmmo = function(ammo, callback){
       resolve();
     });
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(){
     //only add the special rules of the ammo to the inqweapon, we want every
     //modification to be highly visible to the player
@@ -3989,6 +3998,7 @@ function INQCharacter(character, graphic, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());
@@ -4321,6 +4331,8 @@ INQCharacterParser.prototype.parse = function(character, graphic, callback){
       resolve(parser);
     });
   });
+
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
     parser.Name = character.get("name");
     parser.ObjID = character.id;
@@ -4730,6 +4742,8 @@ function INQParser(object, mainCallback){
       resolve();
     }
   });
+
+  parserPromise.catch(function(e){log(e)});
   parserPromise.then(function(){
     if(object != undefined){
       //parse the text
@@ -4829,6 +4843,8 @@ INQParser.prototype.objectToText = function(obj, callback){
         break;
     }
   });
+
+  toTextPromise.catch(function(e){log(e)});
   toTextPromise.then(function(Notes){
     return new Promise(function(resolve){
       obj.get('gmnotes', function(gmnotes){
@@ -4847,7 +4863,7 @@ INQParser.prototype.objectToText = function(obj, callback){
     //save the result
     parser.Text = Notes.notes + "<br>" + Notes.gmnotes;
     if(typeof callback == 'function') callback(parser);
-  });
+  }).catch(function(e){log(e)});
 }
 INQParser.prototype.parse = function(){
   //empty out any old content
@@ -5340,6 +5356,7 @@ function INQVehicle(vehicle, graphic, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqvehicle){
     if(typeof vehicle != 'undefined'){
       Object.setPrototypeOf(inqvehicle, new INQVehicle());
@@ -5564,6 +5581,8 @@ INQVehicleParser.prototype.parse = function(character, graphic, callback){
       resolve(parser);
     });
   });
+
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
     parser.Name = character.get("name");
     parser.ObjID = character.id;
@@ -5726,6 +5745,7 @@ function INQWeapon(weapon, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     if(typeof weapon != 'undefined'){
       Object.setPrototypeOf(inqweapon, new INQWeapon());
@@ -6175,6 +6195,7 @@ INQWeaponParser.prototype.parse = function(obj, callback){
     });
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     //save the non-text details of the handout
     parser.Name = obj.get("name");

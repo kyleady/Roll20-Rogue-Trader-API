@@ -14,6 +14,8 @@ function INQParser(object, mainCallback){
       resolve();
     }
   });
+
+  parserPromise.catch(function(e){log(e)});
   parserPromise.then(function(){
     if(object != undefined){
       //parse the text

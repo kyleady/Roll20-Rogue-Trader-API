@@ -84,6 +84,7 @@ function INQCharacter(character, graphic, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());

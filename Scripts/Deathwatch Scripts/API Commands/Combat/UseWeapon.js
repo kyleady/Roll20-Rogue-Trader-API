@@ -32,6 +32,7 @@ function useWeapon (matches, msg) {
         resolve(valid);
       });
     });
+    Promise.all([characterPromise, weaponPromise]).catch(function(e){log(e)});
     Promise.all([characterPromise, weaponPromise]).then(function(valid){
       if(valid.includes(false)) return;
       if(character != undefined){

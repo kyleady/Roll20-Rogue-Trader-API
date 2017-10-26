@@ -16,6 +16,7 @@ INQAttack.detailTheCharacter = function(character, graphic, callback){
     }
     resolve();
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(){
     if(INQAttack.inqcharacter == undefined){
       INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){

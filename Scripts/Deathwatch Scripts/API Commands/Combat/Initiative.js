@@ -106,6 +106,7 @@ function initiativeHandler(matches,msg,secondAttempt){
     );
   });
 
+  Promise.all(Promises).catch(function(e){log(e)});
   Promise.all(Promises).then(function(){
     turns.save();
   });

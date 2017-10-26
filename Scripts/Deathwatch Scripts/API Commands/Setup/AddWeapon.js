@@ -56,6 +56,7 @@ var INQAttack = INQAttack || {};
       resolve(inqweapon);
     });
   });
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     //was there any ammo to load?
     if(ammoStr){
@@ -98,13 +99,14 @@ var INQAttack = INQAttack || {};
     }
     //add this weapon to each of the selected characters
     eachCharacter(msg, function(character, graphic){
-      var myPromise = new Promise(function(resolve){
+      var characterPromise = new Promise(function(resolve){
         //parse the character
         new INQCharacter(character, graphic, function(inqcharacter){
           resolve(inqcharacter);
         });
       });
-      myPromise.then(function(inqcharacter){
+      characterPromise.catch(function(e){log(e)});
+      characterPromise.then(function(inqcharacter){
         //only add an ability if it isn't gear
         if(inqweapon.Class != "Gear"){
           //add the token action to the character

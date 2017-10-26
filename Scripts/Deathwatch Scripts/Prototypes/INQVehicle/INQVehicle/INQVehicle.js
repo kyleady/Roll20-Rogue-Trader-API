@@ -55,6 +55,7 @@ function INQVehicle(vehicle, graphic, callback){
     }
   });
 
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqvehicle){
     if(typeof vehicle != 'undefined'){
       Object.setPrototypeOf(inqvehicle, new INQVehicle());

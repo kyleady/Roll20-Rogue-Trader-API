@@ -42,6 +42,7 @@ function skillHandler(matches, msg){
       });
     });
 
+    skillPromise.catch(function(e){log(e)});
     skillPromise.then(function(inqcharacter){
       //determine if the character has this skill
       var skill = inqcharacter.has(skillName, "Skills");

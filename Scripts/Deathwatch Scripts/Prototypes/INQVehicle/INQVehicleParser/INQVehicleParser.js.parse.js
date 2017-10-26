@@ -6,6 +6,8 @@ INQVehicleParser.prototype.parse = function(character, graphic, callback){
       resolve(parser);
     });
   });
+
+  myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
     parser.Name = character.get("name");
     parser.ObjID = character.id;
