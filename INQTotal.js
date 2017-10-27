@@ -4545,6 +4545,7 @@ function INQObject(){
 function INQImportParser(targetObj){
   this.target = targetObj;
   this.Patterns = [];
+  this.UnlabledPatterns = [];
 }
 INQImportParser.prototype.getArmour = function(regex, property){
   this.Patterns.push({regex: regex, property: property, interpret: this.interpretArmour});
@@ -4556,7 +4557,7 @@ INQImportParser.prototype.getList = function(regex, property){
   this.Patterns.push({regex: regex, property: property, interpret: this.interpretList});
 }
 INQImportParser.prototype.getNothing = function(regex, property){
-  this.Patterns.push({regex: regex, property: property, interpret: function(){}});
+  this.Patterns.push({regex: regex, property: property, interpret: undefined});
 }
 INQImportParser.prototype.getNumber = function(regex, property){
   this.Patterns.push({regex: regex, property: property, interpret: this.interpretNumber});
@@ -4591,19 +4592,19 @@ INQImportParser.prototype.interpretContent = function(content, properties){
   var inqlink = new INQLink(content);
   this.saveProperty(inqlink, properties);
 }
-INQImportParser.prototype.interpretLabeled = function(labeled){
-  for(var i = 0; i < labeled.length; i++){
-    labeled[i].content = labeled[i].content.replace(/\.\s*$/, "");
+INQImportParser.prototype.interpretLabeled = function(labeledLines){
+  for(var line of labeledLines){
+    line.content = line.content.replace(/\.\s*$/, '');
     var matched = false;
-    for(var j = 0; j < this.Patterns.length; j++){
-      if(this.Patterns[j].regex.test(labeled[i].label)){
+    for(var pattern of this.Patterns){
+      if(pattern.regex.test(line.label)){
         matched = true;
-        this.Patterns[j].interpret.call(this, labeled[i].content, this.Patterns[j].property);
+        if(pattern.interpret){
+          pattern.interpret.call(this, line.content, pattern.property);
+        }
       }
     }
-    if(!matched){
-      this.SpecialRules.push({Name: labeled[i].label, Rule: labeled[i].content});
-    }
+    if(!matched) this.SpecialRules.push({Name: line.label, Rule: line.content});
   }
 }
 INQImportParser.prototype.interpretList = function(content, properties){
