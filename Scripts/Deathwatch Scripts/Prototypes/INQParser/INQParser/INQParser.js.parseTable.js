@@ -1,6 +1,6 @@
 //if this line is a table, save it
 INQParser.prototype.parseTable = function(line){
-  var re = /^\s*(.*)\s*<table>(.*)<\/table>\s*$/;
+  var re = /^\s*(?:<(?:strong|em|u)>)*(.*?)(?:<(?:strong|em|u)>)*\s*<table>(.*)<\/table>\s*$/;
   var matches = line.match(re);
   if(matches){
     //finish off any in-progress lists

@@ -17,12 +17,7 @@ function INQParser(object, mainCallback){
 
   parserPromise.catch(function(e){log(e)});
   parserPromise.then(function(){
-    if(object != undefined){
-      //parse the text
-      parser.parse();
-    }
-    if(typeof mainCallback == 'function'){
-      mainCallback(parser);
-    }
+    if(object != undefined) parser.parse();
+    if(typeof mainCallback == 'function') mainCallback(parser);
   });
 }

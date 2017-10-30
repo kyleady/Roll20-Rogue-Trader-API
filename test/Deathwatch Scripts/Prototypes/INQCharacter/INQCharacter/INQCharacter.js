@@ -12,6 +12,17 @@ describe('INQCharacter()', function() {
 
     expect(new INQCharacter()).to.be.an.instanceof(INQCharacter);
   });
+	it('should return itself in a callback', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+		new INQCharacter(undefined, undefined, function(inqcharacter){
+			expect(inqcharacter).to.be.an.instanceof(INQCharacter);
+			done();
+		});
+  });
   it('should have default properties', function(){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');

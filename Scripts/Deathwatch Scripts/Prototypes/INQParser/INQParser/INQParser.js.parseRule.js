@@ -1,6 +1,6 @@
 //if this line is a rule, save it
 INQParser.prototype.parseRule = function(line){
-  var re = /^\s*<(?:strong|em)>(.+?)<\/(?:strong|em)>\s*:\s*(.+)$/;
+  var re = /^\s*(?:<(?:strong|em|u)>)+(.+?)(?:<\/(?:strong|em|u)>)+\s*:\s*(.+)$/;
   var matches = line.match(re);
   if(matches){
     //finish off any in-progress lists

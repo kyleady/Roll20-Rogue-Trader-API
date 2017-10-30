@@ -7,7 +7,7 @@ INQParser.prototype.parse = function(){
 
   //break the text up by lines
   var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
-  Lines = this.balanceLinkTags(Lines);
+  Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++){
     this.parseLine(Lines[i]);
   }

@@ -4325,29 +4325,30 @@ INQCharacterParser.prototype = Object.create(INQCharacter.prototype);
 INQCharacterParser.prototype.constructor = INQCharacterParser;
 //the full parsing of the character
 INQCharacterParser.prototype.parse = function(character, graphic, callback){
-  var parser = this;
+  var inqcharacterparser = this;
   var myPromise = new Promise(function(resolve){
-    parser.Content = new INQParser(character, function(){
+    new INQParser(character, function(parser){
+      inqcharacterparser.Content = parser;
       resolve(parser);
     });
   });
 
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
-    parser.Name = character.get("name");
-    parser.ObjID = character.id;
-    parser.ObjType = character.get("_type");
+    inqcharacterparser.Name = character.get("name");
+    inqcharacterparser.ObjID = character.id;
+    inqcharacterparser.ObjType = character.get("_type");
 
-    if(graphic) parser.GraphicID = graphic.id;
+    if(graphic) inqcharacterparser.GraphicID = graphic.id;
 
-    parser.controlledby = character.get("controlledby");
+    inqcharacterparser.controlledby = character.get("controlledby");
 
-    parser.parseLists();
-    parser.parseMovement();
-    parser.parseSpecialRules();
-    parser.parseAttributes(graphic);
+    inqcharacterparser.parseLists();
+    inqcharacterparser.parseMovement();
+    inqcharacterparser.parseSpecialRules();
+    inqcharacterparser.parseAttributes(graphic);
     if(typeof callback == 'function'){
-      callback(parser);
+      callback(inqcharacterparser);
     }
   });
 }
@@ -4746,13 +4747,8 @@ function INQParser(object, mainCallback){
 
   parserPromise.catch(function(e){log(e)});
   parserPromise.then(function(){
-    if(object != undefined){
-      //parse the text
-      parser.parse();
-    }
-    if(typeof mainCallback == 'function'){
-      mainCallback(parser);
-    }
+    if(object != undefined) parser.parse();
+    if(typeof mainCallback == 'function') mainCallback(parser);
   });
 }
 //if there was no place for this line, add it as misc content
@@ -4774,55 +4770,79 @@ INQParser.prototype.addToList = function(line){
 }
 //sometimes a link tag can be split onto multiple lines
 //close every link tag that is imbalanced
-INQParser.prototype.balanceLinkTags = function(Lines){
-  var opener = undefined;
-  return _.map(Lines, function(line){
-    var matches = line.match(/<\/a>/g);
-    if(matches == null){matches = [];}
-    var closers = matches.length;
+INQParser.prototype.balanceTags = function(Lines){
+  var tags = [];
+  tags.push({Opener: '<a href="https?://[^\\s>]*">', Closer: '</a>'});
+  tags.push({Opener: '<strong>', Closer: '</strong>'});
+  tags.push({Opener: '<em>', Closer: '</em>'});
+  tags.push({Opener: '<u>', Closer: '</u>'});
+  _.each(tags, function(tag){
+    var openers = [];
+    var closers = [];
+    var j, subLine, text, jshift;
+    for(var i = 0; i < Lines.length; i++) {
+      subLine = Lines[i];
+      jshift = 0;
+      while(true) {
+        j = subLine.search(RegExp(tag.Opener));
+        if(j == -1) break;
+        text = subLine.match(RegExp(tag.Opener))[0];
+        subLine = subLine.substring(j + text.length);
+        openers.push({text: text, j: j + jshift, i: i});
+        jshift += j + text.length;
+      }
 
-    matches = line.match(/<a href=\"https?:\/\/[^\s>]*\">/g);
-    if(matches == null){matches = [];}
-    var openers = matches.length;
-
-    //close up any links that may have been extend to another line
-    while(openers > closers){
-      line += "</a>";
-      closers++;
+      subLine = Lines[i];
+      jshift = 0;
+      while(true) {
+        j = subLine.search(RegExp(tag.Closer));
+        if(j == -1) break;
+        text = subLine.match(RegExp(tag.Closer))[0];
+        subLine = subLine.substring(j + text.length);
+        closers.push({text: text, j: j + jshift, i: i});
+        jshift += j + text.length;
+      }
     }
 
-    //remove any link closers that have been pushed to this line
-    while(closers > openers){
-      line = line.replace(/<\/a>/, "");
-      closers--;
+    for(var opener of openers){
+      for(var closer of closers){
+        if(!closer.opener && (opener.i < closer.i || (opener.i == closer.i && opener.j < closer.j))){
+          opener.closer = closer;
+          closer.opener = opener;
+          break;
+        }
+      }
     }
 
-    return line;
+    for(var opener of openers){
+      if(!opener.closer){
+        Lines[opener.i] = Lines[opener.i].substring(0, opener.j)
+          + Lines[opener.i].substring(opener.j).replace(RegExp(tag.Opener), '');
+      }
+    }
+
+    for(var closer of closers){
+      if(!closer.opener){
+        Lines[closer.i] = Lines[closer.i].substring(0, closer.j)
+          + Lines[closer.i].substring(closer.j).replace(RegExp(tag.Closer), '');
+      }
+    }
+
+    for(var opener of openers){
+      if(opener.closer && opener.i != opener.closer.i){
+        for(var i = opener.i; i <= opener.closer.i; i++){
+          if(i != opener.i){
+            Lines[i] = opener.text + Lines[i];
+          }
+          if(i != opener.closer.i){
+            Lines[i] = Lines[i] + opener.closer.text;
+          }
+        }
+      }
+    }
   });
-}
-//if there is an imbalance of bold tags, balance it out
-INQParser.prototype.closeBoldTags = function(line){
-  //count the number of tags beginning a bold section
-  var matches = line.match(/<(?:strong|em)>/g);
-  if(matches == null){matches = [];}
-  var openers = matches.length;
 
-  //count the number of tags ending a bold section
-  var matches = line.match(/<\/(?:strong|em)>/g);
-  if(matches == null){matches = [];}
-  var closers = matches.length;
-
-  //check for imbalances and rectify them
-  while(openers > closers){
-    line += "</strong>";
-    closers++;
-  }
-  while(closers > openers){
-    line = "<strong>" + line;
-    openers++;
-  }
-  //return the balanced line
-  return line;
+  return Lines;
 }
 //complete the old list and save it, preparing for a new list
 INQParser.prototype.completeOldList = function(){
@@ -4875,7 +4895,7 @@ INQParser.prototype.parse = function(){
 
   //break the text up by lines
   var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
-  Lines = this.balanceLinkTags(Lines);
+  Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++){
     this.parseLine(Lines[i]);
   }
@@ -4884,7 +4904,7 @@ INQParser.prototype.parse = function(){
 }
 //if this is the beginning of a new list, start a new list
 INQParser.prototype.parseBeginningOfList = function(line){
-  var re = /^\s*(?:<(?:strong|em|u)>)+([^:]+)(?:<\/(?:strong|em|u)>)+\s*$/;
+  var re = /^\s*(?:<(?:strong|em|u)>)+([^:]+?)(?:<\/(?:strong|em|u)>)+\s*$/;
   var matches = line.match(re);
   if(matches){
     //tidy up the last list first
@@ -4892,8 +4912,7 @@ INQParser.prototype.parseBeginningOfList = function(line){
     //start the new list
     this.newList = {
       Name: matches[1],
-      Content: [],
-      Type: "List"
+      Content: []
     }
     //this line has been properly parsed
     return true;
@@ -4903,25 +4922,8 @@ INQParser.prototype.parseBeginningOfList = function(line){
 //disect a single line
 INQParser.prototype.parseLine = function(line){
   //be sure there is a line to work with
-  if(line == undefined || line == "" || line == null){return;}
-  var parenthesiesDepth = 0;
-  line = line.split('');
-  for(var i = 0; i < line.length; i++){
-    if(line[i] == "("){
-      if(parenthesiesDepth > 0){
-        line[i] = "[";
-      }
-      parenthesiesDepth++;
-    } else if(line[i] == ")"){
-      parenthesiesDepth--;
-      if(parenthesiesDepth > 0){
-        line[i] = "]";
-      }
-    }
-  }
-  line = line.join('');
-  //complete any bold tags separated by lines
-  line = this.closeBoldTags(line);
+  if(!line) return;
+  line = this.replaceInnerParentheses(line);
   //try each way of parsing the line and quit when it is successful
   if(this.parseRule(line)){return;}
   if(this.parseTable(line)){return;}
@@ -4932,7 +4934,7 @@ INQParser.prototype.parseLine = function(line){
 }
 //if this line is a rule, save it
 INQParser.prototype.parseRule = function(line){
-  var re = /^\s*<(?:strong|em)>(.+?)<\/(?:strong|em)>\s*:\s*(.+)$/;
+  var re = /^\s*(?:<(?:strong|em|u)>)+(.+?)(?:<\/(?:strong|em|u)>)+\s*:\s*(.+)$/;
   var matches = line.match(re);
   if(matches){
     //finish off any in-progress lists
@@ -4949,7 +4951,7 @@ INQParser.prototype.parseRule = function(line){
 }
 //if this line is a table, save it
 INQParser.prototype.parseTable = function(line){
-  var re = /^\s*(.*)\s*<table>(.*)<\/table>\s*$/;
+  var re = /^\s*(?:<(?:strong|em|u)>)*(.*?)(?:<(?:strong|em|u)>)*\s*<table>(.*)<\/table>\s*$/;
   var matches = line.match(re);
   if(matches){
     //finish off any in-progress lists
@@ -4983,6 +4985,20 @@ INQParser.prototype.parseTable = function(line){
     return true;
   }
   return false;
+}
+INQParser.prototype.replaceInnerParentheses = function(line){
+  var parenthesiesDepth = 0;
+  line = line.split('');
+  for(var i = 0; i < line.length; i++){
+    if(line[i] == '('){
+      if(parenthesiesDepth > 0) line[i] = '[';
+      parenthesiesDepth++;
+    } else if(line[i] == ')'){
+      parenthesiesDepth--;
+      if(parenthesiesDepth > 0) line[i] = ']';
+    }
+  }
+  return line.join('');
 }
 //the prototype for characters
 function INQStarship(){

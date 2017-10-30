@@ -1,28 +1,29 @@
 //the full parsing of the character
 INQCharacterParser.prototype.parse = function(character, graphic, callback){
-  var parser = this;
+  var inqcharacterparser = this;
   var myPromise = new Promise(function(resolve){
-    parser.Content = new INQParser(character, function(){
+    new INQParser(character, function(parser){
+      inqcharacterparser.Content = parser;
       resolve(parser);
     });
   });
 
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
-    parser.Name = character.get("name");
-    parser.ObjID = character.id;
-    parser.ObjType = character.get("_type");
+    inqcharacterparser.Name = character.get("name");
+    inqcharacterparser.ObjID = character.id;
+    inqcharacterparser.ObjType = character.get("_type");
 
-    if(graphic) parser.GraphicID = graphic.id;
+    if(graphic) inqcharacterparser.GraphicID = graphic.id;
 
-    parser.controlledby = character.get("controlledby");
+    inqcharacterparser.controlledby = character.get("controlledby");
 
-    parser.parseLists();
-    parser.parseMovement();
-    parser.parseSpecialRules();
-    parser.parseAttributes(graphic);
+    inqcharacterparser.parseLists();
+    inqcharacterparser.parseMovement();
+    inqcharacterparser.parseSpecialRules();
+    inqcharacterparser.parseAttributes(graphic);
     if(typeof callback == 'function'){
-      callback(parser);
+      callback(inqcharacterparser);
     }
   });
 }
