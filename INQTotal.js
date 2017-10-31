@@ -5017,7 +5017,6 @@ function INQStarship(){
 
   this.Speed = 0;
   this.WeaponCapacity = "";
-  this.EssentialComponents = [];
 
   //default character skills and items
   this.List = {};
@@ -5044,6 +5043,7 @@ function INQStarship(){
   this.Attributes.Turret = 1;
   this.Attributes.Crew = 10;
   this.Attributes.Manoeuvrability = 0;
+  this.Attributes.Detection = 0;
 }
 
 INQStarship.prototype = new INQObject();
@@ -5061,8 +5061,7 @@ INQStarship.prototype.bonus = function(stat){
   }
   return bonus;
 }
-//create a character object from the prototype
-INQStarship.prototype.toCharacterObj = function(isPlayer){
+INQStarship.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
   var gmnotes = "";
 
@@ -5101,6 +5100,10 @@ INQStarship.prototype.toCharacterObj = function(isPlayer){
     gmnotes += "<br>";
   });
 
+  return gmnotes;
+}
+//create a character object from the prototype
+INQStarship.prototype.toCharacterObj = function(isPlayer){
   //create the character
   var character = createObj("character", {
     name: this.Name
@@ -5110,10 +5113,10 @@ INQStarship.prototype.toCharacterObj = function(isPlayer){
   this.ObjID = character.id;
 
   //write the character's notes down
-  if(isPlayer){
-    character.set("bio", gmnotes);
+  if(isPlayer || this.controlledby){
+    character.set("bio", this.getCharacterBio());
   } else {
-    character.set("gmnotes", gmnotes);
+    character.set("gmnotes", this.getCharacterBio());
   }
 
   //create all of the character's attributes

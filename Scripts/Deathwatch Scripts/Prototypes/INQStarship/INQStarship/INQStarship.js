@@ -15,7 +15,6 @@ function INQStarship(){
 
   this.Speed = 0;
   this.WeaponCapacity = "";
-  this.EssentialComponents = [];
 
   //default character skills and items
   this.List = {};
@@ -42,6 +41,7 @@ function INQStarship(){
   this.Attributes.Turret = 1;
   this.Attributes.Crew = 10;
   this.Attributes.Manoeuvrability = 0;
+  this.Attributes.Detection = 0;
 }
 
 INQStarship.prototype = new INQObject();
