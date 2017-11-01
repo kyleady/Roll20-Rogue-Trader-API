@@ -53,6 +53,8 @@ describe('INQStarship()', function() {
     expect(inqstarship.Attributes).to.have.property('Armour_P');
     expect(inqstarship.Attributes).to.have.property('Armour_S');
     expect(inqstarship.Attributes).to.have.property('Armour_A');
+
+		expect(inqstarship.Attributes).not.have.property('WS');
   });
   it('should inherent from INQObject', function(){
     Campaign().MOCK20reset();

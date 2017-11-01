@@ -44,5 +44,5 @@ function INQStarship(){
   this.Attributes.Detection = 0;
 }
 
-INQStarship.prototype = new INQObject();
+INQStarship.prototype = new INQCharacter();
 INQStarship.prototype.constructor = INQStarship;

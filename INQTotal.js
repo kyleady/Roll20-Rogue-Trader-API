@@ -4012,37 +4012,25 @@ function INQCharacter(character, graphic, callback){
 
 INQCharacter.prototype = new INQObject();
 INQCharacter.prototype.constructor = INQCharacter;
-//return the attribute bonus Stat/10 + Unnatural Stat
 INQCharacter.prototype.bonus = function(stat){
-  var bonus = 0;
-  //get the bonus from the stat
-  if(this.Attributes[stat]){
-    bonus += Math.floor(this.Attributes[stat]/10);
-  }
-  //add in the unnatural bonus
-  if(this.Attributes["Unnatural " + stat]){
-    bonus += this.Attributes["Unnatural " + stat];
-  }
+  var bonus;
+  if(this.Attributes[stat]) bonus = Math.floor(this.Attributes[stat]/10);
+  if(this.Attributes['Unnatural ' + stat]) bonus += this.Attributes['Unnatural ' + stat];
   return bonus;
 }
 INQCharacter.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
-  var gmnotes = "";
+  var gmnotes = '';
 
   //Movement
   //present movement in the form of a table
-  gmnotes += "<table><tbody>";
-  gmnotes += "<tr>"
+  var table = [[], []];
   for(var move in this.Movement){
-    gmnotes += "<td><strong>" + move + "</strong></td>";
+    table[0].push(move);
+    table[1].push(this.Movement[move]);
   }
-  gmnotes += "</tr>"
-  gmnotes += "<tr>"
-  for(var move in this.Movement){
-    gmnotes += "<td>" + this.Movement[move] + "</td>";
-  }
-  gmnotes += "</tr>";
-  gmnotes += "</tbody></table>";
+
+  gmnotes += this.getTable(table);
 
   //display every list
   for(var list in this.List){
@@ -4065,6 +4053,29 @@ INQCharacter.prototype.getCharacterBio = function(){
   });
 
   return gmnotes;
+}
+INQCharacter.prototype.getTable = function(rows, boldFirstRow){
+  var output = '';
+  if(boldFirstRow || boldFirstRow == undefined){
+    for(var i = 0; i < rows[0].length; i++) {
+      rows[0][i] = '<strong>' + rows[0][i] + '</strong>';
+    }
+  }
+
+  output += '<table><tbody>';
+  for(var row of rows){
+    output += '<tr>';
+    for(var element of row){
+      output += '<td>';
+      output += element;
+      output += '</td>';
+    }
+
+    output += '</tr>';
+  }
+
+  output += '</tbody></table>';
+  return output;
 }
 //check if the character has an inqlink with the given name
 //and within the given list
@@ -4122,38 +4133,36 @@ INQCharacter.prototype.has = function(ability, list){
   if(info.length == 0) return undefined;
   return info;
 }
-//create a character object from the prototype
-INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
-  //get the character
-  var character = undefined;
-  if(characterid){
-    character = getObj("character", characterid);
-  }
-  if(character == undefined){
-    //create the character
-    var character = createObj("character", {});
-  }
+INQCharacter.prototype.removeChildren = function(characterid){
   var oldAttributes = findObjs({
-    _characterid: character.id,
-    _type: "attribute"
+    _characterid: characterid,
+    _type: 'attribute'
   });
   _.each(oldAttributes, function(attr){
     attr.remove();
   });
   var oldAbilities = findObjs({
-    _characterid: character.id,
-    _type: "ability"
+    _characterid: characterid,
+    _type: 'ability'
   });
   _.each(oldAbilities, function(ability){
     ability.remove();
   });
-  //save the character name
-  character.set("name", this.Name);
+}
+//create a character object from the prototype
+INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
+  //get the character
+  var character = undefined;
+  if(characterid) character = getObj("character", characterid);
+  if(!character) character = createObj("character", {});
+  this.removeChildren(character.id);
 
-
-  //save the object ID
   this.ObjID = character.id;
-  //create all of the character's attributes
+  character.set('name', this.Name);
+  character.set('controlledby', this.controlledby);
+  var notes = this.getCharacterBio();
+  var workingWith = (isPlayer || this.controlledby) ? 'bio' : 'gmnotes';
+  character.set(workingWith, notes);
   for(var name in this.Attributes){
     createObj('attribute', {
       name: name,
@@ -4163,25 +4172,20 @@ INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
     });
   }
 
-  //create all of the character's abilities
   var customWeapon = {custom: true};
-  for(var i = 0; i < this.List.Weapons.length; i++){
-    createObj("ability", {
-      name: this.List.Weapons[i].Name,
-      _characterid: this.ObjID,
-      istokenaction: true,
-      action: this.List.Weapons[i].toAbility(this, undefined, customWeapon)
-    });
+  for(var list in this.List){
+    for(var item of this.List[list]){
+      if(item.toAbility){
+        createObj("ability", {
+          name: item.Name,
+          _characterid: this.ObjID,
+          istokenaction: true,
+          action: item.toAbility(this, undefined, customWeapon)
+        });
+      }
+    }
   }
 
-  //note who controlls the character
-  character.set("controlledby", this.controlledby);
-
-  //write the character's notes down
-  var gmnotes = this.getCharacterBio();
-  var workingWith = (isPlayer) ? 'bio' : 'gmnotes';
-  character.set(workingWith, gmnotes);
-  //return the resultant character object
   return character;
 }
 function INQCharacterImportParser(){
@@ -5046,21 +5050,8 @@ function INQStarship(){
   this.Attributes.Detection = 0;
 }
 
-INQStarship.prototype = new INQObject();
+INQStarship.prototype = new INQCharacter();
 INQStarship.prototype.constructor = INQStarship;
-//return the attribute bonus Stat/10 + Unnatural Stat
-INQStarship.prototype.bonus = function(stat){
-  var bonus = 0;
-  //get the bonus from the stat
-  if(this.Attributes[stat]){
-    bonus += Math.floor(this.Attributes[stat]/10);
-  }
-  //add in the unnatural bonus
-  if(this.Attributes["Unnatural " + stat]){
-    bonus += this.Attributes["Unnatural " + stat];
-  }
-  return bonus;
-}
 INQStarship.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
   var gmnotes = "";
@@ -5101,49 +5092,6 @@ INQStarship.prototype.getCharacterBio = function(){
   });
 
   return gmnotes;
-}
-//create a character object from the prototype
-INQStarship.prototype.toCharacterObj = function(isPlayer){
-  //create the character
-  var character = createObj("character", {
-    name: this.Name
-  });
-
-  //save the object ID
-  this.ObjID = character.id;
-
-  //write the character's notes down
-  if(isPlayer || this.controlledby){
-    character.set("bio", this.getCharacterBio());
-  } else {
-    character.set("gmnotes", this.getCharacterBio());
-  }
-
-  //create all of the character's attributes
-  for(var name in this.Attributes){
-    createObj("attribute",{
-      name: name,
-      _characterid: this.ObjID,
-      current: this.Attributes[name],
-      max: this.Attributes[name]
-    });
-  }
-
-  //create all of the character's abilities
-  _.each(this.List["Weapon Components"], function(weapon){
-    createObj("ability", {
-      name: weapon.Name,
-      _characterid: this.ObjID,
-      istokenaction: true,
-      action: weapon.toAbility()
-    });
-  });
-
-  //note who controlls the character
-  character.set("controlledby", this.controlledby);
-
-  //return the resultant character object
-  return character;
 }
 function INQTurns(){
   //get the JSON string of the turn order and make it into an array
@@ -5388,21 +5336,8 @@ function INQVehicle(vehicle, graphic, callback){
   });
 }
 
-INQVehicle.prototype = new INQObject();
+INQVehicle.prototype = new INQCharacter();
 INQVehicle.prototype.constructor = INQVehicle;
-//return the attribute bonus Stat/10 + Unnatural Stat
-INQVehicle.prototype.bonus = function(stat){
-  var bonus = 0;
-  //get the bonus from the stat
-  if(this.Attributes[stat]){
-    bonus += Math.floor(this.Attributes[stat]/10);
-  }
-  //add in the unnatural bonus
-  if(this.Attributes["Unnatural " + stat]){
-    bonus += this.Attributes["Unnatural " + stat];
-  }
-  return bonus;
-}
 //create a character object from the prototype
 INQVehicle.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
@@ -5435,118 +5370,6 @@ INQVehicle.prototype.getCharacterBio = function(){
   });
 
   return gmnotes;
-}
-//check if the character has an inqlink with the given name
-//and within the given list
-//if there are no subgroups for the inqlink, just return {Bonus}
-//if there are, return the inqlink's subgroups with a bonus for each
-//if nothing was found, return undefined
-INQVehicle.prototype.has = function(ability, list){
-  var info = undefined;
-  if(list == undefined){
-    list = "Vehicle Traits";
-  }
-  _.each(this.List[list], function(rule){
-    if(rule.Name == ability){
-      //if we have not found the rule yet
-      if(info == undefined){
-        //does the found skill have subgroups?
-        if(rule.Groups.length > 0){
-          //the inklink has subgroups and each will need their own bonus
-          info = [];
-          _.each(rule.Groups, function(subgroup){
-            info.push({
-              Name:  subgroup,
-              Bonus: rule.Bonus
-            });
-          });
-        } else {
-          //the inqlink does not have subgroups
-          info = {
-            Bonus: rule.Bonus
-          };
-        }
-      //if the rule already has been found
-      //AND the rule has subgroups
-      //AND the previously found rule had subgroups
-      } else if(rule.Groups.length > 0 && info.length > 0){
-        //add the new found subgroups in with their own bonuses
-        _.each(rule.Groups, function(){
-          info.push({
-            Name:  subgroup,
-            Bonus: rule.Bonus
-          });
-        });
-      }
-    }
-  });
-  return info;
-}
-//create a character object from the prototype
-INQVehicle.prototype.toCharacterObj = function(isPlayer, characterid){
-  //get the character
-  var character = undefined;
-  if(characterid){
-    character = getObj("character", characterid);
-  }
-  if(character == undefined){
-    //create the character
-    var character = createObj("character", {});
-  }
-  var oldAttributes = findObjs({
-    _characterid: character.id,
-    _type: "attribute"
-  });
-  _.each(oldAttributes, function(attr){
-    attr.remove();
-  });
-  var oldAbilities = findObjs({
-    _characterid: character.id,
-    _type: "ability"
-  });
-  _.each(oldAbilities, function(ability){
-    ability.remove();
-  });
-  //save the character name
-  character.set("name", this.Name);
-
-
-  //save the object ID
-  this.ObjID = character.id;
-  //write the character's notes down
-  var gmnotes = this.getCharacterBio();
-  if(isPlayer){
-    character.set("bio", gmnotes);
-  } else {
-    character.set("gmnotes", gmnotes);
-  }
-
-  //create all of the character's attributes
-  for(var name in this.Attributes){
-    createObj("attribute",{
-      name: name,
-      _characterid: this.ObjID,
-      current: this.Attributes[name],
-      max: this.Attributes[name]
-    });
-  }
-
-  //create all of the character's abilities
-  var customWeapon = {custom: true};
-  for(var i = 0; i < this.List.Weapons.length; i++){
-    createObj("ability", {
-      name: this.List.Weapons[i].Name,
-      _characterid: this.ObjID,
-      istokenaction: true,
-      action: this.List.Weapons[i].toAbility(undefined, undefined, customWeapon)
-    });
-  }
-
-  //note who controlls the character
-  character.set("controlledby", this.controlledby);
-
-  //return the resultant character object
-  return character;
 }
 function INQVehicleImportParser(){}
 

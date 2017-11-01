@@ -1,21 +1,16 @@
 INQCharacter.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
-  var gmnotes = "";
+  var gmnotes = '';
 
   //Movement
   //present movement in the form of a table
-  gmnotes += "<table><tbody>";
-  gmnotes += "<tr>"
+  var table = [[], []];
   for(var move in this.Movement){
-    gmnotes += "<td><strong>" + move + "</strong></td>";
+    table[0].push(move);
+    table[1].push(this.Movement[move]);
   }
-  gmnotes += "</tr>"
-  gmnotes += "<tr>"
-  for(var move in this.Movement){
-    gmnotes += "<td>" + this.Movement[move] + "</td>";
-  }
-  gmnotes += "</tr>";
-  gmnotes += "</tbody></table>";
+
+  gmnotes += this.getTable(table);
 
   //display every list
   for(var list in this.List){

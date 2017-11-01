@@ -67,5 +67,5 @@ function INQVehicle(vehicle, graphic, callback){
   });
 }
 
-INQVehicle.prototype = new INQObject();
+INQVehicle.prototype = new INQCharacter();
 INQVehicle.prototype.constructor = INQVehicle;
