@@ -5152,12 +5152,8 @@ INQTurns.prototype.addTurn = function(graphic, initiative, custom){
 //get the initiative roll of a turn already in the turn order
 INQTurns.prototype.getInit = function(graphicid){
   for(var i = 0; i < this.turnorder.length; i++){
-    if(graphicid == this.turnorder[i].id){
-      return Number(this.turnorder[i].pr);
-    }
+    if(graphicid == this.turnorder[i].id) return Number(this.turnorder[i].pr);
   }
-  //nothing was found, return undefined
-  return undefined;
 }
 INQTurns.prototype.higherInit = function(newTurn, turn){
   //does the turn we are inserting (newTurn) have greater initiative than the currently examined turn (turn)?
@@ -5174,17 +5170,13 @@ INQTurns.prototype.higherInit = function(newTurn, turn){
     var championID = turn.id;
     //only load up the Ag/Detection if the characters exist
     if(challengerID != undefined && championID != undefined){
-      challengerAg = attributeValue("Ag", {graphicid: challengerID});
-      championAg = attributeValue("Ag", {graphicid: championID});
+      challengerAg = attributeValue('Ag', {graphicid: challengerID, alert: false});
+      championAg = attributeValue('Ag', {graphicid: championID, alert: false});
       //the character may not have an Agility attribute, try Detection
-      if(challengerAg == undefined){
-        challengerAg = attributeValue("Detection", {graphicid: challengerID});
-      }
-      //the character may not have an Agility attribute, try Detection
-      if(championAg == undefined){
-        championAg = attributeValue("Ag", {graphicid: championID});
-      }
+      if(challengerAg == undefined) challengerAg = attributeValue('Detection', {graphicid: challengerID});
+      if(championAg == undefined) championAg = attributeValue('Detection', {graphicid: championID});
     }
+
     //if actual values were found for Ag/Detection for both of them, compare the two
     if(championAg != undefined && challengerAg != undefined){
       //if the challenger has greater agility (or == and rolling a 2 on a D2)
@@ -5203,21 +5195,12 @@ INQTurns.prototype.isDescending = function(){
   var first = undefined;
   var LargestIndex = this.largestIndex();
   for(var i = 0; i < this.turnorder.length; i++){
-    if(!(prev == undefined ||
-      Number(this.turnorder[i].pr) <= prev ||
-      i == LargestIndex)){
-      return false;
-    }
-    if(first == undefined){
-      first = Number(this.turnorder[i].pr);
-    }
+    if(!(prev == undefined || Number(this.turnorder[i].pr) <= prev || i == LargestIndex)) return false;
+    if(first == undefined) first = Number(this.turnorder[i].pr);
     prev = Number(this.turnorder[i].pr);
   }
-  if(LargestIndex == 0 || first <= prev || this.turnorder.length == 0){
-    return true;
-  } else {
-    return false;
-  }
+
+  return (LargestIndex == 0 || first <= prev || this.turnorder.length == 0);
 }
 INQTurns.prototype.largestIndex = function(){
   var result = undefined;
@@ -5252,19 +5235,10 @@ INQTurns.prototype.save = function(){
 INQTurns.prototype.toTurnObj = function(graphic, initiative, custom){
   //create a turn object
   var turnObj = {};
-  //default to no custom text
-  turnObj.custom = custom || "";
-  //record the id of the token
+  turnObj.custom = custom || '';
   turnObj.id = graphic.id;
-  //record the total initiative roll
-  turnObj.pr = initiative;
-  if(typeof turnObj.pr == "number"){
-    //record it as a string (as that is what it normally is)
-    turnObj.pr = turnObj.pr.toString();
-  }
-  //record the page id
+  turnObj.pr = initiative + '';
   turnObj._pageid = graphic.get("_pageid");
-
   return turnObj;
 }
 //the prototype for characters
