@@ -5252,7 +5252,7 @@ function INQVehicle(vehicle, graphic, callback){
   this.Bio.Crew = "Driver";
   this.Bio["Carry Capacity"] = "-";
   this.Bio.Renown = '';
-  this.Bio.Availability = ''
+  this.Bio.Availability = '';
 
   //default character skills and items
   this.List = {};
