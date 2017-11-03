@@ -15,12 +15,17 @@ INQVehicleParser.prototype.parseLabels = function(){
       this.parseVehicleTraits(content);
     } else if(/^\s*crew\s*$/i.test(label)){
       this.parseCrew(content);
-    } else if(/^\s*carrying\s+capacity\s*$/i.test(label)){
+    } else if(/^\s*carry(ing)?\s+capacity\s*$/i.test(label)){
       this.parseCarryingCapacity(content);
     } else if(/^\s*renown\s*$/i.test(label)){
       this.parseRenown(content);
+    } else if(/^\s*availability\s*$/i.test(label)){
+      this.parseAvailability(content);
     } else {
-      this.SpecialRules.push(this.Content.Rules[i]);
+      this.SpecialRules.push({
+        Name: this.Content.Rules[i].Name,
+        Rule: this.Content.Rules[i].Content
+      });
     }
   }
 }

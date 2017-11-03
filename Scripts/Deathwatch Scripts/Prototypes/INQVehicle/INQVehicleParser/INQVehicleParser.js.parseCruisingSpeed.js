@@ -1,3 +1,3 @@
 INQVehicleParser.prototype.parseCruisingSpeed = function(content){
-  this.Bio.CruisingSpeed = content.trim();
+  this.Bio['Cruising Speed'] = content.trim();
 }

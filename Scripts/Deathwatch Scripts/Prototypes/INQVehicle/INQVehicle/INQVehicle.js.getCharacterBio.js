@@ -5,6 +5,7 @@ INQVehicle.prototype.getCharacterBio = function(){
 
   //write down the vehicle details
   for(var k in this.Bio){
+    if(this.Bio[k] == '') continue;
     gmnotes += "<strong>" + k + "</strong>: ";
     gmnotes += this.Bio[k] + "<br>";
   }

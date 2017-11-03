@@ -1,7 +1,7 @@
 //the prototype for weapons
 function INQWeapon(weapon, callback){
   //default weapon stats
-  this.Class          = "Melee";
+  this.Class          = 'Melee';
   this.Range          = 0;
   this.Single         = true;
   this.Semi           = 0;
@@ -10,7 +10,7 @@ function INQWeapon(weapon, callback){
   this.DiceNumber     = 0;
   this.DiceMultiplier = 1;
   this.DamageBase     = 0;
-  this.DamageType     = new INQLink("I");
+  this.DamageType     = new INQLink('I');
   this.Penetration    = 0;
   this.PenDiceNumber  = 0;
   this.PenDiceType    = 0;
@@ -19,16 +19,16 @@ function INQWeapon(weapon, callback){
   this.Special        = [];
   this.Weight         = 0;
   this.Requisition    = 0;
-  this.Renown         = "";
-  this.Availability   = "";
+  this.Renown         = '';
+  this.Availability   = '';
   this.FocusModifier  = 0;
-  this.FocusStat      = "Wp";
+  this.FocusStat      = 'Wp';
 
   //allow the user to immediately parse a weapon in the constructor
   var inqweapon = this;
   var myPromise = new Promise(function(resolve){
     if(weapon != undefined){
-      if(typeof weapon == "string"){
+      if(typeof weapon == 'string'){
         Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
         inqweapon.parse(weapon);
         resolve(inqweapon);
@@ -45,13 +45,8 @@ function INQWeapon(weapon, callback){
 
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
-    if(typeof weapon != 'undefined'){
-      Object.setPrototypeOf(inqweapon, new INQWeapon());
-    }
-
-    if(typeof callback == 'function'){
-      callback(inqweapon);
-    }
+    if(weapon != undefined) Object.setPrototypeOf(inqweapon, new INQWeapon());
+    if(typeof callback == 'function') callback(inqweapon);
   });
 
   this.valueOf = this.toNote;

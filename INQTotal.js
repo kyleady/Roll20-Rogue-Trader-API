@@ -4609,7 +4609,7 @@ INQImportParser.prototype.interpretLabeled = function(labeledLines){
         }
       }
     }
-    if(!matched) this.SpecialRules.push({Name: line.label, Rule: line.content});
+    if(!matched) this.SpecialRules.push({Name: line.label, Rule: line.content.trim()});
   }
 }
 INQImportParser.prototype.interpretList = function(content, properties){
@@ -4658,28 +4658,24 @@ INQImportParser.prototype.interpretWeapons = function(content, properties){
   var parenthesiesDepth = 0;
   content = content.split('');
   for(var i = 0; i < content.length; i++){
-    if(content[i] == "("){
-      if(parenthesiesDepth > 0){
-        content[i] = "[";
-      }
+    if(content[i] == '('){
+      if(parenthesiesDepth > 0) content[i] = '[';
       parenthesiesDepth++;
-    } else if(content[i] == ")"){
+    } else if(content[i] == ')'){
       parenthesiesDepth--;
-      if(parenthesiesDepth > 0){
-        content[i] = "]";
-      }
+      if(parenthesiesDepth > 0) content[i] = ']';
     }
   }
   content = content.join('');
   //separate each weapon out
   var inqlink = new INQLinkParser();
-  var re = RegExp(inqlink.regex(), "gi");
+  var re = RegExp(inqlink.regex(), 'gi');
   var weaponMatches = content.match(re);
   //parse the weapons
-  re = RegExp(inqlink.regex(), "i");
+  re = RegExp(inqlink.regex(), 'i');
   for(var i = 0; i < weaponMatches.length; i++){
     var weapon = new INQWeapon(weaponMatches[i]);
-    weapon.Name = weapon.Name.replace(/(?:^| )or /, "").replace(",", "");
+    weapon.Name = weapon.Name.replace(/(?:^| )or /, '').replace(',', '');
     weapon.Name = weapon.Name.toTitleCase();
     List.push(weapon);
   }
@@ -5255,7 +5251,8 @@ function INQVehicle(vehicle, graphic, callback){
   this.Bio.Size = "Massive";
   this.Bio.Crew = "Driver";
   this.Bio["Carry Capacity"] = "-";
-  this.Bio.Renown = "-";
+  this.Bio.Renown = '';
+  this.Bio.Availability = ''
 
   //default character skills and items
   this.List = {};
@@ -5319,6 +5316,7 @@ INQVehicle.prototype.getCharacterBio = function(){
 
   //write down the vehicle details
   for(var k in this.Bio){
+    if(this.Bio[k] == '') continue;
     gmnotes += "<strong>" + k + "</strong>: ";
     gmnotes += this.Bio[k] + "<br>";
   }
@@ -5350,15 +5348,14 @@ function INQVehicleImportParser(){}
 INQVehicleImportParser.prototype = Object.create(INQVehicle.prototype);
 INQVehicleImportParser.prototype.constructor = INQVehicleImportParser;
 INQVehicleImportParser.prototype.getSpeeds = function(){
-  var speed = this.Bio["Tactical Speed"] + "";
-  log(typeof speed)
+  var speed = this.Bio['Tactical Speed'] + '';
   var matches = speed.match(/(\d+)\s*m/);
   if(matches){
-    this.Attributes["Tactical Speed"] = Number(matches[1]);
+    this.Attributes['Tactical Speed'] = Number(matches[1]);
   }
   matches = speed.match(/(\d+)\s*(?:<[^>]+>)?AUs/);
   if(matches){
-    this.Attributes["Aerial Speed"] = Number(matches[1]);
+    this.Attributes['Aerial Speed'] = Number(matches[1]);
   }
 }
 INQVehicleImportParser.prototype.parse = function(text){
@@ -5371,6 +5368,8 @@ INQVehicleImportParser.prototype.parse = function(text){
   parser.getNumber(/^\s*manoeuvrability\s*$/i, ["Attributes", "Manoeuvrability"]);
   parser.getNumber(/^\s*structural\s+integrity\s*$/i, ["Attributes", "Structural Integrity"]);
   parser.getContent(/^\s*carry(ing)?\s+capacity\s*$/i, ["Bio", "Carry Capacity"]);
+  parser.getContent(/^\s*renown\s*$/i, ["Bio", "Renown"]);
+  parser.getContent(/^\s*availability\s*$/i, ["Bio", "Availability"]);
   parser.getList(/^\s*vehicle\s+traits\s*$/i, ["List", "Vehicle Traits"]);
   parser.getWeapons(/^\s*weapons\s*$/i, ["List", "Weapons"]);
   parser.getArmour(/^\s*armour\s*$/i, ["Attributes", {
@@ -5421,18 +5420,18 @@ INQVehicleParser.prototype.parse = function(character, graphic, callback){
 INQVehicleParser.prototype.parseAttributes = function(graphic){
   //start with the character sheet attributes
   var attributes = findObjs({
-    _type: "attribute",
-    characterid: this.ObjID
+    _type: 'attribute',
+    _characterid: this.ObjID
   });
-  for(var i = 0; i < attributes.length; i++){
-    this.Attributes[attributes[i].get("name")] = Number(attributes[i].get("current"));
+  for(var attr of attributes){
+    this.Attributes[attr.get('name')] = Number(attr.get('current'));
   }
   //when working with a generic enemy's current stats, we need to check for temporary values
   //generic enemies are those who represent a character, yet none of their stats are linked
   if(graphic != undefined
-  && graphic.get("bar1_link") == ""
-  && graphic.get("bar2_link") == ""
-  && graphic.get("bar3_link") == ""){
+  && graphic.get('bar1_link') == ''
+  && graphic.get('bar2_link') == ''
+  && graphic.get('bar3_link') == ''){
     //roll20 stores token gmnotes in URI component
     var localAttributes = new LocalAttributes(graphic);
     for(var k in localAttributes.Attributes){
@@ -5440,14 +5439,17 @@ INQVehicleParser.prototype.parseAttributes = function(graphic){
     }
   }
 }
+INQVehicleParser.prototype.parseAvailability = function(content){
+  this.Bio.Availability = content.trim();
+}
 INQVehicleParser.prototype.parseCarryingCapacity = function(content){
-  this.Bio.CarryingCapacity = content.trim();
+  this.Bio['Carry Capacity'] = content.trim();
 }
 INQVehicleParser.prototype.parseCrew = function(content){
   this.Bio.Crew = content.trim();
 }
 INQVehicleParser.prototype.parseCruisingSpeed = function(content){
-  this.Bio.CruisingSpeed = content.trim();
+  this.Bio['Cruising Speed'] = content.trim();
 }
 //saves any notes on the character
 INQVehicleParser.prototype.parseLabels = function(){
@@ -5466,12 +5468,17 @@ INQVehicleParser.prototype.parseLabels = function(){
       this.parseVehicleTraits(content);
     } else if(/^\s*crew\s*$/i.test(label)){
       this.parseCrew(content);
-    } else if(/^\s*carrying\s+capacity\s*$/i.test(label)){
+    } else if(/^\s*carry(ing)?\s+capacity\s*$/i.test(label)){
       this.parseCarryingCapacity(content);
     } else if(/^\s*renown\s*$/i.test(label)){
       this.parseRenown(content);
+    } else if(/^\s*availability\s*$/i.test(label)){
+      this.parseAvailability(content);
     } else {
-      this.SpecialRules.push(this.Content.Rules[i]);
+      this.SpecialRules.push({
+        Name: this.Content.Rules[i].Name,
+        Rule: this.Content.Rules[i].Content
+      });
     }
   }
 }
@@ -5512,7 +5519,7 @@ INQVehicleParser.prototype.parseSize = function(content){
   this.Bio.Size = content.trim();
 }
 INQVehicleParser.prototype.parseTacticalSpeed = function(content){
-  this.Bio.TacticalSpeed = content.trim();
+  this.Bio['Tactical Speed'] = content.trim();
 }
 INQVehicleParser.prototype.parseType = function(content){
   this.Type = new INQLink(content);
@@ -5520,7 +5527,7 @@ INQVehicleParser.prototype.parseType = function(content){
 //the prototype for weapons
 function INQWeapon(weapon, callback){
   //default weapon stats
-  this.Class          = "Melee";
+  this.Class          = 'Melee';
   this.Range          = 0;
   this.Single         = true;
   this.Semi           = 0;
@@ -5529,7 +5536,7 @@ function INQWeapon(weapon, callback){
   this.DiceNumber     = 0;
   this.DiceMultiplier = 1;
   this.DamageBase     = 0;
-  this.DamageType     = new INQLink("I");
+  this.DamageType     = new INQLink('I');
   this.Penetration    = 0;
   this.PenDiceNumber  = 0;
   this.PenDiceType    = 0;
@@ -5538,16 +5545,16 @@ function INQWeapon(weapon, callback){
   this.Special        = [];
   this.Weight         = 0;
   this.Requisition    = 0;
-  this.Renown         = "";
-  this.Availability   = "";
+  this.Renown         = '';
+  this.Availability   = '';
   this.FocusModifier  = 0;
-  this.FocusStat      = "Wp";
+  this.FocusStat      = 'Wp';
 
   //allow the user to immediately parse a weapon in the constructor
   var inqweapon = this;
   var myPromise = new Promise(function(resolve){
     if(weapon != undefined){
-      if(typeof weapon == "string"){
+      if(typeof weapon == 'string'){
         Object.setPrototypeOf(inqweapon, new INQWeaponNoteParser());
         inqweapon.parse(weapon);
         resolve(inqweapon);
@@ -5564,13 +5571,8 @@ function INQWeapon(weapon, callback){
 
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
-    if(typeof weapon != 'undefined'){
-      Object.setPrototypeOf(inqweapon, new INQWeapon());
-    }
-
-    if(typeof callback == 'function'){
-      callback(inqweapon);
-    }
+    if(weapon != undefined) Object.setPrototypeOf(inqweapon, new INQWeapon());
+    if(typeof callback == 'function') callback(inqweapon);
   });
 
   this.valueOf = this.toNote;

@@ -10,6 +10,6 @@ INQImportParser.prototype.interpretLabeled = function(labeledLines){
         }
       }
     }
-    if(!matched) this.SpecialRules.push({Name: line.label, Rule: line.content});
+    if(!matched) this.SpecialRules.push({Name: line.label, Rule: line.content.trim()});
   }
 }

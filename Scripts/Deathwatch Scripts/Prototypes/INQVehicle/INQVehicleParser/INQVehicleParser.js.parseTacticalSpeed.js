@@ -1,3 +1,3 @@
 INQVehicleParser.prototype.parseTacticalSpeed = function(content){
-  this.Bio.TacticalSpeed = content.trim();
+  this.Bio['Tactical Speed'] = content.trim();
 }

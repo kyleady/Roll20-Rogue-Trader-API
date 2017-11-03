@@ -56,17 +56,19 @@ describe('INQStarship()', function() {
 
 		expect(inqstarship.Attributes).not.have.property('WS');
   });
-  it('should inherent from INQObject', function(){
+	it('should inherent from INQCharacter', function(){
     Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    var inqobject = new INQObject();
+    var inqcharacter = new INQCharacter();
     var inqstarship = new INQStarship();
-    for(var prop in inqobject) {
-      expect(inqstarship).to.have.property(prop);
+    for(var prop in inqcharacter) {
+      if(typeof inqcharacter[prop] == 'function'){
+        expect(inqstarship).to.have.property(prop);
+      }
     }
   });
 });

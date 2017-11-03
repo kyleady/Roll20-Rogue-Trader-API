@@ -1,3 +1,3 @@
 INQVehicleParser.prototype.parseCarryingCapacity = function(content){
-  this.Bio.CarryingCapacity = content.trim();
+  this.Bio['Carry Capacity'] = content.trim();
 }
