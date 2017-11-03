@@ -107,7 +107,7 @@ describe('INQVehicle()', function() {
 		new INQVehicle(vehicle, graphic, function(parsedVehicle){
 			expect(parsedVehicle.Name).to.equal('INQVehicle Name');
 
-	    expect(parsedVehicle.Bio['Type']).to.equal('Ground Vehicle');
+	    expect(parsedVehicle.Bio['Type']).to.deep.equal(new INQLink('Ground Vehicle'));
 			expect(parsedVehicle.Bio['Tactical Speed']).to.equal('15 m');
 			expect(parsedVehicle.Bio['Cruising Speed']).to.equal('70 kph');
 			expect(parsedVehicle.Bio['Size']).to.equal('Enormous');

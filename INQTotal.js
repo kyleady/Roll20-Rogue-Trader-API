@@ -5439,46 +5439,29 @@ INQVehicleParser.prototype.parseAttributes = function(graphic){
     }
   }
 }
-INQVehicleParser.prototype.parseAvailability = function(content){
-  this.Bio.Availability = content.trim();
-}
-INQVehicleParser.prototype.parseCarryingCapacity = function(content){
-  this.Bio['Carry Capacity'] = content.trim();
-}
-INQVehicleParser.prototype.parseCrew = function(content){
-  this.Bio.Crew = content.trim();
-}
-INQVehicleParser.prototype.parseCruisingSpeed = function(content){
-  this.Bio['Cruising Speed'] = content.trim();
-}
 //saves any notes on the character
 INQVehicleParser.prototype.parseLabels = function(){
   for(var i = 0; i < this.Content.Rules.length; i++){
-    var label = this.Content.Rules[i].Name;
-    var content = this.Content.Rules[i].Content;
+    var label = this.Content.Rules[i].Name.trim();
+    var content = this.Content.Rules[i].Content.trim();
     if(/^\s*type\s*$/i.test(label)){
-      this.parseType(content);
+      this.Bio.Type = new INQLink(content);
     } else if(/^\s*tactical\s+speed\s*$/i.test(label)){
-      this.parseTacticalSpeed(content);
+      this.Bio['Tactical Speed'] = content;
     } else if(/^\s*cruising\s+speed\s*$/i.test(label)){
-      this.parseCruisingSpeed(content);
+      this.Bio['Cruising Speed'] = content;
     } else if(/^\s*size\s*$/i.test(label)){
-      this.parseSize(content);
-    } else if(/^\s*vehicle\s+traits\s*$/i.test(label)){
-      this.parseVehicleTraits(content);
+      this.Bio.Size = content;
     } else if(/^\s*crew\s*$/i.test(label)){
-      this.parseCrew(content);
+      this.Bio.Crew = content;
     } else if(/^\s*carry(ing)?\s+capacity\s*$/i.test(label)){
-      this.parseCarryingCapacity(content);
+      this.Bio['Carry Capacity'] = content;
     } else if(/^\s*renown\s*$/i.test(label)){
-      this.parseRenown(content);
+      this.Bio.Renown = content;
     } else if(/^\s*availability\s*$/i.test(label)){
-      this.parseAvailability(content);
+      this.Bio.Availability = content;
     } else {
-      this.SpecialRules.push({
-        Name: this.Content.Rules[i].Name,
-        Rule: this.Content.Rules[i].Content
-      });
+      this.SpecialRules.push({Name: label, Rule: content});
     }
   }
 }
@@ -5511,18 +5494,6 @@ INQVehicleParser.prototype.parseLists = function(){
     });
   });
   this.List = Lists;
-}
-INQVehicleParser.prototype.parseRenown = function(content){
-  this.Bio.Renown = content.trim();
-}
-INQVehicleParser.prototype.parseSize = function(content){
-  this.Bio.Size = content.trim();
-}
-INQVehicleParser.prototype.parseTacticalSpeed = function(content){
-  this.Bio['Tactical Speed'] = content.trim();
-}
-INQVehicleParser.prototype.parseType = function(content){
-  this.Type = new INQLink(content);
 }
 //the prototype for weapons
 function INQWeapon(weapon, callback){
