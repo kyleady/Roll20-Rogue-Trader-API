@@ -2,23 +2,16 @@
 function INQWeapon(weapon, callback){
   //default weapon stats
   this.Class              = 'Melee';
-  this.Range              = 0;
+  this.Range              = new INQFormula('0');
 
   this.Single             = true;
-  this.Semi               = 0;
-  this.Full               = 0;
+  this.Semi               = new INQFormula('0');
+  this.Full               = new INQFormula('0');
 
-  this.DiceType           = 10;
-  this.DiceNumber         = 0;
-  this.DiceMultiplier     = 1;
-  this.DamageBase         = 0;
-
+  this.Damage             = new INQFormula('0');
   this.DamageType         = new INQLink('I');
 
-  this.Penetration        = 0;
-  this.PenDiceNumber      = 0;
-  this.PenDiceType        = 0;
-  this.PenDiceMultiplier  = 1;
+  this.Penetration        = new INQFormula('0');
 
   this.Clip               = 0;
   this.Reload             = -1;
@@ -28,7 +21,7 @@ function INQWeapon(weapon, callback){
   this.Requisition        = 0;
   this.Renown             = '';
   this.Availability       = '';
-  
+
   this.FocusModifier      = 0;
   this.FocusStat          = 'Wp';
   this.Opposed            = false;

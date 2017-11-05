@@ -1,5 +1,5 @@
 INQWeaponParser.prototype.parseReload = function(content){
-  var matches = content.match(/^\s*(Free|Half|Full|\d+\s+Full)\s*$/i);
+  var matches = content.match(/^\s*(Free|Half|Full|\d+\s*Full)\s*$/i);
   if(matches){
     if(matches[1].toLowerCase() == "free"){
       this.Reload = 0;

@@ -115,7 +115,7 @@ describe('INQVehicle()', function() {
 			expect(parsedVehicle.Bio['Carry Capacity']).to.equal('10 Space Marines with wargear');
 			expect(parsedVehicle.Bio['Renown']).to.equal('Respected');
 
-			expect(parsedVehicle.List.Weapons).to.deep.equal([new INQLink('Pintle-Mounted Storm Bolter (Basic; 100m; S/2/4; 2D10+5 X; Pen 5; Clip 100; Reload 2 Full; Facing All, Storm, Tearing)')]);
+			expect(parsedVehicle.List.Weapons).to.deep.equal([new INQLink('Pintle-Mounted Storm Bolter (Basic; 100m; S/2/4; 2D10 + 5 X; Pen 5; Clip 100; Reload 2 Full; Facing All, Storm, Tearing)')]);
 			expect(parsedVehicle.SpecialRules).to.deep.equal([
 				{Name: 'Reinforced Hull', Rule: 'Unnatural Structural Integrity(+2)'},
 				{Name: 'Reliable', Rule: '+20 to Repair'}

@@ -1,6 +1,5 @@
 INQWeaponParser.prototype.parseSpecialRules = function(content){
-  var link = new INQLinkParser();
-  var regex = "^\\s*(?:-|((?:" + link.regex() + ",)*" + link.regex()  + "))$";
+  var regex = "^\\s*(?:-|((?:" + INQLinkParser.regex() + ",)*" + INQLinkParser.regex()  + "))$";
   var re = new RegExp(regex, "i");
   var matches = content.match(re);
   if(matches){

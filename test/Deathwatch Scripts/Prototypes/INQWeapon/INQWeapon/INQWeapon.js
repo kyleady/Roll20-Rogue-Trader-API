@@ -25,14 +25,9 @@ describe('INQWeapon()', function() {
     expect(inqweapon).to.have.property('Single');
     expect(inqweapon).to.have.property('Semi');
     expect(inqweapon).to.have.property('Full');
-    expect(inqweapon).to.have.property('DiceType');
-    expect(inqweapon).to.have.property('DiceNumber');
-    expect(inqweapon).to.have.property('DiceMultiplier');
-    expect(inqweapon).to.have.property('DamageBase');
+    expect(inqweapon).to.have.property('Damage');
     expect(inqweapon).to.have.property('DamageType');
     expect(inqweapon).to.have.property('Penetration');
-    expect(inqweapon).to.have.property('PenDiceNumber');
-    expect(inqweapon).to.have.property('PenDiceType');
     expect(inqweapon).to.have.property('Clip');
     expect(inqweapon).to.have.property('Reload');
     expect(inqweapon).to.have.property('Special');
@@ -42,6 +37,7 @@ describe('INQWeapon()', function() {
     expect(inqweapon).to.have.property('Availability');
     expect(inqweapon).to.have.property('FocusModifier');
     expect(inqweapon).to.have.property('FocusStat');
+		expect(inqweapon).to.have.property('Opposed');
   });
   it('should inherent from INQObject', function(){
     Campaign().MOCK20reset();
@@ -56,7 +52,7 @@ describe('INQWeapon()', function() {
       expect(inqweapon).to.have.property(prop);
     }
   });
-	/*it('should be able to parse a Roll20 handout', function(done){
+	it('should be able to parse a Roll20 handout', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -68,7 +64,7 @@ describe('INQWeapon()', function() {
     text += '<br>';
     text += '<strong>Range</strong>: 13m';
     text += '<br>';
-    text += '<strong>RoF</strong>: S/3/5';
+    text += '<strong>RoF</strong>: S/PR/2PR';
     text += '<br>';
     text += '<strong>Dam</strong>: 2D5 + 5 I';
     text += '<br>';
@@ -93,41 +89,59 @@ describe('INQWeapon()', function() {
     var handout = createObj('handout', {name: 'INQWeapon handout'});
     handout.set('notes', text);
     new INQWeapon(handout, function(inqweapon){
-      expect(inqweapon.Class).to.equal('Psychic');
-      expect(inqweapon.Range).to.equal(13);
-      expect(inqweapon.Single).to.equal(true);
-      expect(inqweapon.Semi).to.equal(3);
-      expect(inqweapon.Full).to.equal(5);
-      expect(inqweapon.DamageBase).to.equal(5);
-      expect(inqweapon.DiceType).to.equal(5);
-      expect(inqweapon.DiceNumber).to.equal(2);
-      expect(inqweapon.DiceMultiplier).to.equal(1);
-      expect(inqweapon.DamageType).to.deep.equal(new INQLink('I'));
-      expect(inqweapon.Pen).to.equal(6);
-      expect(inqweapon.PenDiceType).to.equal(10);
-      expect(inqweapon.PenDiceNumber).to.equal(3);
-      expect(inqweapon.Clip).to.equal(14);
-      expect(inqweapon.Reload).to.equal(3);
-      expect(inqweapon.Special).to.deep.equal([new INQLink('Reliable'), new INQLink('Razor Sharp')]);
-      expect(inqweapon.Weight).to.equal(10);
-      expect(inqweapon.Requisition).to.equal(13);
-      expect(inqweapon.Renown).to.equal('-');
-      expect(inqweapon.Availability).to.equal('Scarce');
-      expect(inqweapon.FocusModifier).to.equal(20);
-      expect(inqweapon.FocusStat).to.equal('T');
-      expect(inqweapon.Opposed).to.equal(true);
+			expect(inqweapon.Class).to.equal('Psychic');
+			expect(inqweapon.Range).to.deep.equal(new INQFormula('13'));
+			expect(inqweapon.Single).to.equal(true);
+			expect(inqweapon.Semi).to.deep.equal(new INQFormula('PR'));
+			expect(inqweapon.Full).to.deep.equal(new INQFormula('2PR'));
+			expect(inqweapon.Damage).to.deep.equal(new INQFormula('2d5+5'));
+			expect(inqweapon.DamageType).to.deep.equal(new INQLink('I'));
+			expect(inqweapon.Penetration).to.deep.equal(new INQFormula('3D10+6'));
+			expect(inqweapon.Clip).to.equal(14);
+			expect(inqweapon.Reload).to.equal(3);
+			expect(inqweapon.Special).to.deep.equal([new INQLink('Reliable'), new INQLink('Razor Sharp')]);
+			expect(inqweapon.Weight).to.equal(10);
+			expect(inqweapon.Requisition).to.equal(13);
+			expect(inqweapon.Renown).to.equal('Initiate');
+			expect(inqweapon.Availability).to.equal('Scarce');
+			expect(inqweapon.FocusModifier).to.equal(20);
+			expect(inqweapon.FocusStat).to.equal('T');
+			expect(inqweapon.Opposed).to.equal(true);
       done();
     });
 	});
-	it('should be able to parse a string', function(done){
+	it('should be able to parse a Weapon Note string', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-		expect(false).to.equal(true);
-		done();
+    var text = 'My Weapon';
+		text += '(';
+    text += 'Pistol; ';
+    text += '13m; ';
+    text += 'S/PR/2PR; ';
+    text += '2D5 + 5 I; ';
+    text += 'Pen 3D10+6; ';
+    text += 'Clip 14; ';
+    text += 'Rld 3Full; ';
+    text += 'Reliable, Razor Sharp';
+		text += ')';
+
+    new INQWeapon(text, function(inqweapon){
+			expect(inqweapon.Class).to.equal('Pistol');
+			expect(inqweapon.Range).to.deep.equal(new INQFormula('13'));
+			expect(inqweapon.Single).to.equal(true);
+			expect(inqweapon.Semi).to.deep.equal(new INQFormula('PR'));
+			expect(inqweapon.Full).to.deep.equal(new INQFormula('2PR'));
+			expect(inqweapon.Damage).to.deep.equal(new INQFormula('2d5+5'));
+			expect(inqweapon.DamageType).to.deep.equal(new INQLink('I'));
+			expect(inqweapon.Penetration).to.deep.equal(new INQFormula('3D10+6'));
+			expect(inqweapon.Clip).to.equal(14);
+			expect(inqweapon.Reload).to.equal(3);
+			expect(inqweapon.Special).to.deep.equal([new INQLink('Reliable'), new INQLink('Razor Sharp')]);
+      done();
+    });
 	});
-	*/
 });

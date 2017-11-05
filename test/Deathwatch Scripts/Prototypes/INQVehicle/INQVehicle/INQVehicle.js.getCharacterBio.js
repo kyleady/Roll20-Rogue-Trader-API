@@ -23,7 +23,7 @@ describe('INQVehicle.js.getCharacterBio.js()', function() {
 		inqvehicle.Bio['Renown'] = 'Respected';
 
 
-    inqvehicle.List.Weapons.push(new INQWeapon('Pintle-Mounted Storm Bolter (Facing All, 100m, S/2/4, 2d10+5 X, Pen 5, Clip 100, Reload 2Full, Storm, Tearing)'));
+    inqvehicle.List.Weapons.push(new INQWeapon('Pintle-Mounted Storm Bolter (Facing All, 100m, S/2/4, 2d10 + 5 X, Pen 5, Clip 100, Reload 2Full, Storm, Tearing)'));
 
     inqvehicle.SpecialRules.push({Name: 'Reinforced Hull', Rule: 'Unnatural Structural Integrity(+2)'});
 		inqvehicle.SpecialRules.push({Name: 'Reliable', Rule: '+20 to Repair'});
@@ -48,7 +48,7 @@ describe('INQVehicle.js.getCharacterBio.js()', function() {
       '<strong>Renown</strong>: Respected',
       '',
       '<u><strong>Weapons</strong></u>',
-			'Pintle-Mounted Storm Bolter (Basic; 100m; S/2/4; 2D10+5 X; Pen 5; Clip 100; Reload 2 Full; Facing All, Storm, Tearing)',
+			'Pintle-Mounted Storm Bolter (Basic; 100m; S/2/4; 2D10 + 5 X; Pen 5; Clip 100; Reload 2 Full; Facing All, Storm, Tearing)',
 			'',
 			'<u><strong>Vehicle Traits</strong></u>',
 			'',

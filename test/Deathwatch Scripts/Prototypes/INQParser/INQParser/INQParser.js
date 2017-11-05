@@ -61,7 +61,7 @@ describe('INQParser()', function() {
 			]);
 			expect(parser.Lists).to.deep.equal([
 				{Name: 'Psychic Powers', Content: ['Nurgle\'s Rot', 'Warp Blast']},
-				{Name: 'Weapons', Content: ['Neural Whip (Melee; D10+5 R; Pen 3; Flexible)', 'Laspistol (Pistol; S/2/-; D10+2 E; Pen 0; Reliable)']},
+				{Name: 'Weapons', Content: ['Neural Whip (Melee; D10 + 5 R; Pen 3; Flexible)', 'Laspistol (Pistol; S/2/-; D10 + 2 E; Pen 0; Reliable)']},
 				{Name: 'Gear', Content: ['Medikit', 'Manacles']},
 				{Name: 'Talents', Content: ['Air of Authority', 'Ambidextrous']},
 				{Name: 'Traits', Content: ['Tyranid', 'Unnatural Characteristic(Fe)(+3)']},

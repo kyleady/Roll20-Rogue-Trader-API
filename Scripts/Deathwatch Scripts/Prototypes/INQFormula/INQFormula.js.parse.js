@@ -1,6 +1,6 @@
 INQFormula.prototype.parse = function(text){
   this.reset();
-  var re = new RegExp('^' + this.regex() + '$', 'i');
+  var re = new RegExp('^' + INQFormula.regex() + '$', 'i');
   var matches = text.match(re);
   if(matches){
     var Multiplier = matches[1];

@@ -1,6 +1,6 @@
 //take text and turn it into an INQLink
 INQLinkParser.prototype.parse = function(text){
-  var re = RegExp("^" + this.regex() + "$", "");
+  var re = RegExp("^" + INQLinkParser.regex() + "$", "");
   var matches = text.match(re);
   if(matches){
     if(matches[1]){

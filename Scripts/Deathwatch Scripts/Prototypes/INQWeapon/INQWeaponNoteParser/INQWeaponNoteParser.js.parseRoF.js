@@ -1,14 +1,8 @@
 INQWeaponNoteParser.prototype.parseRoF = function(detail){
-  var RoFmatches = detail.match(/^(S|-|–)\s*\/\s*(\d+|-|–)\s*\/\s*(\d+|-|–)$/);
-  this.Single = RoFmatches[1] == "S";
-  if(Number(RoFmatches[2])){
-    this.Semi = Number(RoFmatches[2]);
-  }
-  if(Number(RoFmatches[3])){
-    this.Full = Number(RoFmatches[3]);
-  }
-  //RoF means not a Melee weapon
-  if(this.Class == "Melee"){
-    this.Class = "Basic";
-  }
+  var Rates = detail.match(/[^\/]+/g);
+  var rateRe = new RegExp('^' + INQFormula.regex() + '$', 'i');
+  this.Single = Rates[0] == 'S';
+  if(rateRe.test(Rates[1])) this.Semi = new INQFormula(Rates[1]);
+  if(rateRe.test(Rates[2])) this.Full = new INQFormula(Rates[2]);
+  if(this.Class == 'Melee') this.Class = 'Basic';
 }

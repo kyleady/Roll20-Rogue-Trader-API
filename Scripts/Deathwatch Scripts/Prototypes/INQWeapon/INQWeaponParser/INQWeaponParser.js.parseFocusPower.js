@@ -1,7 +1,6 @@
 INQWeaponParser.prototype.parseFocusPower = function(content){
   var regex = "^\\s*"
-  regex += "(Opposed)?\\s*"
-  regex += "\\w+\\s*"
+  regex += "(Opposed|)\\s*"
   regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
 
   regex += "("

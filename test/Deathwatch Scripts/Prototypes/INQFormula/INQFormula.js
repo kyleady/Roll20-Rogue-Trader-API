@@ -56,4 +56,14 @@ describe('INQFormula()', function() {
     expect(inqformula.Modifier_SB).to.equal(true);
     expect(inqformula.Modifier_PR).to.equal(false);
 	});
+	it('should use toNote() in place of valueOf()', function(){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var inqformula = new INQFormula('3SB x 2PRD5 - SB');
+		expect(inqformula + '').to.equal('3SB x (2PRD5 - SB)');
+	});
 });

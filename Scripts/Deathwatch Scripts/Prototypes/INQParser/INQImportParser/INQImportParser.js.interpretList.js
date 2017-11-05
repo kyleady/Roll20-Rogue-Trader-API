@@ -18,8 +18,7 @@ INQImportParser.prototype.interpretList = function(content, properties){
   //clean out any skill characteristic suggestions
   content = content.replace(/\((?:WS|BS|S|T|Ag|Per|WP|Int|Fel)\)/g, '');
   //create a pattern for items in the list
-  var inqlink = new INQLinkParser();
-  var itemregex = new RegExp(inqlink.regex(),"g");
+  var itemregex = new RegExp(INQLinkParser.regex(),'g');
   //create a list of all the items
   var itemList = content.match(itemregex);
   //break up each item into its parts and save those parts

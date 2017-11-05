@@ -1,3 +1,6 @@
 INQWeaponNoteParser.prototype.parseRange = function(detail){
-  this.Range = Number(detail.match(/^(\d+)\s*k?m$/)[1]);
+  var kilo = /km/i.test(detail);
+  detail = detail.replace(/k?m/i, '');
+  this.Range = new INQFormula(detail);
+  if(kilo) this.Range.Multiplier *= 1000;
 }

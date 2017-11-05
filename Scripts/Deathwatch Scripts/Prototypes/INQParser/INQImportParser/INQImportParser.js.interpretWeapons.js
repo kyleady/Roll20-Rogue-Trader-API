@@ -14,11 +14,10 @@ INQImportParser.prototype.interpretWeapons = function(content, properties){
   }
   content = content.join('');
   //separate each weapon out
-  var inqlink = new INQLinkParser();
-  var re = RegExp(inqlink.regex(), 'gi');
+  var re = RegExp(INQLinkParser.regex(), 'gi');
   var weaponMatches = content.match(re);
   //parse the weapons
-  re = RegExp(inqlink.regex(), 'i');
+  re = RegExp(INQLinkParser.regex(), 'i');
   for(var i = 0; i < weaponMatches.length; i++){
     var weapon = new INQWeapon(weaponMatches[i]);
     weapon.Name = weapon.Name.replace(/(?:^| )or /, '').replace(',', '');
