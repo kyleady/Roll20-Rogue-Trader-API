@@ -4440,6 +4440,140 @@ INQCharacterParser.prototype.parseMovement = function(){
 INQCharacterParser.prototype.parseSpecialRules = function(){
   this.SpecialRules = this.Content.Rules;
 }
+function INQFormula(text){
+  this.reset();
+  if(typeof text == 'string') this.parse(text);
+}
+INQFormula.prototype.adjustForSBPR = function(options){
+  if(typeof options != 'object') options = {};
+  options.PR = options.PR || 0;
+  options.SB = options.SB || 0;
+  options.PR = Number(options.PR);
+  options.SB = Number(options.SB);
+
+  var adjusted = {};
+
+  adjusted.modifier = this.Modifier;
+  if(this.Modifier_PR) adjusted.modifier *= options.PR;
+  if(this.Modifier_SB) adjusted.modifier *= options.SB;
+
+  adjusted.multiplier = this.Multiplier;
+  if(this.Multiplier_PR) adjusted.multiplier *= options.PR;
+  if(this.Multiplier_SB) adjusted.multiplier *= options.SB;
+
+  adjusted.dicenumber = this.DiceNumber;
+  if(this.DiceNumber_PR) adjusted.dicenumber *= options.PR;
+  if(this.DiceNumber_SB) adjusted.dicenumber *= options.SB;
+
+  return adjusted;
+}
+INQFormula.prototype.parse = function(text){
+  this.reset();
+  var re = new RegExp('^' + this.regex() + '$', 'i');
+  var matches = text.match(re);
+  if(matches){
+    var Multiplier = matches[1];
+    var DiceNumber = matches[2];
+    var DiceType = matches[3];
+    var Modifier = matches[4];
+
+    if(Multiplier){
+      Multiplier = Multiplier.replace(/[\sx]/gi, '');
+      if(/PR/i.test(Multiplier)) {
+        this.Multiplier_PR = true;
+        Multiplier = Multiplier.replace(/PR/gi, '');
+      }
+      if(/SB/i.test(Multiplier)) {
+        this.Multiplier_SB = true;
+        Multiplier = Multiplier.replace(/SB/gi, '');
+      }
+
+      if(!/\d/.test(Multiplier)) Multiplier += '1';
+      this.Multiplier = Number(Multiplier);
+    }
+    if(DiceType){
+      if(/PR/i.test(DiceNumber)) {
+        this.DiceNumber_PR = true;
+        DiceNumber = DiceNumber.replace(/PR/gi, '');
+      }
+      if(/SB/i.test(DiceNumber)) {
+        this.DiceNumber_SB = true;
+        DiceNumber = DiceNumber.replace(/SB/gi, '');
+      }
+
+      if(!/\d/.test(DiceNumber)) DiceNumber += '1';
+      this.DiceNumber = Number(DiceNumber);
+      this.DiceType = Number(DiceType);
+    }
+    if(Modifier){
+      Modifier = Modifier.replace(/[\sx]/gi, '');
+      if(/PR/i.test(Modifier)) {
+        this.Modifier_PR = true;
+        Modifier = Modifier.replace(/PR/gi, '');
+      }
+      if(/SB/i.test(Modifier)) {
+        this.Modifier_SB = true;
+        Modifier = Modifier.replace(/SB/gi, '');
+      }
+
+      if(!/\d/.test(Modifier)) Modifier += '1';
+      this.Modifier = Number(Modifier);
+    }
+  } else {
+    whisper('Invalid INQValue');
+  }
+}
+INQFormula.prototype.regex = function(){
+  var regex = '\\s*';
+  regex += '((?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+)\\s*x\\s*)?';
+  regex += '(?:(\\d*(?:PR|SB|))\\s*D\\s*(\\d+))?';
+  regex += '(\\s*(?:\\+|-|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
+  regex += '\\s*';
+  return regex;
+}
+INQFormula.prototype.reset = function(){
+  this.Multiplier = 1;
+  this.Multiplier_PR = false;
+  this.Multiplier_SB = false;
+
+  this.DiceNumber = 0;
+  this.DiceNumber_PR = false;
+  this.DiceNumber_SB = false;
+
+  this.DiceType = 10;
+
+  this.Modifier = 0;
+  this.Modifier_PR = false;
+  this.Modifier_SB = false;
+}
+INQFormula.prototype.roll = function(options){
+  var adjusted = this.adjustForSBPR(options);
+  var output = 0;
+  for(var i = 0; i < adjusted.dicenumber; i++){
+    output += randomInteger(this.DiceType);
+  }
+
+  output += adjusted.modifier;
+  output *= adjusted.multiplier;
+  return output;
+}
+INQFormula.prototype.toInline = function(options){
+  if(typeof options != 'object') options = {};
+  options.dicerule = options.dicerule || '';
+  var adjusted = this.adjustForSBPR(options);
+  var formula = '[[';
+  formula += adjusted.multiplier;
+  formula += ' * (';
+  formula += adjusted.dicenumber;
+  formula += 'D';
+  formula += this.DiceType;
+  formula += options.dicerule;
+  formula += ' + ';
+  formula += adjusted.modifier;
+  formula += ')';
+  formula += ']]';
+  return formula;
+}
 //the prototype for Skills, Gear, Talents, etc anything that has a link
 function INQLink(text){
   //the details of the skill
@@ -5498,28 +5632,37 @@ INQVehicleParser.prototype.parseLists = function(){
 //the prototype for weapons
 function INQWeapon(weapon, callback){
   //default weapon stats
-  this.Class          = 'Melee';
-  this.Range          = 0;
-  this.Single         = true;
-  this.Semi           = 0;
-  this.Full           = 0;
-  this.DiceType       = 10;
-  this.DiceNumber     = 0;
-  this.DiceMultiplier = 1;
-  this.DamageBase     = 0;
-  this.DamageType     = new INQLink('I');
-  this.Penetration    = 0;
-  this.PenDiceNumber  = 0;
-  this.PenDiceType    = 0;
-  this.Clip           = 0;
-  this.Reload         = -1;
-  this.Special        = [];
-  this.Weight         = 0;
-  this.Requisition    = 0;
-  this.Renown         = '';
-  this.Availability   = '';
-  this.FocusModifier  = 0;
-  this.FocusStat      = 'Wp';
+  this.Class              = 'Melee';
+  this.Range              = 0;
+
+  this.Single             = true;
+  this.Semi               = 0;
+  this.Full               = 0;
+
+  this.DiceType           = 10;
+  this.DiceNumber         = 0;
+  this.DiceMultiplier     = 1;
+  this.DamageBase         = 0;
+
+  this.DamageType         = new INQLink('I');
+
+  this.Penetration        = 0;
+  this.PenDiceNumber      = 0;
+  this.PenDiceType        = 0;
+  this.PenDiceMultiplier  = 1;
+
+  this.Clip               = 0;
+  this.Reload             = -1;
+  this.Special            = [];
+  this.Weight             = 0;
+
+  this.Requisition        = 0;
+  this.Renown             = '';
+  this.Availability       = '';
+  
+  this.FocusModifier      = 0;
+  this.FocusStat          = 'Wp';
+  this.Opposed            = false;
 
   //allow the user to immediately parse a weapon in the constructor
   var inqweapon = this;
@@ -5531,7 +5674,7 @@ function INQWeapon(weapon, callback){
         resolve(inqweapon);
       } else {
         Object.setPrototypeOf(inqweapon, new INQWeaponParser());
-        inqweapon.parse(weapon, graphic, function(){
+        inqweapon.parse(weapon, function(){
           resolve(inqweapon);
         });
       }
@@ -5541,7 +5684,7 @@ function INQWeapon(weapon, callback){
   });
 
   myPromise.catch(function(e){log(e)});
-  myPromise.then(function(inqweapon){
+  myPromise.then(function(){
     if(weapon != undefined) Object.setPrototypeOf(inqweapon, new INQWeapon());
     if(typeof callback == 'function') callback(inqweapon);
   });
@@ -6066,40 +6209,41 @@ INQWeaponParser.prototype.parseClip = function(content){
 }
 INQWeaponParser.prototype.parseDamage = function(content){
   var link = new INQLinkParser();
-  var regex = "^\\s*";
-  regex += "(?:(\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?";
-  regex += "(\\d*)\\s*D\\s*(\\d+)";
-  regex += "(?:\\s*(\\+|-)\\s*(\\d+|\\d*\\s*x?\\s*PR))?";
-  regex += "(" + link.regex() + ")";
-  regex += "\\s*$";
-  var re = new RegExp(regex, "i");
+  var regex = '^\\s*';
+  regex += '((?:\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?';
+  regex += '(\\d*\\s*D\\s*\\d+)';
+  regex += '(\\s*(?:\\+|-|)\\s*(?:\\d*\\s*x?\\s*PR|\\d+))?\\s*';
+  regex += '(' + link.regex() + ')';
+  regex += '\\s*$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    if(matches[1]){
-      if(Number(matches[1])){
-        this.DiceMultiplier = Number(matches[1]);
-      } else {
-        this.DiceMultiplier = matches[1].replace(/[ x]/gi,"");
-      }
+    var DamageMultiplication = matches[1];
+    var DamageDice = matches[2];
+    var DamageModifier = matches[3];
+    var DamageType = maches[4];
+
+    if(DamageMultiplication){
+      DamageMultiplication = DamageMultiplication.replace(/[\sx]/gi, '');
+      if(Number(DamageMultiplication)) DamageMultiplication = Number(DamageMultiplication);
+      this.DiceMultiplier = DamageMultiplication;
     }
-    if(matches[2] == ""){
-      this.DiceNumber = 1;
-    } else {
-      this.DiceNumber = Number(matches[2]);
+    if(DamageDice){
+      matches = DamageDice.match(/^\s*(\d*)\s*D\s*(\d+)\s*$/i);
+      if(!matches[1]) matches[1] = 1;
+      this.DiceNumber = Number(matches[1]);
+      this.DiceType = Number(matches[2]);
     }
-    this.DiceType = Number(matches[3]);
-    if(matches[4] && matches[5]){
-      if(Number(matches[5])){
-        this.DamageBase = Number(matches[4] + matches[5]);
-      } else {
-        this.DamageBase = matches[5].replace(/[ x]/gi,"");
-      }
+    if(DamageModifier){
+      DamageModifier = DamageModifier.replace(/[\sx]/gi, '');
+      if(Number(DamageModifier)) DamageModifier = Number(DamageModifier);
+      this.DamageBase = DamageModifier;
     }
-    if(matches[6]){
-      this.DamageType = new INQLink(matches[6]);
+    if(DamageType){
+      this.DamageType = new INQLink(DamageType);
     }
   } else {
-    whisper("Invalid Damage");
+    whisper('Invalid Damage');
   }
 }
 INQWeaponParser.prototype.parseFocusPower = function(content){
@@ -6169,19 +6313,37 @@ INQWeaponParser.prototype.parseOpposed = function(content){
   }
 }
 INQWeaponParser.prototype.parsePenetration = function(content){
-  var regex = "^\\s*";
-  regex += "(\\d*\\s*x?\\s*PR|\\d+)";
-  regex += "\\s*$";
-  var re = new RegExp(regex, "i");
+  var link = new INQLinkParser();
+  var regex = '^\\s*';
+  regex += '((?:\\d*\\s*x?\\s*PR|\\d+)\\s*x\\s*)?';
+  regex += '(\\d*\\s*D\\s*\\d+)';
+  regex += '(\\s*(?:\\+|-|)\\s*(?:\\d*\\s*x?\\s*PR|\\d+))?';
+  regex += '\\s*$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    if(Number(matches[1])){
-      this.Penetration = Number(matches[1]);
-    } else {
-      this.Penetration = matches[1].replace(/[ x]/gi,"");
+    var PenMultiplication = matches[1];
+    var PenDice = matches[2];
+    var PenModifier = matches[3];
+
+    if(PenMultiplication){
+      PenMultiplication = PenMultiplication.replace(/[\sx]/gi, '');
+      if(Number(PenMultiplication)) PenMultiplication = Number(PenMultiplication);
+      this.PenDiceMultiplier = PenMultiplication;
+    }
+    if(PenDice){
+      matches = PenDice.match(/^\s*(\d*)\s*D\s*(\d+)\s*$/i);
+      if(!matches[1]) matches[1] = 1;
+      this.PenDiceNumber = Number(matches[1]);
+      this.PenDiceType = Number(matches[2]);
+    }
+    if(PenModifier){
+      PenModifier = PenModifier.replace(/[\sx]/gi, '');
+      if(Number(PenModifier)) PenModifier = Number(PenModifier);
+      this.Pen = PenModifier;
     }
   } else {
-    whisper("Invalid Penetration");
+    whisper('Invalid Penetration');
   }
 }
 INQWeaponParser.prototype.parseRange = function(content){
