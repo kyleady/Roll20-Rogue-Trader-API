@@ -4478,6 +4478,7 @@ INQFormula.prototype.onlyZero = function(){
 INQFormula.prototype.parse = function(text){
   this.reset();
   var re = new RegExp('^' + INQFormula.regex() + '$', 'i');
+  text = text.replace(/(–|—)/g, '-');
   var matches = text.match(re);
   if(matches){
     var Multiplier = matches[1];
@@ -4539,7 +4540,7 @@ INQFormula.regex = function(options){
   regex += '\\(?';
   regex += '(?:(\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
   if(!options.requireDice) regex += '?';
-  regex += '(\\s*(?:\\+|-|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
+  regex += '(\\s*(?:\\+|-|–|—|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
   regex += '\\)?';
   regex += '\\s*';
   return regex;
@@ -5783,10 +5784,28 @@ INQWeapon.prototype.has = function(ability){
   });
   return info;
 }
+INQWeapon.prototype.set = function(properties){
+  for(var prop in properties){
+    if(this[prop] != undefined){
+      if(Array.isArray(this[prop])){
+        var items = properties[prop].split(',');
+        for(var item of items){
+          if(/^\s*$/.test(item)) continue;
+          this[prop].push(new INQLink(item.trim()));
+        }
+      } else if(typeof this[prop] == 'object'){
+        this[prop] = new this[prop].constructor(properties[prop]);
+      } else {
+        this[prop] = properties[prop];
+      }
+    }
+  }
+}
 INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
+  if(typeof options != 'object') options = {};
+  this.set(options);
   var output = '!useWeapon ';
   output += this.Name;
-  if(typeof options != 'object') options = {};
   if(!this.has('Spray') || this.Class == 'Psychic'){
     options.Modifier = '?{Modifier|0}';
     var rates = [];
@@ -5834,54 +5853,27 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     }
   }
 
-  if(options.custom){
-    for(var k in this){
-      if(typeof this[k] != 'function'){
-        if(this[k] == this.__proto__[k]){continue;}
-        if(typeof this[k] == 'object'){
-          if(Array.isArray(this[k])){
-            var specialRules = '';
-            _.each(this[k], function(rule){
-              specialRules += rule.toNote(true) + ', ';
-            });
-            specialRules = specialRules.replace(/, $/,'');
-            options[k] = specialRules;
-          } else {
-            options[k] = this[k].toNote(true);
-          }
-        } else {
-          options[k] = this[k].toString();
-        }
-      }
-    }
-  }
+  if(options.custom) options.custom = this.toNote(true);
 
   if(this.has('Maximal')){
     if(!options.Special){
-      options.Special = '?{Fire on Maximal?|Use Maximal|}';
+      options.Special = '';
     } else {
-      options.Special += ', ?{Fire on Maximal?|Use Maximal|}';
+      options.Special += ', ';
     }
+    options.Special += '?{Fire on Maximal?|Use Maximal|}';
   }
 
   output += JSON.stringify(options);
   return output;
 }
 //turns the weapon prototype into text for an NPC's notes
-INQWeapon.prototype.toNote = function(){
+INQWeapon.prototype.toNote = function(justText){
   var output = '';
   output += this.Name;
   output += ' (';
   output += this.Class + '; ';
-  if(!this.Range.onlyZero()){
-    if(this.Range.Modifier < 1000){
-      output += this.Range + 'm; ';
-    } else {
-      this.Range.Modifier = Math.round(this.Range.Modifier/1000);
-      output += this.Range + 'km; ';
-    }
-  }
-
+  if(!this.Range.onlyZero()) output += this.Range + 'm; ';
   if(this.Class != 'Melee' && (this.Single || !this.Semi.onlyZero() || !this.Full.onlyZero())){
     output += (this.Single) ? 'S' : '-';
     output += '/';
@@ -5891,9 +5883,9 @@ INQWeapon.prototype.toNote = function(){
     output += '; ';
   }
 
-  output += this.Damage + ' ' + this.DamageType + '; ';
+  output += this.Damage + ' ' + this.DamageType.toNote(justText) + '; ';
   output += 'Pen ' + this.Penetration + '; ';
-  if(this.Clip > 0) output += 'Clip ' + this.Clip + '; ';
+  if(this.Clip) output += 'Clip ' + this.Clip + '; ';
   if(this.Reload == 0){
     output += 'Reload Free; ';
   } else if(this.Reload == 0.5){
@@ -5901,11 +5893,11 @@ INQWeapon.prototype.toNote = function(){
   } else if(this.Reload == 1){
     output += 'Reload Full; ';
   } else if(this.Reload > 1) {
-    output += 'Reload ' + Math.floor(this.Reload) + ' Full; ';
+    output += 'Reload ' + this.Reload + ' Full; ';
   }
 
   _.each(this.Special, function(rule){
-    output += rule + ', ';
+    output += rule.toNote(justText) + ', ';
   });
 
   output = output.replace(/(;|,)\s*$/, '');
@@ -5952,7 +5944,7 @@ INQWeaponNoteParser.prototype.parseDetails = function(details){
   for(var i = 0; i < details.length; i++){
     var detail = details[i].trim();
     if(detail == '') continue;
-    if(/^(melee|pistol|basic|heavy)$/i.test(detail)){
+    if(/^(melee|pistol|basic|heavy|psychic)$/i.test(detail)){
       this.parseClass(detail);
     } else if(rangeRe.test(detail)){
       this.parseRange(detail);

@@ -6,7 +6,7 @@ INQFormula.regex = function(options){
   regex += '\\(?';
   regex += '(?:(\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
   if(!options.requireDice) regex += '?';
-  regex += '(\\s*(?:\\+|-|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
+  regex += '(\\s*(?:\\+|-|–|—|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
   regex += '\\)?';
   regex += '\\s*';
   return regex;

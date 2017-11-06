@@ -101,4 +101,19 @@ describe('INQFormula.prototype.parse()', function() {
     expect(inqformula.Modifier_SB).to.equal(false);
     expect(inqformula.Modifier_PR).to.equal(true);
   });
+	it('should be able to parse all kinds of dashes as negative numbers', function(){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+		var inqformula;
+    inqformula = new INQFormula('-1');
+		expect(inqformula.Modifier).to.equal(-1);
+		inqformula = new INQFormula('–1');
+		expect(inqformula.Modifier).to.equal(-1);
+		inqformula = new INQFormula('—1');
+		expect(inqformula.Modifier).to.equal(-1);
+	});
 });

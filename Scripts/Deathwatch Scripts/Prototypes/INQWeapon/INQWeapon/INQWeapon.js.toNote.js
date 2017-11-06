@@ -1,18 +1,10 @@
 //turns the weapon prototype into text for an NPC's notes
-INQWeapon.prototype.toNote = function(){
+INQWeapon.prototype.toNote = function(justText){
   var output = '';
   output += this.Name;
   output += ' (';
   output += this.Class + '; ';
-  if(!this.Range.onlyZero()){
-    if(this.Range.Modifier < 1000){
-      output += this.Range + 'm; ';
-    } else {
-      this.Range.Modifier = Math.round(this.Range.Modifier/1000);
-      output += this.Range + 'km; ';
-    }
-  }
-
+  if(!this.Range.onlyZero()) output += this.Range + 'm; ';
   if(this.Class != 'Melee' && (this.Single || !this.Semi.onlyZero() || !this.Full.onlyZero())){
     output += (this.Single) ? 'S' : '-';
     output += '/';
@@ -22,9 +14,9 @@ INQWeapon.prototype.toNote = function(){
     output += '; ';
   }
 
-  output += this.Damage + ' ' + this.DamageType + '; ';
+  output += this.Damage + ' ' + this.DamageType.toNote(justText) + '; ';
   output += 'Pen ' + this.Penetration + '; ';
-  if(this.Clip > 0) output += 'Clip ' + this.Clip + '; ';
+  if(this.Clip) output += 'Clip ' + this.Clip + '; ';
   if(this.Reload == 0){
     output += 'Reload Free; ';
   } else if(this.Reload == 0.5){
@@ -32,11 +24,11 @@ INQWeapon.prototype.toNote = function(){
   } else if(this.Reload == 1){
     output += 'Reload Full; ';
   } else if(this.Reload > 1) {
-    output += 'Reload ' + Math.floor(this.Reload) + ' Full; ';
+    output += 'Reload ' + this.Reload + ' Full; ';
   }
 
   _.each(this.Special, function(rule){
-    output += rule + ', ';
+    output += rule.toNote(justText) + ', ';
   });
 
   output = output.replace(/(;|,)\s*$/, '');

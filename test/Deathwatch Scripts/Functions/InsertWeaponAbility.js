@@ -31,7 +31,6 @@ describe('insertWeaponAbility()', function() {
 		MOCK20endOfLastScript();
 
 		var inqweapon  = new INQWeapon();
-		inqweapon.Name = 'Unique Weapon Name';
 		inqweapon.Clip = 10;
 		var inqcharacter = new INQCharacter();
 		var character = inqcharacter.toCharacterObj();
@@ -50,8 +49,11 @@ describe('insertWeaponAbility()', function() {
 			if(match0 && match2 && match3) done();
 		});
 
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
 	});
 	it('should only add the ability once, if there is no clip to keep track of', function(){
@@ -62,7 +64,6 @@ describe('insertWeaponAbility()', function() {
 		MOCK20endOfLastScript();
 
 		var inqweapon  = new INQWeapon();
-		inqweapon.Name = 'Unique Weapon Name';
 		var inqcharacter = new INQCharacter();
 		var character = inqcharacter.toCharacterObj();
 		var quantity = undefined;
@@ -78,8 +79,11 @@ describe('insertWeaponAbility()', function() {
 			if(obj.get('name') == 'Unique Weapon Name 3') match3++;
 		});
 
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
 		expect(match0).to.equal(1);
 		expect(match2).to.equal(0);
@@ -93,7 +97,6 @@ describe('insertWeaponAbility()', function() {
 		MOCK20endOfLastScript();
 
 		var inqweapon  = new INQWeapon();
-		inqweapon.Name = 'Unique Weapon Name';
 		var inqcharacter = new INQCharacter();
 		var character = inqcharacter.toCharacterObj();
 		var quantity = 3;
@@ -111,8 +114,11 @@ describe('insertWeaponAbility()', function() {
 			if(match0 && match2 && match3) done();
 		});
 
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
+		inqweapon.Name = 'Unique Weapon Name';
 		insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
 	});
 });

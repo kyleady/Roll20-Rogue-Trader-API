@@ -1,7 +1,8 @@
 INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
+  if(typeof options != 'object') options = {};
+  this.set(options);
   var output = '!useWeapon ';
   output += this.Name;
-  if(typeof options != 'object') options = {};
   if(!this.has('Spray') || this.Class == 'Psychic'){
     options.Modifier = '?{Modifier|0}';
     var rates = [];
@@ -49,34 +50,15 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     }
   }
 
-  if(options.custom){
-    for(var k in this){
-      if(typeof this[k] != 'function'){
-        if(this[k] == this.__proto__[k]){continue;}
-        if(typeof this[k] == 'object'){
-          if(Array.isArray(this[k])){
-            var specialRules = '';
-            _.each(this[k], function(rule){
-              specialRules += rule.toNote(true) + ', ';
-            });
-            specialRules = specialRules.replace(/, $/,'');
-            options[k] = specialRules;
-          } else {
-            options[k] = this[k].toNote(true);
-          }
-        } else {
-          options[k] = this[k].toString();
-        }
-      }
-    }
-  }
+  if(options.custom) options.custom = this.toNote(true);
 
   if(this.has('Maximal')){
     if(!options.Special){
-      options.Special = '?{Fire on Maximal?|Use Maximal|}';
+      options.Special = '';
     } else {
-      options.Special += ', ?{Fire on Maximal?|Use Maximal|}';
+      options.Special += ', ';
     }
+    options.Special += '?{Fire on Maximal?|Use Maximal|}';
   }
 
   output += JSON.stringify(options);
