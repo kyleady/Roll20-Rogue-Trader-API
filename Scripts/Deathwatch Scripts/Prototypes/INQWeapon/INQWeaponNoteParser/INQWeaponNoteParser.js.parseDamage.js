@@ -5,6 +5,7 @@ INQWeaponNoteParser.prototype.parseDamage = function(content){
     return '';
   });
 
+  if(/^\s*$/.test(damagetype)) damagetype = 'I';
   this.Damage = new INQFormula(damage);
   this.DamageType = new INQLink(damagetype);
 }

@@ -5924,7 +5924,9 @@ INQWeaponNoteParser.prototype.parseClass = function(detail){
   this.Class = detail.toTitleCase();
 }
 INQWeaponNoteParser.prototype.parseClip = function(detail){
-  this.Clip = Number(detail.match(/^Clip\s*(\d+)$/)[1]);
+  var matches = detail.match(/^Clip\s*(\d*)(|-|–|—)$/i);
+  if(matches[1]) this.Clip = Number(matches[1]);
+  if(matches[2]) this.Clip = 0;
 }
 INQWeaponNoteParser.prototype.parseDamage = function(content){
   var damage;
@@ -5933,13 +5935,14 @@ INQWeaponNoteParser.prototype.parseDamage = function(content){
     return '';
   });
 
+  if(/^\s*$/.test(damagetype)) damagetype = 'I';
   this.Damage = new INQFormula(damage);
   this.DamageType = new INQLink(damagetype);
 }
 INQWeaponNoteParser.prototype.parseDetails = function(details){
   var rangeRe = new RegExp('^' + INQFormula.regex() + 'k?m$', 'i');
   var rofRe = new RegExp('^(S|-|–|—)/(' + INQFormula.regex() + '|-|–|—)/(' + INQFormula.regex() + '|-|–|—)$', 'i');
-  var damageRe = new RegExp('^' + INQFormula.regex({requireDice: true}) + INQLinkParser.regex() + '$', 'i');
+  var damageRe = new RegExp('^' + INQFormula.regex({requireDice: true}) + '(' + INQLinkParser.regex() + ')?' + '$', 'i');
   var penRe = new RegExp('^Pen(etration)?:?' + INQFormula.regex() + '$', 'i');
   for(var i = 0; i < details.length; i++){
     var detail = details[i].trim();
@@ -5954,9 +5957,9 @@ INQWeaponNoteParser.prototype.parseDetails = function(details){
       this.parseDamage(detail);
     } else if(penRe.test(detail)){
       this.parsePenetration(detail);
-    } else if(/^Clip\s*\d+$/i.test(detail)) {
+    } else if(/^Clip\s*(\d+|-|–|—)\s*$/i.test(detail)) {
       this.parseClip(detail);
-    } else if(/^(?:Reload|Rld):?\s*(Free|Half|(\d*)\s*Full)$/i.test(detail)) {
+    } else if(/^(?:Reload|Rld):?\s*(-|–|—|Free|Half|(\d*)\s*Full)$/i.test(detail)) {
       this.parseReload(detail);
     } else {
       this.Special.push(new INQLink(detail.trim().replace('[', '(').replace(']', ')')));
@@ -5974,7 +5977,7 @@ INQWeaponNoteParser.prototype.parseRange = function(detail){
   if(kilo) this.Range.Multiplier *= 1000;
 }
 INQWeaponNoteParser.prototype.parseReload = function(detail){
-  var ReloadMatches = detail.match(/^(?:Reload|Rld):?\s*(\d*)\s*(Free|Half|Full)$/i);
+  var ReloadMatches = detail.match(/^(?:Reload|Rld):?\s*(\d*)\s*(-|–|—|Free|Half|Full)$/i);
   switch(ReloadMatches[2].toTitleCase()){
     case 'Free':
       this.Reload = 0;
@@ -5985,6 +5988,8 @@ INQWeaponNoteParser.prototype.parseReload = function(detail){
     case 'Full':
       this.Reload = 1;
     break;
+    default:
+      this.Reload = -1;
   }
   if(ReloadMatches[1] != ""){
     this.Reload *= Number(ReloadMatches[1]);
