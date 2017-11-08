@@ -4529,7 +4529,7 @@ INQFormula.prototype.parse = function(text){
       this.Modifier = Number(Modifier);
     }
   } else {
-    whisper('Invalid INQValue');
+    whisper('Invalid INQFormula');
   }
 }
 INQFormula.regex = function(options){
@@ -4702,6 +4702,8 @@ INQLinkParser.prototype.parse = function(text){
     if(matches[4] && matches[5]){
       this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
     }
+  } else {
+    whisper('Invalid INQLink');
   }
 }
 //save the regex for the link and its adjoining notes
@@ -5704,12 +5706,12 @@ function INQWeapon(weapon, callback){
   this.Special            = [];
   this.Weight             = 0;
 
-  this.Requisition        = 0;
+  this.Requisition        = -1;
   this.Renown             = '';
   this.Availability       = '';
 
   this.FocusModifier      = 0;
-  this.FocusStat          = 'Wp';
+  this.FocusTest          = 'Wp';
   this.Opposed            = false;
 
   //allow the user to immediately parse a weapon in the constructor
@@ -6059,7 +6061,7 @@ INQWeaponParser.prototype.parse = function(obj, callback){
       }
     }
     //if the weapon still has no damage and it isn't a psychic power, it is gear
-    if(parser.DamageBase == 0 && parser.DiceNumber == 0 && parser.Class != "Psychic"){
+    if(parser.Damage.onlyZero() && parser.Class != "Psychic"){
       parser.Class = "Gear";
     }
     delete parser.Content;
@@ -6069,31 +6071,52 @@ INQWeaponParser.prototype.parse = function(obj, callback){
   });
 }
 INQWeaponParser.prototype.parseAvailability = function(content){
-  var regex = "^\\s*";
-  regex += "(Ubiquitous|Abundant|Plentiful|Common|Average|Scarce|Rare|Very\s*Rare|Extremely\s*Rare|Near\s*Unique|Unique)";
-  regex += "\\s*$";
-  var re = new RegExp(regex, "i");
+  var availabilities = [
+    'Ubiquitous',
+    'Abundant',
+    'Plentiful',
+    'Common',
+    'Average',
+    'Scarce',
+    'Rare',
+    'Very\\s+Rare',
+    'Extremely\\s+Rare',
+    'Near\\s+Unique',
+    'Unique'
+  ];
+  var regex = '^\\s*(';
+  for(var availability of availabilities){
+    regex += availability + '|';
+  }
+  regex = regex.replace(/\|\s*$/, '');
+  regex += ')\\s*$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    this.Availability = matches[1].toTitleCase();
+    this.Availability = matches[1].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
-    whisper("Invalid Availability")
+    whisper('Invalid Availability')
   }
 }
 INQWeaponParser.prototype.parseClass = function(content){
-  var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic)\s*$/i);
+  var matches = content.match(/^\s*(melee|pistol|basic|heavy|thrown|psychic|gear)\s*$/i);
   if(matches){
     this.Class = matches[1].toTitleCase();
   } else {
-    whisper("Invalid Class");
+    whisper('Invalid Class');
   }
 }
 INQWeaponParser.prototype.parseClip = function(content){
-  var matches = content.match(/^\s*(\d+)\s*$/);
+  var matches = content.match(/^\s*(\d*)(|-|–|—)\s*$/);
   if(matches){
-    this.Clip = Number(matches[1]);
+    if(matches[1]){
+      this.Clip = Number(matches[1]);
+    } else {
+      this.Clip = 0;
+    }
+
   } else {
-    whisper("Invalid Clip")
+    whisper('Invalid Clip')
   }
 }
 INQWeaponParser.prototype.parseDamage = function(content){
@@ -6103,76 +6126,42 @@ INQWeaponParser.prototype.parseDamage = function(content){
     return '';
   });
 
+  if(/^\s*$/.test(damagetype)) damagetype = 'I';
   this.Damage = new INQFormula(damage);
   this.DamageType = new INQLink(damagetype);
+
+  if(!this.DamageType.Name) whisper('Invalid Damage Type');
+  if(this.Damage.onlyZero()) whisper('Invalid Damage');
 }
 INQWeaponParser.prototype.parseFocusPower = function(content){
-  var regex = "^\\s*"
-  regex += "(Opposed|)\\s*"
-  regex += "\\((\\+|-|–)\\s*(\\d+)\\)\\s*";
-
-  regex += "("
-  regex += "Weapon\\s+Skill|";
-  regex += "Ballistic\\s+Skill|";
-  regex += "Strength|";
-  regex += "Toughness|";
-  regex += "Agility|";
-  regex += "Intelligence|";
-  regex += "Perception|";
-  regex += "Willpower|";
-  regex += "Fellowship|";
-  regex += "Corruption|";
-  regex += "Psyniscience";
-  regex += ")"
-
-  regex += "\\s*Test\\s*$"
-  var re = RegExp(regex, "i");
+  var regex = '^\\s*'
+  regex += '(Opposed|)\\s*'
+  regex += '\\((\\+|-|–|—)\\s*(\\d+)\\)\\s*';
+  regex += '(\\D+)';
+  regex += '\\s+Test\\s*$'
+  var re = RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    this.Class = "Psychic";
+    this.Class = 'Psychic';
     if(matches[1]){
       this.Opposed = true;
     }
-    this.FocusModifier = Number(matches[2].replace("–","-") + matches[3]);
-    if(/Weapon\s+Skill/i.test(matches[4])){
-      this.FocusStat = "WS";
-    } else if(/Ballistic\s+Skill/i.test(matches[4])){
-      this.FocusStat = "BS";
-    } else if(/Strength/i.test(matches[4])){
-      this.FocusStat = "S";
-    } else if(/Toughness/i.test(matches[4])){
-      this.FocusStat = "T";
-    } else if(/Agility/i.test(matches[4])){
-      this.FocusStat = "Ag";
-    } else if(/Intelligence/i.test(matches[4])){
-      this.FocusStat = "It";
-    } else if(/Perception/i.test(matches[4])){
-      this.FocusStat = "Per";
-    } else if(/Willpower/i.test(matches[4])){
-      this.FocusStat = "Wp";
-    } else if(/Fellowship/i.test(matches[4])){
-      this.FocusStat = "Fe";
-    } else if(/Corruption/i.test(matches[4])){
-      this.FocusStat = "Corruption";
-    } else if(/Psyniscience/i.test(matches[4])){
-      this.FocusStat  = "Per";
-      this.FocusSkill = "Psyniscience";
-    }
+    this.FocusModifier = Number(matches[2].replace(/–|—/,'-') + matches[3]);
+    this.FocusTest = matches[4].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
-    whisper("Invalid Focus Power")
+    whisper('Invalid Focus Power');
   }
 }
 INQWeaponParser.prototype.parseOpposed = function(content){
   var matches = content.match(/^\s*(Yes|No)\s*$/i);
   if(matches){
-    this.Opposed = matches[1].toLowerCase() == "yes";
-    this.Class = "Psychic";
+    this.Opposed = matches[1].toLowerCase() == 'yes';
+    this.Class = 'Psychic';
   } else {
-    whisper("Invalid Opposed")
+    whisper('Invalid Opposed')
   }
 }
 INQWeaponParser.prototype.parsePenetration = function(content){
-  content = content.replace(/^Pen(etration)?:?/i, '');
   this.Penetration = new INQFormula(content);
 }
 INQWeaponParser.prototype.parseRange = function(content){
@@ -6182,81 +6171,102 @@ INQWeaponParser.prototype.parseRange = function(content){
   if(kilo) this.Range.Multiplier *= 1000;
 }
 INQWeaponParser.prototype.parseReload = function(content){
-  var matches = content.match(/^\s*(Free|Half|Full|\d+\s*Full)\s*$/i);
+  var matches = content.match(/^\s*(\d*)\s*(Free|Half|Full|-|–|—)(\s*Actions?)?\s*$/i);
   if(matches){
-    if(matches[1].toLowerCase() == "free"){
-      this.Reload = 0;
-    } else if(matches[1].toLowerCase() == "half"){
-      this.Reload = 0.5;
-    } else if(matches[1].toLowerCase() == "full"){
-      this.Reload = 1;
-    } else {
-      matches = matches[1].match(/\d+/i);
-      this.Reload = Number(matches[0]);
+    switch(matches[2].toTitleCase()){
+      case 'Free':
+        this.Reload = 0;
+      break;
+      case 'Half':
+        this.Reload = 0.5;
+      break;
+      case 'Full':
+        this.Reload = 1;
+      break;
+      default:
+        this.Reload = -1;
+    }
+    if(matches[1]){
+      this.Reload *= Number(matches[1]);
     }
   } else {
-    whisper("Invalid Reload");
+    whisper('Invalid Reload');
   }
 }
 INQWeaponParser.prototype.parseRenown = function(content){
-  var regex = "^\\s*";
-  regex += "(-|Initiate|Respected|Distinguished|Famed|Hero)";
-  regex += "\\s*$";
-  var re = new RegExp(regex, "i");
+  var renowns = [
+    '-',
+    '–',
+    '—',
+    'Initiate',
+    'Respected',
+    'Distinguished',
+    'Famed',
+    'Hero'
+  ];
+  var regex = '^\\s*(';
+  for(var renown of renowns){
+    regex += renown + '|';
+  }
+  regex = regex.replace(/\|\s*$/, '');
+  regex += ')\\s*$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    if(matches[1] == "-"){
-      this.Renown = "Initiate";
+    if(/(-|–|—)/.test(matches[1])){
+      this.Renown = 'Initiate';
     } else {
       this.Renown = matches[1].toTitleCase();
     }
   } else {
-    whisper("Invalid Renown")
+    whisper('Invalid Renown')
   }
 }
 INQWeaponParser.prototype.parseRequisition = function(content){
-  var matches = content.match(/^\s*(\d+)\s*$/);
+  var matches = content.match(/^\s*(\d*)(|-|–|—)\s*$/);
   if(matches){
-    this.Requisition = Number(matches[1]);
+    if(matches[1]) this.Requisition = Number(matches[1]);
+    if(matches[2]) this.Requisition = -1;
   } else {
-    whisper("Invalid Requisition")
+    whisper('Invalid Requisition');
   }
 }
 INQWeaponParser.prototype.parseRoF = function(content){
   var Rates = content.match(/[^\/]+/g);
+  if(Rates.length != 3) return whisper('Invalid RoF');
   var rateRe = new RegExp('^' + INQFormula.regex() + '$', 'i');
   this.Single = Rates[0] == 'S';
   if(rateRe.test(Rates[1])) this.Semi = new INQFormula(Rates[1]);
   if(rateRe.test(Rates[2])) this.Full = new INQFormula(Rates[2]);
+  if(!this.Single && this.Semi.onlyZero() && this.Full.onlyZero()) return whisper('Invalid RoF');
   if(this.Class == 'Melee') this.Class = 'Basic';
 }
 INQWeaponParser.prototype.parseSpecialRules = function(content){
-  var regex = "^\\s*(?:-|((?:" + INQLinkParser.regex() + ",)*" + INQLinkParser.regex()  + "))$";
-  var re = new RegExp(regex, "i");
+  var regex = '^\\s*(?:-|–|—|((?:' + INQLinkParser.regex() + ',)*' + INQLinkParser.regex()  + '))$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
     if(matches[1]){
-      this.Special = _.map(matches[1].split(","), function(rule){
+      this.Special = _.map(matches[1].split(','), function(rule){
         return new INQLink(rule);
       });
     }
   } else {
-    whisper("Invalid Special Rules")
+    whisper('Invalid Special Rules');
   }
 }
 INQWeaponParser.prototype.parseWeight = function(content){
-  var matches = content.match(/^\s*(\d+)(?:\.(\d+))?\s*(?:kg)?s?\s*$/i);
+  var matches = content.match(/^\s*(\d*)(?:\.(\d+))?\s*(?:kg)?s?(|-|–|—)\s*$/i);
   if(matches){
-    this.Weight = Number(matches[1]);
+    this.Weight = 0;
+    if(matches[1]) this.Weight = Number(matches[1]);
     if(matches[2]){
       var fraction = Number(matches[2]);
-      while(fraction > 1){
-        fraction /= 10;
-      }
+      while(fraction >= 1) fraction /= 10;
       this.Weight += fraction;
     }
   } else {
-    whisper("Invalid Weight")
+    whisper('Invalid Weight');
   }
 }
 function addCounter(matches, msg) {

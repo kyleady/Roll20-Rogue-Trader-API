@@ -49,7 +49,7 @@ INQWeaponParser.prototype.parse = function(obj, callback){
       }
     }
     //if the weapon still has no damage and it isn't a psychic power, it is gear
-    if(parser.DamageBase == 0 && parser.DiceNumber == 0 && parser.Class != "Psychic"){
+    if(parser.Damage.onlyZero() && parser.Class != "Psychic"){
       parser.Class = "Gear";
     }
     delete parser.Content;

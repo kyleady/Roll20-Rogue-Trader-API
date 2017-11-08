@@ -1,16 +1,29 @@
 INQWeaponParser.prototype.parseRenown = function(content){
-  var regex = "^\\s*";
-  regex += "(-|Initiate|Respected|Distinguished|Famed|Hero)";
-  regex += "\\s*$";
-  var re = new RegExp(regex, "i");
+  var renowns = [
+    '-',
+    '–',
+    '—',
+    'Initiate',
+    'Respected',
+    'Distinguished',
+    'Famed',
+    'Hero'
+  ];
+  var regex = '^\\s*(';
+  for(var renown of renowns){
+    regex += renown + '|';
+  }
+  regex = regex.replace(/\|\s*$/, '');
+  regex += ')\\s*$';
+  var re = new RegExp(regex, 'i');
   var matches = content.match(re);
   if(matches){
-    if(matches[1] == "-"){
-      this.Renown = "Initiate";
+    if(/(-|–|—)/.test(matches[1])){
+      this.Renown = 'Initiate';
     } else {
       this.Renown = matches[1].toTitleCase();
     }
   } else {
-    whisper("Invalid Renown")
+    whisper('Invalid Renown')
   }
 }

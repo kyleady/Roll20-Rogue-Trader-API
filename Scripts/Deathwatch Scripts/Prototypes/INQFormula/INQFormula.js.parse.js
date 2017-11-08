@@ -52,6 +52,6 @@ INQFormula.prototype.parse = function(text){
       this.Modifier = Number(Modifier);
     }
   } else {
-    whisper('Invalid INQValue');
+    whisper('Invalid INQFormula');
   }
 }

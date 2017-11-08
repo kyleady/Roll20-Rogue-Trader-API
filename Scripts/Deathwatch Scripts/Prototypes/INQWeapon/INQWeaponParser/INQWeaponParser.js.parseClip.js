@@ -1,8 +1,13 @@
 INQWeaponParser.prototype.parseClip = function(content){
-  var matches = content.match(/^\s*(\d+)\s*$/);
+  var matches = content.match(/^\s*(\d*)(|-|–|—)\s*$/);
   if(matches){
-    this.Clip = Number(matches[1]);
+    if(matches[1]){
+      this.Clip = Number(matches[1]);
+    } else {
+      this.Clip = 0;
+    }
+
   } else {
-    whisper("Invalid Clip")
+    whisper('Invalid Clip')
   }
 }

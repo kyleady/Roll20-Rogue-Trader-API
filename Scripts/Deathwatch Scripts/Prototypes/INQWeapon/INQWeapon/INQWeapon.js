@@ -18,12 +18,12 @@ function INQWeapon(weapon, callback){
   this.Special            = [];
   this.Weight             = 0;
 
-  this.Requisition        = 0;
+  this.Requisition        = -1;
   this.Renown             = '';
   this.Availability       = '';
 
   this.FocusModifier      = 0;
-  this.FocusStat          = 'Wp';
+  this.FocusTest          = 'Wp';
   this.Opposed            = false;
 
   //allow the user to immediately parse a weapon in the constructor

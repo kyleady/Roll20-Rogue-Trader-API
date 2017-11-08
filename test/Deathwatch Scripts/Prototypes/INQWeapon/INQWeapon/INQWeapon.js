@@ -36,7 +36,7 @@ describe('INQWeapon()', function() {
     expect(inqweapon).to.have.property('Renown');
     expect(inqweapon).to.have.property('Availability');
     expect(inqweapon).to.have.property('FocusModifier');
-    expect(inqweapon).to.have.property('FocusStat');
+    expect(inqweapon).to.have.property('FocusTest');
 		expect(inqweapon).to.have.property('Opposed');
   });
   it('should inherent from INQObject', function(){
@@ -105,7 +105,7 @@ describe('INQWeapon()', function() {
 			expect(inqweapon.Renown).to.equal('Initiate');
 			expect(inqweapon.Availability).to.equal('Scarce');
 			expect(inqweapon.FocusModifier).to.equal(20);
-			expect(inqweapon.FocusStat).to.equal('T');
+			expect(inqweapon.FocusTest).to.equal('Toughness');
 			expect(inqweapon.Opposed).to.equal(true);
       done();
     });
