@@ -40,7 +40,7 @@ describe('INQStarship()', function() {
 
     expect(inqstarship).to.have.property('Attributes');
     expect(inqstarship.Attributes).to.have.property('Population');
-    expect(inqstarship.Attributes).to.have.property('Moral');
+    expect(inqstarship.Attributes).to.have.property('Morale');
     expect(inqstarship.Attributes).to.have.property('Hull');
     expect(inqstarship.Attributes).to.have.property('VoidShields');
 

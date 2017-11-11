@@ -26,11 +26,13 @@ describe('INQParser.prototype.parse()', function() {
 		inqcharacter.List.Weapons.push(new INQWeapon('Laspistol(Pistol; S/2/-; D10+2 E; Pen 0; Reliable)'));
 		inqcharacter.SpecialRules.push({Name: 'Special', Rule: 'A special rule.'});
 		var character = inqcharacter.toCharacterObj();
+		var extra = '<u>Something</u>: Something else.<div><em>Rule</em>: Some text.</div>';
+		character.set('bio', extra);
 
 		var inqparser = new INQParser();
     inqparser.objectToText(character, function(){
       inqparser.parse();
-      expect(inqparser.Text).to.equal('' + '<br>' + inqcharacter.getCharacterBio());
+      expect(inqparser.Text).to.equal(extra + '<br>' + inqcharacter.getCharacterBio());
 			expect(inqparser.Tables).deep.equal([{Name: '', Content: [
 				['<strong>Half</strong>', '4'],
 				['<strong>Full</strong>', '8'],
@@ -38,6 +40,8 @@ describe('INQParser.prototype.parse()', function() {
 				['<strong>Run</strong>', '24']
 			]}]);
 			expect(inqparser.Rules).to.deep.equal([
+				{Name: 'Something', Content: 'Something else.'},
+				{Name: 'Rule', Content: 'Some text.'},
 				{Name: 'Special', Content: 'A special rule.'}
 			]);
 			expect(inqparser.Lists).to.deep.equal([

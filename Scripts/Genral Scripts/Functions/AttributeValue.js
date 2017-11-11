@@ -33,7 +33,7 @@ function attributeValue(name, options){
 
       if(options['delete']){
         localAttributes.remove(name);
-        if(options['show']) whisper(name + ' has been deleted.');
+        if(options['alert']) whisper(name + ' has been deleted.');
         return true;
       }
 

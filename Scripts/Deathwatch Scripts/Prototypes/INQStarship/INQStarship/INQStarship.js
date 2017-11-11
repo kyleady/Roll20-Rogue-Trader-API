@@ -29,7 +29,7 @@ function INQStarship(){
   this.Attributes = {};
 
   this.Attributes.Population = 100;
-  this.Attributes.Moral = 100;
+  this.Attributes.Morale = 100;
   this.Attributes.Hull = 1;
   this.Attributes.VoidShields = 0;
 

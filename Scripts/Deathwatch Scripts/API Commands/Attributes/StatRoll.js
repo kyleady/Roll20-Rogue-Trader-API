@@ -156,7 +156,7 @@ function defaultToTokenBars(name){
     case "Tactical Speed":
       return "bar1";
     case "Fate":
-    case "Moral":
+    case "Morale":
     case "Aerial Speed":
       return "bar2";
     case "Wounds":
@@ -171,7 +171,7 @@ function defaultToTokenBars(name){
 on("ready", function() {
   //add the stat roller function to the Central Input list as a public command
   //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Morale)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     var tokenBar = defaultToTokenBars(matches[2]);
     statRoll(matches,msg,{bar: tokenBar});
@@ -180,7 +180,7 @@ on("ready", function() {
   //lets the user quickly view their stats with modifiers
   var inqStats = ["WS", "BS", "S", "T", "Ag", "I(?:n|t|nt)", "Wp", "P(?:r|e|er)", "Fel?", "Cor", "Corruption", "Wounds", "Structural Integrity"];
   var inqLocations = ["H", "RA", "LA", "B", "RL", "LR", "F", "S", "R", "P", "A"];
-  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Moral", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
+  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Morale", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
   var inqUnnatural = "Unnatural (?:";
   for(var inqStat of inqStats){
     inqAttributes.push(inqStat);

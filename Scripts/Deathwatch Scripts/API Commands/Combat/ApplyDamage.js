@@ -68,13 +68,13 @@ function applyDamage (matches,msg){
       if(population < 0) population = 0;
       graphic.set('bar1_value', population);
 
-      var moral = graphic.get('bar2_value');
-      var moralDef = attributeValue('Armour_Moral', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
-      var moralDamage = damage - moralDef;
-      if(moralDamage < 0) moralDamage = 0;
-      moral -= moralDamage;
-      if(moral < 0) moral = 0;
-      graphic.set('bar2_value', moral);
+      var morale = graphic.get('bar2_value');
+      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var moraleDamage = damage - moraleDef;
+      if(moraleDamage < 0) moraleDamage = 0;
+      morale -= moraleDamage;
+      if(morale < 0) morale = 0;
+      graphic.set('bar2_value', morale);
     }
 
     //report an exact amount to the gm

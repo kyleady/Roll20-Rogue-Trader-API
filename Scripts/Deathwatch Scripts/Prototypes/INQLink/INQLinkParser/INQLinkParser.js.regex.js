@@ -5,7 +5,7 @@ INQLinkParser.regex = function(){
   regex += "(?:<\\/a>)?";
   regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
   regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
-  regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
+  regex += "\\s*(?:(\\+|-|–)\\s*(\\d+))?\\s*";
 
   return regex;
 }

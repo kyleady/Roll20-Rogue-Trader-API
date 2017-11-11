@@ -554,7 +554,7 @@ function defaultToTokenBars(name){
     case "Tactical Speed":
       return "bar1";
     case "Fate":
-    case "Moral":
+    case "Morale":
     case "Aerial Speed":
       return "bar2";
     case "Wounds":
@@ -569,7 +569,7 @@ function defaultToTokenBars(name){
 on("ready", function() {
   //add the stat roller function to the Central Input list as a public command
   //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Moral)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
+  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Morale)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     var tokenBar = defaultToTokenBars(matches[2]);
     statRoll(matches,msg,{bar: tokenBar});
@@ -578,7 +578,7 @@ on("ready", function() {
   //lets the user quickly view their stats with modifiers
   var inqStats = ["WS", "BS", "S", "T", "Ag", "I(?:n|t|nt)", "Wp", "P(?:r|e|er)", "Fel?", "Cor", "Corruption", "Wounds", "Structural Integrity"];
   var inqLocations = ["H", "RA", "LA", "B", "RL", "LR", "F", "S", "R", "P", "A"];
-  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Moral", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
+  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Morale", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
   var inqUnnatural = "Unnatural (?:";
   for(var inqStat of inqStats){
     inqAttributes.push(inqStat);
@@ -683,13 +683,13 @@ function applyDamage (matches,msg){
       if(population < 0) population = 0;
       graphic.set('bar1_value', population);
 
-      var moral = graphic.get('bar2_value');
-      var moralDef = attributeValue('Armour_Moral', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
-      var moralDamage = damage - moralDef;
-      if(moralDamage < 0) moralDamage = 0;
-      moral -= moralDamage;
-      if(moral < 0) moral = 0;
-      graphic.set('bar2_value', moral);
+      var morale = graphic.get('bar2_value');
+      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var moraleDamage = damage - moraleDef;
+      if(moraleDamage < 0) moraleDamage = 0;
+      morale -= moraleDamage;
+      if(morale < 0) morale = 0;
+      graphic.set('bar2_value', morale);
     }
 
     //report an exact amount to the gm
@@ -1915,7 +1915,7 @@ function setDefaultToken(matches, msg){
     break;
     case "starship":
       var bar1 = getAttrByName(character.id, "Population", "max") || 0;
-      var bar2 = getAttrByName(character.id, "Moral", "max") || 0;
+      var bar2 = getAttrByName(character.id, "Morale", "max") || 0;
       var bar3 = getAttrByName(character.id, "Hull", "max");
     break;
   }
@@ -4538,7 +4538,7 @@ INQFormula.regex = function(options){
   var regex = '\\s*';
   regex += '((?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+)\\s*x\\s*)?';
   regex += '\\(?';
-  regex += '(?:(\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
+  regex += '(?:(-?\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
   if(!options.requireDice) regex += '?';
   regex += '(\\s*(?:\\+|-|–|—|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
   regex += '\\)?';
@@ -4713,7 +4713,7 @@ INQLinkParser.regex = function(){
   regex += "(?:<\\/a>)?";
   regex += "\\s*((?:\\([^x\\(\\)][^\\(\\)]*\\))*)"
   regex += "\\s*(?:\\(\\s*x\\s*(\\d+)\\))?";
-  regex += "\\s*(?:(\\+|–)\\s*(\\d+))?\\s*";
+  regex += "\\s*(?:(\\+|-|–)\\s*(\\d+))?\\s*";
 
   return regex;
 }
@@ -5085,7 +5085,7 @@ INQParser.prototype.parse = function(){
   this.Misc   = [];
 
   //break the text up by lines
-  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
+  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?div>|<\/?li>)/);
   Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++){
     this.parseLine(Lines[i]);
@@ -5222,7 +5222,7 @@ function INQStarship(){
   this.Attributes = {};
 
   this.Attributes.Population = 100;
-  this.Attributes.Moral = 100;
+  this.Attributes.Morale = 100;
   this.Attributes.Hull = 1;
   this.Attributes.VoidShields = 0;
 
@@ -5279,6 +5279,252 @@ INQStarship.prototype.getCharacterBio = function(){
   });
 
   return gmnotes;
+}
+function INQTest(options){
+  if(typeof options != 'object') options = {};
+  this.Modifiers = [];
+
+  this.Characteristic = '';
+  this.PartyStat = false;
+  this.Skill = '';
+  this.Subgroup = '';
+
+  this.Die = -1;
+  this.Successes = -1;
+  this.Failures = -1;
+
+  this.Stat = undefined;
+  this.Unnatural = undefined;
+
+  this.setSubgroup(options.skill);
+  this.setSkill(options.skill);
+  this.setCharacteristic(options.characteristic);
+  this.addModifier(options.modifier);
+  this.getStats(options.inqcharacter);
+  this.getSkillModifier(options.inqcharacter);
+}
+INQTest.prototype.addModifier = function(modifiers){
+  if(!modifiers) return;
+  if(typeof modifiers == 'string') modifiers = Number(modifiers);
+  if(typeof modifiers == 'number') this.Modifiers.push({Name: 'Other', Value: modifiers});
+  if(Array.isArray(modifiers)) {
+    for(var modifier of modifiers) {
+      this.addModifier(modifier);
+    }
+    return;
+  }
+  if(typeof modifiers == 'object'){
+    if(!modifiers.Name) modifiers.Name = 'Custom';
+    if(typeof modifiers.Value == 'string') modifiers.Value = Number(modifiers.Value);
+    if(!modifiers.Value) return;
+    this.Modifiers.push(modifiers);
+  }
+}
+INQTest.characteristics = function(){
+  return [
+    {Name: 'WS',  Alternates: ['Weapon Skill']},
+    {Name: 'BS',  Alternates: ['Ballistic Skill']},
+    {Name: 'S',   Alternates: ['Strength']},
+    {Name: 'T',   Alternates: ['Toughness']},
+    {Name: 'Ag',  Alternates: ['Agility']},
+    {Name: 'It',  Alternates: ['Inteligence', 'Int']},
+    {Name: 'Wp',  Alternates: ['Willpower']},
+    {Name: 'Per', Alternates: ['Perception', 'Pr']},
+    {Name: 'Fe',  Alternates: ['Fellowship', 'Fel']},
+    {Name: 'Corruption',  Alternates: ['Cor']},
+    {Name: 'Insanity'},
+    {Name: 'Renown'},
+    {Name: 'Morale'},
+    {Name: 'Crew'},
+    {Name: 'Profit Factor', Alternates: ['PF'], PartyStat: true}
+  ];
+}
+INQTest.prototype.display = function(playerid, name, gm){
+  var output = '';
+  var skillName = this.Skill;
+  if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
+  if(gm){
+    output += '/w gm ';
+    if(!playerIsGM(playerid)) {
+      var testName;
+      if(skillName){
+        testName = skillName + '(' + this.Characteristic + ')';
+      } else {
+        testName = this.Characteristic;
+      }
+
+      whisper('Rolling ' + testName + ' for the GM.', {speakingTo: playerid});
+    }
+  }
+
+  output += '&{template:default} ';
+  output += '{{name=<strong>' + this.Characteristic + '</strong>';
+  if(name) output += ': ' + name;
+  output += '}} ';
+  if(skillName) output += '{{Skill=' + skillName + '}}';
+  var formula = new INQFormula('D100');
+  formula.Modifier = -1*this.Stat;
+  for(var modifier of this.Modifiers) formula.Modifier -= modifier.Value;
+  formula.Multiplier = -0.1;
+  var inline = formula.toInline();
+  if(this.Die > 0) inline = inline.replace('D100', '(' + this.Die + ')');
+  output += '{{Successes=' + inline + '}} ';
+  if(this.Unnatural >= 0) output += '{{Unnatural=[[ceil((' + this.Unnatural + ')/2)]]}} ';
+  if(this.Modifiers.length) {
+    output += '{{Modifiers=';
+    for(var modifier of this.Modifiers){
+      output += modifier.Name + '(';
+      if(modifier.Value > 0) output += '+';
+      output += modifier.Value + '), ';
+    }
+    output = output.replace(/,\s*$/, '');
+    output += '}}';
+  }
+
+  announce(output, {speakingAs: playerid});
+}
+INQTest.prototype.getSkillModifier = function(inqcharacter){
+  if(!this.Skill || !inqcharacter) return;
+  var modifier = -20;
+  var skill = inqcharacter.has(this.Skill, 'Skills');
+  if(skill){
+    if(skill.length > 0){
+      if(this.Subgroup){
+        var re = toRegex(this.Subgroup);
+        _.each(skill, function(subgroup){
+          if(re.test(subgroup.Name) || /\s*all\s*/.test(subgroup.Name)){
+            if(subgroup.Bonus > modifier) modifier = subgroup.Bonus;
+          }
+        });
+      } else {
+        return whisper('Please specify a subgroup for *' + getLink(this.Skill) + '*');
+      }
+    } else {
+      modifier = skill.Bonus;
+    }
+  }
+
+  this.addModifier({Name: 'Skill', Value: modifier});
+}
+INQTest.prototype.getStats = function(inqcharacter){
+  if(!this.Characteristic || !inqcharacter) return;
+  if(!this.PartyStat){
+    this.Stat = inqcharacter.Attributes[this.Characteristic];
+    this.Unnatural = inqcharacter.Attributes['Unnatural ' + this.Characteristic];
+  } else {
+    this.Stat = attributeValue(this.Characteristic);
+    this.Unnatural = attributeValue('Unnatural ' + this.Characteristic, {alert: false});
+  }
+}
+INQTest.prototype.roll = function(){
+  this.Die = randomInteger(100);
+  var total = 0;
+  for(var modifier of this.Modifiers){
+    total += modifier.Value;
+  }
+  var test = this.Stat + total - this.Die;
+  this.Successes = Math.floor(Math.abs(test)/10);
+  this.Successes += Math.ceil(this.Unnatural/2);
+  if(test < 0) {
+    this.Failures = this.Successes;
+    this.Successes = -1;
+  } else {
+    this.Failures = -1;
+  }
+
+  return this.Successes;
+}
+INQTest.prototype.setCharacteristic = function(input){
+  if(!input) return false;
+  var characteristics = INQTest.characteristics();
+  for(var characteristic of characteristics){
+    if(toRegex(characteristic).test(input)){
+      this.Characteristic = characteristic.Name
+      this.PartyStat = characteristic.PartyStat;
+      return true;
+    }
+  }
+
+  return false;
+}
+INQTest.prototype.setSkill = function(input){
+  if(!input) return false;
+  input = input.replace(/\(.*\)/, '');
+  if(this.setCharacteristic(input)) return true;
+  var skills = INQTest.skills();
+  for(var skill of skills){
+    if(toRegex(skill).test(input)){
+      this.Skill = skill.Name;
+      this.Characteristic = skill.DefaultStat;
+      return true;
+    }
+  }
+
+  return false;
+}
+INQTest.prototype.setSubgroup = function(input){
+  if(!input) return false;
+  var matches = input.match(/\(([^\)]+)\)/);
+  if(matches) {
+    this.Subgroup = matches[1];
+    return true;
+  } else {
+    return false;
+  }
+}
+INQTest.skills = function(){
+  return [
+    {Name: 'Acrobatics',      DefaultStat: 'Ag'},
+    {Name: 'Athletics',       DefaultStat: 'S'},
+    {Name: 'Awareness',       DefaultStat: 'Per'},
+    {Name: 'Barter',          DefaultStat: 'Fe'},
+    {Name: 'Blather',         DefaultStat: 'Fe'},
+    {Name: 'Carouse',         DefaultStat: 'T'},
+    {Name: 'Charm',           DefaultStat: 'Fe'},
+    {Name: 'Chem-Use',        DefaultStat: 'It'},
+    {Name: 'Ciphers',         DefaultStat: 'It'},
+    {Name: 'Climb',           DefaultStat: 'S'},
+    {Name: 'Commerce',        DefaultStat: 'Fe'},
+    {Name: 'Command',         DefaultStat: 'Fe'},
+    {Name: 'Common Lore',     DefaultStat: 'It'},
+    {Name: 'Concealment',     DefaultStat: 'Ag'},
+    {Name: 'Contortionist',   DefaultStat: 'Ag'},
+    {Name: 'Deceive',         DefaultStat: 'Fe'},
+    {Name: 'Demolition',      DefaultStat: 'It'},
+    {Name: 'Disguise',        DefaultStat: 'It'},
+    {Name: 'Dodge',           DefaultStat: 'Ag'},
+    {Name: 'Drive',           DefaultStat: 'Ag'},
+    {Name: 'Evaluate',        DefaultStat: 'It'},
+    {Name: 'Forbidden Lore',  DefaultStat: 'It'},
+    {Name: 'Gamble',          DefaultStat: 'It'},
+    {Name: 'Inquiry',         DefaultStat: 'Fe'},
+    {Name: 'Interrogation',   DefaultStat: 'It'},
+    {Name: 'Intimidate',      DefaultStat: 'S'},
+    {Name: 'Invocation',      DefaultStat: 'Wp'},
+    {Name: 'Literacy',        DefaultStat: 'It'},
+    {Name: 'Logic',           DefaultStat: 'It'},
+    {Name: 'Medicae',         DefaultStat: 'It'},
+    {Name: 'Navigation',      DefaultStat: 'It'},
+    {Name: 'Performer',       DefaultStat: 'Fe'},
+    {Name: 'Pilot',           DefaultStat: 'Ag'},
+    {Name: 'Psyniscience',    DefaultStat: 'Per'},
+    {Name: 'Scholastic Lore', DefaultStat: 'It'},
+    {Name: 'Scrutiny',        DefaultStat: 'Per'},
+    {Name: 'Search',          DefaultStat: 'Per'},
+    {Name: 'Secret Tongue',   DefaultStat: 'It'},
+    {Name: 'Security',        DefaultStat: 'It'},
+    {Name: 'Shadowing',       DefaultStat: 'Ag'},
+    {Name: 'Silent Move',     DefaultStat: 'Ag'},
+    {Name: 'Sleight of Hand', DefaultStat: 'Ag'},
+    {Name: 'Speak Language',  DefaultStat: 'It'},
+    {Name: 'Survival',        DefaultStat: 'It'},
+    {Name: 'Swim',            DefaultStat: 'S'},
+    {Name: 'Tactics',         DefaultStat: 'It'},
+    {Name: 'Tech-Use',        DefaultStat: 'It'},
+    {Name: 'Tracking',        DefaultStat: 'It'},
+    {Name: 'Trade',           DefaultStat: 'Ag'},
+    {Name: 'Wrangling',       DefaultStat: 'Fe'}
+  ];
 }
 function INQTurns(){
   //get the JSON string of the turn order and make it into an array
@@ -6651,7 +6897,7 @@ function attributeValue(name, options){
 
       if(options['delete']){
         localAttributes.remove(name);
-        if(options['show']) whisper(name + ' has been deleted.');
+        if(options['alert']) whisper(name + ' has been deleted.');
         return true;
       }
 
@@ -7019,6 +7265,25 @@ function modifyAttribute(attribute, options) {
   );
 
   return modifiedAttribute;
+}
+function toRegex(obj, options){
+  if(typeof options != 'object') options = {};
+  if(typeof obj == 'string') obj = {Name: obj};
+  var pattern = '';
+  if(obj.Alternates) pattern += '(?:';
+  pattern += obj.Name.replace(/[- ]/g, '(?:\\s*|-)');
+  if(obj.Alternates){
+      pattern += '|';
+    _.each(obj.Alternates, function(alternate){
+      pattern += alternate.replace(/[- ]/g, '(?:\\s*|-)');
+      pattern += '|';
+    });
+    pattern = pattern.replace(/\|$/, '');
+    pattern += ')';
+  }
+
+  if(options.str) return pattern;
+  return new RegExp('^\\s*' + pattern + '\\s*$', 'i');
 }
 function trimToPerfectMatches(objs, phrase){
   var exactMatches = [];

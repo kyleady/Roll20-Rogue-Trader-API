@@ -6,7 +6,7 @@ INQParser.prototype.parse = function(){
   this.Misc   = [];
 
   //break the text up by lines
-  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?li>)/);
+  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?div>|<\/?li>)/);
   Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++){
     this.parseLine(Lines[i]);

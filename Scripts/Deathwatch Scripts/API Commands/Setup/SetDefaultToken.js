@@ -50,7 +50,7 @@ function setDefaultToken(matches, msg){
     break;
     case "starship":
       var bar1 = getAttrByName(character.id, "Population", "max") || 0;
-      var bar2 = getAttrByName(character.id, "Moral", "max") || 0;
+      var bar2 = getAttrByName(character.id, "Morale", "max") || 0;
       var bar3 = getAttrByName(character.id, "Hull", "max");
     break;
   }
