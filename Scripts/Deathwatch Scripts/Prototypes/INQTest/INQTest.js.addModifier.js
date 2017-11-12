@@ -9,7 +9,7 @@ INQTest.prototype.addModifier = function(modifiers){
     return;
   }
   if(typeof modifiers == 'object'){
-    if(!modifiers.Name) modifiers.Name = 'Custom';
+    if(!modifiers.Name) modifiers.Name = 'Other';
     if(typeof modifiers.Value == 'string') modifiers.Value = Number(modifiers.Value);
     if(!modifiers.Value) return;
     this.Modifiers.push(modifiers);

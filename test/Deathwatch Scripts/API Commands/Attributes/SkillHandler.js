@@ -219,7 +219,7 @@ describe('skillHandler()', function() {
     });
     player.MOCK20chat('!Scholastic lore(BEasts)');
   });
-	it('should allow you to include a modifier', function(done){
+	it('should allow you to include modifiers, with or without notes, with or without commas', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -241,7 +241,7 @@ describe('skillHandler()', function() {
         done();
       }
     });
-    player.MOCK20chat('!navigation(surFace)+6');
+    player.MOCK20chat('!navigation(surFace)+6, +10 Fate Point  -10 Fatigue');
   });
 	it('should allow you to specify an alternate Characteristic', function(done){
 		Campaign().MOCK20reset();

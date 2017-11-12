@@ -1,29 +1,31 @@
 //allows players to roll against a skill they may or may not have
   //matches[1] - skill name
   //matches[2] - skill subgroup
-  //matches[3] - modifier sign
-  //matches[4] - modifier absolute value
-  //matches[5] - alternate characteristic
+  //matches[3] - modifiers
+  //matches[4] - alternate characteristic
 function skillHandler(matches, msg){
   //store the input variables
   var toGM = matches[1];
   var skill = matches[2];
-  if(matches[3]){
-    var modifier = Number(matches[3] + matches[4]);
-  } else {
-    var modifier = 0;
+  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifiers = [];
+  if(modifierMatches){
+    for(var modifierMatch of modifierMatches){
+      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+    }
   }
-  var characteristic = matches[5];
+  log('modifiers');
+  log(modifiers);
 
+  var characteristic = matches[4];
   var inqtest = new INQTest({skill: skill, characteristic: characteristic});
-
-  //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
       var isNPC = inqcharacter.controlledby == '';
       inqtest.Modifiers = [];
-      inqtest.addModifier(modifier);
+      inqtest.addModifier(modifiers);
       inqtest.getStats(inqcharacter);
       inqtest.getSkillModifier(inqcharacter);
       inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
@@ -43,7 +45,7 @@ on('ready', function(){
   regex += ')';
   regex += '(?:\\([^\\(\\)]+\\))?\\s*';
   regex += ')';
-  regex += '(?:(\\+|-)\\s*(\\d+))?\\s*';
+  regex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*';
   regex += '(?:\\|\\s*';
   regex += '(';
   var characteristics = INQTest.characteristics();

@@ -5,18 +5,20 @@
 //matches[0] is the same as msg.content
 //matches[1] is either 'gm' or null
 //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
-//matches[3] is the sign of the modifier and is null if no modifier is included
-//matches[4] is the absolute value of the modifier and is null if no modifier is included
+//matches[3] is the list of modifiers
 function statRoll(matches, msg){
   var toGM = matches[1] && matches[1].toLowerCase() == 'gm';
   var characteristic = matches[2];
-  if(matches[3] && matches[4]){
-    var modifier = Number(matches[3] + matches[4]);
-  } else {
-    var modifier = 0;
+  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifiers = [];
+  if(modifierMatches){
+    for(var modifierMatch of modifierMatches){
+      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+    }
   }
 
-  var inqtest = new INQTest({characteristic: characteristic, modifier: modifier});
+  var inqtest = new INQTest({characteristic: characteristic, modifier: modifiers});
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
@@ -113,7 +115,7 @@ on('ready', function() {
   }
   rollRegex = rollRegex.replace(/\|\s*$/, '');
   rollRegex += ')';
-  rollRegex += '\\s*(?:(\\+|-)\\s*(\\d+)\\s*)?$';
+  rollRegex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*$';
   var rollRe = new RegExp(rollRegex, 'i');
   CentralInput.addCMD(rollRe, statRoll, true);
 

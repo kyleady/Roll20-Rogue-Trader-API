@@ -228,29 +228,31 @@ on("ready", function(){
 //allows players to roll against a skill they may or may not have
   //matches[1] - skill name
   //matches[2] - skill subgroup
-  //matches[3] - modifier sign
-  //matches[4] - modifier absolute value
-  //matches[5] - alternate characteristic
+  //matches[3] - modifiers
+  //matches[4] - alternate characteristic
 function skillHandler(matches, msg){
   //store the input variables
   var toGM = matches[1];
   var skill = matches[2];
-  if(matches[3]){
-    var modifier = Number(matches[3] + matches[4]);
-  } else {
-    var modifier = 0;
+  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifiers = [];
+  if(modifierMatches){
+    for(var modifierMatch of modifierMatches){
+      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+    }
   }
-  var characteristic = matches[5];
+  log('modifiers');
+  log(modifiers);
 
+  var characteristic = matches[4];
   var inqtest = new INQTest({skill: skill, characteristic: characteristic});
-
-  //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
       var isNPC = inqcharacter.controlledby == '';
       inqtest.Modifiers = [];
-      inqtest.addModifier(modifier);
+      inqtest.addModifier(modifiers);
       inqtest.getStats(inqcharacter);
       inqtest.getSkillModifier(inqcharacter);
       inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
@@ -270,7 +272,7 @@ on('ready', function(){
   regex += ')';
   regex += '(?:\\([^\\(\\)]+\\))?\\s*';
   regex += ')';
-  regex += '(?:(\\+|-)\\s*(\\d+))?\\s*';
+  regex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*';
   regex += '(?:\\|\\s*';
   regex += '(';
   var characteristics = INQTest.characteristics();
@@ -334,18 +336,20 @@ on("ready",function(){
 //matches[0] is the same as msg.content
 //matches[1] is either 'gm' or null
 //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
-//matches[3] is the sign of the modifier and is null if no modifier is included
-//matches[4] is the absolute value of the modifier and is null if no modifier is included
+//matches[3] is the list of modifiers
 function statRoll(matches, msg){
   var toGM = matches[1] && matches[1].toLowerCase() == 'gm';
   var characteristic = matches[2];
-  if(matches[3] && matches[4]){
-    var modifier = Number(matches[3] + matches[4]);
-  } else {
-    var modifier = 0;
+  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifiers = [];
+  if(modifierMatches){
+    for(var modifierMatch of modifierMatches){
+      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+    }
   }
 
-  var inqtest = new INQTest({characteristic: characteristic, modifier: modifier});
+  var inqtest = new INQTest({characteristic: characteristic, modifier: modifiers});
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
@@ -442,7 +446,7 @@ on('ready', function() {
   }
   rollRegex = rollRegex.replace(/\|\s*$/, '');
   rollRegex += ')';
-  rollRegex += '\\s*(?:(\\+|-)\\s*(\\d+)\\s*)?$';
+  rollRegex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*$';
   var rollRe = new RegExp(rollRegex, 'i');
   CentralInput.addCMD(rollRe, statRoll, true);
 
@@ -5088,7 +5092,7 @@ INQTest.prototype.addModifier = function(modifiers){
     return;
   }
   if(typeof modifiers == 'object'){
-    if(!modifiers.Name) modifiers.Name = 'Custom';
+    if(!modifiers.Name) modifiers.Name = 'Other';
     if(typeof modifiers.Value == 'string') modifiers.Value = Number(modifiers.Value);
     if(!modifiers.Value) return;
     this.Modifiers.push(modifiers);
