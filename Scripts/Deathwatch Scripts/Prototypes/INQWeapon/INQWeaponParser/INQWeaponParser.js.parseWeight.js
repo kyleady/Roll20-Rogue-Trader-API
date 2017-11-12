@@ -10,5 +10,7 @@ INQWeaponParser.prototype.parseWeight = function(content){
     }
   } else {
     whisper('Invalid Weight');
+    log('Invalid Weight');
+    log(content);
   }
 }

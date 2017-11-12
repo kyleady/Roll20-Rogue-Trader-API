@@ -1,6 +1,6 @@
 INQTest.prototype.display = function(playerid, name, gm){
   var output = '';
-  var skillName = this.Skill;
+  var skillName = getLink(this.Skill);
   if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
   if(gm){
     output += '/w gm ';
@@ -22,11 +22,12 @@ INQTest.prototype.display = function(playerid, name, gm){
   output += '}} ';
   if(skillName) output += '{{Skill=' + skillName + '}}';
   var formula = new INQFormula('D100');
-  formula.Modifier = -1*this.Stat;
-  for(var modifier of this.Modifiers) formula.Modifier -= modifier.Value;
-  formula.Multiplier = -0.1;
+  formula.DiceNumber = -1;
+  formula.Modifier = this.Stat;
+  for(var modifier of this.Modifiers) formula.Modifier += modifier.Value;
+  formula.Multiplier = 0.1;
   var inline = formula.toInline();
-  if(this.Die > 0) inline = inline.replace('D100', '(' + this.Die + ')');
+  if(this.Die > 0) inline = inline.replace('1D100', '(' + this.Die + ')');
   output += '{{Successes=' + inline + '}} ';
   if(this.Unnatural >= 0) output += '{{Unnatural=[[ceil((' + this.Unnatural + ')/2)]]}} ';
   if(this.Modifiers.length) {
@@ -40,5 +41,5 @@ INQTest.prototype.display = function(playerid, name, gm){
     output += '}}';
   }
 
-  announce(output, {speakingAs: playerid});
+  announce(output, {speakingAs: 'player|' + playerid});
 }

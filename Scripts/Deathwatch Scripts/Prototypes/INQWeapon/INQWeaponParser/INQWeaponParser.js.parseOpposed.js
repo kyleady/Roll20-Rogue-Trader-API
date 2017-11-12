@@ -4,6 +4,8 @@ INQWeaponParser.prototype.parseOpposed = function(content){
     this.Opposed = matches[1].toLowerCase() == 'yes';
     this.Class = 'Psychic';
   } else {
-    whisper('Invalid Opposed')
+    whisper('Invalid Opposed');
+    log('Invalid Opposed');
+    log(content);
   }
 }

@@ -23,6 +23,8 @@ INQWeaponParser.prototype.parseAvailability = function(content){
   if(matches){
     this.Availability = matches[1].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
-    whisper('Invalid Availability')
+    whisper('Invalid Availability');
+    log('Invalid Availability');
+    log(content);
   }
 }

@@ -81,7 +81,9 @@ function makeAttributeHandlerRegex(yourAttributes){
     regex = regex.replace(/\|$/, "");
     regex += ")";
   } else {
-    whisper('invalid yourAttributes');
+    whisper('Invalid yourAttributes');
+    log('Invalid yourAttributes');
+    log(yourAttributes);
     return;
   }
   regex += "\\s*" + numModifier.regexStr();

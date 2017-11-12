@@ -10,5 +10,7 @@ INQWeaponParser.prototype.parseSpecialRules = function(content){
     }
   } else {
     whisper('Invalid Special Rules');
+    log('Invalid Special Rules');
+    log(content);
   }
 }

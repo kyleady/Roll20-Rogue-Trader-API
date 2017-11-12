@@ -9,6 +9,14 @@ INQWeaponParser.prototype.parseDamage = function(content){
   this.Damage = new INQFormula(damage);
   this.DamageType = new INQLink(damagetype);
 
-  if(!this.DamageType.Name) whisper('Invalid Damage Type');
-  if(this.Damage.onlyZero()) whisper('Invalid Damage');
+  if(!this.DamageType.Name) {
+    whisper('Invalid Damage Type');
+    log('Invalid Damage Type');
+    log(damagetype);
+  }
+  if(this.Damage.onlyZero()) {
+    whisper('Invalid Damage');
+    log('Invalid Damage');
+    log(damage);
+  }
 }

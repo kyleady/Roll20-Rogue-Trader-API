@@ -15,5 +15,7 @@ INQWeaponParser.prototype.parseFocusPower = function(content){
     this.FocusTest = matches[4].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
     whisper('Invalid Focus Power');
+    log('Invalid Focus Power');
+    log(content);
   }
 }

@@ -19,5 +19,7 @@ INQWeaponParser.prototype.parseReload = function(content){
     }
   } else {
     whisper('Invalid Reload');
+    log('Invalid Reload');
+    log(content);
   }
 }

@@ -1,5 +1,3 @@
-//sometimes a link tag can be split onto multiple lines
-//close every link tag that is imbalanced
 INQParser.prototype.balanceTags = function(Lines){
   var tags = [];
   tags.push({Opener: '<a href="https?://[^\\s>]*">', Closer: '</a>'});
@@ -45,14 +43,16 @@ INQParser.prototype.balanceTags = function(Lines){
     }
 
     for(var opener of openers){
-      if(!opener.closer){
+      if(!opener.closer || /^((<[^<>]+>|\s+))*$/.test(Lines[opener.i].substring(opener.j))){
+        opener.removed = true;
         Lines[opener.i] = Lines[opener.i].substring(0, opener.j)
           + Lines[opener.i].substring(opener.j).replace(RegExp(tag.Opener), '');
       }
     }
 
     for(var closer of closers){
-      if(!closer.opener){
+      if(!closer.opener || /^((<[^<>]+>|\s+))*$/.test(Lines[closer.i].substring(0, closer.j))){
+        closer.removed = true;
         Lines[closer.i] = Lines[closer.i].substring(0, closer.j)
           + Lines[closer.i].substring(closer.j).replace(RegExp(tag.Closer), '');
       }
@@ -61,15 +61,14 @@ INQParser.prototype.balanceTags = function(Lines){
     for(var opener of openers){
       if(opener.closer && opener.i != opener.closer.i){
         for(var i = opener.i; i <= opener.closer.i; i++){
-          if(i != opener.i){
-            Lines[i] = opener.text + Lines[i];
-          }
-          if(i != opener.closer.i){
-            Lines[i] = Lines[i] + opener.closer.text;
-          }
+          if(i == opener.i && opener.removed) continue;
+          if(i == opener.closer.i && opener.closer.removed) continue;
+          if(i != opener.i) Lines[i] = opener.text + Lines[i];
+          if(i != opener.closer.i) Lines[i] = Lines[i] + opener.closer.text;
         }
       }
     }
+
   });
 
   return Lines;

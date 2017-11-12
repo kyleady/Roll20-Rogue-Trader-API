@@ -5,5 +5,7 @@ INQWeaponParser.prototype.parseRequisition = function(content){
     if(matches[2]) this.Requisition = -1;
   } else {
     whisper('Invalid Requisition');
+    log('Invalid Requisition');
+    log(content);
   }
 }

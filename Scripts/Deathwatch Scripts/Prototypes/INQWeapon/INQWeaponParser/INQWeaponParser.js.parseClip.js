@@ -8,6 +8,8 @@ INQWeaponParser.prototype.parseClip = function(content){
     }
 
   } else {
-    whisper('Invalid Clip')
+    whisper('Invalid Clip');
+    log('Invalid Clip');
+    log(content);
   }
 }

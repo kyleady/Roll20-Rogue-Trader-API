@@ -20,7 +20,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*-\s*20\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*-20\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -44,7 +44,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('Per')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*0\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*0\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -68,7 +68,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('Ag')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*20\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*20\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -92,7 +92,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*10\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*10\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -116,7 +116,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*-\s*20\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*-20\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -163,7 +163,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*-\s*10\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*-10\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -187,7 +187,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*10\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*10\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -202,7 +202,7 @@ describe('skillHandler()', function() {
 
     var player = createObj('player', {_displayname: 'skillHandler player'}, {MOCK20override: true});
     var inqcharacter = new INQCharacter();
-		var ScholasticLore = new INQLink('Scholastic Lore(all)-30');
+		var ScholasticLore = new INQLink('Scholastic Lore(all)-10');
 		inqcharacter.List.Skills.push(ScholasticLore);
 		var ScholasticLore2 = new INQLink('Scholastic Lore(Beasts)+30');
 		inqcharacter.List.Skills.push(ScholasticLore2);
@@ -213,7 +213,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*30\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*30\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -237,7 +237,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('It')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*16\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*16\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -261,8 +261,8 @@ describe('skillHandler()', function() {
     var graphic = createObj('graphic', {name: 'skillHandler graphic', _pageid: page.id, represents: character.id});
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('T')) {
-        expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*20\s*\+\s*0\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+				expect(msg.inlinerolls).to.not.be.undefined;
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*20\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -286,7 +286,7 @@ describe('skillHandler()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('Per') && msg.target == 'gm') {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*0\s*\+\s*0\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*0\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });

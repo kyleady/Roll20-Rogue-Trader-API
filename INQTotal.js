@@ -233,125 +233,56 @@ on("ready", function(){
   //matches[5] - alternate characteristic
 function skillHandler(matches, msg){
   //store the input variables
-  var gmwhisper = matches[1];
-  var skillName = matches[2];
-  var skillSubgroup = matches[3];
-  if(matches[4]){
-    var modifier = Number(matches[4] + matches[5]);
+  var toGM = matches[1];
+  var skill = matches[2];
+  if(matches[3]){
+    var modifier = Number(matches[3] + matches[4]);
   } else {
     var modifier = 0;
   }
-  var stat = matches[6];
+  var characteristic = matches[5];
 
-  //determine the actual name of the skill
-  //and use its defaultStat
-  _.each(INQSkill.skills, function(skill){
-    if(RegExp("^" + INQSkill.toRegex(skill) + "$", "i").test(skillName)){
-      skillName = skill.Name;
-      if(!stat){
-        stat = skill.DefaultStat;
-      }
-    }
-  });
-  //determine the actual name of the characteristic
-  _.each(INQSkill.characteristics, function(characteristic){
-    if(RegExp("^" + INQSkill.toRegex(characteristic) + "$", "i").test(stat)){
-      stat = characteristic.Name;
-    }
-  });
+  var inqtest = new INQTest({skill: skill, characteristic: characteristic});
 
   //let each character take the skill check
   eachCharacter(msg, function(character, graphic){
-    var skillPromise = new Promise(function(resolve){
-      //parse this character
-      var inqcharacter = new INQCharacter(character, graphic, function(){
-        resolve(inqcharacter);
-      });
-    });
-
-    skillPromise.catch(function(e){log(e)});
-    skillPromise.then(function(inqcharacter){
-      //determine if the character has this skill
-      var skill = inqcharacter.has(skillName, "Skills");
-      if(!skill){
-        //the character does not have this skill
-        modifier += -20;
-      //the character has a skill with subgroups
-      } else if(skill.length > 0){
-        //did the user provide a subgroup?
-        if(skillSubgroup){
-          //does the character have the given subgroup?
-          var regex = "^\\s*";
-          regex += INQSkill.toRegex({Name: skillSubgroup});
-          regex += "\\s*$";
-          var re = RegExp(regex, "i");
-          var matchingSubgroup = false;
-          var subgroupModifier = -20;
-          _.each(skill, function(subgroup){
-            if(re.test(subgroup.Name) || /\s*all\s*/.test(subgroup.Name)){
-              //overwrite the subgroup's modifier if it is better
-              if(subgroup.Bonus > subgroupModifier){
-                subgroupModifier = subgroup.Bonus;
-              }
-            }
-          });
-          //if the character does not have a matching subgroup, give them a flat -20 modifier
-          modifier += subgroupModifier;
-        } else {
-          //the skill needs a subgroup but the user didn't supply one
-          whisper("Please specify a subgroup for *" + getLink(skillName) + "*", {speakingTo: msg.playerid, gmEcho: true});
-          //skip to the next character
-          return;
-        }
-      //the skill was found, and there is no need to match subgroups
-      } else {
-        //apply the skill's modifier
-        modifier += skill.Bonus;
-      }
-      //turn the modifier into text
-      if(modifier >= 0){
-        var modifierSign = "+";
-      } else {
-        var modifierSign = "-";
-      }
-      var modifierAbsValue = Math.abs(modifier).toString();
-      //create a fake msg to select this character alone
-      var fakeMsg = {
-        playerid: msg.playerid,
-        selected: [graphic]
-      };
-      //note the skill being rolled in the template
-      options = {
-        display: [{
-          Title: "Skill",
-          Content: getLink(skillName)
-        }]
-      }
-      //show the subgroup as well if it exists
-      if(skillSubgroup){
-        options.display.push({
-          Title: "Group",
-          Content: skillSubgroup.trim().toTitleCase().replace(/\s\s+/g, " ")
-        });
-      }
-      //call upon the stat handler to make the actual roll
-      statRoll(["", gmwhisper, stat, modifierSign, modifierAbsValue], fakeMsg, options);
+    var isNPC = false;
+    new INQCharacter(character, graphic, function(inqcharacter){
+      var isNPC = inqcharacter.controlledby == '';
+      inqtest.Modifiers = [];
+      inqtest.addModifier(modifier);
+      inqtest.getStats(inqcharacter);
+      inqtest.getSkillModifier(inqcharacter);
+      inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
     });
   });
 }
 
-on("ready", function(){
-  var regex = "^!\\s*";
-  regex += "(gm|)\\s*";
-  regex += INQSkill.regex("skills") + "\\s*";
-  regex += "(?:\\(([^\\(\\)]+)\\))?\\s*";
-  regex += "(?:(\\+|-)\\s*(\\d+))?\\s*";
-  regex += "(?:\\|\\s*";
-  regex += INQSkill.regex("characteristics");
-  regex += "\\s*)?\\s*";
-  regex += "$";
+on('ready', function(){
+  var regex = '^!\\s*';
+  regex += '(gm|)\\s*';
+  var skills = INQTest.skills();
+  regex += '((?:'
+  for(var skill of skills){
+    regex += toRegex(skill, {str: true}) + '|';
+  }
+  regex = regex.replace(/\|\s*$/, '');
+  regex += ')';
+  regex += '(?:\\([^\\(\\)]+\\))?\\s*';
+  regex += ')';
+  regex += '(?:(\\+|-)\\s*(\\d+))?\\s*';
+  regex += '(?:\\|\\s*';
+  regex += '(';
+  var characteristics = INQTest.characteristics();
+  for(var characteristic of characteristics){
+    regex += toRegex(characteristic, {str: true}) + '|';
+  }
+  regex = regex.replace(/\|\s*$/, '');
+  regex += ')';
+  regex += '\\s*)?\\s*';
+  regex += '$';
 
-  CentralInput.addCMD(RegExp(regex, "i"), skillHandler, true);
+  CentralInput.addCMD(RegExp(regex, 'i'), skillHandler, true);
 });
 //resets every stat of the selected characters to its maximum (creates an
 //exception for Fatigue as it resets to 0).
@@ -401,91 +332,27 @@ on("ready",function(){
 //negative success equals the number of failures
 
 //matches[0] is the same as msg.content
-//matches[1] is either "gm" or null
+//matches[1] is either 'gm' or null
 //matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
 //matches[3] is the sign of the modifier and is null if no modifier is included
 //matches[4] is the absolute value of the modifier and is null if no modifier is included
-function statRoll(matches, msg, options){
-  //if matches[1] exists, then the user specified that they want this to be a private whisper to the gm
-  var toGM = matches[1] && matches[1].toLowerCase() == "gm"
-
-  //record the name of the stat without modification
-  //capitalization modification should be done before this function
-  var statName = matches[2];
-
-  //did the player add a modifier?
+function statRoll(matches, msg){
+  var toGM = matches[1] && matches[1].toLowerCase() == 'gm';
+  var characteristic = matches[2];
   if(matches[3] && matches[4]){
     var modifier = Number(matches[3] + matches[4]);
   } else {
-    var modifier = 0
+    var modifier = 0;
   }
 
-  //default to empty options
-  options = options || {};
-
-  //is the stat a public stat, shared by the entire party?
-  if(options["partyStat"]){
-    //then tell eachCharacter to not even look for a character
-    msg.selected = [{_type: "unique"}];
-  }
-
-  //work through each selected character
+  var inqtest = new INQTest({characteristic: characteristic, modifier: modifier});
   eachCharacter(msg, function(character, graphic){
-    //by default assume each character is not an NPC
     var isNPC = false;
-    //if working for a group stat, search for the stat anywhere in the campaign
-    if(options["partyStat"]){
-      //retrieve the value of the stat we are working with
-      var stat = attributeValue(statName);
-      //retrive the unnatural bonus to the stat we are working with
-      //but don't worry if you can't find one
-      var unnatural_stat = attributeValue("Unnatural " + statName,{alert: false});
-      //ignore the name of the character that owns this stat
-      var name = "";
-    } else {
-      //retrieve the value of the stat we are working with
-      var stat = attributeValue(statName,{characterid: character.id, graphicid: graphic.id, bar: options["bar"]});
-      //retrive the unnatural bonus to the stat we are working with
-      //but don't worry if you can't find one
-      var unnatural_stat = attributeValue("Unnatural " + statName,{characterid: character.id, graphicid: graphic.id, alert: false});
-      //retrive the name of the character that owns the stat
-      //and add a bit a formatting for later
-      var name = ": " + character.get("name");
-      //if the gm rolls for a character that isn't controlled by anyone, roll it
-      //privately
-      isNPC = character.get("controlledby") == "";
-    }
-
-    //be sure the stat exists
-    //attrValue should warn if something went wrong
-    if(stat == undefined){return;}
-
-    //by default, don't include the unnatural bonus
-    var unnatural_bonus = "";
-    if(unnatural_stat != undefined){
-      unnatural_bonus = "{{Unnatural= [[ceil((" + unnatural_stat + ")/2)]]}}";
-    }
-
-    //if this is sent to the gm or if the gm is rolling for an NPC, whisper it
-    if(toGM || (isNPC && playerIsGM(msg.playerid))){
-      var whisperGM = "/w gm ";
-      if(!playerIsGM(msg.playerid)){
-        whisper("Rolling " + statName + " for GM.", {speakingTo: msg.playerid});
-      }
-    } else {
-      var whisperGM = "";
-    }
-    //output the stat roll (whisperGM determines if everyone can see it or if it was sent privately to the GM);
-    var output = "&{template:default} ";
-    output += "{{name=<strong>" + statName +  "</strong>" + name + "}} ";
-    if(options["display"]){
-      _.each(options["display"], function(line){
-        output += "{{" + line.Title  + "=" + line.Content + "}}";
-      });
-    }
-    output += "{{Successes=[[((" + stat.toString() + "+" + modifier.toString() + "-D100)/10)]]}} ";
-    output += unnatural_bonus;
-    announce(whisperGM + output);
+    new INQCharacter(character, graphic, function(inqcharacter){
+      var isNPC = inqcharacter.controlledby == '';
+      inqtest.getStats(inqcharacter);
+      inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
+    });
   });
 }
 
@@ -494,42 +361,42 @@ function statRoll(matches, msg, options){
 function getProperStatName(statName){
   var isUnnatural = /^unnatural /i.test(statName);
   if(isUnnatural){
-    statName = statName.replace(/^unnatural /i,"");
+    statName = statName.replace(/^unnatural /i,'');
   }
   switch(statName.toLowerCase()){
-    case "pr": case "pe":
+    case 'pr': case 'pe':
       //replace pr with Per (due to conflicts with PsyRating(PR))
-      statName = "Per";
+      statName = 'Per';
       break;
-    case "psy rating":
-      statName = "PR";
+    case 'psy rating':
+      statName = 'PR';
       break;
-    case "ws": case "bs":
+    case 'ws': case 'bs':
       //capitalize every letter
       statName = statName.toUpperCase();
       break;
-    case "int": case "in":
-      statName = "It";
+    case 'int': case 'in':
+      statName = 'It';
       break;
-    case "fel":
-      statName = "Fe";
+    case 'fel':
+      statName = 'Fe';
       break;
-    case "cor":
-      statName = "Corruption";
+    case 'cor':
+      statName = 'Corruption';
       break;
-    case "dam":
-      statName = "Damage";
+    case 'dam':
+      statName = 'Damage';
       break;
-    case "pen":
-      statName = "Penetration";
+    case 'pen':
+      statName = 'Penetration';
       break;
-    case "prim":
-      statName = "Primitive";
+    case 'prim':
+      statName = 'Primitive';
       break;
-    case "fell":
-      statName = "Felling";
+    case 'fell':
+      statName = 'Felling';
       break;
-    case "damtype":
+    case 'damtype':
       statName = 'DamageType';
       break;
     default:
@@ -537,10 +404,10 @@ function getProperStatName(statName){
       statName = statName.toTitleCase();
   }
   statName = statName.replace(/^armour(?:_|\s*)(\w\w?)$/i, function(match, p1){
-    return "Armour_" + p1.toUpperCase();
+    return 'Armour_' + p1.toUpperCase();
   });
   if(isUnnatural){
-    statName = "Unnatural " + statName;
+    statName = 'Unnatural ' + statName;
   }
   return statName;
 }
@@ -549,50 +416,54 @@ function getProperStatName(statName){
 //if it isn't represented by any bar, it returns undefined
 function defaultToTokenBars(name){
   switch(name.toTitleCase()){
-    case "Fatigue":
-    case "Population":
-    case "Tactical Speed":
-      return "bar1";
-    case "Fate":
-    case "Morale":
-    case "Aerial Speed":
-      return "bar2";
-    case "Wounds":
-    case "Structural Integrity":
-    case "Hull":
-      return "bar3";
+    case 'Fatigue':
+    case 'Population':
+    case 'Tactical Speed':
+      return 'bar1';
+    case 'Fate':
+    case 'Morale':
+    case 'Aerial Speed':
+      return 'bar2';
+    case 'Wounds':
+    case 'Structural Integrity':
+    case 'Hull':
+      return 'bar3';
   }
   return undefined;
 }
 
 //adds the commands after CentralInput has been initialized
-on("ready", function() {
-  //add the stat roller function to the Central Input list as a public command
-  //inputs should appear like '!Fe+10' OR '!Ag ' OR '!gmS - 20  '
-  CentralInput.addCMD(/^!\s*(gm)?\s*(WS|BS|S|T|Ag|It|Int|Wp|Pr|Per|Fe|Fel|Insanity|Corruption|Renown|Crew|Population|Morale)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
-    matches[2] = getProperStatName(matches[2]);
-    var tokenBar = defaultToTokenBars(matches[2]);
-    statRoll(matches,msg,{bar: tokenBar});
-  },true);
+on('ready', function() {
+  var rollableStats = INQTest.characteristics();
+  var rollRegex = '^!\\s*(gm)?\\s*';
+  rollRegex += '(';
+  for(var rollableStat of rollableStats){
+    rollRegex += toRegex(rollableStat, {str: true}) + '|';
+  }
+  rollRegex = rollRegex.replace(/\|\s*$/, '');
+  rollRegex += ')';
+  rollRegex += '\\s*(?:(\\+|-)\\s*(\\d+)\\s*)?$';
+  var rollRe = new RegExp(rollRegex, 'i');
+  CentralInput.addCMD(rollRe, statRoll, true);
 
   //lets the user quickly view their stats with modifiers
-  var inqStats = ["WS", "BS", "S", "T", "Ag", "I(?:n|t|nt)", "Wp", "P(?:r|e|er)", "Fel?", "Cor", "Corruption", "Wounds", "Structural Integrity"];
-  var inqLocations = ["H", "RA", "LA", "B", "RL", "LR", "F", "S", "R", "P", "A"];
-  var inqAttributes = ["Psy Rating", "Fate", "Insanity", "Renown", "Crew", "Fatigue", "Population", "Morale", "Hull", "Void Shields", "Turret", "Manoeuvrability", "Detection", "Tactical Speed", "Aerial Speed"];
-  var inqUnnatural = "Unnatural (?:";
+  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Structural Integrity'];
+  var inqLocations = ['H', 'RA', 'LA', 'B', 'RL', 'LR', 'F', 'S', 'R', 'P', 'A'];
+  var inqAttributes = ['Psy Rating', 'Fate', 'Insanity', 'Renown', 'Crew', 'Fatigue', 'Population', 'Morale', 'Hull', 'Void Shields', 'Turret', 'Manoeuvrability', 'Detection', 'Tactical Speed', 'Aerial Speed'];
+  var inqUnnatural = 'Unnatural (?:';
   for(var inqStat of inqStats){
     inqAttributes.push(inqStat);
-    inqUnnatural += inqStat + "|";
+    inqUnnatural += inqStat + '|';
   }
-  inqUnnatural = inqUnnatural.replace(/|$/,"");
-  inqUnnatural += ")";
+  inqUnnatural = inqUnnatural.replace(/|$/,'');
+  inqUnnatural += ')';
   inqAttributes.push(inqUnnatural);
-  var inqArmour = "Armour_(?:";
+  var inqArmour = 'Armour_(?:';
   for(var inqLocation of inqLocations){
-    inqArmour += inqLocation + "|";
+    inqArmour += inqLocation + '|';
   }
-  inqArmour = inqArmour.replace(/|$/,"");
-  inqArmour += ")";
+  inqArmour = inqArmour.replace(/|$/,'');
+  inqArmour += ')';
   inqAttributes.push(inqArmour);
   var re = makeAttributeHandlerRegex(inqAttributes);
   CentralInput.addCMD(re, function(matches,msg){
@@ -601,15 +472,9 @@ on("ready", function() {
     attributeHandler(matches,msg,{bar: tokenBar});
   },true);
 
-  //Lets players make a Profit Factor Test
-  CentralInput.addCMD(/^!\s*(gm)?\s*(Profit Factor)\s*(?:(\+|-)\s*(\d+)\s*)?$/i,function(matches,msg){
-    matches[2] = "Profit Factor";
-    statRoll(matches,msg,{partyStat: true});
-  },true);
-  var profitFactorRe = makeAttributeHandlerRegex("Profit Factor");
-  //Lets players freely view and edit profit factor with modifiers
+  var profitFactorRe = makeAttributeHandlerRegex('Profit Factor');
   CentralInput.addCMD(profitFactorRe, function(matches,msg){
-    matches[2] = "Profit Factor";
+    matches[2] = 'Profit Factor';
     attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
@@ -2152,6 +2017,7 @@ on("chat:message", function(msg){
   && /{{\s*successes\s*=\s*\$\[\[0\]\]\s*}}/i.test(msg.content)
   && /{{\s*unnatural\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content)
   && msg.inlinerolls.length == 2) {
+    if(!msg.inlinerolls[0].results) return;
     //load up the AmmoTracker object to calculate the hit location
     saveHitLocation(msg.inlinerolls[0].results.rolls[1].results[0].v, {whisper: true});
     //if the number of successes was positive, add in Unnatural and save it
@@ -3810,108 +3676,6 @@ INQAttack.hordeDamage = function(damage){
   //return the magnitude damage
   return damage;
 }
-//list of accepted characteristics
-var INQSkill = {};
-INQSkill.characteristics = [
-  {Name: "WS",  Alternates: ["Weapon Skill"]},
-  {Name: "BS",  Alternates: ["Ballistic Skill"]},
-  {Name: "S",   Alternates: ["Strength"]},
-  {Name: "T",   Alternates: ["Toughness"]},
-  {Name: "Ag",  Alternates: ["Agility"]},
-  {Name: "It",  Alternates: ["Inteligence", "Int"]},
-  {Name: "Wp",  Alternates: ["Willpower"]},
-  {Name: "Per", Alternates: ["Perception", "Pr"]},
-  {Name: "Fe",  Alternates: ["Fellowship", "Fel"]}
-];
-INQSkill = INQSkill || {};
-//create an OR regex out of a list within INQSkill
-INQSkill.regex = function(group){
-  group = INQSkill[group] || INQSkill.skills;
-  var output = "("
-  _.each(group, function(item){
-    //let spaces and dashes be interchangeable
-    output += INQSkill.toRegex(item);
-    output += "|";
-  });
-  //remove the last OR
-  output = output.replace(/\|$/, "");
-  output += ")";
-  return output;
-}
-INQSkill = INQSkill || {};
-//list of accepted skills
-INQSkill.skills = [
-  {Name: "Acrobatics",      DefaultStat: "Ag"},
-  {Name: "Athletics",       DefaultStat: "S"},
-  {Name: "Awareness",       DefaultStat: "Per"},
-  {Name: "Barter",          DefaultStat: "Fe"},
-  {Name: "Blather",         DefaultStat: "Fe"},
-  {Name: "Carouse",         DefaultStat: "T"},
-  {Name: "Charm",           DefaultStat: "Fe"},
-  {Name: "Chem-Use",        DefaultStat: "It"},
-  {Name: "Ciphers",         DefaultStat: "It"},
-  {Name: "Climb",           DefaultStat: "S"},
-  {Name: "Commerce",        DefaultStat: "Fe"},
-  {Name: "Command",         DefaultStat: "Fe"},
-  {Name: "Common Lore",     DefaultStat: "It"},
-  {Name: "Concealment",     DefaultStat: "Ag"},
-  {Name: "Contortionist",   DefaultStat: "Ag"},
-  {Name: "Deceive",         DefaultStat: "Fe"},
-  {Name: "Demolition",      DefaultStat: "It"},
-  {Name: "Disguise",        DefaultStat: "It"},
-  {Name: "Dodge",           DefaultStat: "Ag"},
-  {Name: "Drive",           DefaultStat: "Ag"},
-  {Name: "Evaluate",        DefaultStat: "It"},
-  {Name: "Forbidden Lore",  DefaultStat: "It"},
-  {Name: "Gamble",          DefaultStat: "It"},
-  {Name: "Inquiry",         DefaultStat: "Fe"},
-  {Name: "Interrogation",   DefaultStat: "It"},
-  {Name: "Intimidate",      DefaultStat: "S"},
-  {Name: "Invocation",      DefaultStat: "Wp"},
-  {Name: "Literacy",        DefaultStat: "It"},
-  {Name: "Logic",           DefaultStat: "It"},
-  {Name: "Medicae",         DefaultStat: "It"},
-  {Name: "Navigation",      DefaultStat: "It"},
-  {Name: "Performer",       DefaultStat: "Fe"},
-  {Name: "Pilot",           DefaultStat: "Ag"},
-  {Name: "Psyniscience",    DefaultStat: "Per"},
-  {Name: "Scholastic Lore", DefaultStat: "It"},
-  {Name: "Scrutiny",        DefaultStat: "Per"},
-  {Name: "Search",          DefaultStat: "Per"},
-  {Name: "Secret Tongue",   DefaultStat: "It"},
-  {Name: "Security",        DefaultStat: "It"},
-  {Name: "Shadowing",       DefaultStat: "Ag"},
-  {Name: "Silent Move",     DefaultStat: "Ag"},
-  {Name: "Sleight of Hand", DefaultStat: "Ag"},
-  {Name: "Speak Language",  DefaultStat: "It"},
-  {Name: "Survival",        DefaultStat: "It"},
-  {Name: "Swim",            DefaultStat: "S"},
-  {Name: "Tactics",         DefaultStat: "It"},
-  {Name: "Tech-Use",        DefaultStat: "It"},
-  {Name: "Tracking",        DefaultStat: "It"},
-  {Name: "Trade",           DefaultStat: "Ag"},
-  {Name: "Wrangling",       DefaultStat: "Fe"}
-];
-INQSkill = INQSkill || {};
-//creates a string regex out of a skill/characteristic and all of its alternate names
-INQSkill.toRegex = function(skill){
-  var output = "";
-  if(skill.Alternates){
-    output = "(?:";
-  }
-  output += skill.Name.replace(/[- ]/, "(?:\\s*|-)");
-  //include any alternate names as well
-  if(skill.Alternates){
-      output += "|";
-    _.each(skill.Alternates, function(alternate){
-      output += alternate.replace(/[- ]/, "(?:\\s*|-)");
-      output += "|";
-    });
-    output = output.replace(/\|$/, "");
-    output += ")";
-  }
-  return output;
-}
 //the prototype for characters
 function INQCharacter(character, graphic, callback){
   //object details
@@ -4530,6 +4294,8 @@ INQFormula.prototype.parse = function(text){
     }
   } else {
     whisper('Invalid INQFormula');
+    log('Invalid INQFormula');
+    log(text);
   }
 }
 INQFormula.regex = function(options){
@@ -4538,7 +4304,7 @@ INQFormula.regex = function(options){
   var regex = '\\s*';
   regex += '((?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+)\\s*x\\s*)?';
   regex += '\\(?';
-  regex += '(?:(-?\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
+  regex += '(?:(\\d*(?:PR|SB|))\\s*D\\s*(\\d+))';
   if(!options.requireDice) regex += '?';
   regex += '(\\s*(?:\\+|-|–|—|)\\s*(?:\\d*\\s*x?\\s*(?:PR|SB)|\\d+))?';
   regex += '\\)?';
@@ -4578,12 +4344,19 @@ INQFormula.prototype.toInline = function(options){
   var formula = '[[';
   formula += adjusted.multiplier;
   formula += ' * (';
-  formula += adjusted.dicenumber;
-  formula += 'D';
-  formula += this.DiceType;
-  formula += options.dicerule;
-  formula += ' + ';
-  formula += adjusted.modifier;
+  if(adjusted.dicenumber < 0) {
+    formula += adjusted.modifier;
+  }
+  if(adjusted.dicenumber) {
+    formula += adjusted.dicenumber;
+    formula += 'D';
+    formula += this.DiceType;
+    formula += options.dicerule;
+  }
+  if(adjusted.dicenumber >= 0){
+    if(adjusted.modifier >= 0) formula += ' + ';
+    formula += adjusted.modifier;
+  }
   formula += ')';
   formula += ']]';
   return formula;
@@ -4704,6 +4477,8 @@ INQLinkParser.prototype.parse = function(text){
     }
   } else {
     whisper('Invalid INQLink');
+    log('Invalid INQLink');
+    log(text);
   }
 }
 //save the regex for the link and its adjoining notes
@@ -4959,8 +4734,6 @@ INQParser.prototype.addToList = function(line){
   }
   return false;
 }
-//sometimes a link tag can be split onto multiple lines
-//close every link tag that is imbalanced
 INQParser.prototype.balanceTags = function(Lines){
   var tags = [];
   tags.push({Opener: '<a href="https?://[^\\s>]*">', Closer: '</a>'});
@@ -5006,14 +4779,16 @@ INQParser.prototype.balanceTags = function(Lines){
     }
 
     for(var opener of openers){
-      if(!opener.closer){
+      if(!opener.closer || /^((<[^<>]+>|\s+))*$/.test(Lines[opener.i].substring(opener.j))){
+        opener.removed = true;
         Lines[opener.i] = Lines[opener.i].substring(0, opener.j)
           + Lines[opener.i].substring(opener.j).replace(RegExp(tag.Opener), '');
       }
     }
 
     for(var closer of closers){
-      if(!closer.opener){
+      if(!closer.opener || /^((<[^<>]+>|\s+))*$/.test(Lines[closer.i].substring(0, closer.j))){
+        closer.removed = true;
         Lines[closer.i] = Lines[closer.i].substring(0, closer.j)
           + Lines[closer.i].substring(closer.j).replace(RegExp(tag.Closer), '');
       }
@@ -5022,15 +4797,14 @@ INQParser.prototype.balanceTags = function(Lines){
     for(var opener of openers){
       if(opener.closer && opener.i != opener.closer.i){
         for(var i = opener.i; i <= opener.closer.i; i++){
-          if(i != opener.i){
-            Lines[i] = opener.text + Lines[i];
-          }
-          if(i != opener.closer.i){
-            Lines[i] = Lines[i] + opener.closer.text;
-          }
+          if(i == opener.i && opener.removed) continue;
+          if(i == opener.closer.i && opener.closer.removed) continue;
+          if(i != opener.i) Lines[i] = opener.text + Lines[i];
+          if(i != opener.closer.i) Lines[i] = Lines[i] + opener.closer.text;
         }
       }
     }
+
   });
 
   return Lines;
@@ -5341,7 +5115,7 @@ INQTest.characteristics = function(){
 }
 INQTest.prototype.display = function(playerid, name, gm){
   var output = '';
-  var skillName = this.Skill;
+  var skillName = getLink(this.Skill);
   if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
   if(gm){
     output += '/w gm ';
@@ -5363,11 +5137,12 @@ INQTest.prototype.display = function(playerid, name, gm){
   output += '}} ';
   if(skillName) output += '{{Skill=' + skillName + '}}';
   var formula = new INQFormula('D100');
-  formula.Modifier = -1*this.Stat;
-  for(var modifier of this.Modifiers) formula.Modifier -= modifier.Value;
-  formula.Multiplier = -0.1;
+  formula.DiceNumber = -1;
+  formula.Modifier = this.Stat;
+  for(var modifier of this.Modifiers) formula.Modifier += modifier.Value;
+  formula.Multiplier = 0.1;
   var inline = formula.toInline();
-  if(this.Die > 0) inline = inline.replace('D100', '(' + this.Die + ')');
+  if(this.Die > 0) inline = inline.replace('1D100', '(' + this.Die + ')');
   output += '{{Successes=' + inline + '}} ';
   if(this.Unnatural >= 0) output += '{{Unnatural=[[ceil((' + this.Unnatural + ')/2)]]}} ';
   if(this.Modifiers.length) {
@@ -5381,7 +5156,7 @@ INQTest.prototype.display = function(playerid, name, gm){
     output += '}}';
   }
 
-  announce(output, {speakingAs: playerid});
+  announce(output, {speakingAs: 'player|' + playerid});
 }
 INQTest.prototype.getSkillModifier = function(inqcharacter){
   if(!this.Skill || !inqcharacter) return;
@@ -6341,7 +6116,9 @@ INQWeaponParser.prototype.parseAvailability = function(content){
   if(matches){
     this.Availability = matches[1].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
-    whisper('Invalid Availability')
+    whisper('Invalid Availability');
+    log('Invalid Availability');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseClass = function(content){
@@ -6350,6 +6127,8 @@ INQWeaponParser.prototype.parseClass = function(content){
     this.Class = matches[1].toTitleCase();
   } else {
     whisper('Invalid Class');
+    log('Invalid Class');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseClip = function(content){
@@ -6362,7 +6141,9 @@ INQWeaponParser.prototype.parseClip = function(content){
     }
 
   } else {
-    whisper('Invalid Clip')
+    whisper('Invalid Clip');
+    log('Invalid Clip');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseDamage = function(content){
@@ -6376,8 +6157,16 @@ INQWeaponParser.prototype.parseDamage = function(content){
   this.Damage = new INQFormula(damage);
   this.DamageType = new INQLink(damagetype);
 
-  if(!this.DamageType.Name) whisper('Invalid Damage Type');
-  if(this.Damage.onlyZero()) whisper('Invalid Damage');
+  if(!this.DamageType.Name) {
+    whisper('Invalid Damage Type');
+    log('Invalid Damage Type');
+    log(damagetype);
+  }
+  if(this.Damage.onlyZero()) {
+    whisper('Invalid Damage');
+    log('Invalid Damage');
+    log(damage);
+  }
 }
 INQWeaponParser.prototype.parseFocusPower = function(content){
   var regex = '^\\s*'
@@ -6396,6 +6185,8 @@ INQWeaponParser.prototype.parseFocusPower = function(content){
     this.FocusTest = matches[4].trim().replace(/\s+/g, ' ').toTitleCase();
   } else {
     whisper('Invalid Focus Power');
+    log('Invalid Focus Power');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseOpposed = function(content){
@@ -6404,7 +6195,9 @@ INQWeaponParser.prototype.parseOpposed = function(content){
     this.Opposed = matches[1].toLowerCase() == 'yes';
     this.Class = 'Psychic';
   } else {
-    whisper('Invalid Opposed')
+    whisper('Invalid Opposed');
+    log('Invalid Opposed');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parsePenetration = function(content){
@@ -6437,6 +6230,8 @@ INQWeaponParser.prototype.parseReload = function(content){
     }
   } else {
     whisper('Invalid Reload');
+    log('Invalid Reload');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseRenown = function(content){
@@ -6465,7 +6260,9 @@ INQWeaponParser.prototype.parseRenown = function(content){
       this.Renown = matches[1].toTitleCase();
     }
   } else {
-    whisper('Invalid Renown')
+    whisper('Invalid Renown');
+    log('Invalid Renown');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseRequisition = function(content){
@@ -6475,16 +6272,26 @@ INQWeaponParser.prototype.parseRequisition = function(content){
     if(matches[2]) this.Requisition = -1;
   } else {
     whisper('Invalid Requisition');
+    log('Invalid Requisition');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseRoF = function(content){
   var Rates = content.match(/[^\/]+/g);
-  if(Rates.length != 3) return whisper('Invalid RoF');
+  if(!Rates || Rates.length != 3) {
+    whisper('Invalid RoF');
+    log('Invalid RoF');
+    return log(content);
+  }
   var rateRe = new RegExp('^' + INQFormula.regex() + '$', 'i');
   this.Single = Rates[0] == 'S';
   if(rateRe.test(Rates[1])) this.Semi = new INQFormula(Rates[1]);
   if(rateRe.test(Rates[2])) this.Full = new INQFormula(Rates[2]);
-  if(!this.Single && this.Semi.onlyZero() && this.Full.onlyZero()) return whisper('Invalid RoF');
+  if(!this.Single && this.Semi.onlyZero() && this.Full.onlyZero()) {
+    whisper('Invalid RoF');
+    log('Invalid RoF');
+    return log(content);
+  }
   if(this.Class == 'Melee') this.Class = 'Basic';
 }
 INQWeaponParser.prototype.parseSpecialRules = function(content){
@@ -6499,6 +6306,8 @@ INQWeaponParser.prototype.parseSpecialRules = function(content){
     }
   } else {
     whisper('Invalid Special Rules');
+    log('Invalid Special Rules');
+    log(content);
   }
 }
 INQWeaponParser.prototype.parseWeight = function(content){
@@ -6513,6 +6322,8 @@ INQWeaponParser.prototype.parseWeight = function(content){
     }
   } else {
     whisper('Invalid Weight');
+    log('Invalid Weight');
+    log(content);
   }
 }
 function addCounter(matches, msg) {
@@ -6619,7 +6430,9 @@ function makeAttributeHandlerRegex(yourAttributes){
     regex = regex.replace(/\|$/, "");
     regex += ")";
   } else {
-    whisper('invalid yourAttributes');
+    whisper('Invalid yourAttributes');
+    log('Invalid yourAttributes');
+    log(yourAttributes);
     return;
   }
   regex += "\\s*" + numModifier.regexStr();
@@ -7238,7 +7051,7 @@ function modifyAttribute(attribute, options) {
     && options.inlinerolls[inlineIndex].results.total != undefined){
       options.modifier = options.inlinerolls[inlineIndex].results.total.toString();
     } else {
-      log('msg.inlinerolls')
+      log('Invalid Inline')
       log(options.inlinerolls);
       return whisper('Invalid Inline');
     }

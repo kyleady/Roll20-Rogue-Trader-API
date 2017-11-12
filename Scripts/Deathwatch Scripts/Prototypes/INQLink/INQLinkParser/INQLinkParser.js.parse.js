@@ -25,5 +25,7 @@ INQLinkParser.prototype.parse = function(text){
     }
   } else {
     whisper('Invalid INQLink');
+    log('Invalid INQLink');
+    log(text);
   }
 }

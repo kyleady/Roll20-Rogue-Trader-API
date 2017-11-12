@@ -24,6 +24,8 @@ INQWeaponParser.prototype.parseRenown = function(content){
       this.Renown = matches[1].toTitleCase();
     }
   } else {
-    whisper('Invalid Renown')
+    whisper('Invalid Renown');
+    log('Invalid Renown');
+    log(content);
   }
 }

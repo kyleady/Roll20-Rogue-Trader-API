@@ -18,8 +18,8 @@ describe('INQParser.prototype.balanceTags()', function() {
     var inqparser = new INQParser();
     expect(inqparser.balanceTags(Lines)).to.deep.equal([
       '<strong><u>Lin<a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></u><u>e1</a></strong></u>',
-      '<u><strong><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></strong>Lin<em>e2</a></em></u>',
-      '<u><em><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></a>Li</u>n</em>e'
+      '<u><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\">Lin<em>e2</a></em></u>',
+      '<u><em>Li</u>n</em>e'
     ]);
   });
 	it('should delete unpaired tags', function(){
@@ -37,8 +37,8 @@ describe('INQParser.prototype.balanceTags()', function() {
     var inqparser = new INQParser();
     expect(inqparser.balanceTags(Lines)).to.deep.equal([
       '<strong><u>Lin<a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></u><u>e1</a></strong></u>',
-      '<u><strong><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></strong>Lin<em>e2</a></em></u>',
-      '<u><em><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\"></a>Li</u>n</em>e'
+      '<u><a href=\"http://journal.roll20.net/handout/-Jj8Kd49NgeKbCEKpzUJ\">Lin<em>e2</a></em></u>',
+      '<u><em>Li</u>n</em>e'
     ]);
   });
 });

@@ -53,5 +53,7 @@ INQFormula.prototype.parse = function(text){
     }
   } else {
     whisper('Invalid INQFormula');
+    log('Invalid INQFormula');
+    log(text);
   }
 }

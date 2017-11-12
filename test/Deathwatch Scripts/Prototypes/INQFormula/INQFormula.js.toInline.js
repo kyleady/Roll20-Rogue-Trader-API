@@ -13,7 +13,7 @@ describe('INQFormula.prototype.toInline()', function() {
     var inqformula = new INQFormula();
     inqformula.parse('3SB x 2PRD5 - SB');
     var inline = inqformula.toInline({SB: 4, PR: 5, dicerule: 'ro<2'});
-    expect(inline).to.equal('[[12 * (10D5ro<2 + -4)]]');
+    expect(inline).to.equal('[[12 * (10D5ro<2-4)]]');
   });
   it('should default to 0 PR, 0 SB, and an empty dice rule', function(){
 		Campaign().MOCK20reset();

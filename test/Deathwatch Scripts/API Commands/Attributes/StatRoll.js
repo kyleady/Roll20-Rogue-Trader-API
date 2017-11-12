@@ -19,7 +19,7 @@ describe('statRoll()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('WS')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*19\s*\+\s*0\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*19\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -67,7 +67,7 @@ describe('statRoll()', function() {
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('Ag')) {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*19\s*\+\s*20\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*39\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
@@ -90,7 +90,7 @@ describe('statRoll()', function() {
     on('chat:message', function(msg){
 			if (msg.playerid == 'API' && msg.content.includes('It') && msg.target == 'gm') {
         expect(msg.inlinerolls).to.not.be.undefined;
-        expect(msg.inlinerolls[0].expression).to.match(/^\s*\(\s*\(\s*19\s*\+\s*3\s*-\s*D100\s*\)\s*\/\s*10\s*\)\s*$/);
+        expect(msg.inlinerolls[0].expression).to.match(/^\s*0\.1\s*\*\s*\(\s*22\s*-\s*1D100\s*\)\s*$/i);
         done();
       }
     });
