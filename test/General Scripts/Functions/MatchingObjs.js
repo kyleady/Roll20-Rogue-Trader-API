@@ -57,4 +57,22 @@ describe('matchingObjs()', function() {
     });
     expect(objs).to.include.members([handout]);
   });
+	it('should search default characters when searching for just players', function () {
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', 'INQTotal.js');
+		INQTotal = fs.readFileSync(filePath, 'utf8');
+		eval(INQTotal);
+    MOCK20endOfLastScript();
+
+    var player = createObj('player', {_displayname: 'matchingObjs player'}, {MOCK20override: true});
+    var player2 = createObj('player', {_displayname: 'not a match player'}, {MOCK20override: true});
+		var player3 = createObj('player', {_displayname: 'third player'}, {MOCK20override: true});
+    var character = createObj('character', {name: 'matchingObjs character', controlledby: player2.id});
+    var character2 = createObj('character', {name: 'also a matchingObjs character', controlledby: 'all'});
+		var character3 = createObj('character', {name: 'yet one more matchingObjs character', controlledby: player.id + ',' + player2.id});
+
+    var objs = matchingObjs('player', ['matchingObjs']);
+    expect(objs).to.include.members([player, player2]);
+		expect(objs).to.not.include.members([player3]);
+  });
 });

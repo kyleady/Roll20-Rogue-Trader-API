@@ -1424,49 +1424,21 @@ on("ready", function(){
 //matches[1] - used to find the pilot to add
 function addPilot(matches, msg){
   var pilotPhrase = matches[1];
-  var pilotKeywords = pilotPhrase.split(' ');
-
-  //if nothing was selected, ask the GM to select someone
-  if(msg.selected == undefined || msg.selected.length <= 0){
-    return whisper("Please select a vehicle to take the pilot.");
-  }
-
-  //find the pilot specified
-  var pilotResults = matchingObjs("character", pilotKeywords);
-
-  //rage quit if no maps were found
-  if(pilotResults.length <= 0){
-    return whisper("No matching pilots were found.");
-  }
-
-  //see if we can trim down the results to just exact matches
-  pilotResults = trimToPerfectMatches(pilotResults, pilotPhrase);
-
-  //if there are still too many pilot results, make the user specify
-  if(pilotResults.length >= 2){
-    //let the gm know that multiple maps were found
-    whisper("Which pilot did you mean?");
-    //give a suggestion for each possible pilot match
-    _.each(pilotResults, function(pilot){
-      var suggestion = "addPilot " + pilot.get("name");
-      suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + pilot.get("name") + "](" + suggestion  + ")");
-    });
-    //stop here, we must wait for the user to specify
-    return;
-  }
-
-  //copy the pilot's Attributes
+  var pilots = suggestCMD('!addPilot $', pilotPhrase, msg.playerid, 'character');
+  if(!pilots) return;
+  var pilot = pilots[0];
   var pilotAttributes = [];
   var attributes = findObjs({
-    _type: "attribute",
-    _characterid: pilotResults[0].id
+    _type: 'attribute',
+    _characterid: pilot.id
   });
+
   _.each(attributes, function(attribute){
     var attributeCopy = {
-      name: attribute.get("name"),
-      value: attribute.get("max")
+      name: attribute.get('name'),
+      value: attribute.get('max')
     };
+
     pilotAttributes.push(attributeCopy);
   });
 
@@ -1478,7 +1450,6 @@ function addPilot(matches, msg){
     });
 
     var skipThisCharacter = false;
-
     _.each(vehicleAttributes, function(vehicleAttribute){
       _.each(pilotAttributes, function(pilotAttribute){
         if(vehicleAttribute.get('name') == pilotAttribute.name) {
@@ -1488,8 +1459,6 @@ function addPilot(matches, msg){
     });
 
     if(skipThisCharacter) return whisper('This vehicle already has a pilot.');
-
-    //add each of the pilot attributes
     _.each(pilotAttributes, function(attribute){
       createObj('attribute', {
         name: attribute.name,
@@ -1500,12 +1469,12 @@ function addPilot(matches, msg){
     });
 
     //alert the gm of the success
-    whisper("The pilot, " + pilotResults[0].get("name") + ", was added to " + vehicle.get("name") + ".");
+    whisper('The pilot, ' + pilotResults[0].get('name') + ', was added to ' + vehicle.get('name') + '.');
   });
 }
 
 //waits until CentralInput has been initialized
-on("ready", function(){
+on('ready', function(){
   CentralInput.addCMD(/^!\s*add\s*pilot\s+(.+)$/i, addPilot);
 });
 //be sure the inqattack object exists before we start working with it
@@ -1523,125 +1492,67 @@ var INQAttack = INQAttack || {};
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper("Please carefully select who we are giving these weapns to.", {speakingTo: msg.playerid});
+      whisper('Please carefully select who we are giving these weapns to.', {speakingTo: msg.playerid});
       return;
     }
   }
-  //save the variables
+
   var name = matches[1];
-  if(matches[2]){
-    var ammoStr = matches[2];
-    var ammoNames = matches[2].split(",");
-  }
-  if(matches[3]){
-    var quantity =matches[3];
-  }
-  //search for the weapon first
-  var weapons = matchingObjs("handout", name.split(" "));
-  //try to trim down to exact weapon matches
-  weapons = trimToPerfectMatches(weapons, name);
-  //did none of the weapons match?
-  if(weapons.length <= 0){
-    whisper("*" + name + "* was not found.", {speakingTo: msg.playerid});
-    return false;
-  }
-  //are there too many weapons?
-  if(weapons.length >= 2){
-    whisper("Which weapon did you intend to add?", {speakingTo: msg.playerid});
-    _.each(weapons, function(weapon){
-      //use the weapon's exact name
-      var suggestion = "addweapon " + weapon.get("name");
-      if(ammoStr){
-        suggestion += "(" + ammoStr + ")";
-      }
-      //the suggested command must be encoded before it is placed inside the button
-      suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
-    });
-    //don't continue unless you are certain what the user wants
-    return false;
-  }
+  var ammoStr, quantity;
+  if(matches[2]) ammoStr = matches[2];
+  if(matches[3]) quantity = matches[3];
+  var weapons = suggestCMD('!addWeapon $(' + ammoStr + ')', name, msg.playerid);
+  if(!weapons) return;
+  var weapon = weapons[0];
   var myPromise = new Promise(function(resolve){
-    var inqweapon = new INQWeapon(weapons[0], function(){
+    var inqweapon = new INQWeapon(weapon, function(){
       resolve(inqweapon);
     });
   });
+
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
-    //was there any ammo to load?
     if(ammoStr){
-      //get the exact name of every clip
-      for(var i = 0; i < ammoNames.length; i++){
-        //if the ammo name is empty, just use the unmodified weapon
-        if(ammoNames[i] == ""){continue;}
-        //search for the ammo
-        var clips = matchingObjs("handout", ammoNames[i].split(" "));
-        //try to trim down to exact ammo matches
-        clips = trimToPerfectMatches(clips, ammoNames[i]);
-        //did none of the weapons match?
-        if(clips.length <= 0){
-          whisper("*" + ammoNames[i] + "* was not found.", {speakingTo: msg.playerid});
-          return false;
-        }
-        //are there too many weapons?
-        if(clips.length >= 2){
-          whisper("Which Special Ammunition did you intend to add?", {speakingTo: msg.playerid});
-          _.each(clips, function(clip){
-            //specify the exact ammo name
-            ammoNames[i] = clip.get("name");
-            //construct the suggested command (without the !)
-            var suggestion = "addweapon " + name + "(" + ammoNames.toString() + ")";
-            //the suggested command must be encoded before it is placed inside the button
-            suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-            whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: msg.playerid});
-          });
-          //something went wrong
-          return false;
-        }
-        //be sure the name is exactly correct
-        ammoNames[i] = clips[0].get("name");
+      var clips = suggestCMD('!addWeapon ' + name + '($)', ammoStr.split(','), msg.playerid);
+      if(!clips) return;
+      var ammoNames = [];
+      for(var clip of clips){
+        ammoNames.push(clip.get('name'));
       }
     }
-    //only weapons that have a clip of 0 are assumed to be consumable
-    //weapons that have an alternate clip size do not need a note on the character bio
-    if(quantity != undefined && inqweapon.Clip == 0){
-      var quantityNote = quantity;
-    }
-    //add this weapon to each of the selected characters
+
     eachCharacter(msg, function(character, graphic){
       var characterPromise = new Promise(function(resolve){
-        //parse the character
         new INQCharacter(character, graphic, function(inqcharacter){
           resolve(inqcharacter);
         });
       });
+
       characterPromise.catch(function(e){log(e)});
       characterPromise.then(function(inqcharacter){
-        //only add an ability if it isn't gear
-        if(inqweapon.Class != "Gear"){
-          //add the token action to the character
+        if(inqweapon.Class != 'Gear'){
           insertWeaponAbility(inqweapon, character, quantity, ammoNames, inqcharacter);
         } else {
-          whisper("Add Weapon is not prepared to create an Ability for Gear.", {speakingTo: msg.playerid, gmEcho: true});
+          whisper('Add Weapon is not prepared to create an Ability for Gear.', {speakingTo: msg.playerid, gmEcho: true});
         }
-        //report the success
-        whisper("*" + inqcharacter.toLink() + "* has been given a(n) *" + inqweapon.toLink() + "*", {speakingTo: msg.playerid, gmEcho: true});
+
+        whisper('*' + inqcharacter.toLink() + '* has been given a(n) *' + inqweapon.toLink() + '*', {speakingTo: msg.playerid, gmEcho: true});
       });
     });
   });
 }
 
-on("ready", function(){
-  var regex = "^!\\s*add\\s*weapon";
-  regex += "\\s+(\\S[^\\(\\)\\[\\]]*)";
-  regex += "(?:";
-  regex += "\\(([^\\(\\)]+)\\)";
-  regex += ")?";
-  regex += "(?:";
-  regex += "\\[\\s*x\\s*(\\d+)\\s*\\]";
-  regex += ")?";
-  regex += "\\s*$";
-  var re = RegExp(regex, "i");
+on('ready', function(){
+  var regex = '^!\\s*add\\s*weapon';
+  regex += '\\s+(\\S[^\\(\\)\\[\\]]*)';
+  regex += '(?:';
+  regex += '\\(([^\\(\\)]+)\\)';
+  regex += ')?';
+  regex += '(?:';
+  regex += '\\[\\s*x\\s*(\\d+)\\s*\\]';
+  regex += ')?';
+  regex += '\\s*$';
+  var re = RegExp(regex, 'i');
   CentralInput.addCMD(re, addWeapon, true);
 });
 function lastWatchWave (matches, msg) {
@@ -1738,93 +1649,69 @@ on("ready",function(){
 function setDefaultToken(matches, msg){
   //get the selected token
   if(msg.selected && msg.selected.length == 1){
-    var graphic = getObj("graphic", msg.selected[0]._id);
-    //be sure the graphic exists
-    if(graphic == undefined) {
-      return whisper("graphic undefined");
-    }
+    var graphic = getObj('graphic', msg.selected[0]._id);
+    if(graphic == undefined) return whisper('graphic undefined');
   } else {
-    return whisper("Please select exactly one token.");
-  }
-  //try to find the specified character
-  var characters = matchingObjs("character", matches[1].split(' '));
-  //rage quit if no characters were found
-  if(characters.length <= 0){
-    return whisper("No matching characters were found.");
-  }
-  //see if we can trim down the results to just exact matches
-  characters = trimToPerfectMatches(characters, matches[1]);
-  //if there are still too many pilot results, make the user specify
-  if(characters.length >= 2){
-    //let the gm know that multiple characters were found
-    whisper("Which character did you mean?");
-    //give a suggestion for each possible character match
-    _.each(characters, function(character){
-      var suggestion = "Give Token To " + character.get("name");
-      suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + character.get("name") + "](" + suggestion  + ")");
-    });
-    //stop here, we must wait for the user to specify
-    return;
+    return whisper('Please select exactly one token.');
   }
 
+  var name = matches[1];
+  var characters = suggestCMD('!Give Token To $', name, msg.playerid, 'character');
+  if(!characters) return;
   var character = characters[0];
-
-  //get the Fate, Fatigue, and Wounds of the character
   switch(characterType(character)){
-    case "character":
-      var bar1 = getAttrByName(character.id, "Fatigue", "max");
-      var bar2 = getAttrByName(character.id, "Fate", "max");
-      var bar3 = getAttrByName(character.id, "Wounds", "max");
+    case 'character':
+      var bar1 = getAttrByName(character.id, 'Fatigue', 'max');
+      var bar2 = getAttrByName(character.id, 'Fate', 'max');
+      var bar3 = getAttrByName(character.id, 'Wounds', 'max');
     break;
-    case "vehicle":
-      var bar1 = getAttrByName(character.id, "Tactical Speed", "max") || 0;
-      var bar2 = getAttrByName(character.id, "Aerial Speed", "max")   || 0;
-      var bar3 = getAttrByName(character.id, "Structural Integrity", "max");
+    case 'vehicle':
+      var bar1 = getAttrByName(character.id, 'Tactical Speed', 'max') || 0;
+      var bar2 = getAttrByName(character.id, 'Aerial Speed', 'max')   || 0;
+      var bar3 = getAttrByName(character.id, 'Structural Integrity', 'max');
     break;
-    case "starship":
-      var bar1 = getAttrByName(character.id, "Population", "max") || 0;
-      var bar2 = getAttrByName(character.id, "Morale", "max") || 0;
-      var bar3 = getAttrByName(character.id, "Hull", "max");
+    case 'starship':
+      var bar1 = getAttrByName(character.id, 'Population', 'max') || 0;
+      var bar2 = getAttrByName(character.id, 'Morale', 'max') || 0;
+      var bar3 = getAttrByName(character.id, 'Hull', 'max');
     break;
   }
-
 
   //detail the graphic
-  graphic.set("bar1_link", "");
-  graphic.set("bar2_link", "");
-  graphic.set("bar3_link", "");
+  graphic.set('bar1_link', '');
+  graphic.set('bar2_link', '');
+  graphic.set('bar3_link', '');
 
-  graphic.set("represents", character.id);
-  graphic.set("name", character.get("name"));
+  graphic.set('represents', character.id);
+  graphic.set('name', character.get('name'));
 
-  graphic.set("bar1_value", bar1);
-  graphic.set("bar2_value", bar2);
-  graphic.set("bar3_value", bar3);
+  graphic.set('bar1_value', bar1);
+  graphic.set('bar2_value', bar2);
+  graphic.set('bar3_value', bar3);
 
-  graphic.set("bar1_max", bar1);
-  graphic.set("bar2_max", bar2);
-  graphic.set("bar3_max", bar3);
+  graphic.set('bar1_max', bar1);
+  graphic.set('bar2_max', bar2);
+  graphic.set('bar3_max', bar3);
 
-  graphic.set("showname", true);
-  graphic.set("showplayers_name", true);
-  graphic.set("showplayers_bar1", true);
-  graphic.set("showplayers_bar2", true);
-  graphic.set("showplayers_bar3", true);
-  graphic.set("showplayers_aura1", true);
-  graphic.set("showplayers_aura2", true);
+  graphic.set('showname', true);
+  graphic.set('showplayers_name', true);
+  graphic.set('showplayers_bar1', true);
+  graphic.set('showplayers_bar2', true);
+  graphic.set('showplayers_bar3', true);
+  graphic.set('showplayers_aura1', true);
+  graphic.set('showplayers_aura2', true);
 
   setDefaultTokenForCharacter(character, graphic);
 
   //set the character's avatar as the token if they don't already have something
-  if(character.get("avatar") == ""){
-    character.set("avatar", graphic.get("imgsrc").replace("/thumb.png?", "/med.png?"));
+  if(character.get('avatar') == ''){
+    character.set('avatar', graphic.get('imgsrc').replace('/thumb.png?', '/med.png?'));
   }
 
-  whisper("Default Token set for *" + getLink(character.get("name")) + "*.");
+  whisper('Default Token set for *' + getLink(character.get('name')) + '*.');
 }
 
-on("ready", function(){
+on('ready', function(){
   CentralInput.addCMD(/^!\s*give\s*token\s*to\s+(.+)$/i, setDefaultToken);
 });
 //searches every message for rolls to hit and damage rolls.
@@ -4969,6 +4856,177 @@ INQParser.prototype.replaceInnerParentheses = function(line){
   }
   return line.join('');
 }
+function INQQtt(inqcharacter, inqweapon){}
+INQQtt.prototype.accurate = function(inqweapon, mode, successes){
+  if(mode == 'Single' && inqweapon.has('Accurate')){
+    for(var modifier of this.modifiers){
+      if(/^\s*Aim\s*$/i.test(modifier.Name)) {
+        this.modifiers.push({Name: 'Accurate', Value: 10});
+        break;
+      }
+    }
+    inqweapon.Damage.DiceNumber += Math.min(successes, 2);
+  }
+}
+INQQtt.prototype.blast = function(inqweapon, pr, sb){
+  var blast = inqweapon.has('Blast');
+  if(blast){
+    _.each(blast, function(value){
+      var formula = new INQFormula(value.Name);
+      this.hordeDamageMultiplier *= formula.roll({PR: pr, SB: sb});
+    });
+  }
+}
+INQQtt.prototype.crushingBlow = function(inqweapon, inqcharacter){
+  if(inqweapon.Class == 'Melee' && inqcharacter.has('Crushing Blow')){
+    inqweapon.Damage.Modifier += 2;
+  }
+}
+INQQtt.prototype.damage = function(inqweapon, pr, sb){
+  var dam = inqweapon.has("Dam") || [];
+  var damage = inqweapon.has("Damage") || [];
+  dam = dam.concat(damage);
+  _.each(dam, function(value){
+    var equals = /=/.test(value.Name);
+    var text = value.Name.replace('=', '');
+    var formula = new INQFormula(text);
+    if(equals){
+      inqweapon.Damage = formula;
+    } else {
+      inqweapon.Damage.Modifier += formula.roll({PR: pr, SB: sb});
+    }
+  });
+}
+INQQtt.prototype.damageType = function(inqweapon){
+  var type = inqweapon.has('DamageType');
+  if(type){
+    _.each(type, function(value){
+      inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
+    });
+  }
+}
+INQQtt.prototype.devastating = function(inqweapon, pr, sb){
+  var devastating = inqweapon.has('Devastating');
+  if(devastating){
+    _.each(devastating, function(value){
+      var formula = new INQFormula(value.Name);
+      this.hordeDamage += formula.roll({PR: pr, SB: sb});
+    });
+  }
+}
+INQQtt.prototype.force = function(inqweapon, inqcharacter){
+  if(inqweapon.has('Force')){
+    inqweapon.Damage.Modifier += inqcharacter.Attributes.PR;
+    inqweapon.Penetration.Modifier += inqcharacter.Attributes.PR;
+  }
+}
+INQQtt.prototype.hammerBlow = function(inqweapon, inqcharacter, RoF){
+  if(/^\s*all\s*out\s*$/i.test(RoF) && inqcharacter.has('Hammer Blow', 'Talents')){
+    inqweapon.Penetration.Modofier += Math.ceil(inqcharacter.bonus('S')/2);
+    var concussive2 = new INQLink('Concussive(2)');
+    inqweapon.Special.push(concussive2);
+  }
+}
+INQQtt.prototype.hordeDmg = function(inqweapon, pr, sb){
+  var hordeDmg = inqweapon.has('HordeDmg');
+  if(hordeDmg){
+    _.each(hordeDmg, function(value){
+      var formula = new INQFormula(value.Name);
+      this.hordeDamageMultiplier += formula.roll({PR: pr, SB: sb});
+    });
+  }
+}
+INQQtt.prototype.lance = function(inqweapon, successes){
+  inqweapon.Penetration.Multiplier *= 1 + successes;
+}
+INQQtt.prototype.maximal = function(inqweapon){
+  if(inqweapon.has('Use Maximal')){
+    this.shotsMultiplier           *= 3;
+    inqweapon.Range.Multiplier     *= 1.33;
+    inqweapon.Damage.DiceNumber    += Math.round(inqweapon.Damage.DiceNumber / 2);
+    inqweapon.Damage.Modifier      += Math.round(inqweapon.Damage.Modifier / 4);
+    inqweapon.Penetration.Modifier += Math.round(inqweapon.Penetration.Modifier / 5);
+    inqweapon.set({Special: 'Recharge'});
+    for(var quality of inqweapon.Special){
+      if(quality.Name == 'Blast'){
+        for(var i = 0; i < quality.Groups.length; i++){
+          var formula = new INQFormula(quality.Groups[i]);
+          formula.Modifier += Math.round(formula.Modifier);
+          quality.Groups[i] = formula.toNote();
+        }
+      }
+    }
+    inqweapon.removeQuality('Use Maximal')
+  } else {
+    inqweapon.removeQuality('Maximal');
+  }
+}
+INQQtt.prototype.mightyShot = function(inqweapon, inqcharacter){
+  if((inqweapon.Class == 'Pistol' || inqweapon.Class == 'Basic' || inqweapon.Class == 'Heavy' || inqweapon.Class == 'Thrown')
+  || inqcharacter.has('Mighty Shot')){
+    inqweapon.Damage.Modifier += 2;
+  }
+}
+INQQtt.prototype.penetration = function(inqweapon, pr, sb){
+  var pen = inqweapon.has('Pen') || [];
+  var penetration = inqweapon.has('Penetration') || [];
+  pen = pen.concat(penetration);
+  _.each(pen, function(value){
+    var equals = /=/.test(value.Name);
+    var text = value.Name.replace('=', '');
+    var formula = new INQFormula(text);
+    if(equals){
+      inqweapon.Penetration = formula;
+    } else {
+      inqweapon.Penetration.Modifier += formula.roll({PR: pr, SB: sb});
+    }
+  });
+}
+INQQtt.prototype.proven = function(inqweapon, pr, sb){
+  var proven = inqweapon.has('Proven');
+  if(proven){
+    _.each(proven, function(value){
+      var formula = new INQFormula(value.Name);
+      this.rerollBelow = formula.roll({SB: sb, PR: pr}) - 1;
+    });
+
+    if(!this.rerollBelow) this.rerollBelow = 1;
+  }
+}
+INQQtt.prototype.razorSharp = function(inqweapon, successes){
+  if(inqweapon.has('Razor Sharp') && successes >= 2){
+    inqweapon.Penetration.Multiplier *= 2;
+  }
+}
+INQQtt.prototype.spray = function(inqweapon){
+  if(inqweapon.has('spray')){
+    this.hordeDamageMultiplier *= Math.ceil(inqweapon.Range/4) + randomInteger(5);
+    if(inqweapon.Class != 'Psychic') this.autoHit = true;
+  }
+}
+INQQtt.prototype.storm = function(inqweapon){
+  if(inqweapon.has('Storm')){
+    this.shotsMultiplier *= 2;
+    this.hitsMultiplier *= 2;
+  }
+}
+INQQtt.prototype.tearingFleshRender = function(inqweapon, inqcharcter){
+  if(inqweapon.has('Tearing')){
+    this.dropDice = 1;
+    inqweapon.Damage.DiceNumber++;
+    if(inqcharacter.has('Flesh Render', 'Talents')){
+      this.dropDice++;
+      inqweapon.Damage.DiceNumber++;
+    }
+  }
+}
+INQQtt.prototype.twinLinked = function(inqweapon){
+  if(inqweapon.has("Twin-linked")){
+    this.modifiers.push({Name: 'Twin-linked', Value: 20});
+    this.shotsMultiplier *= 2;
+    this.maxHitsMultiplier *= 2;
+  }
+}
 //the prototype for characters
 function INQStarship(){
   //object details
@@ -5453,6 +5511,152 @@ INQTurns.prototype.toTurnObj = function(graphic, initiative, custom){
   turnObj._pageid = graphic.get("_pageid");
   return turnObj;
 }
+function INQUse(weaponname, options, character, graphic, playerid, callback){
+  if(typeof options != 'object') options = {};
+  this.options = options;
+  this.playerid = playerid;
+  var inquse = this;
+  var attackerPromise = new Promise(function(resolve){
+    return inquse.loadCharacter(character, graphic, resolve);
+  });
+
+  var defenderPromise = new Promise(function(resolve){
+    return inquse.loadTarget(resolve);
+  });
+
+  var weaponPromise = new Promise(function(resolve){
+    return inquse.loadWeapon(weaponname, resolve);
+  });
+
+  Promise.all([attackerPromise, defenderPromise, weaponPromise]).then(function(valid){
+    if(valid.includes(false)) return callback(false);
+    callback(inquse);
+  });
+}
+INQUse.prototype.applySpecialAmmo = function(){
+  if(!this.inqammo || !this.inqweapon) return;
+  this.inqweapon.Special = this.inqweapon.Special.concat(this.inqammo.Special);
+}
+INQUse.prototype.calcEffectivePsyRating = function(){
+  if(!this.inqcharacter) return;
+  if(this.inqweapon.Class != 'Psychic') return;
+  this.PsyRating = this.inqcharacter.Attributes.PR;
+  if(/^\s*Unfettered\s*$/i.test(this.options.FocusStrength)){
+    this.PsyRating /= 2;
+    this.PsyRating = Math.ceil(this.PsyRating);
+    this.PsyPheOnes = -1;
+    this.PsyPheModifier = 0;
+  } else if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
+    this.PsyPheOnes = 9;
+    this.PsyPheModifier = 0;
+  } else if(/^\s*Push\s*$/i.test(this.options.FocusStrength)){
+    this.PsyRating *= 1.5;
+    this.PsyRating = Math.ceil(this.PsyRating);
+    this.PsyPheOnes = 10;
+    this.PsyPheModifier = 10;
+  } else if(/^\s*True\s*$/i.test(this.options.FocusStrength)){
+    this.PsyRating *= 2;
+    this.PsyPheOnes = 10;
+    this.PsyPheModifier = 50;
+  }
+
+  if(this.options.BonusPR) this.PsyRating += Number(this.options.BonusPR);
+}
+INQUse.prototype.getSpecialAmmo = function(){
+  if(!this.options.Ammo && !this.options.customAmmo) return true;
+  if(this.options.customAmmo){
+    this.inqammo = new INQWeapon(this.options.customAmmo);
+    return true;
+  }
+
+  var clipname = this.options.Ammo;
+  this.options.Ammo = '$';
+  var clips = suggestCMD('!useweapon ' + this.inqweapon.Name + JSON.stringify(this.options), clipname, this.playerid);
+  if(!clips) return false;
+  this.inqammo = clips[0];
+  return true;
+}
+INQUse.prototype.getWeapon = function(weaponname){
+  if(this.options.custom){
+    this.inqweapon = new INQWeapon(this.options.custom);
+    return true;
+  }
+
+  var weapons = suggestCMD('!useweapon $' + JSON.stringify(this.options), weaponname, this.playerid);
+  if(!weapons) return false;
+  this.inqweapon = weapons[0];
+  return true;
+}
+INQUse.prototype.loadCharacter = function(character, graphic, callback) {
+  var pilot;
+  if(character && characterType(character) != 'character' && !playerIsGM(this.playerid)){
+    pilot = defaultCharacter(this.playerid);
+  }
+
+  if(pilot){
+    this.inqcharacter = new INQCharacter(pilot, undefined, function(inqcharacter){
+      inqcharacter.ObjID = character.id;
+      inqcharacter.GraphicID = graphic.id;
+      callback(true);
+    });
+  } else if (character) {
+    this.inqcharacter = new INQCharacter(character, graphic, function(){
+      callback(true);
+    });
+  } else {
+    callback(true);
+  }
+}
+INQUse.prototype.loadTarget = function(callback){
+  if(!this.options.target) return callback(true);
+  var graphic = getObj('graphic', this.options.target);
+  if(!graphic) return callback(false);
+  var character;
+  if(graphic.get('represents')) {
+    character = getObj('character', graphic.get('represents'));
+    this.inqtarget = new INQCharacter(character, graphic, function(){
+      callback(true);
+    });
+  } else {
+    this.inqtarget = new INQCharacter();
+    this.inqtarget.GraphicID = graphic.id;
+    callback(true);
+  }
+}
+INQUse.prototype.loadWeapon = function(weaponname, callback) {
+  var inquse = this;
+  var valid = inquse.getWeapon(weaponname);
+  if(!valid) return callback(false);
+  valid = inquse.getSpecialAmmo();
+  if(!valid) return callback(false);
+
+  var ammoPromise = new Promise(function(resolve){
+    if(inquse.inqammo && inquse.inqammo.get && inquse.inqammo.get('_type') == 'handout'){
+      inquse.inqammo = new INQWeapon(inquse.inqammo, function(){
+        resolve(true);
+      });
+    } else {
+      resolve(true);
+    }
+  });
+
+  var weaponPromise = new Promise(function(resolve){
+    if(inquse.inqweapon && inquse.inqweapon.get && inquse.inqweapon.get('_type') == 'handout'){
+      inquse.inqweapon = new INQWeapon(inquse.inqweapon, function(){
+        resolve(true);
+      });
+    } else {
+      resolve(true);
+    }
+  });
+
+  Promise.all([weaponPromise, ammoPromise]).then(function(valid){
+    if(valid.includes(false)) return callback(false);
+    inquse.applySpecialAmmo();
+    inquse.inqweapon.set(inquse.options);
+    callback(true);
+  });
+}
 //the prototype for characters
 function INQVehicle(vehicle, graphic, callback){
   //object details
@@ -5810,6 +6014,17 @@ INQWeapon.prototype.has = function(ability){
     }
   });
   return info;
+}
+INQWeapon.prototype.removeQuality = function(special){
+  for(var i = 0; i < this.Special.length; i++){
+    if(this.Special[i].Name == special){
+      this.Special.splice(i, 1);
+      i--;
+      return true;
+    }
+  }
+  
+  return false;
 }
 INQWeapon.prototype.set = function(properties){
   for(var prop in properties){
@@ -6489,64 +6704,26 @@ on('ready',function(){
 function returnPlayers(matches, msg){
   var playerPages = Campaign().get('playerspecificpages');
   if(!playerPages) return whisper('There are no players to return from their player specific pages.');
-  var playersToReturn = [];
-  for(var player in playerPages){
-    playersToReturn.push(player);
-  }
-
-  var playerPhrase = matches[1] || '';
-  var playerKeywords = playerPhrase.split(' ');
-
-  var playerResults = matchingObjs(['player'], playerKeywords);
-  var characterResults = matchingObjs(['character'], playerKeywords, function(obj){
-    var owners = obj.get('controlledby').split(',')
-    return !(owners.length != 1 || owners[0] == 'all' || playerIsGM(owners[0]))
-  });
-
-  _.each(characterResults, function(character){
-    var newPlayerID = true;
-    var playerID = character.get('controlledby');
-    for(var i = 0; i < playerResults.length; i++){
-      if(playerResults[i].id == playerID){
-        newPlayerID = false;
-        break;
+  var playerPhrases = matches[1] || '';
+  var players = [];
+  if(/^\s*$/.test(playerPhrases)){
+    for(var playerid in playerPages){
+      players.push(getObj('player', playerid));
+    }
+  } else {
+    players = suggestCMD('!return $', playerPhrases.split(','), msg.playerid, 'player', function(obj){
+      if(playerPages[player.id] != undefined) {
+        return true;
+      } else {
+        whisper('*' + player.get('_displayname') + '* is not on a player specific page.')
+        return false;
       }
-    }
-    if(newPlayerID){
-      playerResults.push(getObj('player', playerID));
-    }
-  });
-
-  if(!playerResults.length && playerPhrase) return whisper('No matching players were found.');
-
-  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
-
-  var returningPlayers = [];
-  _.each(playerResults, function(player){
-    if(playersToReturn.indexOf(player.id) != -1){
-      returningPlayers.push(player);
-    } else {
-      whisper('*' + player.get('_displayname') + '* is not on a player specific page.');
-    }
-  });
-
-  if(playerResults.length >= 2){
-    whisper('Which player did you mean?');
-    _.each(playerResults, function(player){
-      var suggestion = player.get('_displayname');
-      whisper('[' + suggestion + '](!return ' + suggestion + ')');
     });
-    return;
+
+    if(!players) return;
   }
 
-  playerPhrase.trim();
-  if(playerPhrase == ''){
-    _.each(playersToReturn, function(playerid){
-      returningPlayers.push(getObj('player', playerid));
-    });
-  }
-
-  _.each(returningPlayers, function(player){
+  _.each(players, function(player){
     delete playerPages[player.id];
     whisper('*' + player.get('_displayname') + '* has returned to the main party.');
   });
@@ -6561,74 +6738,27 @@ function returnPlayers(matches, msg){
 on('ready',function(){
   CentralInput.addCMD(/^!\s*return(?:\s([^\|\[\]]+))?$/i, returnPlayers);
 });
-function sendToPage(matches,msg){
-  var mapPhrase    = matches[1] || '';
+function sendToPage(matches, msg){
+  var pagePhrase    = matches[1] || '';
   var playerPhrase = matches[2] || '';
-  var mapKeywords    = mapPhrase.split(' ');
-  var playerKeywords = playerPhrase.split(' ');
-  var mapResults    = matchingObjs('page', mapKeywords);
-  var playerResults = matchingObjs('player', playerKeywords);
-  var characterResults = matchingObjs('character', playerKeywords, function(obj){
-    var owners = obj.get('controlledby').split(',')
-    return !(owners.length != 1 || owners[0] == '' || owners[0] == 'all' || playerIsGM(owners[0]))
-  });
-
-  _.each(characterResults, function(character){
-    var newPlayerID = true;
-    var playerID = character.get('controlledby');
-    for(var i = 0; i < playerResults.length; i++){
-      if(playerResults[i].id == playerID){
-        newPlayerID = false;
-        break;
-      }
-    }
-
-    if(newPlayerID){
-      playerResults.push(getObj('player', playerID));
-    }
-  });
-
-  if(!mapResults.length) return whisper('No matching maps were found.');
-  if(!playerResults.length && playerPhrase) return whisper('No matching players were found.');
-  mapResults = trimToPerfectMatches(mapResults, playerPhrase);
-  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
-  if(mapResults.length >= 2){
-    whisper('Which map did you mean?');
-    var playerSearch = '';
-    if(playerResults.length == 1){
-      playerSearch = '|' + playerResults[0].get('_displayname');
-    } else if(playerResults.length > 1){
-      playerSearch = '|' + playerPhrase;
-    }
-
-    _.each(mapResults, function(map){
-      var suggestion = map.get('name') + playerSearch;
-      whisper('[' + suggestion + '](!sendTo ' + suggestion + ')');
-    });
-
-    return;
-  }
-
-  if(playerResults.length >= 2){
-    whisper('Which player did you mean?');
-    var mapSearch = mapResults[0].get('name');
-    _.each(playerResults, function(player){
-      var suggestion = mapSearch + '|' + player.get('_displayname');
-      whisper('[' + suggestion + '](!sendTo ' + suggestion + ')');
-    });
-    return;
-  }
-
-  if(!playerResults.length){
-    Campaign().set('playerpageid', mapResults[0].id);
-    whisper('The party has been moved to *' + mapResults[0].get('name') + '*');
+  var suggestion = '!sendTo $';
+  if(playerPhrase) suggestion += '|' + playerPhrase;
+  var pages = suggestCMD(suggestion, pagePhrase, msg.playerid, 'page');
+  if(!pages) return;
+  var page = pages[0];
+  if(!playerPhrase){
+    Campaign().set('playerpageid', page.id);
+    whisper('The party has been moved to *' + page.get('name') + '*');
   } else {
+    var players = suggestCMD('!sendTo ' + page.get('name') + '|$', playerPhrase.split(','), msg.playerid, 'player');
+    if(!players) return;
     var playerPages = Campaign().get('playerspecificpages');
     playerPages = playerPages || {};
-    _.each(playerResults, function(player){
-      playerPages[player.id] = mapResults[0].id;
-      whisper('*' + player.get('_displayname') + '* was moved to *' + mapResults[0].get('name') + '*');
+    _.each(players, function(player){
+      playerPages[player.id] = page.id;
+      whisper('*' + player.get('_displayname') + '* was moved to *' + page.get('name') + '*');
     });
+
     Campaign().set('playerspecificpages', playerPages);
   }
 }
@@ -7005,15 +7135,14 @@ function matchingObjs(types, keywords, additionalCriteria){
     if(keywords[i] == ''){
       keywords.splice(i,1);
       i--;
+    } else {
+      keywords[i] = keywords[i].toLowerCase();
     }
   }
 
+  var playerSearch = (types[0] == 'player' && types.length == 1);
   if(!keywords.length) return [];
-  for(var i = 0; i < keywords.length; i++){
-    keywords[i] = keywords[i].toLowerCase();
-  }
-
-  return filterObjs(function(obj){
+  var filteredObjs = filterObjs(function(obj){
     if(types.indexOf(obj.get('_type')) == -1) return false;
     if(obj.get('_type') == 'player'){
       var name = obj.get('_displayname');
@@ -7025,12 +7154,48 @@ function matchingObjs(types, keywords, additionalCriteria){
     for(var i = 0; i < keywords.length; i++){
       if(name.indexOf(keywords[i]) == -1) return false;
     }
+
     if(typeof additionalCriteria == 'function'){
       return additionalCriteria(obj);
     } else {
       return true;
     }
   });
+
+  if(playerSearch){
+    var characters = filterObjs(function(obj){
+      if(obj.get('_type') != 'character') return false;
+      name = obj.get('name').toLowerCase();
+      if(obj.get('controlledby') == ''
+      || obj.get('controlledby') == 'all'
+      || obj.get('controlledby').includes(',')) return false;
+      for(var i = 0; i < keywords.length; i++){
+        if(name.indexOf(keywords[i]) == -1) return false;
+      }
+
+      var owner = getObj('player', obj.get('controlledby'));
+      if(typeof additionalCriteria == 'function'){
+        return additionalCriteria(owner);
+      } else {
+        return true;
+      }
+    });
+
+    for(var character of characters){
+      var playerID = character.get('controlledby');
+      var newPlayer = true;
+      for(var obj of filteredObjs){
+        if(obj.id == playerID) {
+          newPlayer = false;
+          break;
+        }
+      }
+
+      if(newPlayer) filteredObjs.push(getObj('player', playerID));
+    }
+  }
+
+  return filteredObjs;
 }
 function modifyAttribute(attribute, options) {
   if (typeof options != 'object' ) options = {};
@@ -7082,6 +7247,48 @@ function modifyAttribute(attribute, options) {
   );
 
   return modifiedAttribute;
+}
+function suggestCMD(suggestedCMD, names, playerid, type, additionalCriteria){
+  type = type || 'handout';
+  if(typeof names == 'string') names = [names];
+  var index = suggestedCMD.search(/\$([^\$]|$)/);
+  suggestedCMD = suggestedCMD.replace(/\$\$/g, '$');
+  if(index == -1) {
+    whisper('Each suggestion will be the same.');
+    return false;
+  }
+
+  var front = suggestedCMD.substring(0, index).replace(/^!/, '');
+  var end = suggestedCMD.substring(index+1);
+  var output = [];
+  for(var i = 0; i < names.length; i++){
+    var name = names[i];
+    var items = matchingObjs(type, name.split(' '), additionalCriteria);
+    items = trimToPerfectMatches(items, name);
+    if(items.length <= 0){
+      whisper('*' + name + '* was not found.', {speakingTo: playerid, gmEcho: true});
+      return false;
+    } else if(items.length > 1) {
+      whisper('There were multiple matches for *' + name + '*.', {speakingTo: playerid,  gmEcho: true});
+      _.each(items, function(item){
+        if(item.get('_type') == 'player'){
+          names[i] = item.get('_displayname');
+        } else {
+          names[i] = item.get('name');
+        }
+
+        var suggestion = front + names.toString() + end;
+        suggestion = '!{URIFixed}' + encodeURIFixed(suggestion);
+        whisper('[' + names[i] + '](' + suggestion  + ')', {speakingTo: playerid, gmEcho: true});
+      });
+
+      return false;
+    } else {
+      output.push(items[0]);
+    }
+  }
+
+  return output;
 }
 function toRegex(obj, options){
   if(typeof options != 'object') options = {};

@@ -1,0 +1,1 @@
+function INQQtt(inqcharacter, inqweapon){}

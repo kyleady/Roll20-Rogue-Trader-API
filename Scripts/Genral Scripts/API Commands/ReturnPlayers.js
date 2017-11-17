@@ -1,64 +1,26 @@
 function returnPlayers(matches, msg){
   var playerPages = Campaign().get('playerspecificpages');
   if(!playerPages) return whisper('There are no players to return from their player specific pages.');
-  var playersToReturn = [];
-  for(var player in playerPages){
-    playersToReturn.push(player);
-  }
-
-  var playerPhrase = matches[1] || '';
-  var playerKeywords = playerPhrase.split(' ');
-
-  var playerResults = matchingObjs(['player'], playerKeywords);
-  var characterResults = matchingObjs(['character'], playerKeywords, function(obj){
-    var owners = obj.get('controlledby').split(',')
-    return !(owners.length != 1 || owners[0] == 'all' || playerIsGM(owners[0]))
-  });
-
-  _.each(characterResults, function(character){
-    var newPlayerID = true;
-    var playerID = character.get('controlledby');
-    for(var i = 0; i < playerResults.length; i++){
-      if(playerResults[i].id == playerID){
-        newPlayerID = false;
-        break;
+  var playerPhrases = matches[1] || '';
+  var players = [];
+  if(/^\s*$/.test(playerPhrases)){
+    for(var playerid in playerPages){
+      players.push(getObj('player', playerid));
+    }
+  } else {
+    players = suggestCMD('!return $', playerPhrases.split(','), msg.playerid, 'player', function(obj){
+      if(playerPages[player.id] != undefined) {
+        return true;
+      } else {
+        whisper('*' + player.get('_displayname') + '* is not on a player specific page.')
+        return false;
       }
-    }
-    if(newPlayerID){
-      playerResults.push(getObj('player', playerID));
-    }
-  });
-
-  if(!playerResults.length && playerPhrase) return whisper('No matching players were found.');
-
-  playerResults = trimToPerfectMatches(playerResults, playerPhrase);
-
-  var returningPlayers = [];
-  _.each(playerResults, function(player){
-    if(playersToReturn.indexOf(player.id) != -1){
-      returningPlayers.push(player);
-    } else {
-      whisper('*' + player.get('_displayname') + '* is not on a player specific page.');
-    }
-  });
-
-  if(playerResults.length >= 2){
-    whisper('Which player did you mean?');
-    _.each(playerResults, function(player){
-      var suggestion = player.get('_displayname');
-      whisper('[' + suggestion + '](!return ' + suggestion + ')');
     });
-    return;
+
+    if(!players) return;
   }
 
-  playerPhrase.trim();
-  if(playerPhrase == ''){
-    _.each(playersToReturn, function(playerid){
-      returningPlayers.push(getObj('player', playerid));
-    });
-  }
-
-  _.each(returningPlayers, function(player){
+  _.each(players, function(player){
     delete playerPages[player.id];
     whisper('*' + player.get('_displayname') + '* has returned to the main party.');
   });
