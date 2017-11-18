@@ -1,9 +1,11 @@
-INQQtt.prototype.tearingFleshRender = function(inqweapon, inqcharcter){
+INQQtt.prototype.tearingFleshRender = function(){
+  var inqweapon = this.inquse.inqweapon;
+  var inqcharacter = this.inquse.inqcharacter;
   if(inqweapon.has('Tearing')){
-    this.dropDice = 1;
+    this.inquse.dropDice = 1;
     inqweapon.Damage.DiceNumber++;
     if(inqcharacter.has('Flesh Render', 'Talents')){
-      this.dropDice++;
+      this.inquse.dropDice++;
       inqweapon.Damage.DiceNumber++;
     }
   }

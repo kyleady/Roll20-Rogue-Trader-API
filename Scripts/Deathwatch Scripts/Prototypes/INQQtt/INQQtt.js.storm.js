@@ -1,6 +1,7 @@
-INQQtt.prototype.storm = function(inqweapon){
+INQQtt.prototype.storm = function(){
+  var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Storm')){
-    this.shotsMultiplier *= 2;
-    this.hitsMultiplier *= 2;
+    this.inquse.shotsMultiplier *= 2;
+    this.inquse.hitsMultiplier *= 2;
   }
 }

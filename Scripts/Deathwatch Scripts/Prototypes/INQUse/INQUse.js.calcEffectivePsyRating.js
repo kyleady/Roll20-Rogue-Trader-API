@@ -1,25 +1,25 @@
 INQUse.prototype.calcEffectivePsyRating = function(){
   if(!this.inqcharacter) return;
+  this.PR = this.inqcharacter.Attributes.PR;
   if(this.inqweapon.Class != 'Psychic') return;
-  this.PsyRating = this.inqcharacter.Attributes.PR;
+  if(!this.options.FocusStrength) this.options.FocusStrength = 'Fettered';
   if(/^\s*Unfettered\s*$/i.test(this.options.FocusStrength)){
-    this.PsyRating /= 2;
-    this.PsyRating = Math.ceil(this.PsyRating);
-    this.PsyPheOnes = -1;
+    this.PR /= 2;
+    this.PR = Math.ceil(this.PR);
     this.PsyPheModifier = 0;
   } else if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
-    this.PsyPheOnes = 9;
     this.PsyPheModifier = 0;
   } else if(/^\s*Push\s*$/i.test(this.options.FocusStrength)){
-    this.PsyRating *= 1.5;
-    this.PsyRating = Math.ceil(this.PsyRating);
-    this.PsyPheOnes = 10;
+    this.PR *= 1.5;
+    this.PR = Math.ceil(this.PR);
     this.PsyPheModifier = 10;
   } else if(/^\s*True\s*$/i.test(this.options.FocusStrength)){
-    this.PsyRating *= 2;
-    this.PsyPheOnes = 10;
+    this.PR *= 2;
     this.PsyPheModifier = 50;
   }
 
-  if(this.options.BonusPR) this.PsyRating += Number(this.options.BonusPR);
+  if(this.options.BonusPR) this.PR += Number(this.options.BonusPR);
+  if(this.PR && this.inqweapon.Class == 'Psychic') {
+    this.modifiers.push({Name: 'Psy Rating', Value: 5 * this.PR});
+  }
 }

@@ -1,4 +1,5 @@
-INQQtt.prototype.damageType = function(inqweapon){
+INQQtt.prototype.damageType = function(){
+  var inqweapon = this.inquse.inqweapon;
   var type = inqweapon.has('DamageType');
   if(type){
     _.each(type, function(value){

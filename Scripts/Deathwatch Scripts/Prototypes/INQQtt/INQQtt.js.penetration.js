@@ -1,4 +1,7 @@
-INQQtt.prototype.penetration = function(inqweapon, pr, sb){
+INQQtt.prototype.penetration = function(){
+  var inqweapon = this.inquse.inqweapon;
+  var PR = this.inquse.PR;
+  var SB = this.inquse.SB;
   var pen = inqweapon.has('Pen') || [];
   var penetration = inqweapon.has('Penetration') || [];
   pen = pen.concat(penetration);
@@ -9,7 +12,7 @@ INQQtt.prototype.penetration = function(inqweapon, pr, sb){
     if(equals){
       inqweapon.Penetration = formula;
     } else {
-      inqweapon.Penetration.Modifier += formula.roll({PR: pr, SB: sb});
+      inqweapon.Penetration.Modifier += formula.roll({PR: PR, SB: SB});
     }
   });
 }

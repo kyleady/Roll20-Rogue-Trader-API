@@ -1,1 +1,3 @@
-function INQQtt(inqcharacter, inqweapon){}
+function INQQtt(inquse){
+  this.inquse = inquse;
+}

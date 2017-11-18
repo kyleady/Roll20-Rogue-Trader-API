@@ -1,7 +1,8 @@
-INQQtt.prototype.twinLinked = function(inqweapon){
+INQQtt.prototype.twinLinked = function(){
+  var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has("Twin-linked")){
-    this.modifiers.push({Name: 'Twin-linked', Value: 20});
-    this.shotsMultiplier *= 2;
-    this.maxHitsMultiplier *= 2;
+    this.inquse.modifiers.push({Name: 'Twin-linked', Value: 20});
+    this.inquse.shotsMultiplier *= 2;
+    this.inquse.maxHitsMultiplier *= 2;
   }
 }

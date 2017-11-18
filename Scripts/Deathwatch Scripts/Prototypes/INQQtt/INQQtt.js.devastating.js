@@ -1,9 +1,12 @@
-INQQtt.prototype.devastating = function(inqweapon, pr, sb){
+INQQtt.prototype.devastating = function(){
+  var inqweapon = this.inquse.inqweapon;
+  var PR = this.inquse.PR;
+  var SB = this.inquse.SB;
   var devastating = inqweapon.has('Devastating');
   if(devastating){
     _.each(devastating, function(value){
       var formula = new INQFormula(value.Name);
-      this.hordeDamage += formula.roll({PR: pr, SB: sb});
+      this.inquse.hordeDamage += formula.roll({PR: PR, SB: SB});
     });
   }
 }

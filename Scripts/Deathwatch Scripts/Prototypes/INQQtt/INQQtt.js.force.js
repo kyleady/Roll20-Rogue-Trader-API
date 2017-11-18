@@ -1,6 +1,7 @@
-INQQtt.prototype.force = function(inqweapon, inqcharacter){
+INQQtt.prototype.force = function(){
   if(inqweapon.has('Force')){
-    inqweapon.Damage.Modifier += inqcharacter.Attributes.PR;
-    inqweapon.Penetration.Modifier += inqcharacter.Attributes.PR;
+    var PR = this.inquse.inqcharacter.Attributes.PR;
+    this.inquse.inqweapon.Damage.Modifier += PR;
+    this.inquse.inqweapon.Penetration.Modifier += PR;
   }
 }
