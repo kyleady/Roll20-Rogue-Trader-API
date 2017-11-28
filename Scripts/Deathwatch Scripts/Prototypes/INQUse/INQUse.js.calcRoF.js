@@ -34,7 +34,7 @@ INQUse.prototype.calcRoF = function(){
     this.maxHits = 1;
     this.mode = 'Single';
   } else { //if(/single/i.test(this.options.RoF))
-    if(this.inqweapon.Class != 'Psychic') this.modifiers.push({Name: 'Single', Value: 10});
+    if(this.inqweapon.Class != 'Psychic') this.modifiers.push({Name: 'Standard', Value: 10});
     this.maxHits = 1;
     this.mode = 'Single';
   }

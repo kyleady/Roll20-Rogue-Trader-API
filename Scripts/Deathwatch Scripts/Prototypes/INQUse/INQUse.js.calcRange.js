@@ -1,8 +1,9 @@
 INQUse.prototype.calcRange = function(){
-  if(!this.inqweapon.isRanged()) return;
+  if(this.inqweapon.Range.onlyZero()) return;
+  if(!this.inqtarget) return;
   var distance = getRange(this.inqcharacter.GraphicID, this.inqtarget.GraphicID);
+  if(distance == undefined) return;
   var range = this.inqweapon.Range.roll({PR: this.PR, SB: this.SB});
-  var modifier = 0;
   if(distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
     this.range = 'Point Blank';

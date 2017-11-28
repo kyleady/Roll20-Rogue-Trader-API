@@ -4,7 +4,12 @@ INQUse.prototype.parseModifiers = function(){
   if(modifierMatches){
     for(var modifierMatch of modifierMatches){
       var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
-      this.modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+      var name = details[3].trim();
+      if(!name) name = 'Other';
+      this.modifiers.push({
+        Value: details[1] + details[2],
+        Name: '<em>' + name + '</em>'
+      });
     }
   }
 }
