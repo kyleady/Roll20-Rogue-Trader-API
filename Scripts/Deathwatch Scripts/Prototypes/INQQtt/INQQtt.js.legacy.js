@@ -3,7 +3,7 @@ INQQtt.prototype.legacy = function(){
   var inqcharacter = this.inquse.inqcharacter;
   if(inqweapon.has('Legacy')){
     var bonus = inqcharacter.bonus('Renown');
-    bonus = Math.round(bonus/2);
+    bonus = Math.ceil(bonus/2);
     inqweapon.Damage.Modifier += bonus;
     inqweapon.Penetration.Modifier += bonus;
   }

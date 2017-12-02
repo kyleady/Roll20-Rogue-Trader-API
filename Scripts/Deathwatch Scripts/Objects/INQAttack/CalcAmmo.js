@@ -11,5 +11,5 @@ INQAttack.calcAmmo = function(){
     INQAttack.shotsFired = 0;
   }
 
-  INQAttack.shotsFired *= INQAttack.shotsMultiplier;
+  INQAttack.shotsFired *= INQAttack.ammoMultiplier;
 }

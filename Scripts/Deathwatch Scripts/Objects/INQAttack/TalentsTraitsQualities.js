@@ -63,7 +63,7 @@ INQAttack.accountForForce = function(){
 //however, they also double the ammo expended
 INQAttack.accountForStorm = function(){
   if(INQAttack.inqweapon.has("Storm")){
-    INQAttack.shotsMultiplier *= 2;
+    INQAttack.ammoMultiplier *= 2;
     INQAttack.hitsMultiplier *= 2;
   }
 }
@@ -111,7 +111,7 @@ INQAttack.accountForDevastating = function(){
 INQAttack.accountForTwinLinked = function(){
   if(INQAttack.inqweapon.has("Twin-linked")){
     INQAttack.toHit += 20;
-    INQAttack.shotsMultiplier *= 2;
+    INQAttack.ammoMultiplier *= 2;
     INQAttack.maxHitsMultiplier *= 2;
   }
 }
@@ -152,7 +152,7 @@ INQAttack.accountForRazorSharp = function(){
 //grants the recharge quality
 INQAttack.accountForMaximal = function(){
   if(INQAttack.inqweapon.has("Use Maximal")){
-    INQAttack.shotsMultiplier *= 3;
+    INQAttack.ammoMultiplier *= 3;
     INQAttack.inqweapon.Range       += Math.round(INQAttack.inqweapon.Range / 3);
     INQAttack.inqweapon.DiceNumber  += Math.round(INQAttack.inqweapon.DiceNumber / 2);
     INQAttack.inqweapon.DamageBase  += Math.round(INQAttack.inqweapon.DamageBase / 4);

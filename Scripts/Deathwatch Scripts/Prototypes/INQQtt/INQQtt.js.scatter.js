@@ -3,8 +3,8 @@ INQQtt.prototype.scatter = function(){
   var range = this.inquse.range;
   if(inqweapon.has('Scatter')){
     if(range == 'Point Blank'){
-      inqweapon.set({Special: 'Storm'});
-    } else if(/(Extended|Extreme|Impossible)/.test(range)){
+      this.inquse.hitsMultiplier *= 2;
+    } else if(/(Long|Extended|Extreme|Impossible)/.test(range)){
       inqweapon.set({Special: 'Primitive'});
     }
   }

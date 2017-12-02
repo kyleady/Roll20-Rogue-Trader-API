@@ -4,15 +4,20 @@ INQQtt.prototype.accurate = function(){
   var modifiers = this.inquse.modifiers;
   var successes = this.inquse.test.Successes;
   if(mode == 'Single' && inqweapon.has('Accurate')){
-    if(!successes){
-      for(var modifier of modifiers){
-        if(/^\s*Aim\s*$/i.test(modifier.Name)) {
-          modifiers.push({Name: 'Accurate', Value: 10});
-          break;
-        }
+    var aimmed = false;
+    for(var modifier of modifiers){
+      if(/^\s*(<em>\s*)?Aim(\s*<\/em>)?\s*$/i.test(modifier.Name)) {
+        aimmed = true;
+        break;
       }
+    }
+    
+    if(!aimmed) return;
+    if(successes == undefined){
+      modifiers.push({Name: 'Accurate', Value: 10});
     } else {
-      inqweapon.Damage.DiceNumber += Math.min(successes, 2);
+      var twoSuccesses = Math.floor(successes / 2);
+      inqweapon.Damage.DiceNumber += Math.max(Math.min(twoSuccesses, 2), 0);
     }
   }
 }

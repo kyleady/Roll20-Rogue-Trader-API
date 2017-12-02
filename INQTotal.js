@@ -2394,7 +2394,7 @@ INQAttack.calcAmmo = function(){
     INQAttack.shotsFired = 0;
   }
 
-  INQAttack.shotsFired *= INQAttack.shotsMultiplier;
+  INQAttack.shotsFired *= INQAttack.ammoMultiplier;
 }
 INQAttack = INQAttack || {};
 //determine the effective psy rating of the character
@@ -2889,7 +2889,7 @@ INQAttack = INQAttack || {};
 INQAttack.prepareVariables = function(){
   INQAttack.toHit = 0;
   INQAttack.unnaturalSuccesses = 0;
-  INQAttack.shotsMultiplier = 1;
+  INQAttack.ammoMultiplier = 1;
   INQAttack.hitsMultiplier = 1;
   INQAttack.maxHitsMultiplier = 1;
   INQAttack.hordeDamage = 0;
@@ -3131,7 +3131,7 @@ INQAttack.accountForForce = function(){
 //however, they also double the ammo expended
 INQAttack.accountForStorm = function(){
   if(INQAttack.inqweapon.has("Storm")){
-    INQAttack.shotsMultiplier *= 2;
+    INQAttack.ammoMultiplier *= 2;
     INQAttack.hitsMultiplier *= 2;
   }
 }
@@ -3179,7 +3179,7 @@ INQAttack.accountForDevastating = function(){
 INQAttack.accountForTwinLinked = function(){
   if(INQAttack.inqweapon.has("Twin-linked")){
     INQAttack.toHit += 20;
-    INQAttack.shotsMultiplier *= 2;
+    INQAttack.ammoMultiplier *= 2;
     INQAttack.maxHitsMultiplier *= 2;
   }
 }
@@ -3220,7 +3220,7 @@ INQAttack.accountForRazorSharp = function(){
 //grants the recharge quality
 INQAttack.accountForMaximal = function(){
   if(INQAttack.inqweapon.has("Use Maximal")){
-    INQAttack.shotsMultiplier *= 3;
+    INQAttack.ammoMultiplier *= 3;
     INQAttack.inqweapon.Range       += Math.round(INQAttack.inqweapon.Range / 3);
     INQAttack.inqweapon.DiceNumber  += Math.round(INQAttack.inqweapon.DiceNumber / 2);
     INQAttack.inqweapon.DamageBase  += Math.round(INQAttack.inqweapon.DamageBase / 4);
@@ -3732,23 +3732,18 @@ INQCharacter.prototype.getTable = function(rows, boldFirstRow){
   output += '</tbody></table>';
   return output;
 }
-//check if the character has an inqlink with the given name
-//and within the given list
-//if there are no subgroups for the inqlink, just return {Bonus}
-//if there are, return the inqlink's subgroups with a bonus for each
-//if nothing was found, return undefined
 INQCharacter.prototype.has = function(ability, list){
+  var strMatch = typeof ability == 'string';
   if(list == undefined){
     whisper("Which List are you searching?");
     return undefined;
   }
   var info = [];
   _.each(this.List[list], function(rule){
-    if(rule.Name == ability){
-      //does the found skill have subgroups?
+    if((strMatch && rule.Name == ability)
+    || (!strMatch && ability.test(rule.Name))){
       var newRules = [];
       if(rule.Groups.length > 0){
-        //the inklink has subgroups and each will need their own bonus
         _.each(rule.Groups, function(subgroups){
           _.each(subgroups.split(/\s*,\s*/), function(subgroup){
             newRules.push({
@@ -3758,7 +3753,6 @@ INQCharacter.prototype.has = function(ability, list){
           });
         });
       } else {
-        //the inqlink does not have subgroups
         newRules.push({
           Name: 'all',
           Bonus: rule.Bonus
@@ -4865,15 +4859,20 @@ INQQtt.prototype.accurate = function(){
   var modifiers = this.inquse.modifiers;
   var successes = this.inquse.test.Successes;
   if(mode == 'Single' && inqweapon.has('Accurate')){
-    if(!successes){
-      for(var modifier of modifiers){
-        if(/^\s*Aim\s*$/i.test(modifier.Name)) {
-          modifiers.push({Name: 'Accurate', Value: 10});
-          break;
-        }
+    var aimmed = false;
+    for(var modifier of modifiers){
+      if(/^\s*(<em>\s*)?Aim(\s*<\/em>)?\s*$/i.test(modifier.Name)) {
+        aimmed = true;
+        break;
       }
+    }
+    
+    if(!aimmed) return;
+    if(successes == undefined){
+      modifiers.push({Name: 'Accurate', Value: 10});
     } else {
-      inqweapon.Damage.DiceNumber += Math.min(successes, 2);
+      var twoSuccesses = Math.floor(successes / 2);
+      inqweapon.Damage.DiceNumber += Math.max(Math.min(twoSuccesses, 2), 0);
     }
   }
 }
@@ -4885,14 +4884,11 @@ INQQtt.prototype.autoStabilised = function(){
 }
 INQQtt.prototype.blast = function(){
   var inqweapon = this.inquse.inqweapon;
-  var PR = this.inquse.PR;
-  var SB = this.inquse.SB;
+  var inquse = this.inquse;
   var blast = inqweapon.has('Blast');
   if(blast){
-    _.each(blast, function(value){
-      var formula = new INQFormula(value.Name);
-      this.inquse.hordeDamageMultiplier *= formula.roll({PR: PR, SB: SB});
-    });
+    var total = this.getTotal(blast);
+    inquse.hordeDamageMultiplier *= total;
   }
 }
 INQQtt.prototype.bulgingBiceps = function(){
@@ -4904,15 +4900,11 @@ INQQtt.prototype.bulgingBiceps = function(){
 INQQtt.prototype.claws = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.test.Successes;
+  if(successes <= 0) return;
   var claws = inqweapon.has('Claws');
   if(claws){
-    var additionalDamage = 0;
-    for(var value of claws){
-      if(Number(value.Name)) additionalDamage = Number(value.Name);
-    }
-
-    if(!additionalDamage) additionalDamage = 2;
-    inqweapon.Damage.Modifier += 2 * Successes;
+    var total = this.getTotal(claws);
+    inqweapon.Damage.Modifier += total * successes;
   }
 }
 INQQtt.prototype.crushingBlow = function(){
@@ -4924,25 +4916,23 @@ INQQtt.prototype.crushingBlow = function(){
 }
 INQQtt.prototype.damage = function(){
   var inqweapon = this.inquse.inqweapon;
-  var PR = this.inquse.PR;
-  var SB = this.inquse.SB;
-  var dam = inqweapon.has('Dam') || [];
-  var damage = inqweapon.has('Damage') || [];
-  dam = dam.concat(damage);
-  _.each(dam, function(value){
-    var equals = /=/.test(value.Name);
-    var text = value.Name.replace('=', '');
-    var formula = new INQFormula(text);
-    if(equals){
-      inqweapon.Damage = formula;
-    } else {
-      inqweapon.Damage.Modifier += formula.roll({PR: PR, SB: SB});
-    }
-  });
+  var dam = inqweapon.has(/dam(age)?/i);
+  if(dam){
+    _.each(dam, function(value){
+      if(/=/.test(value.Name)){
+        var text = value.Name.replace('=', '');
+        var formula = new INQFormula(text);
+        inqweapon.Damage = formula;
+      }
+    });
+
+    var total = this.getTotal(dam, 0);
+    inqweapon.Damage.Modifier += total;
+  }
 }
 INQQtt.prototype.damageType = function(){
   var inqweapon = this.inquse.inqweapon;
-  var type = inqweapon.has('DamageType');
+  var type = inqweapon.has(/Dam(age)?\s*Type/i);
   if(type){
     _.each(type, function(value){
       inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
@@ -4952,58 +4942,73 @@ INQQtt.prototype.damageType = function(){
 INQQtt.prototype.deadeye = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Dead Eye Shot', 'Talents')
-  && /called/i.test(this.options.RoF)
+  var RoF = this.inquse.options.RoF;
+  if(inqcharacter.has(/Dead\s*Eye\s*(Shot)?/i, 'Talents')
+  && /called/i.test(RoF)
   && inqweapon.isRanged()){
     this.inquse.modifiers.push({Name: 'Deadeye', Value: 10});
   }
 }
 INQQtt.prototype.devastating = function(){
   var inqweapon = this.inquse.inqweapon;
-  var PR = this.inquse.PR;
-  var SB = this.inquse.SB;
   var devastating = inqweapon.has('Devastating');
   if(devastating){
-    _.each(devastating, function(value){
-      var formula = new INQFormula(value.Name);
-      this.inquse.hordeDamage += formula.roll({PR: PR, SB: SB});
-    });
+    var total = this.getTotal(devastating);
+    this.inquse.hordeDamage += total;
   }
 }
 INQQtt.prototype.favouredByTheWarp = function(){
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Favoured By The Warp', 'Talents')){
-    this.inquse.PhyPheDrop++;
+  if(inqcharacter.has(/Favou?red By The Warp/i, 'Talents')){
+    this.inquse.PsyPheDrop++;
   }
 }
 INQQtt.prototype.fist = function(){
   var inqweapon = this.inquse.inqweapon;
-  var SB = this.inquse.inqcharacter.bonus('S');
+  var SB = this.inquse.SB;
   if(inqweapon.has('Fist')){
     inqweapon.Damage.Modifier += SB;
   }
 }
 INQQtt.prototype.force = function(){
   var inqweapon = this.inquse.inqweapon;
+  var PR = this.inquse.inqcharacter.Attributes.PR;
   if(inqweapon.has('Force')){
-    var PR = this.inquse.inqcharacter.Attributes.PR;
     this.inquse.inqweapon.Damage.Modifier += PR;
     this.inquse.inqweapon.Penetration.Modifier += PR;
   }
 }
+INQQtt.prototype.getTotal = function(subgroups, min){
+  if(min == undefined) min = 1;
+  var PR = this.inquse.PR;
+  var SB = this.inquse.SB;
+  var total = 0;
+  if(Array.isArray(subgroups)){
+    for(var value of subgroups){
+      if(/=/.test(value.Name)) continue;
+      if(value.Name == 'all') value.Name = min.toString();
+      var formula = new INQFormula(value.Name);
+      total += formula.roll({PR: PR, SB: SB});
+    }
+  }
+
+  if(total < min) total = min;
+  return total;
+}
 INQQtt.prototype.gyroStabilised = function(){
   var inqweapon = this.inquse.inqweapon;
+  var inqcharacter = this.inquse.inqcharacter;
   var range = this.inquse.range;
   var modifiers = this.inquse.modifiers;
   var braced = this.inquse.braced;
-  if(inqweapon.has('Gyro-Stabilised')){
-    if(range == 'Extended'){
+  if(inqweapon.has(/Gyro(-|\s*)Stabilised/i)){
+    if(range == 'Extended' && !inqcharacter.has('Marksman', 'Talents')){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
     } else if(range == 'Extreme'){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 20});
     }
 
-    if(!braced){
+    if(!braced && inqweapon.Class == 'Heavy'){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
     }
   }
@@ -5012,36 +5017,32 @@ INQQtt.prototype.hammerBlow = function(){
   var inqcharacter = this.inquse.inqcharacter;
   var inqweapon = this.inquse.inqweapon;
   var RoF = this.inquse.options.RoF;
-  if(inqcharacter.has('Hammer Blow', 'Talents') && /^\s*all\s*out\s*$/i.test(RoF)){
-    inqweapon.Penetration.Modofier += Math.ceil(inqcharacter.bonus('S')/2);
-    var concussive2 = new INQLink('Concussive(2)');
-    inqweapon.Special.push(concussive2);
+  var SB = this.inquse.SB;
+  if(inqcharacter.has('Hammer Blow', 'Talents') && /^\s*all\s*out\s*(attack)?\s*$/i.test(RoF)){
+    inqweapon.Penetration.Modifier += Math.ceil(SB/2);
+    inqweapon.set({Special: 'Concussive(2)'});
   }
 }
 INQQtt.prototype.hordeDmg = function(){
   var inqweapon = this.inquse.inqweapon;
-  var PR = this.inquse.PR;
-  var SB = this.inquse.SB;
-  var hordeDmg = inqweapon.has('HordeDmg');
+  var hordeDmg = inqweapon.has(/Horde\s*(Dmg|Dam(age)?)/i);
   if(hordeDmg){
-    _.each(hordeDmg, function(value){
-      var formula = new INQFormula(value.Name);
-      this.inquse.hordeDamageMultiplier += formula.roll({PR: PR, SB: SB});
-    });
+    var total = this.getTotal(hordeDmg);
+    this.inquse.hordeDamageMultiplier += total;
   }
 }
 INQQtt.prototype.indirect = function(){
   var inqweapon = this.inquse.inqweapon;
   var indirect = inqweapon.has('Indirect');
   if(indirect){
-    for(var value of indirect){
-      if(Number(value.Name)) this.inquse.scatter = value.Name;
-    }
+    var total = this.getTotal(indirect);
+    this.inquse.indirect = total;
   }
 }
 INQQtt.prototype.lance = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.test.Successes;
+  if(successes <= 0) return;
   if(inqweapon.has('Lance')){
     inqweapon.Penetration.Multiplier *= 1 + successes;
   }
@@ -5051,7 +5052,7 @@ INQQtt.prototype.legacy = function(){
   var inqcharacter = this.inquse.inqcharacter;
   if(inqweapon.has('Legacy')){
     var bonus = inqcharacter.bonus('Renown');
-    bonus = Math.round(bonus/2);
+    bonus = Math.ceil(bonus/2);
     inqweapon.Damage.Modifier += bonus;
     inqweapon.Penetration.Modifier += bonus;
   }
@@ -5059,38 +5060,38 @@ INQQtt.prototype.legacy = function(){
 INQQtt.prototype.marksman = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
+  var modifiers = this.inquse.modifiers;
+  var range = this.inquse.range;
   if(inqcharacter.has('Marksman', 'Talents')){
-    if(this.inquse.Range == 'Long') {
-      this.inquse.modifiers.push({Name: 'Marksman', Value: 10});
-    } else if(this.inquse.Range == 'Extended') {
-      this.inquse.modifiers.push({Name: 'Marksman', Value: 20});
+    if(range == 'Long') {
+      modifiers.push({Name: 'Marksman', Value: 10});
+    } else if(range == 'Extended') {
+      modifiers.push({Name: 'Marksman', Value: 20});
     }
   }
 }
 INQQtt.prototype.maximal = function(){
   var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Use Maximal')){
-    this.inquse.shotsMultiplier    *= 3;
+    this.inquse.ammoMultiplier    *= 3;
     inqweapon.Range.Multiplier     *= 1.33;
     inqweapon.Damage.DiceNumber    += Math.round(inqweapon.Damage.DiceNumber / 2);
     inqweapon.Damage.Modifier      += Math.round(inqweapon.Damage.Modifier / 4);
     inqweapon.Penetration.Modifier += Math.round(inqweapon.Penetration.Modifier / 5);
     inqweapon.set({Special: 'Recharge'});
-    for(var quality of inqweapon.Special){
-      if(quality.Name == 'Blast'){
-        for(var i = 0; i < quality.Groups.length; i++){
-          var formula = new INQFormula(quality.Groups[i]);
-          formula.Modifier += Math.round(formula.Modifier);
-          quality.Groups[i] = formula.toNote();
-        }
-      }
+    var blast = inqweapon.has('Blast');
+    if(blast){
+      var total = this.getTotal(blast);
+      total = Math.ceil(total/2);
+      inqweapon.set({Special: 'Blast(' + total + ')'});
     }
+
     inqweapon.removeQuality('Use Maximal')
   } else {
     inqweapon.removeQuality('Maximal');
   }
 }
-INQQtt.prototype.lance = function(){
+INQQtt.prototype.melta = function(){
   var inqweapon = this.inquse.inqweapon;
   var range = this.inquse.range;
   if(inqweapon.has('Melta') && /(Point Blank|Short)/i.test(range)){
@@ -5099,14 +5100,15 @@ INQQtt.prototype.lance = function(){
 }
 INQQtt.prototype.mightyShot = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqcharacter.has('Mighty Shot') && inqweapon.isRanged()){
+  var inqcharacter = this.inquse.inqcharacter;
+  if(inqcharacter.has('Mighty Shot', 'Talents') && inqweapon.isRanged()){
     inqweapon.Damage.Modifier += 2;
   }
 }
 INQQtt.prototype.overcharge = function(){
   var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Use Overcharge')){
-    this.inquse.shotsMultiplier    *= 3;
+    this.inquse.ammoMultiplier *= 3;
     inqweapon.set({Special: 'Concussive(2), Devastating(2), Overheats, Recharge'});
     inqweapon.removeQuality('Use Overcharge')
   } else {
@@ -5115,28 +5117,33 @@ INQQtt.prototype.overcharge = function(){
 }
 INQQtt.prototype.penetration = function(){
   var inqweapon = this.inquse.inqweapon;
-  var PR = this.inquse.PR;
-  var SB = this.inquse.SB;
-  var pen = inqweapon.has('Pen') || [];
-  var penetration = inqweapon.has('Penetration') || [];
-  pen = pen.concat(penetration);
-  _.each(pen, function(value){
-    var equals = /=/.test(value.Name);
-    var text = value.Name.replace('=', '');
-    var formula = new INQFormula(text);
-    if(equals){
-      inqweapon.Penetration = formula;
-    } else {
-      inqweapon.Penetration.Modifier += formula.roll({PR: PR, SB: SB});
-    }
-  });
+  var pen = inqweapon.has(/Pen(etration)?/i);
+  if(pen){
+    _.each(pen, function(value){
+      if(/=/.test(value.Name)){
+        var text = value.Name.replace('=', '');
+        var formula = new INQFormula(text);
+        inqweapon.Penetration = formula;
+      }
+    });
+
+    var total = this.getTotal(pen, 0);
+    inqweapon.Penetration.Modifier += total;
+  }
+}
+INQQtt.prototype.powerField = function(){
+  var inqweapon = this.inquse.inqweapon;
+  if(inqweapon.has('Power Field')){
+    this.inquse.hordeDamage++;
+  }
 }
 INQQtt.prototype.preciseBlow = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
+  var RoF = this.inquse.options.RoF;
   if(inqcharacter.has('Precise Blow', 'Talents')
-  && /called/i.test(this.options.RoF)
-  && inqweapon.isRanged()){
+  && /called/i.test(RoF)
+  && inqweapon.Class == 'Melee'){
     this.inquse.modifiers.push({Name: 'Precise Blow', Value: 10});
   }
 }
@@ -5146,12 +5153,15 @@ INQQtt.prototype.proven = function(){
   var SB = this.inquse.SB;
   var proven = inqweapon.has('Proven');
   if(proven){
+    var largest = 1;
+    var current = 1;
     for(value of proven){
       var formula = new INQFormula(value.Name);
-      this.inquse.rerollBelow = formula.roll({SB: SB, PR: PR}) - 1;
+      current = formula.roll({SB: SB, PR: PR});
+      if(current > largest) largest = current;
     }
 
-    if(!this.inquse.rerollBelow) this.inquse.rerollBelow = 1;
+    this.inquse.rerollDam = largest - 1;
   }
 }
 INQQtt.prototype.razorSharp = function(){
@@ -5166,8 +5176,8 @@ INQQtt.prototype.scatter = function(){
   var range = this.inquse.range;
   if(inqweapon.has('Scatter')){
     if(range == 'Point Blank'){
-      inqweapon.set({Special: 'Storm'});
-    } else if(/(Extended|Extreme|Impossible)/.test(range)){
+      this.inquse.hitsMultiplier *= 2;
+    } else if(/(Long|Extended|Extreme|Impossible)/.test(range)){
       inqweapon.set({Special: 'Primitive'});
     }
   }
@@ -5175,8 +5185,9 @@ INQQtt.prototype.scatter = function(){
 INQQtt.prototype.sharpshooter = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
+  var RoF = this.inquse.options.RoF;
   if(inqcharacter.has('Sharpshooter', 'Talents')
-  && /called/i.test(this.options.RoF)
+  && /called/i.test(RoF)
   && inqweapon.isRanged()){
     this.inquse.modifiers.push({Name: 'Sharpshooter', Value: 10});
   }
@@ -5184,28 +5195,28 @@ INQQtt.prototype.sharpshooter = function(){
 INQQtt.prototype.size = function(){
   var inqtarget = this.inquse.inqtarget;
   var modifiers = this.inquse.modifiers;
-  var size = inqtarget.has('Size', 'Talents');
+  var size = inqtarget.has('Size', 'Traits');
   if(size){
     for(var value of size){
-      if(/(1|Miniscule)/i.test(value.Name)){
+      if(/^(1|Miniscule)$/i.test(value.Name)){
         modifiers.push({Name: 'Miniscule', Value: -30});
-      } else if(/(2|Puny)/i.test(value.Name)){
+      } else if(/^(2|Puny)$/i.test(value.Name)){
         modifiers.push({Name: 'Puny', Value: -20});
-      } else if(/(3|Scrawny)/i.test(value.Name)){
+      } else if(/^(3|Scrawny)$/i.test(value.Name)){
         modifiers.push({Name: 'Scrawny', Value: -10});
-      } else if(/(4|Average)/i.test(value.Name)){
+      } else if(/^(4|Average)$/i.test(value.Name)){
 
-      } else if(/(5|Hulking)/i.test(value.Name)){
+      } else if(/^(5|Hulking)$/i.test(value.Name)){
         modifiers.push({Name: 'Hulking', Value: 10});
-      } else if(/(6|Enormous)/i.test(value.Name)){
+      } else if(/^(6|Enormous)$/i.test(value.Name)){
         modifiers.push({Name: 'Enormous', Value: 20});
-      } else if(/(7|Massive)/i.test(value.Name)){
+      } else if(/^(7|Massive)$/i.test(value.Name)){
         modifiers.push({Name: 'Massive', Value: 30});
-      } else if(/(8|Immense)/i.test(value.Name)){
+      } else if(/^(8|Immense)$/i.test(value.Name)){
         modifiers.push({Name: 'Immense', Value: 40});
-      } else if(/(9|Monumental)/i.test(value.Name)){
+      } else if(/^(9|Monumental)$/i.test(value.Name)){
         modifiers.push({Name: 'Monumental', Value: 50});
-      } else if(/(10|Titanic)/i.test(value.Name)){
+      } else if(/^(10|Titanic)$/i.test(value.Name)){
         modifiers.push({Name: 'Titanic', Value: 60});
       }
     }
@@ -5224,15 +5235,16 @@ INQQtt.prototype.spray = function(){
 INQQtt.prototype.storm = function(){
   var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Storm')){
-    this.inquse.shotsMultiplier *= 2;
+    this.inquse.ammoMultiplier *= 2;
     this.inquse.hitsMultiplier *= 2;
   }
 }
 INQQtt.prototype.sureStrike = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
+  var RoF = this.inquse.options.RoF;
   if(inqcharacter.has('Sure Strike', 'Talents')
-  && /called/i.test(this.options.RoF)
+  && /called/i.test(RoF)
   && inqweapon.Class == 'Melee'){
     this.inquse.modifiers.push({Name: 'Sure Strike', Value: 10});
   }
@@ -5250,16 +5262,25 @@ INQQtt.prototype.tearingFleshRender = function(){
   if(inqweapon.has('Tearing')){
     this.inquse.dropDice = 1;
     inqweapon.Damage.DiceNumber++;
-    if(inqcharacter.has('Flesh Render', 'Talents')){
+    if(inqcharacter.has('Flesh Render', 'Talents') && inqweapon.Class == 'Melee'){
       this.inquse.dropDice++;
       inqweapon.Damage.DiceNumber++;
     }
   }
 }
+INQQtt.prototype.toHit = function(){
+  var inqweapon = this.inquse.inqweapon;
+  var toHit = inqweapon.has(/To\s*Hit/i);
+  var modifiers = this.inquse.modifiers;
+  if(toHit){
+    var total = this.getTotal(toHit);
+    modifiers.push({Name: 'Weapon', Value: total});
+  }
+}
 INQQtt.prototype.twinLinked = function(){
   var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Twin-linked')){
-    this.inquse.shotsMultiplier *= 2;
+    this.inquse.ammoMultiplier *= 2;
     this.inquse.maxHitsMultiplier *= 2;
     if(this.inquse.mode == 'Single') this.inquse.mode = 'Semi';
   }
@@ -6355,46 +6376,50 @@ function INQWeapon(weapon, callback){
 
 INQWeapon.prototype = new INQObject();
 INQWeapon.prototype.constructor = INQWeapon;
-//check if the weapon has an inqlink with the given name
-//if there are no subgroups for the inqlink, just return {Bonus}
-//if there are, return the inqlink's subgroups with a bonus for each
-//if nothing was found, return undefined
 INQWeapon.prototype.has = function(ability){
-  var info = undefined;
+  var strMatch = typeof ability == 'string';
+  var info = [];
   _.each(this.Special, function(rule){
-    if(rule.Name == ability){
-      //if we have not found the rule yet
-      if(info == undefined){
-        //does the found skill have subgroups?
-        if(rule.Groups.length > 0){
-          //the inklink has subgroups and each will need their own bonus
-          info = [];
-          _.each(rule.Groups, function(subgroup){
-            info.push({
+    if((strMatch && rule.Name == ability)
+    || (!strMatch && ability.test(rule.Name))){
+      var newRules = [];
+      if(rule.Groups.length > 0){
+        _.each(rule.Groups, function(subgroups){
+          _.each(subgroups.split(/\s*,\s*/), function(subgroup){
+            newRules.push({
               Name:  subgroup,
               Bonus: rule.Bonus
             });
           });
-        } else {
-          //the inqlink does not have subgroups
-          info = {
-            Bonus: rule.Bonus
-          };
-        }
-      //if the rule already has been found
-      //AND the rule has subgroups
-      //AND the previously found rule had subgroups
-      } else if(rule.Groups.length > 0 && info.length > 0){
-        //add the new found subgroups in with their own bonuses
-        _.each(rule.Groups, function(){
-          info.push({
-            Name:  subgroup,
-            Bonus: rule.Bonus
-          });
+        });
+      } else {
+        newRules.push({
+          Name: 'all',
+          Bonus: rule.Bonus
         });
       }
+      _.each(newRules, function(newRule){
+        _.each(info, function(oldRule){
+          if(newRule.Name == oldRule.Name){
+            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
+            newRule.Repeat = true;
+          }
+        });
+        if(!newRule.Repeat) info.push(newRule);
+      });
     }
   });
+  var highestAll = -99999;
+  _.each(info, function(oldRule){
+    if(oldRule.Name == 'all' && oldRule.Bonus > highestAll) highestAll = oldRule.Bonus;
+  });
+  _.each(info, function(oldRule){
+    if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
+  });
+
+
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
+  if(info.length == 0) return undefined;
   return info;
 }
 INQWeapon.prototype.isRanged = function(){

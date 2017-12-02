@@ -1,11 +1,13 @@
 INQQtt.prototype.marksman = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
+  var modifiers = this.inquse.modifiers;
+  var range = this.inquse.range;
   if(inqcharacter.has('Marksman', 'Talents')){
-    if(this.inquse.Range == 'Long') {
-      this.inquse.modifiers.push({Name: 'Marksman', Value: 10});
-    } else if(this.inquse.Range == 'Extended') {
-      this.inquse.modifiers.push({Name: 'Marksman', Value: 20});
+    if(range == 'Long') {
+      modifiers.push({Name: 'Marksman', Value: 10});
+    } else if(range == 'Extended') {
+      modifiers.push({Name: 'Marksman', Value: 20});
     }
   }
 }

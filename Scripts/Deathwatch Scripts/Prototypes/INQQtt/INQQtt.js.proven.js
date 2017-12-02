@@ -4,11 +4,14 @@ INQQtt.prototype.proven = function(){
   var SB = this.inquse.SB;
   var proven = inqweapon.has('Proven');
   if(proven){
+    var largest = 1;
+    var current = 1;
     for(value of proven){
       var formula = new INQFormula(value.Name);
-      this.inquse.rerollBelow = formula.roll({SB: SB, PR: PR}) - 1;
+      current = formula.roll({SB: SB, PR: PR});
+      if(current > largest) largest = current;
     }
 
-    if(!this.inquse.rerollBelow) this.inquse.rerollBelow = 1;
+    this.inquse.rerollDam = largest - 1;
   }
 }
