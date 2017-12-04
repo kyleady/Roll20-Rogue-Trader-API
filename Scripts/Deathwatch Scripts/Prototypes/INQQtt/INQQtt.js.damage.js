@@ -1,6 +1,6 @@
 INQQtt.prototype.damage = function(){
   var inqweapon = this.inquse.inqweapon;
-  var dam = inqweapon.has(/dam(age)?/i);
+  var dam = inqweapon.has(/^dam(age)?$/i);
   if(dam){
     _.each(dam, function(value){
       if(/=/.test(value.Name)){

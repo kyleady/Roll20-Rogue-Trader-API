@@ -4,7 +4,9 @@ INQQtt.prototype.tearingFleshRender = function(){
   if(inqweapon.has('Tearing')){
     this.inquse.dropDice = 1;
     inqweapon.Damage.DiceNumber++;
-    if(inqcharacter.has('Flesh Render', 'Talents') && inqweapon.Class == 'Melee'){
+    if(inqcharacter
+    && inqcharacter.has('Flesh Render', 'Talents')
+    && inqweapon.Class == 'Melee'){
       this.inquse.dropDice++;
       inqweapon.Damage.DiceNumber++;
     }

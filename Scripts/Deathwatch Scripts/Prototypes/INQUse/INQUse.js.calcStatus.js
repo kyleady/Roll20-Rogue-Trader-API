@@ -1,7 +1,7 @@
 INQUse.prototype.calcStatus = function(){
-  var attacker = getObj('graphic', this.inqcharacter.GraphicID);
-  var target = getObj('graphic', this.inqtarget.GraphicID);
-
+  var attacker, target;
+  if(this.inqcharacter) attacker = getObj('graphic', this.inqcharacter.GraphicID);
+  if(this.inqtarget) target = getObj('graphic', this.inqtarget.GraphicID);
   if(attacker) {
     if(attacker.get('status_blue')) {
       this.braced = true;

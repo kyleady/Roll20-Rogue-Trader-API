@@ -1,10 +1,18 @@
 INQUse.prototype.calcRange = function(){
   if(this.inqweapon.Range.onlyZero()) return;
   if(!this.inqtarget) return;
+  if(!this.inqcharacter) return;
   var distance = getRange(this.inqcharacter.GraphicID, this.inqtarget.GraphicID);
   if(distance == undefined) return;
   var range = this.inqweapon.Range.roll({PR: this.PR, SB: this.SB});
-  if(distance <= 2) {
+  if(!range) range = 1;
+  if(this.inqweapon.Class == 'Melee') {
+    if(distance <= range){
+      this.range = 'Melee';
+    } else {
+      this.range = 'Impossible';
+    }
+  } else if (distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
     this.range = 'Point Blank';
   } else if (distance <= range / 2) {
@@ -22,7 +30,6 @@ INQUse.prototype.calcRange = function(){
     this.modifiers.push({Name: 'Extreme Range', Value: -30});
     this.range = 'Extreme';
   } else {
-    this.modifiers.push({Name: 'Impossible', Value: -1000});
     this.range = 'Impossible';
   }
 }

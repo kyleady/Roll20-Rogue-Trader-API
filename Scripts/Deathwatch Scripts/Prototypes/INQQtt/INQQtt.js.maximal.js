@@ -1,7 +1,7 @@
 INQQtt.prototype.maximal = function(){
   var inqweapon = this.inquse.inqweapon;
   if(inqweapon.has('Use Maximal')){
-    this.inquse.ammoMultiplier    *= 3;
+    this.inquse.ammoMultiplier     += 2;
     inqweapon.Range.Multiplier     *= 1.33;
     inqweapon.Damage.DiceNumber    += Math.round(inqweapon.Damage.DiceNumber / 2);
     inqweapon.Damage.Modifier      += Math.round(inqweapon.Damage.Modifier / 4);

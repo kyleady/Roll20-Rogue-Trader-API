@@ -19,7 +19,4 @@ INQUse.prototype.calcEffectivePsyRating = function(){
   }
 
   if(this.options.BonusPR) this.PR += Number(this.options.BonusPR);
-  if(this.PR && this.inqweapon.Class == 'Psychic') {
-    this.modifiers.push({Name: 'Psy Rating', Value: 5 * this.PR});
-  }
 }

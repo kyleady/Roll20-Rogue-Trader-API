@@ -16,7 +16,7 @@ describe('INQQtt.prototype.overcharge()', function() {
 			inquse.ammoMultiplier = 2;
       var inqqtt = new INQQtt(inquse);
       inqqtt.overcharge();
-      expect(inquse.ammoMultiplier).to.equal(6);
+      expect(inquse.ammoMultiplier).to.equal(4);
       done();
     });
   });

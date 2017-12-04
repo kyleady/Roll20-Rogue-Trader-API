@@ -21,7 +21,6 @@ describe('INQUse()', function() {
 
     expect(inquse).to.be.an.instanceof(INQUse);
   });
-  it('should have default properties');
   it('should retrive a handout by name and save it as an INQWeapon', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');

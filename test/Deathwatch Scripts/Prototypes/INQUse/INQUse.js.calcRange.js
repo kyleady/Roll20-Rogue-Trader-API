@@ -10,12 +10,12 @@ describe('INQUse.prototype.calcRange()', function() {
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Range</strong>: 3 x SB m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Basic<br><strong>Range</strong>: 3 x SB m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, height: 0.1, width: 0.1, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 3, left: 19, height: 0.1, width: 0.1, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.modifiers = [];
@@ -23,7 +23,6 @@ describe('INQUse.prototype.calcRange()', function() {
       inquse.SB = 4;
 			inquse.calcRange();
       expect(inquse.range).to.equal('Long');
-			graphic2.set('top', 3);
 			graphic2.set('left', 5);
 			inquse.calcRange();
       expect(inquse.range).to.equal('Point Blank');
@@ -33,7 +32,7 @@ describe('INQUse.prototype.calcRange()', function() {
 			graphic2.set('left', 4+7);
 			inquse.calcRange();
       expect(inquse.range).to.equal('Standard');
-			graphic2.set('left', 4+12.001);
+			graphic2.set('left', 4+14);
 			inquse.calcRange();
       expect(inquse.range).to.equal('Long');
 			graphic2.set('left', 4+25);
@@ -55,12 +54,12 @@ describe('INQUse.prototype.calcRange()', function() {
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Range</strong>: 10 x PR m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Basic<br><strong>Range</strong>: 10 x PR m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 2}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, height: 0.1, width: 0.1, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 3, left: 12, height: 0.1, width: 0.1, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.modifiers = [];

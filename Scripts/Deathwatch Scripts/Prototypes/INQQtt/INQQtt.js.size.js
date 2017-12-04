@@ -1,6 +1,8 @@
 INQQtt.prototype.size = function(){
   var inqtarget = this.inquse.inqtarget;
   var modifiers = this.inquse.modifiers;
+  var inqweapon = this.inquse.inqweapon;
+  if(!(inqweapon.Class == 'Melee' || inqweapon.isRanged())) return;
   var size = inqtarget.has('Size', 'Traits');
   if(size){
     for(var value of size){
