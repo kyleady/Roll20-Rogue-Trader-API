@@ -20,6 +20,7 @@ describe('INQUse.prototype.defaultProperties()', function() {
 			inquse.defaultProperties();
       expect(inquse.braced).to.equal(false);
       expect(inquse.range).to.equal('');
+			expect(inquse.options.FocusStrength).to.equal('');
       expect(inquse.PsyPheDrop).to.equal(0);
       expect(inquse.PsyPheModifier).to.equal(0);
       expect(inquse.hordeDamage).to.equal(0);

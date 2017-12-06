@@ -6,7 +6,7 @@ INQWeaponNoteParser.prototype.parseDetails = function(details){
   for(var i = 0; i < details.length; i++){
     var detail = details[i].trim();
     if(detail == '') continue;
-    if(/^(melee|pistol|basic|heavy|psychic)$/i.test(detail)){
+    if(/^(melee|thrown|pistol|basic|heavy|psychic|gear)$/i.test(detail)){
       this.parseClass(detail);
     } else if(rangeRe.test(detail)){
       this.parseRange(detail);

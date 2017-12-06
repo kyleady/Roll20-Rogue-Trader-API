@@ -43,31 +43,35 @@ describe('INQUse.prototype.calcRange()', function() {
       expect(inquse.range).to.equal('Extreme');
 			graphic2.set('left', 4+60);
 			inquse.calcRange();
-      expect(inquse.range).to.equal('Impossible');
+			expect(inquse.autoFail).to.equal(true);
       done();
     });
   });
-  it('should record the range modifier type', function(done){
+  it('should record the melee range', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Basic<br><strong>Range</strong>: 10 x PR m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Melee<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
-    var page = createObj('page', {scale_number: 2}, {MOCK20override: true});
+    var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, height: 0.1, width: 0.1, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 3, left: 12, height: 0.1, width: 0.1, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, height: 1, width: 1, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 3, left: 6, height: 1, width: 1, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.modifiers = [];
       inquse.range = '';
       inquse.PR = 10;
-      inquse.calcRange();
-      expect(inquse.range).to.equal('Close');
-      expect(inquse.modifiers).to.deep.equal([{Name: 'Close Range', Value: 10}]);
+			inquse.calcRange();
+      expect(inquse.range).to.equal('Melee');
+			expect(inquse.autoFail).to.not.equal(true);
+      expect(inquse.modifiers).to.deep.equal([]);
+			graphic2.set('left', 10);
+			inquse.calcRange();
+      expect(inquse.autoFail).to.equal(true);
       done();
     });
   });

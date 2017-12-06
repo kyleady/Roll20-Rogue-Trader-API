@@ -22,7 +22,8 @@ describe('INQUse.prototype.calcModifiers()', function() {
 		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 91});
 		graphic2.set('status_green', true);
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
-      inquse.inqcharacter = new INQCharacter();
+			inquse.inqweapon.FocusModifier = -10;
+			inquse.inqcharacter = new INQCharacter();
 			inquse.inqcharacter.GraphicID = graphic1.id;
       inquse.inqcharacter.Attributes.PR = 5;
 			inquse.inqcharacter.List.Talents.push(new INQLink('Warp Conduit'));
@@ -32,6 +33,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
 			inquse.calcModifiers();
 			expect(inquse.modifiers).to.deep.equal([
         {Name: '<em>My Modifier</em>', Value: '+20'},
+				{Name: 'Focus Modifier', Value: -10},
         {Name: 'Psy Rating', Value: 45}
       ]);
 			expect(inquse.PR).to.equal(9);
@@ -72,6 +74,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
 			inquse.calcModifiers();
 			expect(inquse.modifiers).to.deep.equal([
         {Name: '<em>My Modifier</em>', Value: '+20'},
+				{Name: 'Focus Modifier', Value: 0},
 				{Name: 'Long Range', Value: -10},
 				{Name: 'Stunned', Value: 20},
 				{Name: 'Enormous', Value: 20},
@@ -111,6 +114,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       inquse.calcModifiers();
 			expect(inquse.modifiers).to.deep.equal([
         {Name: '<em>My Modifier</em>', Value: '+20'},
+				{Name: 'Focus Modifier', Value: 0},
 				{Name: 'Unbraced', Value: -30}
       ]);
 			expect(inquse.PR).to.equal(5);
@@ -145,6 +149,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
 			inquse.calcModifiers();
 			expect(inquse.modifiers).to.deep.equal([
         {Name: '<em>My Modifier</em>', Value: '+20'},
+				{Name: 'Focus Modifier', Value: 0},
 				{Name: 'Stunned', Value: 20},
 				{Name: 'Enormous', Value: 20},
 				{Name: 'Unbraced', Value: -30}

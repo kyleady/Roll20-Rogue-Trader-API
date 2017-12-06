@@ -1,5 +1,4 @@
 INQUse.prototype.calcRange = function(){
-  if(this.inqweapon.Range.onlyZero()) return;
   if(!this.inqtarget) return;
   if(!this.inqcharacter) return;
   var distance = getRange(this.inqcharacter.GraphicID, this.inqtarget.GraphicID);
@@ -10,7 +9,8 @@ INQUse.prototype.calcRange = function(){
     if(distance <= range){
       this.range = 'Melee';
     } else {
-      this.range = 'Impossible';
+      whisper('Out of melee range.', {speakingTo: this.playerid, gmEcho: true});
+      this.autoFail = true;
     }
   } else if (distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
@@ -30,6 +30,7 @@ INQUse.prototype.calcRange = function(){
     this.modifiers.push({Name: 'Extreme Range', Value: -30});
     this.range = 'Extreme';
   } else {
-    this.range = 'Impossible';
+    whisper('Out of range: ' + distance  + 'm/' + range + 'm', {speakingTo: this.playerid, gmEcho: true});
+    this.autoFail = true;
   }
 }

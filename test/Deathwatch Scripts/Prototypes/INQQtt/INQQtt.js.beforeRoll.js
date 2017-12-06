@@ -19,7 +19,9 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
       'Spray',
       'Storm',
       'To Hit[30]',
-      'Twin-linked'
+      'Twin-linked',
+			'Reliable',
+			'Overheats'
     ];
     var options = {
 			modifiers: '+10 Aim',
@@ -50,6 +52,8 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 
 			inquse.indirect = 0;
 
+			inquse.jamsAt = 96;
+
 			inquse.hordeDamageMultiplier = 1;
 			inquse.hordeDamage = 0;
 
@@ -60,6 +64,8 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.test = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
+			expect(inquse.jamsAt).to.equal(100);
+			expect(inquse.jamResult).to.equal('Overheats');
 			expect(inquse.braced).to.equal(true);
 			expect(inquse.modifiers).to.have.deep.members([
 				{Name: '<em>Aim</em>', Value: '+10'},
@@ -110,7 +116,8 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
       'Spray',
       'Storm',
       'To Hit[30]',
-      'Twin-linked'
+      'Twin-linked',
+			'Unreliable'
     ];
     var options = {
 			modifiers: '+10 Aim',
@@ -149,6 +156,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.test = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
+			expect(inquse.jamsAt).to.equal(91);
 			expect(inquse.braced).to.equal(true);
 			expect(inquse.modifiers).to.have.deep.members([
 				{Name: '<em>Aim</em>', Value: '+10'},
@@ -198,7 +206,8 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
       'Spray',
       'Storm',
       'To Hit[30]',
-      'Twin-linked'
+      'Twin-linked',
+			'Overheats'
     ];
     var options = {
 			modifiers: '+10 Aim',
@@ -230,6 +239,8 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.test = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
+			expect(inquse.jamsAt).to.equal(91);
+			expect(inquse.jamResult).to.equal('Overheats');
 			expect(inquse.braced).to.equal(false);
 			expect(inquse.modifiers).to.have.deep.members([
 				{Name: '<em>Aim</em>', Value: '+10'},

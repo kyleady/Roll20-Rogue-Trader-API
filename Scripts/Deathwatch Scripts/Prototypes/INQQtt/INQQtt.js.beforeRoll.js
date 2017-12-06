@@ -22,4 +22,7 @@ INQQtt.prototype.beforeRoll = function(){
   this.storm();
   this.toHit();
   this.twinLinked();
+  this.overheats();
+  this.reliable();
+  this.unreliable();
 }

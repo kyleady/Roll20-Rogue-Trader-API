@@ -2,6 +2,11 @@ INQUse.prototype.calcModifiers = function(){
   this.defaultProperties();
   var special = new INQQtt(this);
   this.parseModifiers();
+  this.modifiers.push({
+    Name: 'Focus Modifier',
+    Value: this.inqweapon.FocusModifier
+  });
+
   this.calcEffectivePsyRating();
   if(this.inqcharacter) this.SB = this.inqcharacter.bonus('S');
   special.beforeRange();

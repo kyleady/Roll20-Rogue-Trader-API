@@ -4089,6 +4089,70 @@ INQCharacterParser.prototype.parseMovement = function(){
 INQCharacterParser.prototype.parseSpecialRules = function(){
   this.SpecialRules = this.Content.Rules;
 }
+function INQClip(inqweapon, characterid, options){
+  this.inqweapon = inqweapon;
+  this.characterid = characterid;
+  if(typeof options != 'object') options = {};
+  this.options = options;
+  this.getName();
+}
+INQClip.prototype.getClipObj = function(makeObj){
+  if(makeObj == undefined) makeObj = true;
+  var attributes = findObjs({
+    _characterid: this.characterid,
+    name: this.name
+  });
+
+  if (attributes && attributes.length) {
+    this.clipObj = attributes[0];
+  } else if(makeObj) {
+    this.clipObj = createObj('attribute', {
+      name: this.name,
+      _characterid: this.characterid,
+      current: Number(this.inqweapon.Clip),
+      max: Number(this.inqweapon.Clip)
+    });
+  }
+}
+INQClip.prototype.getName = function(weapon){
+  if(!this.inqweapon) return;
+  this.name = 'Ammo - ';
+  if(typeof this.inqweapon == 'string'){
+    this.name += this.inqweapon;
+  } else {
+    this.name += this.inqweapon.Name;
+  }
+
+  if(this.options.inqammo) {
+    this.name += ' (';
+    if(typeof this.options.inqammo == 'string'){
+      this.name += this.options.inqammo;
+    } else {
+      this.name += this.options.inqammo.Name;
+    }
+    this.name += ')';
+  }
+}
+INQClip.prototype.spend = function(){
+  this.getClipObj(Number(this.inqweapon.Clip));
+  if(!this.clipObj) return true;
+  var clip = Number(this.clipObj.get('current'));
+  var total = this.options.shots || 1;
+  total *= this.options.ammoMultilpier || 1;
+  clip -= total;
+  if(clip < 0) {
+    var warning = 'Not enough ammo to fire ';
+    warning += this.inqweapon.toLink();
+    if(this.options.inqammo) warning += ' using ' + this.options.inqammo.toLink();
+    warning += '.';
+    whisper(warning, {speakingTo: this.options.playerid, gmEcho: true});
+    return false;
+  }
+
+  if(this.options.freeShot) return true;
+  this.clipObj.set('current', clip);
+  return true;
+}
 function INQFormula(text){
   this.reset();
   if(typeof text == 'string') this.parse(text);
@@ -4939,6 +5003,9 @@ INQQtt.prototype.beforeRoll = function(){
   this.storm();
   this.toHit();
   this.twinLinked();
+  this.overheats();
+  this.reliable();
+  this.unreliable();
 }
 INQQtt.prototype.blast = function(){
   var inqweapon = this.inquse.inqweapon;
@@ -5174,6 +5241,13 @@ INQQtt.prototype.overcharge = function(){
     inqweapon.removeQuality('Overcharge');
   }
 }
+INQQtt.prototype.overheats = function(){
+  var inqweapon = this.inquse.inqweapon;
+  if(inqweapon.has('Overheats')){
+    this.inquse.jamResult = 'Overheats';
+    this.inquse.jamsAt = 91;
+  }
+}
 INQQtt.prototype.penetration = function(){
   var inqweapon = this.inquse.inqweapon;
   var pen = inqweapon.has(/Pen(etration)?/i);
@@ -5228,6 +5302,12 @@ INQQtt.prototype.razorSharp = function(){
   var successes = this.inquse.test.Successes;
   if(inqweapon.has('Razor Sharp') && successes >= 2){
     inqweapon.Penetration.Multiplier *= 2;
+  }
+}
+INQQtt.prototype.reliable = function(){
+  var inqweapon = this.inquse.inqweapon;
+  if(inqweapon.has('Reliable')){
+    this.inquse.jamsAt = 100;
   }
 }
 INQQtt.prototype.scatter = function(){
@@ -5346,6 +5426,12 @@ INQQtt.prototype.twinLinked = function(){
     this.inquse.ammoMultiplier++;
     this.inquse.maxHitsMultiplier++;
     if(this.inquse.mode == 'Single') this.inquse.mode = 'Semi';
+  }
+}
+INQQtt.prototype.unreliable = function(){
+  var inqweapon = this.inquse.inqweapon;
+  if(inqweapon.has('Unreliable')){
+    this.inquse.jamsAt = 91;
   }
 }
 INQQtt.prototype.warpConduit = function(){
@@ -5892,6 +5978,11 @@ INQUse.prototype.calcModifiers = function(){
   this.defaultProperties();
   var special = new INQQtt(this);
   this.parseModifiers();
+  this.modifiers.push({
+    Name: 'Focus Modifier',
+    Value: this.inqweapon.FocusModifier
+  });
+
   this.calcEffectivePsyRating();
   if(this.inqcharacter) this.SB = this.inqcharacter.bonus('S');
   special.beforeRange();
@@ -5908,7 +5999,6 @@ INQUse.prototype.calcModifiers = function(){
   }
 }
 INQUse.prototype.calcRange = function(){
-  if(this.inqweapon.Range.onlyZero()) return;
   if(!this.inqtarget) return;
   if(!this.inqcharacter) return;
   var distance = getRange(this.inqcharacter.GraphicID, this.inqtarget.GraphicID);
@@ -5919,7 +6009,8 @@ INQUse.prototype.calcRange = function(){
     if(distance <= range){
       this.range = 'Melee';
     } else {
-      this.range = 'Impossible';
+      whisper('Out of melee range.', {speakingTo: this.playerid, gmEcho: true});
+      this.autoFail = true;
     }
   } else if (distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
@@ -5939,7 +6030,8 @@ INQUse.prototype.calcRange = function(){
     this.modifiers.push({Name: 'Extreme Range', Value: -30});
     this.range = 'Extreme';
   } else {
-    this.range = 'Impossible';
+    whisper('Out of range: ' + distance  + 'm/' + range + 'm', {speakingTo: this.playerid, gmEcho: true});
+    this.autoFail = true;
   }
 }
 INQUse.prototype.calcRoF = function(){
@@ -6026,6 +6118,10 @@ INQUse.prototype.calcStatus = function(){
 INQUse.prototype.defaultProperties = function(){
   this.braced = false;
   this.range = '';
+  if(!this.options.FocusStrength) this.options.FocusStrength = '';
+
+  this.jamsAt = 96;
+  this.jamResult = 'Jam';
 
   this.PsyPheDrop = 0;
   this.PsyPheModifier = 0;
@@ -6036,6 +6132,39 @@ INQUse.prototype.defaultProperties = function(){
   this.ammoMultiplier = 1;
   this.hitsMultiplier = 1;
   this.maxHitsMultiplier = 1;
+}
+INQUse.prototype.diceEvents = function(){
+  var die = this.test.Die;
+  var tens = Math.floor(die / 10);
+  var ones = die - tens * 10;
+  if(this.options.FocusStrength){
+    this.jamsAt = 91;
+    this.jamResult = 'Fail';
+    switch(this.options.FocusStrength){
+      case 'Unfettered':
+        if(ones == 9) this.PsyPhe = true;
+      break;
+      case 'Push': case 'True':
+        this.PsyPhe = true;
+      break;
+    }
+  }
+
+  if(this.inqweapon.isRanged()
+  && (this.mode == 'Semi' || this.mode == 'Full')
+  && this.jamsAt > 94) {
+    this.jamsAt = 94;
+  }
+
+  if(this.inqweapon.isRanged() || this.inqweapon.Class == 'Psychic'){
+    if(die >= this.jamsAt) {
+      var jamReport =  getLink(this.inqweapon.Name);
+      jamReport += ' **' + getLink(this.jamResult) + '**';
+      if(!/s$/.test(this.jamResult)) jamReport += 's';
+      this.warning = jamReport + '!';
+      this.autoFail = true;
+    }
+  }
 }
 INQUse.prototype.getSpecialAmmo = function(){
   if(!this.options.Ammo && !this.options.customAmmo) return true;
@@ -6146,6 +6275,24 @@ INQUse.prototype.parseModifiers = function(){
       });
     }
   }
+}
+INQUse.prototype.roll = function(){
+  var skill;
+  if(this.inqweapon.Class == 'Melee'){
+    skill = 'WS';
+  } else if(this.inqweapon.isRanged()){
+    skill = 'BS';
+  } else {
+    skill = this.inqweapon.FocusTest;
+  }
+
+  this.test = new INQTest({
+    skill: skill,
+    modifier: this.modifiers,
+    inqcharacter: this.inqcharacter
+  });
+
+  this.test.roll();
 }
 //the prototype for characters
 function INQVehicle(vehicle, graphic, callback){
@@ -6686,7 +6833,7 @@ INQWeaponNoteParser.prototype.parseDetails = function(details){
   for(var i = 0; i < details.length; i++){
     var detail = details[i].trim();
     if(detail == '') continue;
-    if(/^(melee|pistol|basic|heavy|psychic)$/i.test(detail)){
+    if(/^(melee|thrown|pistol|basic|heavy|psychic|gear)$/i.test(detail)){
       this.parseClass(detail);
     } else if(rangeRe.test(detail)){
       this.parseRange(detail);
@@ -7593,7 +7740,7 @@ function getRange(graphic1ID, graphic2ID, options){
   }
   ds *= Number(page.get('scale_number'));
   if(/km/.test(page.get('scale_units'))) ds *= 1000;
-  return ds;
+  return Math.round(ds);
 }
 function matchingAttrNames(graphicid, phrase){
   var matches = [];
