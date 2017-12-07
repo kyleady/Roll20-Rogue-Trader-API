@@ -15,7 +15,7 @@ function damDetails() {
   //warn the gm for each attribute that was not found
   if(details.DamType == undefined){
     successfulLoad = false;
-    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+    whisper("No attribute named DamageType was found anywhere in the campaign. Damage was not recorded.");
   }
   if(details.Dam == undefined){
     successfulLoad = false;

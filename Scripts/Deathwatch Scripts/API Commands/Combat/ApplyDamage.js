@@ -2,37 +2,37 @@
 function applyDamage (matches,msg){
   //get the attack details
   //quit if one of the details was not found
-  if(INQAttack.getAttack() == undefined){return;}
+  if(INQAttack_old.getAttack() == undefined){return;}
   //apply the damage to every selected character
   eachCharacter(msg, function(character, graphic){
     //record the target
-    INQAttack.character = character;
+    INQAttack_old.character = character;
     //allow targets to use temporary variables from the graphic
-    INQAttack.graphic = graphic;
+    INQAttack_old.graphic = graphic;
 
     //record the target type
-    INQAttack.targetType = characterType(character);
+    INQAttack_old.targetType = characterType(character);
 
     //FUTURE WORK: determine if the target is wearing Primitive Armour
     //This isn't a priority as I have never encountered an enemy with Primitive
     //Armour
 
     //reset the damage
-    var damage = Number(INQAttack.Dam.get("current"));
+    var damage = Number(INQAttack_old.Dam.get("current"));
     log("damage: " + damage)
 
     //be sure the damage type matches the targetType
-    if(!INQAttack.appropriateDamageType()){return;}
+    if(!INQAttack_old.appropriateDamageType()){return;}
 
     //reduce the damage by the target's Armour
-    damage = INQAttack.applyArmour(damage);
+    damage = INQAttack_old.applyArmour(damage);
 
     //reduce the damage by the target's Toughness Bonus
-    damage = INQAttack.applyToughness(damage);
+    damage = INQAttack_old.applyToughness(damage);
 
     //a capital H in bar2 alerts the system that this graphic is a horde
     if(graphic.get("bar2_value") == "H"){
-      damage = INQAttack.hordeDamage(damage);
+      damage = INQAttack_old.hordeDamage(damage);
       log('horde damage: ' + damage)
     }
 
@@ -48,7 +48,7 @@ function applyDamage (matches,msg){
     var remainingWounds = Number(graphic.get("bar3_value")) - damage;
 
     //report any crits
-    remainingWounds = INQAttack.calcCrit(remainingWounds);
+    remainingWounds = INQAttack_old.calcCrit(remainingWounds);
 
     //record the damage
     graphic.set("bar3_value", remainingWounds);
@@ -57,11 +57,11 @@ function applyDamage (matches,msg){
     }
 
     //Reroll Location after each hit
-    if(INQAttack.targetType == "character"){
+    if(INQAttack_old.targetType == "character"){
       saveHitLocation(randomInteger(100));
-    } else if (INQAttack.targetType == 'starship') {
+    } else if (INQAttack_old.targetType == 'starship') {
       var population = graphic.get('bar1_value');
-      var populationDef = attributeValue('Armour_Population', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var populationDef = attributeValue('Armour_Population', {graphicid: INQAttack_old.graphic.id, alert: false}) || 0;
       var populationDamage = damage - populationDef;
       if(populationDamage < 0) populationDamage = 0;
       population -= populationDamage;
@@ -69,7 +69,7 @@ function applyDamage (matches,msg){
       graphic.set('bar1_value', population);
 
       var morale = graphic.get('bar2_value');
-      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack_old.graphic.id, alert: false}) || 0;
       var moraleDamage = damage - moraleDef;
       if(moraleDamage < 0) moraleDamage = 0;
       morale -= moraleDamage;
@@ -84,7 +84,7 @@ function applyDamage (matches,msg){
   });
   //reset starship damage
   //starship damage is a running tally and needs to be reset when used
-  if (INQAttack.DamType.get("current").toUpperCase() == "S") INQAttack.Dam.set("current", 0);
+  if (INQAttack_old.DamType.get("current").toUpperCase() == "S") INQAttack_old.Dam.set("current", 0);
 }
 
 //waits until CentralInput has been initialized

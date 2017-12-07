@@ -1,34 +1,34 @@
 function useWeapon (matches, msg) {
   //clean out any of the previous details
-  INQAttack.clean();
+  INQAttack_old.clean();
   //get the options
-  INQAttack.options = carefulParse(matches[2]) || {};
+  INQAttack_old.options = carefulParse(matches[2]) || {};
   //save the weapon name
-  INQAttack.weaponname = matches[1];
+  INQAttack_old.weaponname = matches[1];
   //save the message for use elsewhere
-  INQAttack.msg = msg;
+  INQAttack_old.msg = msg;
   //if nothing was selected and the player is the gm, auto hit with no roll
-  if(INQAttack.msg.selected == undefined || INQAttack.msg.selected == []){
-    if(playerIsGM(INQAttack.msg.playerid)){
-      INQAttack.msg.selected = [{_type: "unique"}];
+  if(INQAttack_old.msg.selected == undefined || INQAttack_old.msg.selected == []){
+    if(playerIsGM(INQAttack_old.msg.playerid)){
+      INQAttack_old.msg.selected = [{_type: "unique"}];
     }
   }
   //repeat for each character selected
-  eachCharacter(INQAttack.msg, function(character, graphic){
+  eachCharacter(INQAttack_old.msg, function(character, graphic){
     //allow the loop to skip over future iterations if something went wrong
-    if(INQAttack.break){return;}
+    if(INQAttack_old.break){return;}
     //reset the report
-    INQAttack.Reports = {};
+    INQAttack_old.Reports = {};
     //prepare attack variables for each character's attack
-    INQAttack.prepareVariables();
+    INQAttack_old.prepareVariables();
     //detail the character (or make a dummy character)
     var characterPromise = new Promise(function(resolve){
-      INQAttack.detailTheCharacter(character, graphic, function(){
+      INQAttack_old.detailTheCharacter(character, graphic, function(){
         resolve();
       });
     });
     var weaponPromise = new Promise(function(resolve){
-      INQAttack.detailTheWeapon(function(valid){
+      INQAttack_old.detailTheWeapon(function(valid){
         resolve(valid);
       });
     });
@@ -37,24 +37,24 @@ function useWeapon (matches, msg) {
       if(valid.includes(false)) return;
       if(character != undefined){
         //roll to hit
-        INQAttack.rollToHit();
+        INQAttack_old.rollToHit();
         //use up the ammo for the attack
         //cancel this attack if there isn't enough ammo
-        if(!INQAttack.expendAmmunition()){return;}
+        if(!INQAttack_old.expendAmmunition()){return;}
       }
 
       //check if the weapon jammed
-      INQAttack.checkJammed();
+      INQAttack_old.checkJammed();
       //only show the damage if the attack hit
-      if(INQAttack.hits == 0){
+      if(INQAttack_old.hits == 0){
         //offer reroll
-        INQAttack.offerReroll();
+        INQAttack_old.offerReroll();
       } else {
         //roll damage
-        INQAttack.rollDamage();
+        INQAttack_old.rollDamage();
       }
       //report the results
-      INQAttack.deliverReport();
+      INQAttack_old.deliverReport();
     });
   });
 }

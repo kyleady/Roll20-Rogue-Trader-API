@@ -1,12 +1,12 @@
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //the attack missed, offer a reroll
-INQAttack.offerReroll = function(){
+INQAttack_old.offerReroll = function(){
   //the reroll will not use up any ammo
-  INQAttack.options.freeShot = "true";
+  INQAttack_old.options.freeShot = "true";
   //offer a reroll instead of rolling the damage
-  var attack = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
+  var attack = "useweapon " + INQAttack_old.weaponname + JSON.stringify(INQAttack_old.options);
   //encode the attack
   attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
-  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack.msg.playerid});
+  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack_old.msg.playerid});
 }

@@ -1,4 +1,5 @@
-INQTest.prototype.display = function(playerid, name, gm){
+INQTest.prototype.display = function(playerid, name, gm, extraLines){
+  extraLines = extraLines || [];
   var output = '';
   var skillName = getLink(this.Skill);
   if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
@@ -38,7 +39,15 @@ INQTest.prototype.display = function(playerid, name, gm){
       output += modifier.Value + '), ';
     }
     output = output.replace(/,\s*$/, '');
-    output += '}}';
+    output += '}} ';
+  }
+
+  for(var line of extraLines){
+    output += '{{';
+    output += line.Name;
+    output += '=';
+    output += line.Content;
+    output += '}} ';
   }
 
   announce(output, {speakingAs: 'player|' + playerid});

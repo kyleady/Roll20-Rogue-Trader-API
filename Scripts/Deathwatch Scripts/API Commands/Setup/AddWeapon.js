@@ -1,5 +1,5 @@
 //be sure the inqattack object exists before we start working with it
-var INQAttack = INQAttack || {};
+var INQAttack_old = INQAttack_old || {};
 
 //gives the listed weapon to the character, adding it to their character sheet
 //and adding a token action to the character

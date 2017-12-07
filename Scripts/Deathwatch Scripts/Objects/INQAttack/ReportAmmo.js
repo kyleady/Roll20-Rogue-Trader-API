@@ -1,17 +1,17 @@
-INQAttack = INQAttack || {};
-INQAttack.reportAmmo = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.reportAmmo = function(){
   //write a report on the weapon
-  INQAttack.Reports.Weapon = "";
-  INQAttack.Reports.Weapon += "<br><strong>Weapon</strong>: " + INQAttack.inqweapon.toLink();
-  if(INQAttack.inqammo){
-    INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.inqammo.toLink();
+  INQAttack_old.Reports.Weapon = "";
+  INQAttack_old.Reports.Weapon += "<br><strong>Weapon</strong>: " + INQAttack_old.inqweapon.toLink();
+  if(INQAttack_old.inqammo){
+    INQAttack_old.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack_old.inqammo.toLink();
   }
-  INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.options.RoF.toTitleCase();
-  if(INQAttack.inqweapon.Class == "Psychic"){
-    INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
-    INQAttack.Reports.Weapon += "<br><strong>" + getLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
+  INQAttack_old.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack_old.options.RoF.toTitleCase();
+  if(INQAttack_old.inqweapon.Class == "Psychic"){
+    INQAttack_old.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack_old.PsyRating.toString();
+    INQAttack_old.Reports.Weapon += "<br><strong>" + getLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
   }
-  if(INQAttack.AmmoLeft != undefined){
-    INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.AmmoLeft + "/" + INQAttack.inqweapon.Clip;
+  if(INQAttack_old.AmmoLeft != undefined){
+    INQAttack_old.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack_old.AmmoLeft + "/" + INQAttack_old.inqweapon.Clip;
   }
 }

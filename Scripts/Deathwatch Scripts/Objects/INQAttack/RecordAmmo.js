@@ -1,41 +1,41 @@
-INQAttack = INQAttack || {};
-INQAttack.recordAmmo = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.recordAmmo = function(){
   //use the name of the weapon to construct the name of the ammo
-  var AmmoName = "Ammo - " + INQAttack.inqweapon.Name;
-  if(INQAttack.inqammo){
-    AmmoName += " (" + INQAttack.inqammo.Name + ")";
+  var AmmoName = "Ammo - " + INQAttack_old.inqweapon.Name;
+  if(INQAttack_old.inqammo){
+    AmmoName += " (" + INQAttack_old.inqammo.Name + ")";
   }
   //how much ammo is left for this weapon?
-  INQAttack.AmmoLeft = attributeValue(AmmoName, {
-    characterid: INQAttack.inqcharacter.ObjID,
-    graphicid: INQAttack.inqcharacter.GraphicID,
+  INQAttack_old.AmmoLeft = attributeValue(AmmoName, {
+    characterid: INQAttack_old.inqcharacter.ObjID,
+    graphicid: INQAttack_old.inqcharacter.GraphicID,
     alert: false}
   );
   //check if this ammo tracker exists yet
-  if(INQAttack.AmmoLeft == undefined){
+  if(INQAttack_old.AmmoLeft == undefined){
     //create a brand new clip
     attributeValue(AmmoName, {
-      setTo: INQAttack.inqweapon.Clip,
-      characterid: INQAttack.inqcharacter.ObjID,
-      graphicid: INQAttack.inqcharacter.GraphicID,
+      setTo: INQAttack_old.inqweapon.Clip,
+      characterid: INQAttack_old.inqcharacter.ObjID,
+      graphicid: INQAttack_old.inqcharacter.GraphicID,
       alert: false}
     );
     //minus the shots fired from the max
-    INQAttack.AmmoLeft = INQAttack.inqweapon.Clip - INQAttack.shotsFired;
+    INQAttack_old.AmmoLeft = INQAttack_old.inqweapon.Clip - INQAttack_old.shotsFired;
   } else {
     //minus the shots fired from the clip
-    INQAttack.AmmoLeft -= INQAttack.shotsFired;
+    INQAttack_old.AmmoLeft -= INQAttack_old.shotsFired;
   }
   //be sure you can even spend this much ammo
-  if(INQAttack.AmmoLeft < 0){
-    whisper("Not enough ammo to fire on " + INQAttack.options.RoF, INQAttack.msg.playerid);
+  if(INQAttack_old.AmmoLeft < 0){
+    whisper("Not enough ammo to fire on " + INQAttack_old.options.RoF, INQAttack_old.msg.playerid);
     return false;
   }
   //record the resulting clip
   attributeValue(AmmoName, {
-    setTo: INQAttack.AmmoLeft,
-    characterid: INQAttack.inqcharacter.ObjID,
-    graphicid: INQAttack.inqcharacter.GraphicID,
+    setTo: INQAttack_old.AmmoLeft,
+    characterid: INQAttack_old.inqcharacter.ObjID,
+    graphicid: INQAttack_old.inqcharacter.GraphicID,
     alert: false}
   );
 

@@ -1,9 +1,9 @@
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //parse the special ammo and use it to customize the inqweaon
-INQAttack.useAmmo = function(ammo, callback){
+INQAttack_old.useAmmo = function(ammo, callback){
   var myPromise = new Promise(function(resolve){
     //parse the special ammunition
-    INQAttack.inqammo = new INQWeapon(ammo, function(){
+    INQAttack_old.inqammo = new INQWeapon(ammo, function(){
       resolve();
     });
   });
@@ -11,13 +11,13 @@ INQAttack.useAmmo = function(ammo, callback){
   myPromise.then(function(){
     //only add the special rules of the ammo to the inqweapon, we want every
     //modification to be highly visible to the player
-    for(var k in INQAttack.inqammo){
+    for(var k in INQAttack_old.inqammo){
       if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
-      if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
-      if(Array.isArray(INQAttack.inqammo[k])){
-        INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
+      if(INQAttack_old.inqammo[k] == INQAttack_old.inqammo.__proto__[k]){continue;}
+      if(Array.isArray(INQAttack_old.inqammo[k])){
+        INQAttack_old.inqweapon[k] = INQAttack_old.inqweapon[k].concat(INQAttack_old.inqammo[k]);
       } else {
-        INQAttack.inqweapon[k] = INQAttack.inqammo[k];
+        INQAttack_old.inqweapon[k] = INQAttack_old.inqammo[k];
       }
     }
 

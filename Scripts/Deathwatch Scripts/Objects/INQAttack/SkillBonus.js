@@ -1,18 +1,18 @@
-INQAttack = INQAttack || {};
-INQAttack.skillBonus = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.skillBonus = function(){
   var bonus = 0;
   //is there a skill to search for?
-  if(INQAttack.inqweapon.FocusSkill){
+  if(INQAttack_old.inqweapon.FocusSkill){
     //check the character for the skill
-    var skill = INQAttack.inqcharacter.has(INQAttack.inqweapon.FocusSkill, "Skills");
+    var skill = INQAttack_old.inqcharacter.has(INQAttack_old.inqweapon.FocusSkill, "Skills");
     if(!skill){
       bonus = -20;
     } else if(skill.length > 0){
       //did the user provide a subgroup?
-      if(INQAttack.inqweapon.FocusSkillGroup){
+      if(INQAttack_old.inqweapon.FocusSkillGroup){
         //does the character have the given subgroup?
         var regex = "^\\s*";
-        regex += INQAttack.inqweapon.FocusSkillGroup.replace(/(-|\s+)/g,"(-|\\s+)");
+        regex += INQAttack_old.inqweapon.FocusSkillGroup.replace(/(-|\s+)/g,"(-|\\s+)");
         regex += "\\s*$";
         var re = RegExp(regex, "i");
         var matchingSubgroup = false;
@@ -28,7 +28,7 @@ INQAttack.skillBonus = function(){
         //if the character does not have a matching subgroup, give them a flat -20 modifier
         bonus = subgroupModifier;
       } else {
-        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack_old.msg.playerid, gmEcho: true});
         bonus = -20;
       }
     //the skill was found, and there is no need to match subgroups

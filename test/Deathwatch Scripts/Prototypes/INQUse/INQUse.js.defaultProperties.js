@@ -28,6 +28,8 @@ describe('INQUse.prototype.defaultProperties()', function() {
       expect(inquse.ammoMultiplier).to.equal(1);
       expect(inquse.hitsMultiplier).to.equal(1);
       expect(inquse.maxHitsMultiplier).to.equal(1);
+			expect(inquse.SB).to.equal(0);
+			expect(inquse.PR).to.equal(0);
       done();
     });
   });

@@ -1,9 +1,9 @@
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //reduce the damage by the target's toughness
-INQAttack.applyToughness = function(damage){
-  if(INQAttack.targetType == "character"){
+INQAttack_old.applyToughness = function(damage){
+  if(INQAttack_old.targetType == "character"){
     //get the target's toughness
-    var Toughness = attributeValue("T", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+    var Toughness = attributeValue("T", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
     //be sure that the Toughness was found
     if(Toughness){
       Toughness = Number(Toughness);
@@ -11,14 +11,14 @@ INQAttack.applyToughness = function(damage){
       log("T Bonus: " + Math.floor(Toughness/10))
       damage -= Math.floor(Toughness/10);
     }
-    log("Felling: " + Number(INQAttack.Fell.get("current")))
+    log("Felling: " + Number(INQAttack_old.Fell.get("current")))
 
     //get the target's toughness
-    var UnnaturalToughness = attributeValue("Unnatural T", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+    var UnnaturalToughness = attributeValue("Unnatural T", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
     //be sure that the Toughness was found
     if(UnnaturalToughness){
       log("Unnatural Toughness: " + UnnaturalToughness)
-      UnnaturalToughness = Number(UnnaturalToughness) - Number(INQAttack.Fell.get("current"));
+      UnnaturalToughness = Number(UnnaturalToughness) - Number(INQAttack_old.Fell.get("current"));
       //reduce the damage by the base T Bonus of the character
       if(UnnaturalToughness > 0){
         damage -= UnnaturalToughness;

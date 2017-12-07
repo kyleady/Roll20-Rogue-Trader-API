@@ -1,24 +1,24 @@
-INQAttack = INQAttack || {};
-INQAttack.calcToHit = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.calcToHit = function(){
   //get the stat used to hit
-  INQAttack.stat = "BS"
-  if(INQAttack.inqweapon.Class == "Melee"){
-    INQAttack.stat = "WS";
-  } else if(INQAttack.inqweapon.Class == "Psychic"){
+  INQAttack_old.stat = "BS"
+  if(INQAttack_old.inqweapon.Class == "Melee"){
+    INQAttack_old.stat = "WS";
+  } else if(INQAttack_old.inqweapon.Class == "Psychic"){
     //not all psychic attacks use Willpower
-    INQAttack.stat = INQAttack.inqweapon.FocusStat;
+    INQAttack_old.stat = INQAttack_old.inqweapon.FocusStat;
     //some psychic attacks are based off of a skill
-    INQAttack.toHit += INQAttack.skillBonus();
+    INQAttack_old.toHit += INQAttack_old.skillBonus();
     //some psychic attacks have a base modifier
-    INQAttack.toHit += INQAttack.inqweapon.FocusModifier;
+    INQAttack_old.toHit += INQAttack_old.inqweapon.FocusModifier;
 
     //psychic attacks get a bonus for the psy rating it was cast at
-    INQAttack.toHit += INQAttack.PsyRating * 5;
+    INQAttack_old.toHit += INQAttack_old.PsyRating * 5;
   }
   //use the stat
-  INQAttack.toHit += Number(INQAttack.inqcharacter.Attributes[INQAttack.stat]);
-  INQAttack.unnaturalSuccesses += Math.ceil(Number(INQAttack.inqcharacter.Attributes["Unnatural " + INQAttack.stat])/2);
-  if(INQAttack.options.Modifier && Number(INQAttack.options.Modifier)){
-    INQAttack.toHit += Number(INQAttack.options.Modifier);
+  INQAttack_old.toHit += Number(INQAttack_old.inqcharacter.Attributes[INQAttack_old.stat]);
+  INQAttack_old.unnaturalSuccesses += Math.ceil(Number(INQAttack_old.inqcharacter.Attributes["Unnatural " + INQAttack_old.stat])/2);
+  if(INQAttack_old.options.Modifier && Number(INQAttack_old.options.Modifier)){
+    INQAttack_old.toHit += Number(INQAttack_old.options.Modifier);
   }
 }

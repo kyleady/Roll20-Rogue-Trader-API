@@ -1,4 +1,5 @@
 INQQtt.prototype.beforeDamage = function(){
+  this.accurate();
   this.blast();
   this.claws();
   this.damage();

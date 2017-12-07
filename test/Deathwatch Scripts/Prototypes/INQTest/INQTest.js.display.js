@@ -89,4 +89,21 @@ describe('INQTest.prototype.display()', function() {
 
     inqtest.display();
   });
+	it('should be able to add extra lines', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var inqcharacter = new INQCharacter();
+    var inqtest = new INQTest({skill: 'tactics  (Stealth and Recon)', inqcharacter: inqcharacter});
+
+    on('chat:message', function(msg){
+      expect(msg.content).to.match(/{{Extra=Line}}/);
+      done();
+    });
+
+    inqtest.display(undefined, undefined, undefined, [{Name: 'Extra', Content: 'Line'}]);
+  });
 });

@@ -486,37 +486,37 @@ on('ready', function() {
 function applyDamage (matches,msg){
   //get the attack details
   //quit if one of the details was not found
-  if(INQAttack.getAttack() == undefined){return;}
+  if(INQAttack_old.getAttack() == undefined){return;}
   //apply the damage to every selected character
   eachCharacter(msg, function(character, graphic){
     //record the target
-    INQAttack.character = character;
+    INQAttack_old.character = character;
     //allow targets to use temporary variables from the graphic
-    INQAttack.graphic = graphic;
+    INQAttack_old.graphic = graphic;
 
     //record the target type
-    INQAttack.targetType = characterType(character);
+    INQAttack_old.targetType = characterType(character);
 
     //FUTURE WORK: determine if the target is wearing Primitive Armour
     //This isn't a priority as I have never encountered an enemy with Primitive
     //Armour
 
     //reset the damage
-    var damage = Number(INQAttack.Dam.get("current"));
+    var damage = Number(INQAttack_old.Dam.get("current"));
     log("damage: " + damage)
 
     //be sure the damage type matches the targetType
-    if(!INQAttack.appropriateDamageType()){return;}
+    if(!INQAttack_old.appropriateDamageType()){return;}
 
     //reduce the damage by the target's Armour
-    damage = INQAttack.applyArmour(damage);
+    damage = INQAttack_old.applyArmour(damage);
 
     //reduce the damage by the target's Toughness Bonus
-    damage = INQAttack.applyToughness(damage);
+    damage = INQAttack_old.applyToughness(damage);
 
     //a capital H in bar2 alerts the system that this graphic is a horde
     if(graphic.get("bar2_value") == "H"){
-      damage = INQAttack.hordeDamage(damage);
+      damage = INQAttack_old.hordeDamage(damage);
       log('horde damage: ' + damage)
     }
 
@@ -532,7 +532,7 @@ function applyDamage (matches,msg){
     var remainingWounds = Number(graphic.get("bar3_value")) - damage;
 
     //report any crits
-    remainingWounds = INQAttack.calcCrit(remainingWounds);
+    remainingWounds = INQAttack_old.calcCrit(remainingWounds);
 
     //record the damage
     graphic.set("bar3_value", remainingWounds);
@@ -541,11 +541,11 @@ function applyDamage (matches,msg){
     }
 
     //Reroll Location after each hit
-    if(INQAttack.targetType == "character"){
+    if(INQAttack_old.targetType == "character"){
       saveHitLocation(randomInteger(100));
-    } else if (INQAttack.targetType == 'starship') {
+    } else if (INQAttack_old.targetType == 'starship') {
       var population = graphic.get('bar1_value');
-      var populationDef = attributeValue('Armour_Population', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var populationDef = attributeValue('Armour_Population', {graphicid: INQAttack_old.graphic.id, alert: false}) || 0;
       var populationDamage = damage - populationDef;
       if(populationDamage < 0) populationDamage = 0;
       population -= populationDamage;
@@ -553,7 +553,7 @@ function applyDamage (matches,msg){
       graphic.set('bar1_value', population);
 
       var morale = graphic.get('bar2_value');
-      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack.graphic.id, alert: false}) || 0;
+      var moraleDef = attributeValue('Armour_Morale', {graphicid: INQAttack_old.graphic.id, alert: false}) || 0;
       var moraleDamage = damage - moraleDef;
       if(moraleDamage < 0) moraleDamage = 0;
       morale -= moraleDamage;
@@ -568,7 +568,7 @@ function applyDamage (matches,msg){
   });
   //reset starship damage
   //starship damage is a running tally and needs to be reset when used
-  if (INQAttack.DamType.get("current").toUpperCase() == "S") INQAttack.Dam.set("current", 0);
+  if (INQAttack_old.DamType.get("current").toUpperCase() == "S") INQAttack_old.Dam.set("current", 0);
 }
 
 //waits until CentralInput has been initialized
@@ -1353,35 +1353,35 @@ on("ready",function(){
 });
 function useWeapon (matches, msg) {
   //clean out any of the previous details
-  INQAttack.clean();
+  INQAttack_old.clean();
   //get the options
-  INQAttack.options = carefulParse(matches[2]) || {};
+  INQAttack_old.options = carefulParse(matches[2]) || {};
   //save the weapon name
-  INQAttack.weaponname = matches[1];
+  INQAttack_old.weaponname = matches[1];
   //save the message for use elsewhere
-  INQAttack.msg = msg;
+  INQAttack_old.msg = msg;
   //if nothing was selected and the player is the gm, auto hit with no roll
-  if(INQAttack.msg.selected == undefined || INQAttack.msg.selected == []){
-    if(playerIsGM(INQAttack.msg.playerid)){
-      INQAttack.msg.selected = [{_type: "unique"}];
+  if(INQAttack_old.msg.selected == undefined || INQAttack_old.msg.selected == []){
+    if(playerIsGM(INQAttack_old.msg.playerid)){
+      INQAttack_old.msg.selected = [{_type: "unique"}];
     }
   }
   //repeat for each character selected
-  eachCharacter(INQAttack.msg, function(character, graphic){
+  eachCharacter(INQAttack_old.msg, function(character, graphic){
     //allow the loop to skip over future iterations if something went wrong
-    if(INQAttack.break){return;}
+    if(INQAttack_old.break){return;}
     //reset the report
-    INQAttack.Reports = {};
+    INQAttack_old.Reports = {};
     //prepare attack variables for each character's attack
-    INQAttack.prepareVariables();
+    INQAttack_old.prepareVariables();
     //detail the character (or make a dummy character)
     var characterPromise = new Promise(function(resolve){
-      INQAttack.detailTheCharacter(character, graphic, function(){
+      INQAttack_old.detailTheCharacter(character, graphic, function(){
         resolve();
       });
     });
     var weaponPromise = new Promise(function(resolve){
-      INQAttack.detailTheWeapon(function(valid){
+      INQAttack_old.detailTheWeapon(function(valid){
         resolve(valid);
       });
     });
@@ -1390,24 +1390,24 @@ function useWeapon (matches, msg) {
       if(valid.includes(false)) return;
       if(character != undefined){
         //roll to hit
-        INQAttack.rollToHit();
+        INQAttack_old.rollToHit();
         //use up the ammo for the attack
         //cancel this attack if there isn't enough ammo
-        if(!INQAttack.expendAmmunition()){return;}
+        if(!INQAttack_old.expendAmmunition()){return;}
       }
 
       //check if the weapon jammed
-      INQAttack.checkJammed();
+      INQAttack_old.checkJammed();
       //only show the damage if the attack hit
-      if(INQAttack.hits == 0){
+      if(INQAttack_old.hits == 0){
         //offer reroll
-        INQAttack.offerReroll();
+        INQAttack_old.offerReroll();
       } else {
         //roll damage
-        INQAttack.rollDamage();
+        INQAttack_old.rollDamage();
       }
       //report the results
-      INQAttack.deliverReport();
+      INQAttack_old.deliverReport();
     });
   });
 }
@@ -1478,7 +1478,7 @@ on('ready', function(){
   CentralInput.addCMD(/^!\s*add\s*pilot\s+(.+)$/i, addPilot);
 });
 //be sure the inqattack object exists before we start working with it
-var INQAttack = INQAttack || {};
+var INQAttack_old = INQAttack_old || {};
 
 //gives the listed weapon to the character, adding it to their character sheet
 //and adding a token action to the character
@@ -2154,7 +2154,7 @@ function damDetails() {
   //warn the gm for each attribute that was not found
   if(details.DamType == undefined){
     successfulLoad = false;
-    whisper("No attribute named Damage Type was found anywhere in the campaign. Damage was not recorded.");
+    whisper("No attribute named DamageType was found anywhere in the campaign. Damage was not recorded.");
   }
   if(details.Dam == undefined){
     successfulLoad = false;
@@ -2269,7 +2269,7 @@ insertWeaponAbility = function(inqweapon, character, quantity, ammoNames, inqcha
   var abilityNames = [];
   var abilityObjs = findObjs({_type: 'ability', _characterid: character.id});
   _.each(abilityObjs, function(abilityObj){
-    //is this a weapon ability generated by INQAttack?
+    //is this a weapon ability generated by INQAttack_old?
     var matches = abilityObj.get('action').match(/^!useWeapon ([^\{\}]+)(\{.*\})$/);
     if(matches){
       //get the weapon name
@@ -2356,265 +2356,265 @@ function saveHitLocation(roll, options){
     setTimeout(function(location){announce(location, {speakingAs: 'Location'})}, 100, Location);
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //a list of all the special rules that affect the damage calculation
-INQAttack.accountForDamageSpecialRules = function(){
-  INQAttack.accountForAccurate();
-  INQAttack.accountForProven();
-  INQAttack.accountForTearingFleshRender();
-  INQAttack.accountForForce();
-  INQAttack.accountForCrushingBlowMightyShot();
-  INQAttack.accountForHammerBlow();
-  INQAttack.accountForDamage();
-  INQAttack.accountForPen();
-  INQAttack.accountForType();
-  INQAttack.accountForLance();
-  INQAttack.accountForRazorSharp();
+INQAttack_old.accountForDamageSpecialRules = function(){
+  INQAttack_old.accountForAccurate();
+  INQAttack_old.accountForProven();
+  INQAttack_old.accountForTearingFleshRender();
+  INQAttack_old.accountForForce();
+  INQAttack_old.accountForCrushingBlowMightyShot();
+  INQAttack_old.accountForHammerBlow();
+  INQAttack_old.accountForDamage();
+  INQAttack_old.accountForPen();
+  INQAttack_old.accountForType();
+  INQAttack_old.accountForLance();
+  INQAttack_old.accountForRazorSharp();
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //a list of all the special rules that affect the toHit calculations
-INQAttack.accountForHitsSpecialRules = function(){
-  INQAttack.accountForMaximal();
-  INQAttack.accountForStorm();
-  INQAttack.accountForBlast();
-  INQAttack.accountForSpray();
-  INQAttack.accountForTwinLinked();
-  INQAttack.accountForDevastating();
+INQAttack_old.accountForHitsSpecialRules = function(){
+  INQAttack_old.accountForMaximal();
+  INQAttack_old.accountForStorm();
+  INQAttack_old.accountForBlast();
+  INQAttack_old.accountForSpray();
+  INQAttack_old.accountForTwinLinked();
+  INQAttack_old.accountForDevastating();
 }
-INQAttack = INQAttack || {};
-INQAttack.calcAmmo = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.calcAmmo = function(){
   //if the attacker was making a careful shot, don't expend ammo on a near hit
-  if(/called/i.test(INQAttack.options.RoF)
-  && INQAttack.toHit - INQAttack.d100 <   0
-  && INQAttack.toHit - INQAttack.d100 > -30){
-    INQAttack.options.freeShot = true;
+  if(/called/i.test(INQAttack_old.options.RoF)
+  && INQAttack_old.toHit - INQAttack_old.d100 <   0
+  && INQAttack_old.toHit - INQAttack_old.d100 > -30){
+    INQAttack_old.options.freeShot = true;
   }
   //determine how many shots were fired
-  if(INQAttack.options.freeShot){
-    INQAttack.shotsFired = 0;
+  if(INQAttack_old.options.freeShot){
+    INQAttack_old.shotsFired = 0;
   }
 
-  INQAttack.shotsFired *= INQAttack.ammoMultiplier;
+  INQAttack_old.shotsFired *= INQAttack_old.ammoMultiplier;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //determine the effective psy rating of the character
-INQAttack.calcEffectivePsyRating = function(){
+INQAttack_old.calcEffectivePsyRating = function(){
   //reset the psy rating for each selected character
-  INQAttack.PsyRating = undefined;
+  INQAttack_old.PsyRating = undefined;
   //allow the options to superceed the character's psy rating
-  if(INQAttack.options.EffectivePR){
-    INQAttack.PsyRating = Number(INQAttack.options.EffectivePR);
+  if(INQAttack_old.options.EffectivePR){
+    INQAttack_old.PsyRating = Number(INQAttack_old.options.EffectivePR);
   }
   //if no effective psy rating is set, default to the character's psy rating
-  if(INQAttack.PsyRating == undefined
-  && INQAttack.inqcharacter != undefined){
-    INQAttack.PsyRating = INQAttack.inqcharacter.Attributes.PR;
+  if(INQAttack_old.PsyRating == undefined
+  && INQAttack_old.inqcharacter != undefined){
+    INQAttack_old.PsyRating = INQAttack_old.inqcharacter.Attributes.PR;
   }
   //if the psy rating still has no set value, just default to 0
-  if(INQAttack.PsyRating == undefined){
-    INQAttack.PsyRating = 0;
+  if(INQAttack_old.PsyRating == undefined){
+    INQAttack_old.PsyRating = 0;
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //calculate the number of hits based on the
-INQAttack.calcHits = function(){
+INQAttack_old.calcHits = function(){
   //account for any extra ammo this may spend
-  INQAttack.maxHits *= INQAttack.maxHitsMultiplier;
+  INQAttack_old.maxHits *= INQAttack_old.maxHitsMultiplier;
   //determine the successes based on the roll
-  INQAttack.successes = Math.floor((INQAttack.toHit-INQAttack.d100)/10) + INQAttack.unnaturalSuccesses;
+  INQAttack_old.successes = Math.floor((INQAttack_old.toHit-INQAttack_old.d100)/10) + INQAttack_old.unnaturalSuccesses;
   //calculate the number of hits based on the firing mode
-  INQAttack.hits = 0;
-  if(INQAttack.autoHit){
+  INQAttack_old.hits = 0;
+  if(INQAttack_old.autoHit){
     //auto hitting weapons always hit
-    INQAttack.hits = INQAttack.maxHits;
-  } else if(INQAttack.toHit - INQAttack.d100 >= 0){
-    INQAttack.hits = 1;
-    switch(INQAttack.mode){
+    INQAttack_old.hits = INQAttack_old.maxHits;
+  } else if(INQAttack_old.toHit - INQAttack_old.d100 >= 0){
+    INQAttack_old.hits = 1;
+    switch(INQAttack_old.mode){
       case "Full":
-        INQAttack.hits += INQAttack.successes
+        INQAttack_old.hits += INQAttack_old.successes
       break;
       default: //"Semi"
-        INQAttack.hits += Math.floor(INQAttack.successes/2);
+        INQAttack_old.hits += Math.floor(INQAttack_old.successes/2);
       break;
     }
     //be sure the number of hits is not over the max (and that there is a max)
-    if(INQAttack.maxHits > 0 && INQAttack.hits > INQAttack.maxHits){
-      INQAttack.hits = INQAttack.maxHits;
+    if(INQAttack_old.maxHits > 0 && INQAttack_old.hits > INQAttack_old.maxHits){
+      INQAttack_old.hits = INQAttack_old.maxHits;
     }
   }
   //account for any hits bonuses
-  INQAttack.hits *= INQAttack.hitsMultiplier;
+  INQAttack_old.hits *= INQAttack_old.hitsMultiplier;
 }
-INQAttack = INQAttack || {};
-INQAttack.calcHordeDamage = function(){
-  INQAttack.accountForDevastating();
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.calcHordeDamage = function(){
+  INQAttack_old.accountForDevastating();
   //adds to the horde multiplier, instead of multipliying, do this last
-  INQAttack.accountForHordeDmg();
-  INQAttack.hits *= INQAttack.hordeDamageMultiplier;
-  INQAttack.hits += INQAttack.hordeDamage;
+  INQAttack_old.accountForHordeDmg();
+  INQAttack_old.hits *= INQAttack_old.hordeDamageMultiplier;
+  INQAttack_old.hits += INQAttack_old.hordeDamage;
 }
-INQAttack = INQAttack || {};
-INQAttack.calcToHit = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.calcToHit = function(){
   //get the stat used to hit
-  INQAttack.stat = "BS"
-  if(INQAttack.inqweapon.Class == "Melee"){
-    INQAttack.stat = "WS";
-  } else if(INQAttack.inqweapon.Class == "Psychic"){
+  INQAttack_old.stat = "BS"
+  if(INQAttack_old.inqweapon.Class == "Melee"){
+    INQAttack_old.stat = "WS";
+  } else if(INQAttack_old.inqweapon.Class == "Psychic"){
     //not all psychic attacks use Willpower
-    INQAttack.stat = INQAttack.inqweapon.FocusStat;
+    INQAttack_old.stat = INQAttack_old.inqweapon.FocusStat;
     //some psychic attacks are based off of a skill
-    INQAttack.toHit += INQAttack.skillBonus();
+    INQAttack_old.toHit += INQAttack_old.skillBonus();
     //some psychic attacks have a base modifier
-    INQAttack.toHit += INQAttack.inqweapon.FocusModifier;
+    INQAttack_old.toHit += INQAttack_old.inqweapon.FocusModifier;
 
     //psychic attacks get a bonus for the psy rating it was cast at
-    INQAttack.toHit += INQAttack.PsyRating * 5;
+    INQAttack_old.toHit += INQAttack_old.PsyRating * 5;
   }
   //use the stat
-  INQAttack.toHit += Number(INQAttack.inqcharacter.Attributes[INQAttack.stat]);
-  INQAttack.unnaturalSuccesses += Math.ceil(Number(INQAttack.inqcharacter.Attributes["Unnatural " + INQAttack.stat])/2);
-  if(INQAttack.options.Modifier && Number(INQAttack.options.Modifier)){
-    INQAttack.toHit += Number(INQAttack.options.Modifier);
+  INQAttack_old.toHit += Number(INQAttack_old.inqcharacter.Attributes[INQAttack_old.stat]);
+  INQAttack_old.unnaturalSuccesses += Math.ceil(Number(INQAttack_old.inqcharacter.Attributes["Unnatural " + INQAttack_old.stat])/2);
+  if(INQAttack_old.options.Modifier && Number(INQAttack_old.options.Modifier)){
+    INQAttack_old.toHit += Number(INQAttack_old.options.Modifier);
   }
 }
 //be sure the inqattack object exists before we start working with it
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 
-INQAttack.checkJammed = function(){
+INQAttack_old.checkJammed = function(){
   var JamsAt = 101;
   var JamResult = "Jam";
-  if(INQAttack.inqweapon.has("Overheats")){
+  if(INQAttack_old.inqweapon.has("Overheats")){
     JamsAt = 91;
     JamResult = "Overheats";
-  } else if(INQAttack.inqweapon.has("Unreliable")){
+  } else if(INQAttack_old.inqweapon.has("Unreliable")){
     JamsAt = 91;
-  } else if(INQAttack.inqweapon.has("Reliable")){
+  } else if(INQAttack_old.inqweapon.has("Reliable")){
     JamsAt = 100;
-  } else if(INQAttack.stat == "BS"){
-    if(INQAttack.mode == "Single"){
+  } else if(INQAttack_old.stat == "BS"){
+    if(INQAttack_old.mode == "Single"){
       JamsAt = 96;
     } else {
       JamsAt = 94;
     }
   }
-  if(INQAttack.d100 >= JamsAt){
-    var jamReport =  getLink(INQAttack.inqweapon.Name) + " **" + getLink(JamResult) + "**";
+  if(INQAttack_old.d100 >= JamsAt){
+    var jamReport =  getLink(INQAttack_old.inqweapon.Name) + " **" + getLink(JamResult) + "**";
     if(!/s$/.test(JamResult)){
       jamReport += "s";
     }
     announce("/em " + jamReport + "!", "The");
-    INQAttack.hits = 0;
+    INQAttack_old.hits = 0;
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //delete every property but leave all of the functions untouched
-INQAttack.clean = function(){
-  for(var k in INQAttack){
-    if(typeof INQAttack[k] != 'function'){
-      delete INQAttack[k];
+INQAttack_old.clean = function(){
+  for(var k in INQAttack_old){
+    if(typeof INQAttack_old[k] != 'function'){
+      delete INQAttack_old[k];
     }
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 
 //let the given options temporarily overwrite the details of the weapon
-INQAttack.customizeWeapon = function(){
-  for(var label in INQAttack.inqweapon){
+INQAttack_old.customizeWeapon = function(){
+  for(var label in INQAttack_old.inqweapon){
     //only work with labels that options has
-    if(INQAttack.options[label] != undefined){
+    if(INQAttack_old.options[label] != undefined){
       //if label -> array, don't overwrite just add each item on as a link
-      if(Array.isArray(INQAttack.inqweapon[label])){
-        _.each(INQAttack.options[label].split(","), function(element){
+      if(Array.isArray(INQAttack_old.inqweapon[label])){
+        _.each(INQAttack_old.options[label].split(","), function(element){
           if(element.trim() != ""){
-            INQAttack.inqweapon[label].push(new INQLink(element.trim()));
+            INQAttack_old.inqweapon[label].push(new INQLink(element.trim()));
           }
         });
         //check if the value we are overwriting is a number
-      } else if(typeof INQAttack.inqweapon[label] == 'number'){
-        INQAttack.inqweapon[label] = Number(INQAttack.options[label]);
+      } else if(typeof INQAttack_old.inqweapon[label] == 'number'){
+        INQAttack_old.inqweapon[label] = Number(INQAttack_old.options[label]);
       } else {
         //otherwise simply overwrite the label
-        INQAttack.inqweapon[label] = INQAttack.options[label];
+        INQAttack_old.inqweapon[label] = INQAttack_old.options[label];
       }
     }
   }
 
-  if(typeof INQAttack.inqweapon.Special == 'string'){
-    INQAttack.inqweapon.Special = _.map(INQAttack.inqweapon.split(","), function(rule){
+  if(typeof INQAttack_old.inqweapon.Special == 'string'){
+    INQAttack_old.inqweapon.Special = _.map(INQAttack_old.inqweapon.split(","), function(rule){
       return new INQLink(rule);
     });
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //calculate the damage formula
-INQAttack.damageFormula = function(){
+INQAttack_old.damageFormula = function(){
   var formula = "";
   //write the roll down
-  if(INQAttack.inqweapon.DiceNumber != 0){
+  if(INQAttack_old.inqweapon.DiceNumber != 0){
     //if the dice are multiplied by a number other than one
-    INQAttack.inqweapon.DiceNumber *= INQAttack.inqweapon.DiceMultiplier;
-    formula += INQAttack.inqweapon.DiceNumber.toString();
+    INQAttack_old.inqweapon.DiceNumber *= INQAttack_old.inqweapon.DiceMultiplier;
+    formula += INQAttack_old.inqweapon.DiceNumber.toString();
     formula += "d";
-    formula += INQAttack.inqweapon.DiceType.toString();
+    formula += INQAttack_old.inqweapon.DiceType.toString();
     //if there is a reroll number, add that in
-    if(INQAttack.inqweapon.rerollBelow){
-      formula += "ro<" + INQAttack.inqweapon.rerollBelow.toString();
+    if(INQAttack_old.inqweapon.rerollBelow){
+      formula += "ro<" + INQAttack_old.inqweapon.rerollBelow.toString();
     }
     //if there are any keep dice, add them
-    if(INQAttack.inqweapon.keepDice){
-      formula += "k" + INQAttack.inqweapon.keepDice.toString();
+    if(INQAttack_old.inqweapon.keepDice){
+      formula += "k" + INQAttack_old.inqweapon.keepDice.toString();
     }
   }
   //add in the base damage
-  if(INQAttack.inqweapon.DamageBase != 0){
+  if(INQAttack_old.inqweapon.DamageBase != 0){
     formula += "+";
-    formula += INQAttack.inqweapon.DamageBase.toString();
+    formula += INQAttack_old.inqweapon.DamageBase.toString();
   }
   //return the damage formula
   return formula;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //display all of the results from the current attack
-INQAttack.deliverReport = function(){
+INQAttack_old.deliverReport = function(){
   //auto hitting weapons do not roll to hit
-  if(INQAttack.autoHit){
-    INQAttack.Reports.toHit = undefined;
+  if(INQAttack_old.autoHit){
+    INQAttack_old.Reports.toHit = undefined;
   }
   //deliver each report
   _.each(["Weapon", "toHit", "Crit", "Damage"], function(report){
-    if(INQAttack.Reports[report]){
+    if(INQAttack_old.Reports[report]){
       //is this a private or public roll?
-      if(INQAttack.inqcharacter.controlledby == ""
-      || INQAttack.options.whisper){
+      if(INQAttack_old.inqcharacter.controlledby == ""
+      || INQAttack_old.options.whisper){
         //only whisper the report to the gm
-        whisper(INQAttack.Reports[report]);
+        whisper(INQAttack_old.Reports[report]);
       } else {
         //make the character publicly roll
-        announce(INQAttack.Reports[report]);
+        announce(INQAttack_old.Reports[report]);
       }
     }
   });
   //record the results of the attack
-  if(INQAttack.hits) INQAttack.recordAttack();
+  if(INQAttack_old.hits) INQAttack_old.recordAttack();
   //if a player whispered this to the gm, let the player know it was successful
-  if(INQAttack.inqcharacter.controlledby == ""
-  || INQAttack.options.whisper){
-    if(!playerIsGM(INQAttack.msg.playerid)){
-      whisper("Damage rolled.", {speakingTo: INQAttack.msg.playerid});
+  if(INQAttack_old.inqcharacter.controlledby == ""
+  || INQAttack_old.options.whisper){
+    if(!playerIsGM(INQAttack_old.msg.playerid)){
+      whisper("Damage rolled.", {speakingTo: INQAttack_old.msg.playerid});
     }
   }
 }
 //be sure the inqattack object exists before we start working with it
-INQAttack = INQAttack || {};
-INQAttack.detailTheCharacter = function(character, graphic, callback){
-  INQAttack.inqcharacter = undefined;
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.detailTheCharacter = function(character, graphic, callback){
+  INQAttack_old.inqcharacter = undefined;
   var myPromise = new Promise(function(resolve){
-    if(character && characterType(character) != 'character' && !playerIsGM(INQAttack.msg.playerid)){
-      var pilot = defaultCharacter(INQAttack.msg.playerid);
+    if(character && characterType(character) != 'character' && !playerIsGM(INQAttack_old.msg.playerid)){
+      var pilot = defaultCharacter(INQAttack_old.msg.playerid);
       if(pilot != undefined){
-        INQAttack.inqcharacter = new INQCharacter(pilot, undefined, function(){
-          INQAttack.inqcharacter.ObjID = character.id;
-          INQAttack.inqcharacter.GraphicID = graphic.id;
+        INQAttack_old.inqcharacter = new INQCharacter(pilot, undefined, function(){
+          INQAttack_old.inqcharacter.ObjID = character.id;
+          INQAttack_old.inqcharacter.GraphicID = graphic.id;
           resolve();
         });
         return;
@@ -2624,8 +2624,8 @@ INQAttack.detailTheCharacter = function(character, graphic, callback){
   });
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(){
-    if(INQAttack.inqcharacter == undefined){
-      INQAttack.inqcharacter = new INQCharacter(character, graphic, function(){
+    if(INQAttack_old.inqcharacter == undefined){
+      INQAttack_old.inqcharacter = new INQCharacter(character, graphic, function(){
         callback();
       });
     } else {
@@ -2634,14 +2634,14 @@ INQAttack.detailTheCharacter = function(character, graphic, callback){
   });
 }
 //be sure the inqattack object exists before we start working with it
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //completely detail the weapon using ammo and character
 //returns true if nothing went wrong
 //returns false if something went wrong
-INQAttack.detailTheWeapon = function(callback){
+INQAttack_old.detailTheWeapon = function(callback){
   var weaponPromise = new Promise(function(resolve){
     //get the weapon base
-    INQAttack.getWeapon(function(valid){
+    INQAttack_old.getWeapon(function(valid){
       resolve(valid);
     });
   });
@@ -2650,7 +2650,7 @@ INQAttack.detailTheWeapon = function(callback){
     var ammoPromise = new Promise(function(resolve){
       if(!valid) return resolve(false);
       //add in the special ammo
-      INQAttack.getSpecialAmmo(function(validAmmo){
+      INQAttack_old.getSpecialAmmo(function(validAmmo){
         resolve(validAmmo);
       });
     });
@@ -2658,17 +2658,17 @@ INQAttack.detailTheWeapon = function(callback){
     ammoPromise.then(function(validAmmo){
       if(validAmmo) {
         //overwrite any detail with user options
-        INQAttack.customizeWeapon();
+        INQAttack_old.customizeWeapon();
         //apply the special rules that affect the toHit roll
-        INQAttack.accountForHitsSpecialRules();
+        INQAttack_old.accountForHitsSpecialRules();
         //apply the special rules that affect the damage roll
-        INQAttack.accountForDamageSpecialRules();
+        INQAttack_old.accountForDamageSpecialRules();
         //determine the character's effective psy rating
-        INQAttack.calcEffectivePsyRating();
+        INQAttack_old.calcEffectivePsyRating();
         //apply that psy rating to the weapon
-        INQAttack.inqweapon.setPR(INQAttack.PsyRating);
+        INQAttack_old.inqweapon.setPR(INQAttack_old.PsyRating);
         //apply the strength bonus of the character to the weapon
-        INQAttack.inqweapon.setSB(INQAttack.inqcharacter.bonus("S"));
+        INQAttack_old.inqweapon.setSB(INQAttack_old.inqcharacter.bonus("S"));
       }
       //the weapon was fully customized
       if(typeof callback == 'function'){
@@ -2677,168 +2677,168 @@ INQAttack.detailTheWeapon = function(callback){
     });
   });
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 
 //try to spend ammo when making the shot
-INQAttack.expendAmmunition = function(){
-  INQAttack.calcAmmo();
+INQAttack_old.expendAmmunition = function(){
+  INQAttack_old.calcAmmo();
   //be sure this weapon uses ammunition
-  if(INQAttack.inqweapon.Clip > 0){
-    if(!INQAttack.recordAmmo()){return false;}
+  if(INQAttack_old.inqweapon.Clip > 0){
+    if(!INQAttack_old.recordAmmo()){return false;}
   }
-  INQAttack.reportAmmo();
+  INQAttack_old.reportAmmo();
   //we made it this far, nothing went wrong
   return true;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //use the players rate of fire to determine what mode the weapn is firing on
 //add in all the respective bonuses for that mode
-INQAttack.getFiringMode = function(){
+INQAttack_old.getFiringMode = function(){
   //if the RoF was undefined, find the lowest available setting to fire on
   _.each(["Single", "Semi", "Full"], function(RoF){
-    if(INQAttack.options.RoF == undefined
-    && INQAttack.inqweapon[RoF]){
-      INQAttack.options.RoF = RoF;
+    if(INQAttack_old.options.RoF == undefined
+    && INQAttack_old.inqweapon[RoF]){
+      INQAttack_old.options.RoF = RoF;
       if(RoF != "Single"){
-        INQAttack.options.RoF += "(" + INQAttack.inqweapon[RoF] + ")";
+        INQAttack_old.options.RoF += "(" + INQAttack_old.inqweapon[RoF] + ")";
       }
     }
   });
   //if nothing was valid, go for single
-  if(INQAttack.options.RoF == undefined){
-    INQAttack.options.RoF = "Single";
+  if(INQAttack_old.options.RoF == undefined){
+    INQAttack_old.options.RoF = "Single";
   }
 
   //add in any modifiers for the RoF
-  if(/semi/i.test(INQAttack.options.RoF)){
-    INQAttack.toHit += 0;
-    INQAttack.maxHits = INQAttack.inqweapon.Semi;
-    INQAttack.mode = "Semi";
-  } else if(/swift/i.test(INQAttack.options.RoF)){
-    INQAttack.toHit += 0;
-    INQAttack.maxHits = Math.max(2, Math.round(INQAttack.inqcharacter.bonus("WS")/3));
-    INQAttack.mode = "Semi";
-  } else if(/full/i.test(INQAttack.options.RoF)){
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.toHit += -10;
+  if(/semi/i.test(INQAttack_old.options.RoF)){
+    INQAttack_old.toHit += 0;
+    INQAttack_old.maxHits = INQAttack_old.inqweapon.Semi;
+    INQAttack_old.mode = "Semi";
+  } else if(/swift/i.test(INQAttack_old.options.RoF)){
+    INQAttack_old.toHit += 0;
+    INQAttack_old.maxHits = Math.max(2, Math.round(INQAttack_old.inqcharacter.bonus("WS")/3));
+    INQAttack_old.mode = "Semi";
+  } else if(/full/i.test(INQAttack_old.options.RoF)){
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.toHit += -10;
     }
-    INQAttack.maxHits = INQAttack.inqweapon.Full
-    INQAttack.mode = "Full";
-  } else if(/lightning/i.test(INQAttack.options.RoF)){
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.toHit += -10;
+    INQAttack_old.maxHits = INQAttack_old.inqweapon.Full
+    INQAttack_old.mode = "Full";
+  } else if(/lightning/i.test(INQAttack_old.options.RoF)){
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.toHit += -10;
     }
-    INQAttack.maxHits = Math.max(3, Math.round(INQAttack.inqcharacter.bonus("WS")/2));
-    INQAttack.mode = "Full";
-  } else if(/called/i.test(INQAttack.options.RoF)){
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.toHit += -20;
+    INQAttack_old.maxHits = Math.max(3, Math.round(INQAttack_old.inqcharacter.bonus("WS")/2));
+    INQAttack_old.mode = "Full";
+  } else if(/called/i.test(INQAttack_old.options.RoF)){
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.toHit += -20;
     }
-    INQAttack.maxHits = 1;
-    INQAttack.mode = "Single";
-  } else if(/all\s*out/i.test(INQAttack.options.RoF)){
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.toHit += 30;
+    INQAttack_old.maxHits = 1;
+    INQAttack_old.mode = "Single";
+  } else if(/all\s*out/i.test(INQAttack_old.options.RoF)){
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.toHit += 30;
     }
-    INQAttack.maxHits = 1;
-    INQAttack.mode = "Single";
-  } else { //if(/single/i.test(INQAttack.options.RoF))
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.toHit += 10;
+    INQAttack_old.maxHits = 1;
+    INQAttack_old.mode = "Single";
+  } else { //if(/single/i.test(INQAttack_old.options.RoF))
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.toHit += 10;
     }
-    INQAttack.maxHits = 1;
-    INQAttack.mode = "Single";
+    INQAttack_old.maxHits = 1;
+    INQAttack_old.mode = "Single";
   }
 
-  INQAttack.shotsFired = INQAttack.maxHits;
+  INQAttack_old.shotsFired = INQAttack_old.maxHits;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //find the special ammunition
-INQAttack.getSpecialAmmo = function(callback){
+INQAttack_old.getSpecialAmmo = function(callback){
   //be sure the user was actually looking for special ammo
-  if(!INQAttack.options.Ammo){
+  if(!INQAttack_old.options.Ammo){
     //there was nothing to do so nothing went wrong
     if(typeof callback == 'function') callback(true);
     return true;
   }
   //is this a custom ammo type?
-  if(INQAttack.options.customAmmo){
+  if(INQAttack_old.options.customAmmo){
     //record the name of the special ammo inside a weapon object
-    INQAttack.inqammo = new INQWeapon();
-    INQAttack.inqammo.Name = INQAttack.options.Ammo
+    INQAttack_old.inqammo = new INQWeapon();
+    INQAttack_old.inqammo.Name = INQAttack_old.options.Ammo
     //exit out with everything being fine
     if(typeof callback == 'function') callback(true);
     return true;
   }
   //search for the ammo
-  var clips = matchingObjs("handout", INQAttack.options.Ammo.split(" "));
+  var clips = matchingObjs("handout", INQAttack_old.options.Ammo.split(" "));
   //try to trim down to exact ammo matches
-  clips = trimToPerfectMatches(clips, INQAttack.options.Ammo);
+  clips = trimToPerfectMatches(clips, INQAttack_old.options.Ammo);
   //did none of the weapons match?
   if(clips.length <= 0){
-    whisper("*" + INQAttack.options.Ammo + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+    whisper("*" + INQAttack_old.options.Ammo + "* was not found.", {speakingTo: INQAttack_old.msg.playerid, gmEcho: true});
     if(typeof callback == 'function') callback(false);
     return false;
   }
   //are there too many weapons?
   if(clips.length >= 2){
-    whisper("Which Special Ammunition did you intend to fire?", {speakingTo: INQAttack.msg.playerid})
+    whisper("Which Special Ammunition did you intend to fire?", {speakingTo: INQAttack_old.msg.playerid})
     _.each(clips, function(clip){
       //specify the exact ammo name
-      INQAttack.options.Ammo = clip.get("name");
+      INQAttack_old.options.Ammo = clip.get("name");
       //construct the suggested command (without the !)
-      var suggestion = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
+      var suggestion = "useweapon " + INQAttack_old.weaponname + JSON.stringify(INQAttack_old.options);
       //the suggested command must be encoded before it is placed inside the button
       suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-      whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
+      whisper("[" + clip.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack_old.msg.playerid});
     });
     //something went wrong
     if(typeof callback == 'function') callback(false);
     return false;
   }
   //modify the weapon with the clip
-  INQAttack.useAmmo(clips[0], function(){
+  INQAttack_old.useAmmo(clips[0], function(){
     callback(true);
   });
   //nothing went wrong
   return true;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //find the weapon
-INQAttack.getWeapon = function(callback){
+INQAttack_old.getWeapon = function(callback){
   //is this a custom weapon?
-  if(INQAttack.options.custom){
-    INQAttack.inqweapon = new INQWeapon();
+  if(INQAttack_old.options.custom){
+    INQAttack_old.inqweapon = new INQWeapon();
     if(typeof callback == 'function') callback(true);
     return true;
   //or are its stats found in the library?
   } else {
     //search for the weapon
-    var weapons = matchingObjs("handout", INQAttack.weaponname.split(" "));
+    var weapons = matchingObjs("handout", INQAttack_old.weaponname.split(" "));
     //try to trim down to exact weapon matches
-    weapons = trimToPerfectMatches(weapons, INQAttack.weaponname);
+    weapons = trimToPerfectMatches(weapons, INQAttack_old.weaponname);
     //did none of the weapons match?
     if(weapons.length <= 0){
-      whisper("*" + INQAttack.weaponname + "* was not found.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+      whisper("*" + INQAttack_old.weaponname + "* was not found.", {speakingTo: INQAttack_old.msg.playerid, gmEcho: true});
       if(typeof callback == 'function') callback(false);
       return false;
     }
     //are there too many weapons?
     if(weapons.length >= 2){
-      whisper("Which weapon did you intend to fire?", {speakingTo: INQAttack.msg.playerid});
+      whisper("Which weapon did you intend to fire?", {speakingTo: INQAttack_old.msg.playerid});
       _.each(weapons, function(weapon){
         //use the weapon's exact name
-        var suggestion = "useweapon " + weapon.get("name") + JSON.stringify(INQAttack.options);
+        var suggestion = "useweapon " + weapon.get("name") + JSON.stringify(INQAttack_old.options);
         //the suggested command must be encoded before it is placed inside the button
         suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack.msg.playerid});
+        whisper("[" + weapon.get("name") + "](" + suggestion  + ")", {speakingTo: INQAttack_old.msg.playerid});
       });
       //don't continue unless you are certain what the user wants
       if(typeof callback == 'function') callback(false);
       return false;
     }
 
-    INQAttack.inqweapon = new INQWeapon(weapons[0], function(){
+    INQAttack_old.inqweapon = new INQWeapon(weapons[0], function(){
       if(typeof callback == 'function') callback(true);
     });
 
@@ -2846,200 +2846,200 @@ INQAttack.getWeapon = function(callback){
     return true;
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //the attack missed, offer a reroll
-INQAttack.offerReroll = function(){
+INQAttack_old.offerReroll = function(){
   //the reroll will not use up any ammo
-  INQAttack.options.freeShot = "true";
+  INQAttack_old.options.freeShot = "true";
   //offer a reroll instead of rolling the damage
-  var attack = "useweapon " + INQAttack.weaponname + JSON.stringify(INQAttack.options);
+  var attack = "useweapon " + INQAttack_old.weaponname + JSON.stringify(INQAttack_old.options);
   //encode the attack
   attack = "!{URIFixed}" + encodeURIFixed(attack);
   //offer it as a button to the player
-  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack.msg.playerid});
+  setTimeout(whisper, 100, "[Reroll](" + attack + ")", {speakingTo: INQAttack_old.msg.playerid});
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //calculate the penetration formula
-INQAttack.penetrationFormula = function(){
+INQAttack_old.penetrationFormula = function(){
   var formula = "";
-  if(INQAttack.penSuccessesMultiplier){
+  if(INQAttack_old.penSuccessesMultiplier){
     formula += "(";
   }
-  if(INQAttack.penDoubleAt && INQAttack.successes >= INQAttack.penDoubleAt){
+  if(INQAttack_old.penDoubleAt && INQAttack_old.successes >= INQAttack_old.penDoubleAt){
     formula += "(";
   }
-  if(INQAttack.inqweapon.PenDiceNumber > 0 && INQAttack.inqweapon.PenDiceType > 0){
-    formula += INQAttack.inqweapon.PenDiceNumber + "d" + INQAttack.inqweapon.PenDicType;
+  if(INQAttack_old.inqweapon.PenDiceNumber > 0 && INQAttack_old.inqweapon.PenDiceType > 0){
+    formula += INQAttack_old.inqweapon.PenDiceNumber + "d" + INQAttack_old.inqweapon.PenDicType;
   }
-  formula += "+" + INQAttack.inqweapon.Penetration;
-  if(INQAttack.penSuccessesMultiplier){
+  formula += "+" + INQAttack_old.inqweapon.Penetration;
+  if(INQAttack_old.penSuccessesMultiplier){
     var penMultiplier = 1;
-    penMultiplier += INQAttack.successes;
-    penMultiplier *= INQAttack.penSuccessesMultiplier
+    penMultiplier += INQAttack_old.successes;
+    penMultiplier *= INQAttack_old.penSuccessesMultiplier
     formula += ")*";
     formula += penMultiplier;
   }
-  if(INQAttack.penDoubleAt && INQAttack.successes >= INQAttack.penDoubleAt){
+  if(INQAttack_old.penDoubleAt && INQAttack_old.successes >= INQAttack_old.penDoubleAt){
     formula += ")*2"
   }
   return formula;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //prepare attack variables for each attack
-INQAttack.prepareVariables = function(){
-  INQAttack.toHit = 0;
-  INQAttack.unnaturalSuccesses = 0;
-  INQAttack.ammoMultiplier = 1;
-  INQAttack.hitsMultiplier = 1;
-  INQAttack.maxHitsMultiplier = 1;
-  INQAttack.hordeDamage = 0;
-  INQAttack.hordeDamageMultiplier = 1;
+INQAttack_old.prepareVariables = function(){
+  INQAttack_old.toHit = 0;
+  INQAttack_old.unnaturalSuccesses = 0;
+  INQAttack_old.ammoMultiplier = 1;
+  INQAttack_old.hitsMultiplier = 1;
+  INQAttack_old.maxHitsMultiplier = 1;
+  INQAttack_old.hordeDamage = 0;
+  INQAttack_old.hordeDamageMultiplier = 1;
 
 }
-INQAttack = INQAttack || {};
-INQAttack.recordAmmo = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.recordAmmo = function(){
   //use the name of the weapon to construct the name of the ammo
-  var AmmoName = "Ammo - " + INQAttack.inqweapon.Name;
-  if(INQAttack.inqammo){
-    AmmoName += " (" + INQAttack.inqammo.Name + ")";
+  var AmmoName = "Ammo - " + INQAttack_old.inqweapon.Name;
+  if(INQAttack_old.inqammo){
+    AmmoName += " (" + INQAttack_old.inqammo.Name + ")";
   }
   //how much ammo is left for this weapon?
-  INQAttack.AmmoLeft = attributeValue(AmmoName, {
-    characterid: INQAttack.inqcharacter.ObjID,
-    graphicid: INQAttack.inqcharacter.GraphicID,
+  INQAttack_old.AmmoLeft = attributeValue(AmmoName, {
+    characterid: INQAttack_old.inqcharacter.ObjID,
+    graphicid: INQAttack_old.inqcharacter.GraphicID,
     alert: false}
   );
   //check if this ammo tracker exists yet
-  if(INQAttack.AmmoLeft == undefined){
+  if(INQAttack_old.AmmoLeft == undefined){
     //create a brand new clip
     attributeValue(AmmoName, {
-      setTo: INQAttack.inqweapon.Clip,
-      characterid: INQAttack.inqcharacter.ObjID,
-      graphicid: INQAttack.inqcharacter.GraphicID,
+      setTo: INQAttack_old.inqweapon.Clip,
+      characterid: INQAttack_old.inqcharacter.ObjID,
+      graphicid: INQAttack_old.inqcharacter.GraphicID,
       alert: false}
     );
     //minus the shots fired from the max
-    INQAttack.AmmoLeft = INQAttack.inqweapon.Clip - INQAttack.shotsFired;
+    INQAttack_old.AmmoLeft = INQAttack_old.inqweapon.Clip - INQAttack_old.shotsFired;
   } else {
     //minus the shots fired from the clip
-    INQAttack.AmmoLeft -= INQAttack.shotsFired;
+    INQAttack_old.AmmoLeft -= INQAttack_old.shotsFired;
   }
   //be sure you can even spend this much ammo
-  if(INQAttack.AmmoLeft < 0){
-    whisper("Not enough ammo to fire on " + INQAttack.options.RoF, INQAttack.msg.playerid);
+  if(INQAttack_old.AmmoLeft < 0){
+    whisper("Not enough ammo to fire on " + INQAttack_old.options.RoF, INQAttack_old.msg.playerid);
     return false;
   }
   //record the resulting clip
   attributeValue(AmmoName, {
-    setTo: INQAttack.AmmoLeft,
-    characterid: INQAttack.inqcharacter.ObjID,
-    graphicid: INQAttack.inqcharacter.GraphicID,
+    setTo: INQAttack_old.AmmoLeft,
+    characterid: INQAttack_old.inqcharacter.ObjID,
+    graphicid: INQAttack_old.inqcharacter.GraphicID,
     alert: false}
   );
 
   return true;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //record the details of the attack
-INQAttack.recordAttack = function(){
+INQAttack_old.recordAttack = function(){
   //report the hit location and save the hit location
-  if(INQAttack.d100 != undefined){
-    saveHitLocation(INQAttack.d100, {whisper: INQAttack.inqcharacter.controlledby == "" || INQAttack.options.whisper});
+  if(INQAttack_old.d100 != undefined){
+    saveHitLocation(INQAttack_old.d100, {whisper: INQAttack_old.inqcharacter.controlledby == "" || INQAttack_old.options.whisper});
   }
-  if(INQAttack.hits != undefined){
+  if(INQAttack_old.hits != undefined){
     //save the number of hits achieved
     var hitsObj = findObjs({ type: 'attribute', name: "Hits" })[0];
     if(hitsObj == undefined){
       return whisper("No attribute named Hits was found anywhere in the campaign.");
     }
-    hitsObj.set("current", INQAttack.hits);
-    hitsObj.set("max", INQAttack.hits);
+    hitsObj.set("current", INQAttack_old.hits);
+    hitsObj.set("max", INQAttack_old.hits);
   }
 }
-INQAttack = INQAttack || {};
-INQAttack.reportAmmo = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.reportAmmo = function(){
   //write a report on the weapon
-  INQAttack.Reports.Weapon = "";
-  INQAttack.Reports.Weapon += "<br><strong>Weapon</strong>: " + INQAttack.inqweapon.toLink();
-  if(INQAttack.inqammo){
-    INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.inqammo.toLink();
+  INQAttack_old.Reports.Weapon = "";
+  INQAttack_old.Reports.Weapon += "<br><strong>Weapon</strong>: " + INQAttack_old.inqweapon.toLink();
+  if(INQAttack_old.inqammo){
+    INQAttack_old.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack_old.inqammo.toLink();
   }
-  INQAttack.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack.options.RoF.toTitleCase();
-  if(INQAttack.inqweapon.Class == "Psychic"){
-    INQAttack.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack.PsyRating.toString();
-    INQAttack.Reports.Weapon += "<br><strong>" + getLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
+  INQAttack_old.Reports.Weapon += "<br><strong>Mode</strong>: " + INQAttack_old.options.RoF.toTitleCase();
+  if(INQAttack_old.inqweapon.Class == "Psychic"){
+    INQAttack_old.Reports.Weapon += "<br><strong>Psy Rating</strong>: " + INQAttack_old.PsyRating.toString();
+    INQAttack_old.Reports.Weapon += "<br><strong>" + getLink("Psychic Phenomena") + "</strong>: [Roll](!find Psychic Phenomena&#13;/r d100)";
   }
-  if(INQAttack.AmmoLeft != undefined){
-    INQAttack.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack.AmmoLeft + "/" + INQAttack.inqweapon.Clip;
+  if(INQAttack_old.AmmoLeft != undefined){
+    INQAttack_old.Reports.Weapon += "<br><strong>Ammo</strong>: " + INQAttack_old.AmmoLeft + "/" + INQAttack_old.inqweapon.Clip;
   }
 }
 //be sure the inqattack object exists before we start working with it
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //report the damage roll
-INQAttack.rollDamage = function(){
+INQAttack_old.rollDamage = function(){
   //be sure the weapon has a damage roll
-  if(INQAttack.inqweapon.DiceNumber == 0){
+  if(INQAttack_old.inqweapon.DiceNumber == 0){
     return;
   }
   //begin constructing the damage report
-  INQAttack.Reports.Damage = "&{template:default} {{name=<strong>Damage</strong>: " + INQAttack.inqweapon.Name + "}} ";
+  INQAttack_old.Reports.Damage = "&{template:default} {{name=<strong>Damage</strong>: " + INQAttack_old.inqweapon.Name + "}} ";
   //calculate the damage
-  INQAttack.Reports.Damage +=  "{{Damage= [[" + INQAttack.damageFormula() + "]]}} ";
+  INQAttack_old.Reports.Damage +=  "{{Damage= [[" + INQAttack_old.damageFormula() + "]]}} ";
   //note the damage type
-  if(typeof INQAttack.inqweapon.DamageType == 'string'){
-    var DamageType = getLink(INQAttack.inqweapon.DamageType);
+  if(typeof INQAttack_old.inqweapon.DamageType == 'string'){
+    var DamageType = getLink(INQAttack_old.inqweapon.DamageType);
   } else {
-    var DamageType = INQAttack.inqweapon.DamageType.toNote();
+    var DamageType = INQAttack_old.inqweapon.DamageType.toNote();
   }
-  INQAttack.Reports.Damage +=  "{{Type=  " + DamageType + "}} ";
+  INQAttack_old.Reports.Damage +=  "{{Type=  " + DamageType + "}} ";
   //calculate the penetration
-  INQAttack.Reports.Damage +=  "{{Pen=  [[" + INQAttack.penetrationFormula() + "]]}} ";
+  INQAttack_old.Reports.Damage +=  "{{Pen=  [[" + INQAttack_old.penetrationFormula() + "]]}} ";
   //add on any special notes
-  INQAttack.Reports.Damage += "{{Notes= " + INQAttack.weaponNotes() + "}}";
+  INQAttack_old.Reports.Damage += "{{Notes= " + INQAttack_old.weaponNotes() + "}}";
 
-  INQAttack.calcHordeDamage();
+  INQAttack_old.calcHordeDamage();
 }
-INQAttack = INQAttack || {};
-INQAttack.rollToHit = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.rollToHit = function(){
   //calculate the base roll to hit
-  INQAttack.calcToHit();
+  INQAttack_old.calcToHit();
   //determine the weapon's firing mode
-  INQAttack.getFiringMode();
+  INQAttack_old.getFiringMode();
   //make the roll to hit
-  INQAttack.d100 = randomInteger(100);
+  INQAttack_old.d100 = randomInteger(100);
   //was there a crit?
-  if(INQAttack.d100 == 100){
-    INQAttack.Reports.Crit = "[Critical Failure!](!This Isn't Anything Yet)";
-  } else if(INQAttack.d100 == 1) {
-    INQAttack.Reports.Crit = "[Critical Success!](!This Isn't Anything Yet)";
+  if(INQAttack_old.d100 == 100){
+    INQAttack_old.Reports.Crit = "[Critical Failure!](!This Isn't Anything Yet)";
+  } else if(INQAttack_old.d100 == 1) {
+    INQAttack_old.Reports.Crit = "[Critical Success!](!This Isn't Anything Yet)";
   }
   //determine the number of hits based on the roll to hit and firing mode
-  INQAttack.calcHits();
+  INQAttack_old.calcHits();
   //show the roll to hit
-  INQAttack.Reports.toHit = "&{template:default} ";
-  INQAttack.Reports.toHit += "{{name=<strong>" + INQAttack.stat +  "</strong>: " + INQAttack.inqcharacter.Name + "}} ";
-  if(INQAttack.inqweapon.FocusSkill){
-    INQAttack.Reports.toHit += "{{Skill=" + getLink(INQAttack.inqweapon.FocusSkill) + "}} ";
+  INQAttack_old.Reports.toHit = "&{template:default} ";
+  INQAttack_old.Reports.toHit += "{{name=<strong>" + INQAttack_old.stat +  "</strong>: " + INQAttack_old.inqcharacter.Name + "}} ";
+  if(INQAttack_old.inqweapon.FocusSkill){
+    INQAttack_old.Reports.toHit += "{{Skill=" + getLink(INQAttack_old.inqweapon.FocusSkill) + "}} ";
   }
-  INQAttack.Reports.toHit += "{{Successes=[[(" + INQAttack.toHit.toString() + " - (" + INQAttack.d100.toString() + ") )/10]]}} ";
-  INQAttack.Reports.toHit += "{{Unnatural= [[" + INQAttack.unnaturalSuccesses.toString() + "]]}} ";
-  INQAttack.Reports.toHit += "{{Hits= [[" + INQAttack.hits.toString() + "]]}}";
+  INQAttack_old.Reports.toHit += "{{Successes=[[(" + INQAttack_old.toHit.toString() + " - (" + INQAttack_old.d100.toString() + ") )/10]]}} ";
+  INQAttack_old.Reports.toHit += "{{Unnatural= [[" + INQAttack_old.unnaturalSuccesses.toString() + "]]}} ";
+  INQAttack_old.Reports.toHit += "{{Hits= [[" + INQAttack_old.hits.toString() + "]]}}";
 }
-INQAttack = INQAttack || {};
-INQAttack.skillBonus = function(){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.skillBonus = function(){
   var bonus = 0;
   //is there a skill to search for?
-  if(INQAttack.inqweapon.FocusSkill){
+  if(INQAttack_old.inqweapon.FocusSkill){
     //check the character for the skill
-    var skill = INQAttack.inqcharacter.has(INQAttack.inqweapon.FocusSkill, "Skills");
+    var skill = INQAttack_old.inqcharacter.has(INQAttack_old.inqweapon.FocusSkill, "Skills");
     if(!skill){
       bonus = -20;
     } else if(skill.length > 0){
       //did the user provide a subgroup?
-      if(INQAttack.inqweapon.FocusSkillGroup){
+      if(INQAttack_old.inqweapon.FocusSkillGroup){
         //does the character have the given subgroup?
         var regex = "^\\s*";
-        regex += INQAttack.inqweapon.FocusSkillGroup.replace(/(-|\s+)/g,"(-|\\s+)");
+        regex += INQAttack_old.inqweapon.FocusSkillGroup.replace(/(-|\s+)/g,"(-|\\s+)");
         regex += "\\s*$";
         var re = RegExp(regex, "i");
         var matchingSubgroup = false;
@@ -3055,7 +3055,7 @@ INQAttack.skillBonus = function(){
         //if the character does not have a matching subgroup, give them a flat -20 modifier
         bonus = subgroupModifier;
       } else {
-        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack.msg.playerid, gmEcho: true});
+        whisper("Psychic Power did not provide a skill group.", {speakingTo: INQAttack_old.msg.playerid, gmEcho: true});
         bonus = -20;
       }
     //the skill was found, and there is no need to match subgroups
@@ -3067,29 +3067,29 @@ INQAttack.skillBonus = function(){
   return bonus;
 }
 //be sure the inqattack object exists before we start working with it
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 
 //accurate increases the damage of the weapon by D10 for each success rolled, up
 //to 2. It will not decrease the damage if there are failures.
 //accurate only works when the weapon is making a single shot
-INQAttack.accountForAccurate = function(){
-  if(INQAttack.mode == "Single"
-  && INQAttack.inqweapon.has("Accurate")){
-    INQAttack.inqweapon.DiceNumber += Math.max(Math.min(INQAttack.successes,2),0);
+INQAttack_old.accountForAccurate = function(){
+  if(INQAttack_old.mode == "Single"
+  && INQAttack_old.inqweapon.has("Accurate")){
+    INQAttack_old.inqweapon.DiceNumber += Math.max(Math.min(INQAttack_old.successes,2),0);
   }
 }
 
 //proven rerolls damage < the given number
 //roll20 treats < as <= so the value must be decreased by one
-INQAttack.accountForProven = function(){
-  var proven = INQAttack.inqweapon.has("Proven");
+INQAttack_old.accountForProven = function(){
+  var proven = INQAttack_old.inqweapon.has("Proven");
   if(proven){
     //by default, reroll all 1's
-    INQAttack.inqweapon.rerollBelow = 1;
+    INQAttack_old.inqweapon.rerollBelow = 1;
     //find the proven value
     _.each(proven, function(value){
       if(Number(value.Name)){
-        INQAttack.inqweapon.rerollBelow = Number(value.Name)-1;
+        INQAttack_old.inqweapon.rerollBelow = Number(value.Name)-1;
       }
     });
   }
@@ -3097,53 +3097,53 @@ INQAttack.accountForProven = function(){
 
 //tearing rolls one extra damage die, discarding the lowest
 //flesh render rolls another die beyond that, discarding the next lowest
-INQAttack.accountForTearingFleshRender = function(){
-  if(INQAttack.inqweapon.has("Tearing")){
-    INQAttack.inqweapon.keepDice = INQAttack.inqweapon.DiceNumber;
-    INQAttack.inqweapon.DiceNumber++;
-    if(INQAttack.inqcharacter.has("Flesh Render", "Talents")){
-      INQAttack.inqweapon.DiceNumber++;
+INQAttack_old.accountForTearingFleshRender = function(){
+  if(INQAttack_old.inqweapon.has("Tearing")){
+    INQAttack_old.inqweapon.keepDice = INQAttack_old.inqweapon.DiceNumber;
+    INQAttack_old.inqweapon.DiceNumber++;
+    if(INQAttack_old.inqcharacter.has("Flesh Render", "Talents")){
+      INQAttack_old.inqweapon.DiceNumber++;
     }
   }
 }
 
 //crushing blow give +2 damage to melee attacks
 //mighty shot gives +2 damage to ranged attacks
-INQAttack.accountForCrushingBlowMightyShot = function(){
-  if(INQAttack.inqweapon.Class == "Melee"
-  && INQAttack.inqcharacter.has("Crushing Blow", "Talents")){
-    INQAttack.inqweapon.DamageBase += 2;
-  } else if(INQAttack.inqweapon.Class != "Psychic"
-  && INQAttack.inqcharacter.has("Mighty Shot", "Talents")){
-    INQAttack.inqweapon.DamageBase += 2;
+INQAttack_old.accountForCrushingBlowMightyShot = function(){
+  if(INQAttack_old.inqweapon.Class == "Melee"
+  && INQAttack_old.inqcharacter.has("Crushing Blow", "Talents")){
+    INQAttack_old.inqweapon.DamageBase += 2;
+  } else if(INQAttack_old.inqweapon.Class != "Psychic"
+  && INQAttack_old.inqcharacter.has("Mighty Shot", "Talents")){
+    INQAttack_old.inqweapon.DamageBase += 2;
   }
 }
 
 //force weapons add the user's Psy Rating to their Damage and Penetration
-INQAttack.accountForForce = function(){
-  if(INQAttack.inqweapon.has("Force")){
-    INQAttack.inqweapon.DamageBase  += INQAttack.inqcharacter.Attributes.PR;
-    INQAttack.inqweapon.Penetration += INQAttack.inqcharacter.Attributes.PR;
+INQAttack_old.accountForForce = function(){
+  if(INQAttack_old.inqweapon.has("Force")){
+    INQAttack_old.inqweapon.DamageBase  += INQAttack_old.inqcharacter.Attributes.PR;
+    INQAttack_old.inqweapon.Penetration += INQAttack_old.inqcharacter.Attributes.PR;
   }
 }
 
 //storm weapons double the max hits and double the hits per success
 //however, they also double the ammo expended
-INQAttack.accountForStorm = function(){
-  if(INQAttack.inqweapon.has("Storm")){
-    INQAttack.ammoMultiplier *= 2;
-    INQAttack.hitsMultiplier *= 2;
+INQAttack_old.accountForStorm = function(){
+  if(INQAttack_old.inqweapon.has("Storm")){
+    INQAttack_old.ammoMultiplier *= 2;
+    INQAttack_old.hitsMultiplier *= 2;
   }
 }
 
 //blast weapons multiply the horde damage by a given number
-INQAttack.accountForBlast = function(){
-  var blast = INQAttack.inqweapon.has("Blast");
+INQAttack_old.accountForBlast = function(){
+  var blast = INQAttack_old.inqweapon.has("Blast");
   if(blast){
     //find the proven value
     _.each(blast, function(value){
       if(Number(value.Name)){
-        INQAttack.hordeDamageMultiplier *= Number(value.Name);
+        INQAttack_old.hordeDamageMultiplier *= Number(value.Name);
       }
     });
   }
@@ -3151,23 +3151,23 @@ INQAttack.accountForBlast = function(){
 
 //spray weapons multiply the horde damage by (Range/4) + D5
 //spray weapons do not roll to hit
-INQAttack.accountForSpray = function(){
-  if(INQAttack.inqweapon.has("Spray")){
-    INQAttack.hordeDamageMultiplier *= Math.ceil(INQAttack.inqweapon.Range/4) + randomInteger(5);
-    if(INQAttack.inqweapon.Class != "Psychic"){
-      INQAttack.autoHit = true;
+INQAttack_old.accountForSpray = function(){
+  if(INQAttack_old.inqweapon.has("Spray")){
+    INQAttack_old.hordeDamageMultiplier *= Math.ceil(INQAttack_old.inqweapon.Range/4) + randomInteger(5);
+    if(INQAttack_old.inqweapon.Class != "Psychic"){
+      INQAttack_old.autoHit = true;
     }
   }
 }
 
 //devastating weapons add to the total horde damage
-INQAttack.accountForDevastating = function(){
-  var devastating = INQAttack.inqweapon.has("Devastating");
+INQAttack_old.accountForDevastating = function(){
+  var devastating = INQAttack_old.inqweapon.has("Devastating");
   if(devastating){
     //find the proven value
     _.each(devastating, function(value){
       if(Number(value.Name)){
-        INQAttack.hordeDamage += Number(value.Name);
+        INQAttack_old.hordeDamage += Number(value.Name);
       }
     });
   }
@@ -3176,37 +3176,37 @@ INQAttack.accountForDevastating = function(){
 //Twin-linked weapons have +20 to hit
 //Twin-linked weapons can hit twice as much
 //Twin-linked, single shots can hit twice if they roll 2+ successes
-INQAttack.accountForTwinLinked = function(){
-  if(INQAttack.inqweapon.has("Twin-linked")){
-    INQAttack.toHit += 20;
-    INQAttack.ammoMultiplier *= 2;
-    INQAttack.maxHitsMultiplier *= 2;
+INQAttack_old.accountForTwinLinked = function(){
+  if(INQAttack_old.inqweapon.has("Twin-linked")){
+    INQAttack_old.toHit += 20;
+    INQAttack_old.ammoMultiplier *= 2;
+    INQAttack_old.maxHitsMultiplier *= 2;
   }
 }
 
 //Crushing blow + All Out Attack => Pen += StrB/2
 //Crushing blow + All Out Attack => Concussive(2)
-INQAttack.accountForHammerBlow = function(){
-  if(INQAttack.inqcharacter == undefined){return;}
-  if(/all\s*out/i.test(INQAttack.options.RoF)
-  && INQAttack.inqcharacter.has("Hammer Blow", "Talents")){
-    INQAttack.inqweapon.Penetration += Math.ceil(INQAttack.inqcharacter.bonus("S")/2);
+INQAttack_old.accountForHammerBlow = function(){
+  if(INQAttack_old.inqcharacter == undefined){return;}
+  if(/all\s*out/i.test(INQAttack_old.options.RoF)
+  && INQAttack_old.inqcharacter.has("Hammer Blow", "Talents")){
+    INQAttack_old.inqweapon.Penetration += Math.ceil(INQAttack_old.inqcharacter.bonus("S")/2);
     var concussive2 = new INQLink("Concussive(2)");
-    INQAttack.inqweapon.Special.push(concussive2);
+    INQAttack_old.inqweapon.Special.push(concussive2);
   }
 }
 
 //Lance Weapons multiply their Pen by their to Hit Successes + 1
-INQAttack.accountForLance = function(){
-  if(INQAttack.inqweapon.has("Lance")){
-    INQAttack.penSuccessesMultiplier = 1;
+INQAttack_old.accountForLance = function(){
+  if(INQAttack_old.inqweapon.has("Lance")){
+    INQAttack_old.penSuccessesMultiplier = 1;
   }
 }
 
 //Razorsharp weapons double their pen if they earn two or more successes
-INQAttack.accountForRazorSharp = function(){
-  if(INQAttack.inqweapon.has("Razor Sharp")){
-    INQAttack.penDoubleAt = 2;
+INQAttack_old.accountForRazorSharp = function(){
+  if(INQAttack_old.inqweapon.has("Razor Sharp")){
+    INQAttack_old.penDoubleAt = 2;
   }
 }
 
@@ -3218,26 +3218,26 @@ INQAttack.accountForRazorSharp = function(){
 //increases penetration multiplier by 1/5
 //increases blast quality by 1/2
 //grants the recharge quality
-INQAttack.accountForMaximal = function(){
-  if(INQAttack.inqweapon.has("Use Maximal")){
-    INQAttack.ammoMultiplier *= 3;
-    INQAttack.inqweapon.Range       += Math.round(INQAttack.inqweapon.Range / 3);
-    INQAttack.inqweapon.DiceNumber  += Math.round(INQAttack.inqweapon.DiceNumber / 2);
-    INQAttack.inqweapon.DamageBase  += Math.round(INQAttack.inqweapon.DamageBase / 4);
-    INQAttack.inqweapon.Penetration += Math.round(INQAttack.inqweapon.Penetration / 5);
+INQAttack_old.accountForMaximal = function(){
+  if(INQAttack_old.inqweapon.has("Use Maximal")){
+    INQAttack_old.ammoMultiplier *= 3;
+    INQAttack_old.inqweapon.Range       += Math.round(INQAttack_old.inqweapon.Range / 3);
+    INQAttack_old.inqweapon.DiceNumber  += Math.round(INQAttack_old.inqweapon.DiceNumber / 2);
+    INQAttack_old.inqweapon.DamageBase  += Math.round(INQAttack_old.inqweapon.DamageBase / 4);
+    INQAttack_old.inqweapon.Penetration += Math.round(INQAttack_old.inqweapon.Penetration / 5);
     var recharge = new INQLink("Recharge");
-    INQAttack.inqweapon.Special.push(recharge);
+    INQAttack_old.inqweapon.Special.push(recharge);
     //remove the useMaximal special rule from the displayed abilities
     var maximal = -1;
-    for(var i = 0; i < INQAttack.inqweapon.Special.length; i++){
-      if(INQAttack.inqweapon.Special[i].Name == "Use Maximal"){
-        INQAttack.inqweapon.Special.splice(i, 1);
+    for(var i = 0; i < INQAttack_old.inqweapon.Special.length; i++){
+      if(INQAttack_old.inqweapon.Special[i].Name == "Use Maximal"){
+        INQAttack_old.inqweapon.Special.splice(i, 1);
         i--
-      } else if(INQAttack.inqweapon.Special[i].Name == "Blast"){
-        for(var j = 0; j < INQAttack.inqweapon.Special[i].Groups.length; j++){
-          if(Number(INQAttack.inqweapon.Special[i].Groups[j])){
-            INQAttack.inqweapon.Special[i].Groups[j] = Number(INQAttack.inqweapon.Special[i].Groups[j]);
-            INQAttack.inqweapon.Special[i].Groups[j] += Math.round(INQAttack.inqweapon.Special[i].Groups[j] / 2);
+      } else if(INQAttack_old.inqweapon.Special[i].Name == "Blast"){
+        for(var j = 0; j < INQAttack_old.inqweapon.Special[i].Groups.length; j++){
+          if(Number(INQAttack_old.inqweapon.Special[i].Groups[j])){
+            INQAttack_old.inqweapon.Special[i].Groups[j] = Number(INQAttack_old.inqweapon.Special[i].Groups[j]);
+            INQAttack_old.inqweapon.Special[i].Groups[j] += Math.round(INQAttack_old.inqweapon.Special[i].Groups[j] / 2);
           }
         }
       }
@@ -3245,22 +3245,22 @@ INQAttack.accountForMaximal = function(){
   } else {
     //remove the maximal special rule from the displayed abilities
     var maximal = -1;
-    for(var i = 0; i < INQAttack.inqweapon.Special.length; i++){
-      if(INQAttack.inqweapon.Special[i].Name == "Maximal"){
-        INQAttack.inqweapon.Special.splice(i, 1);
+    for(var i = 0; i < INQAttack_old.inqweapon.Special.length; i++){
+      if(INQAttack_old.inqweapon.Special[i].Name == "Maximal"){
+        INQAttack_old.inqweapon.Special.splice(i, 1);
         i--
       }
     }
   }
 }
 
-INQAttack.accountForHordeDmg = function(){
-  var hordeDmg = INQAttack.inqweapon.has("HordeDmg");
+INQAttack_old.accountForHordeDmg = function(){
+  var hordeDmg = INQAttack_old.inqweapon.has("HordeDmg");
   if(hordeDmg){
     //find the proven value
     _.each(hordeDmg, function(value){
       if(Number(value.Name)){
-        INQAttack.hordeDamageMultiplier += Number(value.Name);
+        INQAttack_old.hordeDamageMultiplier += Number(value.Name);
       }
     });
   }
@@ -3268,48 +3268,48 @@ INQAttack.accountForHordeDmg = function(){
 
 //special ammunition will explicitly note stat modifications
 //apply damage modifications
-INQAttack.accountForDamage = function(){
-  var dam = INQAttack.inqweapon.has("Dam") || [];
-  var damage = INQAttack.inqweapon.has("Damage") || [];
+INQAttack_old.accountForDamage = function(){
+  var dam = INQAttack_old.inqweapon.has("Dam") || [];
+  var damage = INQAttack_old.inqweapon.has("Damage") || [];
   dam = dam.concat(damage);
   _.each(dam, function(value){
     if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-      INQAttack.inqweapon.DamageBase += Number(value.Name);
+      INQAttack_old.inqweapon.DamageBase += Number(value.Name);
     }
   });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply penetration modifications
-INQAttack.accountForPen = function(){
-  var pen = INQAttack.inqweapon.has("Pen") || [];
-  var penetration = INQAttack.inqweapon.has("Penetration") || [];
+INQAttack_old.accountForPen = function(){
+  var pen = INQAttack_old.inqweapon.has("Pen") || [];
+  var penetration = INQAttack_old.inqweapon.has("Penetration") || [];
   pen = pen.concat(penetration);
   _.each(pen, function(value){
     if(/^\s*(|\+|-)\s*\d+\s*$/.test(value.Name)){
-      INQAttack.inqweapon.Penetration += Number(value.Name);
+      INQAttack_old.inqweapon.Penetration += Number(value.Name);
     } else if(/^\s*=\s*\d+\s*$/.test(value.Name)){
-      INQAttack.inqweapon.Penetration = Number(value.Name.replace("=", ""));
+      INQAttack_old.inqweapon.Penetration = Number(value.Name.replace("=", ""));
     }
   });
 }
 
 //special ammunition will explicitly note stat modifications
 //apply damage TYPE modifications
-INQAttack.accountForType = function(){
-  var type = INQAttack.inqweapon.has("DamageType");
+INQAttack_old.accountForType = function(){
+  var type = INQAttack_old.inqweapon.has("DamageType");
   if(type){
     _.each(type, function(value){
-      INQAttack.inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
+      INQAttack_old.inqweapon.DamageType = new INQLink(value.Name.replace('=',''));
     });
   }
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //parse the special ammo and use it to customize the inqweaon
-INQAttack.useAmmo = function(ammo, callback){
+INQAttack_old.useAmmo = function(ammo, callback){
   var myPromise = new Promise(function(resolve){
     //parse the special ammunition
-    INQAttack.inqammo = new INQWeapon(ammo, function(){
+    INQAttack_old.inqammo = new INQWeapon(ammo, function(){
       resolve();
     });
   });
@@ -3317,13 +3317,13 @@ INQAttack.useAmmo = function(ammo, callback){
   myPromise.then(function(){
     //only add the special rules of the ammo to the inqweapon, we want every
     //modification to be highly visible to the player
-    for(var k in INQAttack.inqammo){
+    for(var k in INQAttack_old.inqammo){
       if(k == "Name" || k == "ObjID" || k == "ObjType" || k == "DamageType"){continue;}
-      if(INQAttack.inqammo[k] == INQAttack.inqammo.__proto__[k]){continue;}
-      if(Array.isArray(INQAttack.inqammo[k])){
-        INQAttack.inqweapon[k] = INQAttack.inqweapon[k].concat(INQAttack.inqammo[k]);
+      if(INQAttack_old.inqammo[k] == INQAttack_old.inqammo.__proto__[k]){continue;}
+      if(Array.isArray(INQAttack_old.inqammo[k])){
+        INQAttack_old.inqweapon[k] = INQAttack_old.inqweapon[k].concat(INQAttack_old.inqammo[k]);
       } else {
-        INQAttack.inqweapon[k] = INQAttack.inqammo[k];
+        INQAttack_old.inqweapon[k] = INQAttack_old.inqammo[k];
       }
     }
 
@@ -3332,25 +3332,25 @@ INQAttack.useAmmo = function(ammo, callback){
     }
   });
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //make a list of all of the weapon special abilities
-INQAttack.weaponNotes = function(){
+INQAttack_old.weaponNotes = function(){
   var notes = "";
-  _.each(INQAttack.inqweapon.Special, function(rule){
+  _.each(INQAttack_old.inqweapon.Special, function(rule){
     notes += rule.toNote() + ", ";
   });
   //remove the last comma
   return notes.replace(/,\s*$/, "");
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //reduce the attack's damage by the armour of the target
-INQAttack.applyArmour = function(damage){
+INQAttack_old.applyArmour = function(damage){
 
   //find the hit location
-  var hitLocation = getHitLocation(INQAttack.TensLoc.get("current"), INQAttack.OnesLoc.get("current"), INQAttack.targetType);
+  var hitLocation = getHitLocation(INQAttack_old.TensLoc.get("current"), INQAttack_old.OnesLoc.get("current"), INQAttack_old.targetType);
   log("Hit Location: " + hitLocation)
   //get the armor of the target
-  var armour = attributeValue("Armour_" + hitLocation, {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+  var armour = attributeValue("Armour_" + hitLocation, {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
   log("Armour: " + armour)
 
   //turn armour into a valid number
@@ -3361,14 +3361,14 @@ INQAttack.applyArmour = function(damage){
   }
 
   //is the attack primitive?
-  if(Number(INQAttack.Prim.get("current")) > 0){
+  if(Number(INQAttack_old.Prim.get("current")) > 0){
     log("Primitive Attack")
     //the armour is twice as protective against primitive attacks
     armour *= 2;
   }
 
   //is the armour primitive?
-  if(INQAttack.primArmour){
+  if(INQAttack_old.primArmour){
     log("Primitive Armour")
     //the primitive armour is half as effective
     armour /= 2;
@@ -3378,15 +3378,15 @@ INQAttack.applyArmour = function(damage){
   armour = Math.round(armour);
 
   //is the target a spaceship?
-  if(INQAttack.targetType == "starship"){
+  if(INQAttack_old.targetType == "starship"){
     //starship weapons either have no penetration, or infinite penetration
-    if(Number(INQAttack.Pen.get("current")) > 0){
+    if(Number(INQAttack_old.Pen.get("current")) > 0){
       armour = 0;
     }
   }else {
     //all other targets treat penetration normally
-    log("Penetration: " + INQAttack.Pen.get("current"))
-    armour -= INQAttack.Pen.get("current");
+    log("Penetration: " + INQAttack_old.Pen.get("current"))
+    armour -= INQAttack_old.Pen.get("current");
     //be sure the penetration doesn't overshoot the armour
     if(armour < 0){
       armour = 0;
@@ -3407,12 +3407,12 @@ INQAttack.applyArmour = function(damage){
   //report the reduced damage
   return damage;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //reduce the damage by the target's toughness
-INQAttack.applyToughness = function(damage){
-  if(INQAttack.targetType == "character"){
+INQAttack_old.applyToughness = function(damage){
+  if(INQAttack_old.targetType == "character"){
     //get the target's toughness
-    var Toughness = attributeValue("T", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+    var Toughness = attributeValue("T", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
     //be sure that the Toughness was found
     if(Toughness){
       Toughness = Number(Toughness);
@@ -3420,14 +3420,14 @@ INQAttack.applyToughness = function(damage){
       log("T Bonus: " + Math.floor(Toughness/10))
       damage -= Math.floor(Toughness/10);
     }
-    log("Felling: " + Number(INQAttack.Fell.get("current")))
+    log("Felling: " + Number(INQAttack_old.Fell.get("current")))
 
     //get the target's toughness
-    var UnnaturalToughness = attributeValue("Unnatural T", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+    var UnnaturalToughness = attributeValue("Unnatural T", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
     //be sure that the Toughness was found
     if(UnnaturalToughness){
       log("Unnatural Toughness: " + UnnaturalToughness)
-      UnnaturalToughness = Number(UnnaturalToughness) - Number(INQAttack.Fell.get("current"));
+      UnnaturalToughness = Number(UnnaturalToughness) - Number(INQAttack_old.Fell.get("current"));
       //reduce the damage by the base T Bonus of the character
       if(UnnaturalToughness > 0){
         damage -= UnnaturalToughness;
@@ -3443,21 +3443,21 @@ INQAttack.applyToughness = function(damage){
   return damage;
 }
 //define the attack object
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //warn the gm of any damage type that should not be applied to a character type
-INQAttack.appropriateDamageType = function(){
-  if(INQAttack.targetType == "starship" && INQAttack.DamType.get("current").toUpperCase() != "S"){
-    whisper(INQAttack.graphic.get("name") + ": Using non-starship damage on a starship. Aborting. [Correct This](!damage type = s)");
+INQAttack_old.appropriateDamageType = function(){
+  if(INQAttack_old.targetType == "starship" && INQAttack_old.DamType.get("current").toUpperCase() != "S"){
+    whisper(INQAttack_old.graphic.get("name") + ": Using non-starship damage on a starship. Aborting. [Correct This](!damage type = s)");
     return false;
-  } else if(INQAttack.targetType != "starship" && INQAttack.DamType.get("current").toUpperCase() == "S"){
-    whisper(INQAttack.graphic.get("name") + ": Using starship damage on a non-starship. Aborting. [Correct This](!damage type = i)");
+  } else if(INQAttack_old.targetType != "starship" && INQAttack_old.DamType.get("current").toUpperCase() == "S"){
+    whisper(INQAttack_old.graphic.get("name") + ": Using starship damage on a non-starship. Aborting. [Correct This](!damage type = i)");
     return false;
   }
   //no warning to hand out
   return true;
 }
-INQAttack = INQAttack || {};
-INQAttack.calcCrit = function(remainingWounds){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.calcCrit = function(remainingWounds){
   //Has the token taken critical damage?
   if(remainingWounds < 0){
     //strings to contain the details of which crit table to refer to
@@ -3465,19 +3465,19 @@ INQAttack.calcCrit = function(remainingWounds){
     var critType = "";
     //calculate the critical effect that should be applied
     var critEffect =  (-1) * remainingWounds;
-    switch(INQAttack.targetType){
+    switch(INQAttack_old.targetType){
       case "character":
         //Load up the Wounds and Unnatural Wounds attributes. Warn the gm if
         //they are not found.
         var WBonus = 1;
-        var Wounds = attributeValue("Wounds", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+        var Wounds = attributeValue("Wounds", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
         if(Wounds != undefined){
           //Calculate the Wounds Bonus of the Character
           Wounds = Number(Wounds);
           WBonus = Math.floor(Wounds/10);
         }
 
-        var UnnaturalWounds = attributeValue("Unnatural Wounds", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+        var UnnaturalWounds = attributeValue("Unnatural Wounds", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
         if(UnnaturalWounds != undefined){
           //Add in Unnatural Wounds to the Wounds Bonus
           UnnaturalWounds = Number(UnnaturalWounds);
@@ -3488,20 +3488,20 @@ INQAttack.calcCrit = function(remainingWounds){
         //Calculate the resulting Critical Effect
         critEffect = Math.ceil(critEffect/WBonus);
         //record the crit type
-        critType = INQAttack.DamType.get("current");
-        critLocation = getHitLocation(INQAttack.TensLoc.get("current"), INQAttack.OnesLoc.get("current"));
+        critType = INQAttack_old.DamType.get("current");
+        critLocation = getHitLocation(INQAttack_old.TensLoc.get("current"), INQAttack_old.OnesLoc.get("current"));
       break;
       case "vehicle":
         //Load up the Structural Integrity and Unnatural Structural Integrity
         //Attributes. Warn the gm if they are not found.
         var SIBonus = 1;
-        var StrucInt = attributeValue("Structural Integrity", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+        var StrucInt = attributeValue("Structural Integrity", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
         if(StrucInt != undefined){
           //Calculate the Structural Integrity Bonus of the Vehicle
           StrucInt = Number(StrucInt);
           SIBonus = Math.floor(StrucInt/10);
         }
-        var UnnaturalStrucInt = attributeValue("Unnatural Structural Integrity", {characterid: INQAttack.character.id, graphicid: INQAttack.graphic.id});
+        var UnnaturalStrucInt = attributeValue("Unnatural Structural Integrity", {characterid: INQAttack_old.character.id, graphicid: INQAttack_old.graphic.id});
         if(UnnaturalStrucInt != undefined){
           //Add in any Unnatural Structural Integrity to the Bonus
           UnnaturalStrucInt = Number(UnnaturalStrucInt);
@@ -3523,15 +3523,15 @@ INQAttack.calcCrit = function(remainingWounds){
       break;
     }
     //report the critical effect to the gm
-    whisper("**" + INQAttack.character.get("name") + "**: " + getCritLink(["", critType, critLocation], INQAttack.msg, {show: false}) + "(" + critEffect + ")");
+    whisper("**" + INQAttack_old.character.get("name") + "**: " + getCritLink(["", critType, critLocation], INQAttack_old.msg, {show: false}) + "(" + critEffect + ")");
   }
   //return any critical damage that remains on the character (or how much health
   //they have left before they start taking critical damage)
   return remainingWounds;
 }
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //record the details of the attack into the object
-INQAttack.getAttack = function(){
+INQAttack_old.getAttack = function(){
     //get the damage details obj
     var details = damDetails();
 
@@ -3539,33 +3539,87 @@ INQAttack.getAttack = function(){
     if(details == undefined){return;}
 
     //record the attack details for use elsewhere in the object
-    INQAttack.DamType = details.DamType;
-    INQAttack.Dam     = details.Dam;
-    INQAttack.Pen     = details.Pen;
-    INQAttack.Prim    = details.Prim;
-    INQAttack.Fell    = details.Fell;
-    INQAttack.Hits    = details.Hits;
-    INQAttack.OnesLoc = details.OnesLoc;
-    INQAttack.TensLoc = details.TensLoc;
+    INQAttack_old.DamType = details.DamType;
+    INQAttack_old.Dam     = details.Dam;
+    INQAttack_old.Pen     = details.Pen;
+    INQAttack_old.Prim    = details.Prim;
+    INQAttack_old.Fell    = details.Fell;
+    INQAttack_old.Hits    = details.Hits;
+    INQAttack_old.OnesLoc = details.OnesLoc;
+    INQAttack_old.TensLoc = details.TensLoc;
 
     //return that reading the details was successful
     return true;
 }
-INQAttack = INQAttack || {};
-INQAttack.hordeDamage = function(damage){
+INQAttack_old = INQAttack_old || {};
+INQAttack_old.hordeDamage = function(damage){
   //if the damage is non-zero, overwrite the damage with the number of Hits
   //(gm's can add bonus horde damage beforehand by modifying the number of
   //hits. This is will leave the damage unaffected on other tokens.)
   if(damage > 0){
     //at base it is the number of hits
-    damage = INQAttack.Hits.get("current");
+    damage = INQAttack_old.Hits.get("current");
     //explosive damage deals one extra point of horde damage
-    if(INQAttack.DamType.get("current").toUpperCase() == "X") damage++;
+    if(INQAttack_old.DamType.get("current").toUpperCase() == "X") damage++;
     //FUTURE WORK: add devastating damage to the magnitude damage
   }
 
   //return the magnitude damage
   return damage;
+}
+function INQAttack(inquse){
+  this.inquse = inquse;
+}
+INQAttack.prototype.damDiceRule = function(){
+  var output = '';
+  if(this.inquse.rerollDam){
+    output += 'r<';
+    output += this.inquse.rerollDam;
+  }
+
+  if(this.inquse.dropDice){
+    output += 'dl';
+    output += this.inquse.dropDice;
+  }
+
+  return output;
+}
+INQAttack.prototype.display = function(playerid, gm, extraLines){
+  extraLines = extraLines || [];
+  var inqweapon = this.inquse.inqweapon;
+  var output = '';
+  if(gm) output += '/w gm';
+  output += '&{template:default} {{name=<strong>Damage</strong>: ' + inqweapon.Name + '}} ';
+  output +=  '{{Damage= ' + inqweapon.Damage.toInline({
+    SB: this.inquse.SB,
+    PR: this.inquse.PR,
+    dicerule: this.damDiceRule()
+  }) + '}} ';
+  output += '{{Type=  ' + inqweapon.DamageType + '}} ';
+  output += '{{Pen=  '  + inqweapon.Penetration.toInline({
+    SB: this.inquse.SB,
+    PR: this.inquse.PR
+  }) + '}} ';
+  output += '{{HDam= '  + this.hordeDamage + '}} ';
+  output += '{{Notes= ' + inqweapon.Special + '}} ';
+  for(var line of extraLines){
+    output += '{{';
+    output += line.Name;
+    output += '=';
+    output += line.Content;
+    output += '}} ';
+  }
+
+  announce(output, {speakingAs: 'player|' + this.inquse.playerid});
+}
+INQAttack.prototype.prepareAttack = function(){
+  var special = new INQQtt(this.inquse);
+  special.beforeDamage();
+  if(this.inquse.inqweapon.Class == 'Melee') this.inquse.inqweapon.Damage.Modifier += this.inquse.SB;
+  this.hordeDamage = this.inquse.hits;
+  this.hordeDamage *= this.inquse.hordeDamageMultiplier;
+  this.hordeDamage += this.inquse.hordeDamage;
+  attributeValue('Hits', {setTo: this.hordeDamage});
 }
 //the prototype for characters
 function INQCharacter(character, graphic, callback){
@@ -4948,6 +5002,7 @@ INQQtt.prototype.autoStabilised = function(){
   }
 }
 INQQtt.prototype.beforeDamage = function(){
+  this.accurate();
   this.blast();
   this.claws();
   this.damage();
@@ -5590,7 +5645,8 @@ INQTest.characteristics = function(){
     {Name: 'Profit Factor', Alternates: ['PF'], PartyStat: true}
   ];
 }
-INQTest.prototype.display = function(playerid, name, gm){
+INQTest.prototype.display = function(playerid, name, gm, extraLines){
+  extraLines = extraLines || [];
   var output = '';
   var skillName = getLink(this.Skill);
   if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
@@ -5630,7 +5686,15 @@ INQTest.prototype.display = function(playerid, name, gm){
       output += modifier.Value + '), ';
     }
     output = output.replace(/,\s*$/, '');
-    output += '}}';
+    output += '}} ';
+  }
+
+  for(var line of extraLines){
+    output += '{{';
+    output += line.Name;
+    output += '=';
+    output += line.Content;
+    output += '}} ';
   }
 
   announce(output, {speakingAs: 'player|' + playerid});
@@ -6132,6 +6196,9 @@ INQUse.prototype.defaultProperties = function(){
   this.ammoMultiplier = 1;
   this.hitsMultiplier = 1;
   this.maxHitsMultiplier = 1;
+
+  this.SB = 0;
+  this.PR = 0;
 }
 INQUse.prototype.diceEvents = function(){
   var die = this.test.Die;
@@ -6293,6 +6360,22 @@ INQUse.prototype.roll = function(){
   });
 
   this.test.roll();
+  this.hits = 0;
+  if(this.test.Successes >= 0) {
+    this.hits++;
+    switch(this.mode){
+      case 'Semi':
+        this.hits += Math.floor(this.test.Successes / 2);
+      break;
+      case 'Full':
+        this.hits += this.test.Successes;
+      break;
+    }
+  }
+
+  this.hits *= this.hitsMultiplier;
+  this.maxHits += this.maxHitsMultiplier;
+  if(this.hits > this.maxHits) this.hits = this.maxHits;
 }
 //the prototype for characters
 function INQVehicle(vehicle, graphic, callback){

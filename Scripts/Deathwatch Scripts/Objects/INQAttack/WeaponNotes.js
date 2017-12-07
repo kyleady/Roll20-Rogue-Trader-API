@@ -1,8 +1,8 @@
-INQAttack = INQAttack || {};
+INQAttack_old = INQAttack_old || {};
 //make a list of all of the weapon special abilities
-INQAttack.weaponNotes = function(){
+INQAttack_old.weaponNotes = function(){
   var notes = "";
-  _.each(INQAttack.inqweapon.Special, function(rule){
+  _.each(INQAttack_old.inqweapon.Special, function(rule){
     notes += rule.toNote() + ", ";
   });
   //remove the last comma
