@@ -23,7 +23,7 @@ describe('attributeHandler()', function() {
 		});
 		player.MOCK20chat('!attr Strength ?', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
 	});
-	it('should allow any player to apply a modifier to an attribute query', function(){
+	it('should allow any player to apply a modifier to an attribute query', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -46,28 +46,15 @@ describe('attributeHandler()', function() {
 		var division_detected = false;
 
 		on('chat:message', function(msg){
-			if(msg.playerid == 'API' && msg.content.indexOf(table_addition) != -1){
-				on({MOCK20remove: true}, this);
-				addition_detected = true;
-			}
-		});
-		on('chat:message', function(msg){
-			if(msg.playerid == 'API' && msg.content.indexOf(table_subtraction) != -1){
-				on({MOCK20remove: true}, this);
-				subtraction_detected = true;
-			}
-		});
-		on('chat:message', function(msg){
-			if(msg.playerid == 'API' && msg.content.indexOf(table_multiplication) != -1){
-				on({MOCK20remove: true}, this);
-				multiplication_detected = true;
-			}
-		});
-		on('chat:message', function(msg){
-			if(msg.playerid == 'API' && msg.content.indexOf(table_division) != -1){
-				on({MOCK20remove: true}, this);
-				division_detected = true;
-			}
+			if(msg.playerid != 'API') return;
+			if(msg.content.indexOf(table_addition) != -1) addition_detected = true;
+			if(msg.content.indexOf(table_subtraction) != -1) subtraction_detected = true;
+			if(msg.content.indexOf(table_multiplication) != -1) multiplication_detected = true;
+			if(msg.content.indexOf(table_division) != -1) division_detected = true;
+			if(addition_detected
+			&& subtraction_detected
+			&& multiplication_detected
+			&& division_detected) done();
 		});
 
 		expect(addition_detected).to.equal(false);
@@ -76,13 +63,9 @@ describe('attributeHandler()', function() {
 		expect(division_detected).to.equal(false);
 
 		player.MOCK20chat('!attr Intelligence ?+ 10', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
-		expect(addition_detected).to.equal(true);
 		player.MOCK20chat('!attr Intelligence ?- 8', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
-		expect(subtraction_detected).to.equal(true);
 		player.MOCK20chat('!attr Intelligence ?* 3', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
-		expect(multiplication_detected).to.equal(true);
 		player.MOCK20chat('!attr Intelligence ?/ 2', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
-		expect(division_detected).to.equal(true);
 	});
 	it('should allow any player to set an attribute of a selected character\'s attribute', function(){
 		Campaign().MOCK20reset();

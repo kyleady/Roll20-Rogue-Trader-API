@@ -2,9 +2,10 @@ INQUse.prototype.defaultProperties = function(){
   this.braced = false;
   this.range = '';
   if(!this.options.FocusStrength) this.options.FocusStrength = '';
+  if(!this.options.modifiers) this.options.modifiers = '';
 
-  this.jamsAt = 96;
-  this.jamResult = 'Jam';
+  this.jamsAt = 101;
+  this.jamResult = '?';
 
   this.PsyPheDrop = 0;
   this.PsyPheModifier = 0;

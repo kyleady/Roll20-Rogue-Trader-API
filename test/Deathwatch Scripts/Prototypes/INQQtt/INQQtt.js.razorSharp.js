@@ -14,10 +14,10 @@ describe('INQQtt.prototype.razorSharp()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Melee; D10+2 I; Pen 3; Razor Sharp)'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 200};
+      inquse.inqtest = {Successes: 200};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(2);
-      inquse.test = {Successes: 2};
+      inquse.inqtest = {Successes: 2};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(4);
       done();
@@ -34,10 +34,10 @@ describe('INQQtt.prototype.razorSharp()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Melee; D10+2 I; Pen 3; Razor Sharp)'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 1};
+      inquse.inqtest = {Successes: 1};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(1);
-      inquse.test = {Successes: 0};
+      inquse.inqtest = {Successes: 0};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(1);
       done();
@@ -54,10 +54,10 @@ describe('INQQtt.prototype.razorSharp()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Melee; D10+2 I; Pen 3)'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 200};
+      inquse.inqtest = {Successes: 200};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(1);
-      inquse.test = {Successes: 2};
+      inquse.inqtest = {Successes: 2};
       inqqtt.razorSharp();
 			expect(inquse.inqweapon.Penetration.Multiplier).to.equal(1);
       done();

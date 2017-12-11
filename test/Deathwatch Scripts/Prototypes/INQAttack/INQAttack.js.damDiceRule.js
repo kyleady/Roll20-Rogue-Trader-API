@@ -20,7 +20,7 @@ describe('INQAttack.prototype.damDiceRule()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqcharacter = new INQCharacter();
       inquse.defaultProperties();
-      inquse.test = {Successes: 3};
+      inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
       expect(inqattack.damDiceRule()).to.equal('r<3dl1');
@@ -45,7 +45,7 @@ describe('INQAttack.prototype.damDiceRule()', function() {
       inquse.inqcharacter = new INQCharacter();
       inquse.inqcharacter.List.Talents.push('Flesh Render');
       inquse.defaultProperties();
-      inquse.test = {Successes: 3};
+      inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
       expect(inqattack.damDiceRule()).to.equal('');

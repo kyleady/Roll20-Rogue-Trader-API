@@ -25,6 +25,6 @@ describe('INQFormula.prototype.toInline()', function() {
     var inqformula = new INQFormula();
     inqformula.parse('D10 + SB');
     var inline = inqformula.toInline();
-    expect(inline).to.equal('[[1 * (1D10 + 0)]]');
+    expect(inline).to.equal('[[1D10 + 0]]');
   });
 });

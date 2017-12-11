@@ -4,10 +4,12 @@ INQQtt.prototype.marksman = function(){
   var modifiers = this.inquse.modifiers;
   var range = this.inquse.range;
   if(inqcharacter.has('Marksman', 'Talents')){
-    if(range == 'Long') {
+    if(/^Long/i.test(range)) {
       modifiers.push({Name: 'Marksman', Value: 10});
-    } else if(range == 'Extended') {
+    } else if(/^Extended/i.test(range)) {
       modifiers.push({Name: 'Marksman', Value: 20});
+    } else if(/^Extreme/i.test(range)) {
+      modifiers.push({Name: 'Marksman', Value: 30});
     }
   }
 }

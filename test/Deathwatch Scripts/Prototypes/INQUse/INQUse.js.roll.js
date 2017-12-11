@@ -23,10 +23,10 @@ describe('INQUse.prototype.roll()', function() {
       ];
 
       inquse.roll();
-      expect(inquse.test).to.be.an.instanceof(INQTest);
-      expect(inquse.test.Die).to.be.within(1,100);
-      expect(inquse.test.Characteristic).to.equal('WS');
-      expect(inquse.test.Modifiers).to.deep.equal([
+      expect(inquse.inqtest).to.be.an.instanceof(INQTest);
+      expect(inquse.inqtest.Die).to.be.within(1,100);
+      expect(inquse.inqtest.Characteristic).to.equal('WS');
+      expect(inquse.inqtest.Modifiers).to.deep.equal([
         {Name: '<em>Modifier</em>', Value: 10},
         {Name: 'Something', Value: -10}
       ]);
@@ -53,7 +53,7 @@ describe('INQUse.prototype.roll()', function() {
       ];
 
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('WS');
+      expect(inquse.inqtest.Characteristic).to.equal('WS');
       done();
     });
   });
@@ -77,16 +77,16 @@ describe('INQUse.prototype.roll()', function() {
       ];
 
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('BS');
+      expect(inquse.inqtest.Characteristic).to.equal('BS');
       inquse.inqweapon.Class = 'Pistol';
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('BS');
+      expect(inquse.inqtest.Characteristic).to.equal('BS');
       inquse.inqweapon.Class = 'Basic';
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('BS');
+      expect(inquse.inqtest.Characteristic).to.equal('BS');
       inquse.inqweapon.Class = 'Heavy';
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('BS');
+      expect(inquse.inqtest.Characteristic).to.equal('BS');
       done();
     });
   });
@@ -111,8 +111,8 @@ describe('INQUse.prototype.roll()', function() {
 
       inquse.inqweapon.FocusTest = 'Psyniscience';
       inquse.roll();
-      expect(inquse.test.Characteristic).to.equal('Per');
-      expect(inquse.test.Skill).to.equal('Psyniscience');
+      expect(inquse.inqtest.Characteristic).to.equal('Per');
+      expect(inquse.inqtest.Skill).to.equal('Psyniscience');
       done();
     });
   });
@@ -125,16 +125,42 @@ describe('INQUse.prototype.roll()', function() {
 
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var options = {
-      custom: 'My Weapon(Melee; D10+2; Pen 3)'
+      custom: 'My Weapon(Melee; D10+2; Pen 3; Storm)'
     };
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqcharacter = new INQCharacter();
 			inquse.inqcharacter.Attributes.WS = 100;
 			inquse.defaultProperties();
 			inquse.maxHits = 7;
+			inquse.hitsMultiplier = 2;
+			inquse.maxHitsMultiplier = 2;
 			inquse.mode = 'Full';
       inquse.roll();
-      expect(inquse.hits).to.be.within(1,7);
+      expect(inquse.hits).to.be.within(2,14);
+      done();
+    });
+  });
+	it('should leave maxHits unmodified', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {
+      custom: 'My Weapon(Melee; D10+2; Pen 3; Storm)'
+    };
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+      inquse.inqcharacter = new INQCharacter();
+			inquse.inqcharacter.Attributes.WS = 100;
+			inquse.defaultProperties();
+			inquse.maxHits = 7;
+			inquse.hitsMultiplier = 2;
+			inquse.maxHitsMultiplier = 2;
+			inquse.mode = 'Full';
+      inquse.roll();
+      expect(inquse.maxHits).to.equal(7);
       done();
     });
   });

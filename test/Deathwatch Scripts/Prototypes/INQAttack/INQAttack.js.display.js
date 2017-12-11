@@ -35,7 +35,7 @@ describe('INQAttack.prototype.display()', function() {
 			inquse.hordeDamageMultiplier = 1;
 			inquse.hordeDamage = 0;
 
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.display();
     });
@@ -76,7 +76,7 @@ describe('INQAttack.prototype.display()', function() {
 			inquse.hordeDamageMultiplier = 1;
 			inquse.hordeDamage = 0;
 
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.display();
     });

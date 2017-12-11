@@ -61,7 +61,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.hitsMultiplier = 1;
 			inquse.maxHitsMultiplier = 1;
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
 			expect(inquse.jamsAt).to.equal(100);
@@ -153,7 +153,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.hitsMultiplier = 1;
 			inquse.maxHitsMultiplier = 1;
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
 			expect(inquse.jamsAt).to.equal(91);
@@ -236,7 +236,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.hitsMultiplier = 1;
 			inquse.maxHitsMultiplier = 1;
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
 			expect(inquse.jamsAt).to.equal(91);

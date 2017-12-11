@@ -48,7 +48,7 @@ function addPilot(matches, msg){
     });
 
     //alert the gm of the success
-    whisper('The pilot, ' + pilotResults[0].get('name') + ', was added to ' + vehicle.get('name') + '.');
+    whisper('The pilot, ' + pilot.get('name') + ', was added to ' + vehicle.get('name') + '.');
   });
 }
 

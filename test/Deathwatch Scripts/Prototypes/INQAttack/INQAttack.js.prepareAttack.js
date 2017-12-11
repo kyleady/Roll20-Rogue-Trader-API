@@ -69,7 +69,7 @@ describe('INQAttack.prototype.prepareAttack()', function() {
 			inquse.maxHitsMultiplier = 1;
 
 			inquse.parseModifiers();
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
       expect(inquse.hordeDamageMultiplier).to.equal(10);
@@ -108,7 +108,7 @@ describe('INQAttack.prototype.prepareAttack()', function() {
 			inquse.hordeDamageMultiplier = 1;
 			inquse.hordeDamage = 0;
 
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
       expect(inquse.inqweapon.Damage.Modifier).to.equal(26);
@@ -135,11 +135,62 @@ describe('INQAttack.prototype.prepareAttack()', function() {
 			inquse.hordeDamage = 4;
 			inquse.hits = 3;
 
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
       expect(inquse.inqweapon.Damage.Modifier).to.equal(20);
 			expect(inqattack.hordeDamage).to.equal(10);
+      done();
+    });
+  });
+	it('should save the horde damage as Hits', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var handout = createObj('handout', {name: 'Attack Variables'});
+    var hits = createObj('attribute', {name: 'Hits', current: 0, max: 0});
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {custom: 'My Weapon(Pistol; 100m; 10D10+20 R; Pen 3)'};
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+      inquse.inqcharacter = new INQCharacter();
+			inquse.defaultProperties();
+			inquse.SB = 6;
+
+			inquse.hordeDamageMultiplier = 2;
+			inquse.hordeDamage = 4;
+			inquse.hits = 3;
+
+			inquse.inqtest = {Successes: 3};
+      var inqattack = new INQAttack(inquse);
+      inqattack.prepareAttack();
+			expect(hits.get('current')).to.equal(10);
+			expect(hits.get('max')).to.equal(10);
+      done();
+    });
+  });
+	it('should not calculate the horde damage if the hits have not been calculated', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var handout = createObj('handout', {name: 'Attack Variables'});
+    var hits = createObj('attribute', {name: 'Hits', current: 0, max: 0});
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {custom: 'My Weapon(Pistol; 100m; 10D10+20 R; Pen 3)'};
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+      inquse.inqcharacter = new INQCharacter();
+			inquse.defaultProperties();
+			inquse.SB = 6;
+
+			var inqattack = new INQAttack(inquse);
+      inqattack.prepareAttack();
+      expect(inquse.inqweapon.Damage.Modifier).to.equal(20);
+			expect(inqattack.hordeDamage).to.be.undefined;
       done();
     });
   });

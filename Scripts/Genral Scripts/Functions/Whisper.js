@@ -35,11 +35,11 @@ function whisper(content, options){
   } else if(options.speakingTo) {
     if(getObj('player', options.speakingTo)){
       if(options.gmEcho && !playerIsGM(options.speakingTo)) whisper(content, new_options);
-      return sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options );
+      setTimeout(function(){sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options)}, options.delay);
     } else {
       return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
   } else {
-    return sendChat(speakingAs, '/w gm ' + content, options.callback, options);
+    setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
   }
 }

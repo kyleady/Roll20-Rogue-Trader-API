@@ -5,10 +5,10 @@ INQQtt.prototype.gyroStabilised = function(){
   var modifiers = this.inquse.modifiers;
   var braced = this.inquse.braced;
   if(inqweapon.has(/Gyro(-|\s*)Stabilised/i)){
-    if(range == 'Extended'
+    if(/^Extended/i.test(range)
     && (!inqcharacter || !inqcharacter.has('Marksman', 'Talents'))){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
-    } else if(range == 'Extreme'){
+    } else if(/^Extreme/i.test(range)){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 20});
     }
 

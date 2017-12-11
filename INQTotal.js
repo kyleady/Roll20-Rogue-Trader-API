@@ -1352,71 +1352,52 @@ on("ready",function(){
   });
 });
 function useWeapon (matches, msg) {
-  //clean out any of the previous details
-  INQAttack_old.clean();
-  //get the options
-  INQAttack_old.options = carefulParse(matches[2]) || {};
-  //save the weapon name
-  INQAttack_old.weaponname = matches[1];
-  //save the message for use elsewhere
-  INQAttack_old.msg = msg;
-  //if nothing was selected and the player is the gm, auto hit with no roll
-  if(INQAttack_old.msg.selected == undefined || INQAttack_old.msg.selected == []){
-    if(playerIsGM(INQAttack_old.msg.playerid)){
-      INQAttack_old.msg.selected = [{_type: "unique"}];
+  var name = matches[1];
+  var originalOptions = matches[2];
+  var options = carefulParse(originalOptions) || {};
+  if(!msg.selected || !msg.selected.length){
+    if(playerIsGM(msg.playerid)){
+      msg.selected = [{_type: 'unique'}];
     }
   }
-  //repeat for each character selected
-  eachCharacter(INQAttack_old.msg, function(character, graphic){
-    //allow the loop to skip over future iterations if something went wrong
-    if(INQAttack_old.break){return;}
-    //reset the report
-    INQAttack_old.Reports = {};
-    //prepare attack variables for each character's attack
-    INQAttack_old.prepareVariables();
-    //detail the character (or make a dummy character)
-    var characterPromise = new Promise(function(resolve){
-      INQAttack_old.detailTheCharacter(character, graphic, function(){
-        resolve();
-      });
-    });
-    var weaponPromise = new Promise(function(resolve){
-      INQAttack_old.detailTheWeapon(function(valid){
-        resolve(valid);
-      });
-    });
-    Promise.all([characterPromise, weaponPromise]).catch(function(e){log(e)});
-    Promise.all([characterPromise, weaponPromise]).then(function(valid){
-      if(valid.includes(false)) return;
-      if(character != undefined){
-        //roll to hit
-        INQAttack_old.rollToHit();
-        //use up the ammo for the attack
-        //cancel this attack if there isn't enough ammo
-        if(!INQAttack_old.expendAmmunition()){return;}
+
+  eachCharacter(msg, function(character, graphic){
+    new INQUse(name, options, character, graphic, msg.playerid, function(inquse){
+      if(!inquse) return;
+      inquse.calcModifiers();
+      if(inquse.autoFail) return;
+      if(!inquse.autoHit) inquse.roll();
+      if(character) {
+        inquse.inqclip = new INQClip(inquse.inqweapon, character.id, {
+          freeShot: inquse.freeShot,
+          inqammo: inquse.inqammo,
+          shots: inquse.maxHits,
+          ammoMultilpier: inquse.ammoMultilpier,
+          playerid: msg.playerid
+        });
+
+        if(!inquse.inqclip.spend()) return;
       }
 
-      //check if the weapon jammed
-      INQAttack_old.checkJammed();
-      //only show the damage if the attack hit
-      if(INQAttack_old.hits == 0){
-        //offer reroll
-        INQAttack_old.offerReroll();
+      if(inquse.autoHit || inquse.inqtest.Successes >= 0) {
+        if(!inquse.inqweapon.Damage.onlyZero()) {
+          inquse.inqattack = new INQAttack(inquse);
+          inquse.inqattack.prepareAttack();
+        }
       } else {
-        //roll damage
-        INQAttack_old.rollDamage();
+        inquse.offerReroll(originalOptions);
       }
-      //report the results
-      INQAttack_old.deliverReport();
+
+      inquse.display();
     });
   });
 }
 
-on("ready", function(){
-  var regex = "^!\\s*use\\s*weapon";
-  regex += "\\s+(\\S[^\\{\\}]*)"
-  regex += "(\\{.*\\})$"
-  var re = RegExp(regex, "i");
+on('ready', function(){
+  var regex = '^!\\s*use\\s*weapon';
+  regex += '\\s+(\\S[^\\{\\}]*)'
+  regex += '(\\{.*\\})$'
+  var re = RegExp(regex, 'i');
   CentralInput.addCMD(re, useWeapon, true);
 });
 //allows the GM to add the details and attributes of a character to a vehicle,
@@ -1469,7 +1450,7 @@ function addPilot(matches, msg){
     });
 
     //alert the gm of the success
-    whisper('The pilot, ' + pilotResults[0].get('name') + ', was added to ' + vehicle.get('name') + '.');
+    whisper('The pilot, ' + pilot.get('name') + ', was added to ' + vehicle.get('name') + '.');
   });
 }
 
@@ -1759,11 +1740,8 @@ on("chat:message", function(msg) {
     //I don't know why I need to do this BUT for some reason when the message is sent by the API
     //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
     //"with a(n) " is the generic method I have the api using. Player sent commands are expected to be more intelligent
-    if(msg.inlinerolls[0] == undefined){
-      var rollIndex = 1;
-    } else {
-      var rollIndex = 0;
-    }
+    var rollIndex = 0;
+    while(!msg.inlinerolls[rollIndex]) rollIndex++;
 
     //record Damage Type
     var DamageType;
@@ -1783,9 +1761,12 @@ on("chat:message", function(msg) {
 
     //record the highest damage roll
     var lowest = 10
-    for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
-      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
-        lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
+    for(var roll of msg.inlinerolls[rollIndex].results.rolls) {
+      if(!roll.results) continue;
+      for(var result of roll.results){
+        if(!result.d && result.v < lowest){
+          lowest = result.v;
+        }
       }
     }
 
@@ -1793,23 +1774,14 @@ on("chat:message", function(msg) {
     PenObj.set('current', msg.inlinerolls[rollIndex + 1].results.total);
 
     //record Felling
-    var fellingIndex = msg.content.indexOf("Felling");
-    //is there any Felling inside the weapon?
-    if(fellingIndex >= 0){
-      //find the parenthesis after Felling
-      var startIndex = msg.content.indexOf("(",fellingIndex);
-      var endIndex = msg.content.indexOf(")",startIndex);
-      //be sure the parenthesis were both found
-      if (startIndex >= 0 && endIndex >= 0 && Number(msg.content.substring(startIndex+1,endIndex))){
-        //record the amount of felling
-        FellObj.set('current',Number(msg.content.substring(startIndex+1,endIndex)));
-      } else {
-        //record zero felling
-        FellObj.set('current', 0);
-      }
-    } else {
-      //record zero felling
-      FellObj.set('current', 0);
+    var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
+    if(notesMatches) {
+      var notes = notesMatches[1];
+      notes = notes.replace('(', '[').replace(')', ']');
+      var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
+      var felling = inqweapon.has('Felling');
+      var inqqtt = new INQQtt({PR: 0, SB: 0});
+      FellObj.set('current', inqqtt.getTotal(felling));
     }
 
     //record Primitive
@@ -2328,32 +2300,32 @@ function saveHitLocation(roll, options){
   //calculate Ones Location
   var ones = roll - 10 * tens;
   //load up the TensLocation variable to save the result in
-  var attribObj = findObjs({ _type: 'attribute', name: "TensLocation" })[0];
-  attribObj.set("current",tens);
+  var attribObj = findObjs({ _type: 'attribute', name: 'TensLocation' })[0];
+  attribObj.set('current',tens);
   //load up the OnesLocation variable to save the result in
-  var attribObj = findObjs({ _type: 'attribute', name: "OnesLocation" })[0];
-  attribObj.set("current",ones);
+  var attribObj = findObjs({ _type: 'attribute', name: 'OnesLocation' })[0];
+  attribObj.set('current',ones);
   //where did you hit?
-  var Location = "";
+  var Location = '';
   switch(ones){
-    case 10: case 0: Location = "Head"; break;
+    case 10: case 0: Location = 'Head'; break;
     case 9: case 8:
       switch(tens % 2){
-        case 0: Location = "Right "; break;
-        case 1: Location = "Left "; break;
-      } Location += "Arm"; break;
-    case 4: case 5: case 6: case 7: Location = "Body"; break;
+        case 0: Location = 'Right '; break;
+        case 1: Location = 'Left '; break;
+      } Location += 'Arm'; break;
+    case 4: case 5: case 6: case 7: Location = 'Body'; break;
     case 3: case 2: case 1:
       switch(tens % 2){
-        case 0: Location = "Right "; break;
-        case 1: Location = "Left "; break;
-      } Location += "Leg"; break;
+        case 0: Location = 'Right '; break;
+        case 1: Location = 'Left '; break;
+      } Location += 'Leg'; break;
   }
   //send the total Damage at a 1 second delay
   if (options.whisper) {
-    setTimeout(function(location){whisper(location, {speakingAs: 'Location'})}, 100, Location);
+    whisper(Location, {speakingAs: 'Location', delay: 100});
   } else {
-    setTimeout(function(location){announce(location, {speakingAs: 'Location'})}, 100, Location);
+    announce(Location, {speakingAs: 'Location', delay: 100});
   }
 }
 INQAttack_old = INQAttack_old || {};
@@ -3584,24 +3556,25 @@ INQAttack.prototype.damDiceRule = function(){
 
   return output;
 }
-INQAttack.prototype.display = function(playerid, gm, extraLines){
+INQAttack.prototype.display = function(extraLines){
   extraLines = extraLines || [];
   var inqweapon = this.inquse.inqweapon;
   var output = '';
-  if(gm) output += '/w gm';
+  if(this.inquse.gm) output += '/w gm ';
   output += '&{template:default} {{name=<strong>Damage</strong>: ' + inqweapon.Name + '}} ';
-  output +=  '{{Damage= ' + inqweapon.Damage.toInline({
+  output +=  '{{Damage=' + inqweapon.Damage.toInline({
     SB: this.inquse.SB,
     PR: this.inquse.PR,
     dicerule: this.damDiceRule()
   }) + '}} ';
-  output += '{{Type=  ' + inqweapon.DamageType + '}} ';
-  output += '{{Pen=  '  + inqweapon.Penetration.toInline({
+  output += '{{Type=' + inqweapon.DamageType + '}} ';
+  output += '{{Pen='  + inqweapon.Penetration.toInline({
     SB: this.inquse.SB,
     PR: this.inquse.PR
   }) + '}} ';
-  output += '{{HDam= '  + this.hordeDamage + '}} ';
-  output += '{{Notes= ' + inqweapon.Special + '}} ';
+  if(this.hordeDamage) output += '{{HDam=[['  + this.hordeDamage + ']]}} ';
+  var notes = inqweapon.Special.map(rule => ' ' + rule);
+  output += '{{Notes=' + notes + '}} ';
   for(var line of extraLines){
     output += '{{';
     output += line.Name;
@@ -3616,10 +3589,13 @@ INQAttack.prototype.prepareAttack = function(){
   var special = new INQQtt(this.inquse);
   special.beforeDamage();
   if(this.inquse.inqweapon.Class == 'Melee') this.inquse.inqweapon.Damage.Modifier += this.inquse.SB;
-  this.hordeDamage = this.inquse.hits;
-  this.hordeDamage *= this.inquse.hordeDamageMultiplier;
-  this.hordeDamage += this.inquse.hordeDamage;
-  attributeValue('Hits', {setTo: this.hordeDamage});
+  if(this.inquse.hits) {
+    this.hordeDamage = this.inquse.hits;
+    this.hordeDamage *= this.inquse.hordeDamageMultiplier;
+    this.hordeDamage += this.inquse.hordeDamage;
+    attributeValue('Hits', {setTo: this.hordeDamage});
+    attributeValue('Hits', {setTo: this.hordeDamage, max: true});
+  }
 }
 //the prototype for characters
 function INQCharacter(character, graphic, callback){
@@ -4150,6 +4126,15 @@ function INQClip(inqweapon, characterid, options){
   this.options = options;
   this.getName();
 }
+INQClip.prototype.display = function(){
+  if(!this.clipObj) return '';
+  var output = '';
+  output += '<strong>Clip</strong>: ';
+  output += this.clipObj.get('current');
+  output += '/';
+  output += this.clipObj.get('max');
+  return output;
+}
 INQClip.prototype.getClipObj = function(makeObj){
   if(makeObj == undefined) makeObj = true;
   var attributes = findObjs({
@@ -4198,7 +4183,9 @@ INQClip.prototype.spend = function(){
     var warning = 'Not enough ammo to fire ';
     warning += this.inqweapon.toLink();
     if(this.options.inqammo) warning += ' using ' + this.options.inqammo.toLink();
-    warning += '.';
+    warning += '. ';
+    warning += '(' + this.clipObj.get('current');
+    warning += '/' + this.clipObj.get('max') + ')';
     whisper(warning, {speakingTo: this.options.playerid, gmEcho: true});
     return false;
   }
@@ -4345,22 +4332,31 @@ INQFormula.prototype.toInline = function(options){
   options.dicerule = options.dicerule || '';
   var adjusted = this.adjustForSBPR(options);
   var formula = '[[';
-  formula += adjusted.multiplier;
-  formula += ' * (';
+  if(adjusted.multiplier != 1) {
+    formula += adjusted.multiplier;
+    formula += ' * (';
+  }
+
   if(adjusted.dicenumber < 0) {
     formula += adjusted.modifier;
   }
+
   if(adjusted.dicenumber) {
     formula += adjusted.dicenumber;
     formula += 'D';
     formula += this.DiceType;
     formula += options.dicerule;
   }
+
   if(adjusted.dicenumber >= 0){
-    if(adjusted.modifier >= 0) formula += ' + ';
+    if(adjusted.modifier >= 0 && adjusted.dicenumber != 0) formula += ' + ';
     formula += adjusted.modifier;
   }
-  formula += ')';
+
+  if(adjusted.multiplier != 1) {
+    formula += ')';
+  }
+
   formula += ']]';
   return formula;
 }
@@ -4976,7 +4972,7 @@ INQQtt.prototype.accurate = function(){
   var inqweapon = this.inquse.inqweapon;
   var modifiers = this.inquse.modifiers;
   var successes;
-  if(this.inquse.test) successes = this.inquse.test.Successes;
+  if(this.inquse.inqtest) successes = this.inquse.inqtest.Successes;
   if(mode == 'Single' && inqweapon.has('Accurate')){
     var aimmed = false;
     for(var modifier of modifiers){
@@ -5002,23 +4998,26 @@ INQQtt.prototype.autoStabilised = function(){
   }
 }
 INQQtt.prototype.beforeDamage = function(){
-  this.accurate();
   this.blast();
-  this.claws();
   this.damage();
   this.damageType();
   this.devastating();
   this.hordeDmg();
-  this.lance();
   this.melta();
   this.penetration();
   this.powerField();
   this.proven();
-  this.razorSharp();
   this.scatter();
   this.tearingFleshRender();
 
-  if(this.inquse.inqcharacter){
+  if(this.inquse.inqtest) {
+    this.accurate();
+    this.claws();
+    this.lance();
+    this.razorSharp();
+  }
+
+  if(this.inquse.inqcharacter) {
     this.crushingBlow();
     this.fist();
     this.force();
@@ -5079,7 +5078,7 @@ INQQtt.prototype.bulgingBiceps = function(){
 }
 INQQtt.prototype.claws = function(){
   var inqweapon = this.inquse.inqweapon;
-  var successes = this.inquse.test.Successes;
+  var successes = this.inquse.inqtest.Successes;
   if(successes <= 0) return;
   var claws = inqweapon.has('Claws');
   if(claws){
@@ -5182,10 +5181,10 @@ INQQtt.prototype.gyroStabilised = function(){
   var modifiers = this.inquse.modifiers;
   var braced = this.inquse.braced;
   if(inqweapon.has(/Gyro(-|\s*)Stabilised/i)){
-    if(range == 'Extended'
+    if(/^Extended/i.test(range)
     && (!inqcharacter || !inqcharacter.has('Marksman', 'Talents'))){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
-    } else if(range == 'Extreme'){
+    } else if(/^Extreme/i.test(range)){
       modifiers.push({Name: 'Gyro-Stabilised', Value: 20});
     }
 
@@ -5222,7 +5221,7 @@ INQQtt.prototype.indirect = function(){
 }
 INQQtt.prototype.lance = function(){
   var inqweapon = this.inquse.inqweapon;
-  var successes = this.inquse.test.Successes;
+  var successes = this.inquse.inqtest.Successes;
   if(successes <= 0) return;
   if(inqweapon.has('Lance')){
     inqweapon.Penetration.Multiplier *= 1 + successes;
@@ -5244,10 +5243,12 @@ INQQtt.prototype.marksman = function(){
   var modifiers = this.inquse.modifiers;
   var range = this.inquse.range;
   if(inqcharacter.has('Marksman', 'Talents')){
-    if(range == 'Long') {
+    if(/^Long/i.test(range)) {
       modifiers.push({Name: 'Marksman', Value: 10});
-    } else if(range == 'Extended') {
+    } else if(/^Extended/i.test(range)) {
       modifiers.push({Name: 'Marksman', Value: 20});
+    } else if(/^Extreme/i.test(range)) {
+      modifiers.push({Name: 'Marksman', Value: 30});
     }
   }
 }
@@ -5275,7 +5276,7 @@ INQQtt.prototype.maximal = function(){
 INQQtt.prototype.melta = function(){
   var inqweapon = this.inquse.inqweapon;
   var range = this.inquse.range;
-  if(inqweapon.has('Melta') && /(Point Blank|Short)/i.test(range)){
+  if(inqweapon.has('Melta') && /^(Point Blank|Short)/i.test(range)){
     inqweapon.Penetration.Multiplier *= 2;
   }
 }
@@ -5354,7 +5355,7 @@ INQQtt.prototype.proven = function(){
 }
 INQQtt.prototype.razorSharp = function(){
   var inqweapon = this.inquse.inqweapon;
-  var successes = this.inquse.test.Successes;
+  var successes = this.inquse.inqtest.Successes;
   if(inqweapon.has('Razor Sharp') && successes >= 2){
     inqweapon.Penetration.Multiplier *= 2;
   }
@@ -5365,13 +5366,13 @@ INQQtt.prototype.reliable = function(){
     this.inquse.jamsAt = 100;
   }
 }
-INQQtt.prototype.scatter = function(){
+INQQtt.prototype.scatter = function() {
   var inqweapon = this.inquse.inqweapon;
   var range = this.inquse.range;
   if(inqweapon.has('Scatter')){
-    if(range == 'Point Blank'){
+    if(/^Point Blank/i.test(range)){
       this.inquse.hitsMultiplier *= 2;
-    } else if(/(Long|Extended|Extreme|Impossible)/.test(range)){
+    } else if(/^(Long|Extended|Extreme|Impossible)/.test(range)){
       inqweapon.set({Special: 'Primitive'});
     }
   }
@@ -6012,6 +6013,13 @@ function INQUse(weaponname, options, character, graphic, playerid, callback){
     callback(inquse);
   });
 }
+INQUse.prototype.applyOptions = function() {
+  if(this.options.freeShot != undefined) this.freeShot = this.options.freeShot;
+  if(this.options.autoHit != undefined) this.autoHit = this.options.autoHit;
+  if(this.options.braced != undefined) this.braced = this.options.braced;
+  if(this.options.jamsAt != undefined) this.jamsAt = this.options.jamsAt;
+  if(this.options.gm != undefined) this.gm = this.options.gm;
+}
 INQUse.prototype.applySpecialAmmo = function(){
   if(!this.inqammo || !this.inqweapon) return;
   this.inqweapon.Special = this.inqweapon.Special.concat(this.inqammo.Special);
@@ -6041,6 +6049,7 @@ INQUse.prototype.calcEffectivePsyRating = function(){
 INQUse.prototype.calcModifiers = function(){
   this.defaultProperties();
   var special = new INQQtt(this);
+  if(!this.inqcharacter) this.autoHit = true;
   this.parseModifiers();
   this.modifiers.push({
     Name: 'Focus Modifier',
@@ -6057,7 +6066,19 @@ INQUse.prototype.calcModifiers = function(){
   this.calcRange();
   this.calcStatus();
   this.calcRoF();
+  if(this.inqweapon.isRanged()) {
+    this.jamsAt = 96;
+    this.jamResult = 'Jam';
+    if(this.mode == 'Semi' || this.mode == 'Full') this.jamsAt = 94;
+  } else if(this.inqweapon.Class == 'Psychic'){
+    this.jamsAt = 91;
+    this.jamResult = 'Fail';
+  }
+
   special.beforeRoll();
+  this.gm = playerIsGM(this.playerid);
+  if(this.inqcharacter) this.gm = this.inqcharacter.controlledby == '';
+  this.applyOptions();
   if(this.inqweapon.Class == 'Heavy' && !this.braced){
     this.modifiers.push({Name: 'Unbraced', Value: -30});
   }
@@ -6074,6 +6095,7 @@ INQUse.prototype.calcRange = function(){
       this.range = 'Melee';
     } else {
       whisper('Out of melee range.', {speakingTo: this.playerid, gmEcho: true});
+      this.range = 'Impossible';
       this.autoFail = true;
     }
   } else if (distance <= 2) {
@@ -6095,8 +6117,11 @@ INQUse.prototype.calcRange = function(){
     this.range = 'Extreme';
   } else {
     whisper('Out of range: ' + distance  + 'm/' + range + 'm', {speakingTo: this.playerid, gmEcho: true});
+    this.range = 'Impossible';
     this.autoFail = true;
   }
+
+  this.range += '(' + distance + '/' + range + ')';
 }
 INQUse.prototype.calcRoF = function(){
   if(!this.options.RoF){
@@ -6183,9 +6208,10 @@ INQUse.prototype.defaultProperties = function(){
   this.braced = false;
   this.range = '';
   if(!this.options.FocusStrength) this.options.FocusStrength = '';
+  if(!this.options.modifiers) this.options.modifiers = '';
 
-  this.jamsAt = 96;
-  this.jamResult = 'Jam';
+  this.jamsAt = 101;
+  this.jamResult = '?';
 
   this.PsyPheDrop = 0;
   this.PsyPheModifier = 0;
@@ -6201,37 +6227,95 @@ INQUse.prototype.defaultProperties = function(){
   this.PR = 0;
 }
 INQUse.prototype.diceEvents = function(){
-  var die = this.test.Die;
+  var die = this.inqtest.Die;
   var tens = Math.floor(die / 10);
   var ones = die - tens * 10;
-  if(this.options.FocusStrength){
-    this.jamsAt = 91;
-    this.jamResult = 'Fail';
-    switch(this.options.FocusStrength){
-      case 'Unfettered':
-        if(ones == 9) this.PsyPhe = true;
-      break;
-      case 'Push': case 'True':
-        this.PsyPhe = true;
-      break;
+  if(die == 100) {
+    this.critical = 'Failure!';
+    this.inqtest.Successes = -1;
+  } else if(die == 1) {
+    this.critical = 'Success!';
+  }
+
+  switch(this.options.FocusStrength){
+    case 'Unfettered':
+      this.PsyPhe = ones == 9;
+    break;
+    case 'Push': case 'True':
+      this.PsyPhe = true;
+    break;
+  }
+
+  if(die >= this.jamsAt) {
+    this.warning =  getLink(this.inqweapon.Name);
+    this.warning += ' **' + getLink(this.jamResult) + '**';
+    if(!/s$/.test(this.jamResult)) this.warning += 's';
+    this.warning += '!';
+    this.inqtest.Successes = -1;
+  }
+}
+INQUse.prototype.display = function(){
+  var output = '';
+  if(this.gm) output += '/w ';
+  output += '<br><strong>Weapon</strong>: ';
+  output += this.inqweapon.toLink();
+  output += '<br>';
+  if(this.inqammo) {
+    output += '<strong>Ammo</strong>: ';
+    output += this.inqammo.toLink();
+    output += '<br>';
+  }
+
+  output += '<strong>Mode</strong>: ';
+  output += this.mode + '(' + this.maxHits * this.maxHitsMultiplier + ')';
+  output += '<br>';
+  if(this.range && !/^Melee/i.test(this.range)) {
+    output += '<strong>Range</strong>: ';
+    output += this.range;
+    output += '<br>';
+  }
+
+  if(this.inqclip) output += this.inqclip.display();
+  announce(output, {speakingAs: 'player|' + this.playerid});
+  if(this.inqtest) this.displayHitReport();
+  if(this.critical) announce('/em ' + this.critical, {speakingAs: 'Critical', delay: 100});
+  if(this.reroll) whisper(this.reroll, {speakingTo: this.playerid, gmEcho: true, delay: 100});
+  if(this.inqattack) {
+    this.inqattack.display();
+    saveHitLocation(this.inqtest.Die, {whisper: this.gm});
+  }
+  if(this.warning) announce('/em ' + this.warning, {speakingAs: 'The', delay: 100});
+}
+INQUse.prototype.displayHitReport = function(){
+  var name;
+  if(this.inqcharacter) name = this.inqcharacter.Name;
+  var extraLines = [];
+  extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
+  if(this.inqweapon.Class == 'Psychic') {
+    if(this.PsyPhe) {
+      var PsyPhe = new INQFormula();
+      PsyPhe.DiceNumber = 1;
+      PsyPhe.DiceType = 100;
+      PsyPhe.Modifier = this.PsyPheModifier;
+      var PsyPheDiceRule = '';
+      if(this.PsyPheDropDice){
+        PsyPhe.DiceNumber += this.PsyPheDropDice;
+        PsyPheDiceRule = 'dl' + this.PsyPheDropDice;
+      }
+
+      extraLines.push({
+        Name: 'Phenomena',
+        Content: PsyPhe.toInline(PsyPheDiceRule)
+      });
+    } else {
+      extraLines.push({
+        Name: 'Phenomena',
+        Content: '-'
+      });
     }
   }
 
-  if(this.inqweapon.isRanged()
-  && (this.mode == 'Semi' || this.mode == 'Full')
-  && this.jamsAt > 94) {
-    this.jamsAt = 94;
-  }
-
-  if(this.inqweapon.isRanged() || this.inqweapon.Class == 'Psychic'){
-    if(die >= this.jamsAt) {
-      var jamReport =  getLink(this.inqweapon.Name);
-      jamReport += ' **' + getLink(this.jamResult) + '**';
-      if(!/s$/.test(this.jamResult)) jamReport += 's';
-      this.warning = jamReport + '!';
-      this.autoFail = true;
-    }
-  }
+  this.inqtest.display(this.playerid, name, this.gm, extraLines);
 }
 INQUse.prototype.getSpecialAmmo = function(){
   if(!this.options.Ammo && !this.options.customAmmo) return true;
@@ -6328,12 +6412,19 @@ INQUse.prototype.loadWeapon = function(weaponname, callback) {
     callback(true);
   });
 }
+INQUse.prototype.offerReroll = function(originalOptions){
+  var options = carefulParse(originalOptions) || {};
+  options.freeShot = true;
+  var suggestion = 'useWeapon ' + this.inqweapon.Name + JSON.stringify(options);
+  suggestion = '!{URIFixed}' + encodeURIFixed(suggestion);
+  this.reroll = '[Reroll](' + suggestion + ')';
+}
 INQUse.prototype.parseModifiers = function(){
-  var modifierMatches = this.options.modifiers.match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifierMatches = this.options.modifiers.match(/(\+|-|)\s*(\d+)([\sa-z]*)/gi);
   this.modifiers = [];
   if(modifierMatches){
     for(var modifierMatch of modifierMatches){
-      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      var details = modifierMatch.match(/(\+|-|)\s*(\d+)([\sa-z]*)/i);
       var name = details[3].trim();
       if(!name) name = 'Other';
       this.modifiers.push({
@@ -6353,29 +6444,30 @@ INQUse.prototype.roll = function(){
     skill = this.inqweapon.FocusTest;
   }
 
-  this.test = new INQTest({
+  this.inqtest = new INQTest({
     skill: skill,
     modifier: this.modifiers,
     inqcharacter: this.inqcharacter
   });
 
-  this.test.roll();
+  this.inqtest.roll();
+  this.diceEvents();
   this.hits = 0;
-  if(this.test.Successes >= 0) {
+  if(this.inqtest.Successes >= 0) {
     this.hits++;
     switch(this.mode){
       case 'Semi':
-        this.hits += Math.floor(this.test.Successes / 2);
+        this.hits += Math.floor(this.inqtest.Successes / 2);
       break;
       case 'Full':
-        this.hits += this.test.Successes;
+        this.hits += this.inqtest.Successes;
       break;
     }
   }
 
   this.hits *= this.hitsMultiplier;
-  this.maxHits += this.maxHitsMultiplier;
-  if(this.hits > this.maxHits) this.hits = this.maxHits;
+  var maxHits = this.maxHits * this.maxHitsMultiplier;
+  if(this.hits > maxHits) this.hits = maxHits;
 }
 //the prototype for characters
 function INQVehicle(vehicle, graphic, callback){
@@ -7524,7 +7616,7 @@ function announce(content, options){
   var callback = options.callback || null;
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('announce() attempted to send an empty message.');
-  sendChat(speakingAs, content, callback, options);
+  setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
 }
 function attributeTable(name, attribute, options){
   if(typeof options != 'object') options = {};
@@ -8111,12 +8203,12 @@ function whisper(content, options){
   } else if(options.speakingTo) {
     if(getObj('player', options.speakingTo)){
       if(options.gmEcho && !playerIsGM(options.speakingTo)) whisper(content, new_options);
-      return sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options );
+      setTimeout(function(){sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options)}, options.delay);
     } else {
       return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
   } else {
-    return sendChat(speakingAs, '/w gm ' + content, options.callback, options);
+    setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
   }
 }
 function canViewAttribute(name, options){

@@ -43,11 +43,8 @@ on("chat:message", function(msg) {
     //I don't know why I need to do this BUT for some reason when the message is sent by the API
     //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
     //"with a(n) " is the generic method I have the api using. Player sent commands are expected to be more intelligent
-    if(msg.inlinerolls[0] == undefined){
-      var rollIndex = 1;
-    } else {
-      var rollIndex = 0;
-    }
+    var rollIndex = 0;
+    while(!msg.inlinerolls[rollIndex]) rollIndex++;
 
     //record Damage Type
     var DamageType;
@@ -67,9 +64,12 @@ on("chat:message", function(msg) {
 
     //record the highest damage roll
     var lowest = 10
-    for(var i = 0; i < msg.inlinerolls[rollIndex].results.rolls[0].results.length; i++){
-      if(!msg.inlinerolls[rollIndex].results.rolls[0].results[i].d && msg.inlinerolls[rollIndex].results.rolls[0].results[i].v < lowest){
-        lowest = msg.inlinerolls[rollIndex].results.rolls[0].results[i].v
+    for(var roll of msg.inlinerolls[rollIndex].results.rolls) {
+      if(!roll.results) continue;
+      for(var result of roll.results){
+        if(!result.d && result.v < lowest){
+          lowest = result.v;
+        }
       }
     }
 
@@ -77,23 +77,14 @@ on("chat:message", function(msg) {
     PenObj.set('current', msg.inlinerolls[rollIndex + 1].results.total);
 
     //record Felling
-    var fellingIndex = msg.content.indexOf("Felling");
-    //is there any Felling inside the weapon?
-    if(fellingIndex >= 0){
-      //find the parenthesis after Felling
-      var startIndex = msg.content.indexOf("(",fellingIndex);
-      var endIndex = msg.content.indexOf(")",startIndex);
-      //be sure the parenthesis were both found
-      if (startIndex >= 0 && endIndex >= 0 && Number(msg.content.substring(startIndex+1,endIndex))){
-        //record the amount of felling
-        FellObj.set('current',Number(msg.content.substring(startIndex+1,endIndex)));
-      } else {
-        //record zero felling
-        FellObj.set('current', 0);
-      }
-    } else {
-      //record zero felling
-      FellObj.set('current', 0);
+    var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
+    if(notesMatches) {
+      var notes = notesMatches[1];
+      notes = notes.replace('(', '[').replace(')', ']');
+      var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
+      var felling = inqweapon.has('Felling');
+      var inqqtt = new INQQtt({PR: 0, SB: 0});
+      FellObj.set('current', inqqtt.getTotal(felling));
     }
 
     //record Primitive

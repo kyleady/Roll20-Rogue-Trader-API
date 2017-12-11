@@ -4,5 +4,5 @@ function announce(content, options){
   var callback = options.callback || null;
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('announce() attempted to send an empty message.');
-  sendChat(speakingAs, content, callback, options);
+  setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
 }

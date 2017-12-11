@@ -22,4 +22,13 @@ describe('announce()', function() {
     });
     announce('announce() speakingAs', {speakingAs: 'The Speaker', MOCK20tag: 'announce_options'});
   });
+	it('should allow you to specify a delay', function(){
+		msgCount = 0;
+		on('chat:message:announce_options', function(msg){
+      msgCount++;
+      done();
+    });
+    announce('announce() delay', {speakingAs: 'The Speaker', MOCK20tag: 'announce_options', delay: 100});
+		expect(msgCount).to.equal(0);
+  });
 });

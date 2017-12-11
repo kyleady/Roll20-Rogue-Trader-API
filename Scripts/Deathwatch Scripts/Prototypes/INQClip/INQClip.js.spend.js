@@ -9,7 +9,9 @@ INQClip.prototype.spend = function(){
     var warning = 'Not enough ammo to fire ';
     warning += this.inqweapon.toLink();
     if(this.options.inqammo) warning += ' using ' + this.options.inqammo.toLink();
-    warning += '.';
+    warning += '. ';
+    warning += '(' + this.clipObj.get('current');
+    warning += '/' + this.clipObj.get('max') + ')';
     whisper(warning, {speakingTo: this.options.playerid, gmEcho: true});
     return false;
   }

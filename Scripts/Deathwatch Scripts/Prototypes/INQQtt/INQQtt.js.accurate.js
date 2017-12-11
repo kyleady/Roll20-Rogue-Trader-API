@@ -3,7 +3,7 @@ INQQtt.prototype.accurate = function(){
   var inqweapon = this.inquse.inqweapon;
   var modifiers = this.inquse.modifiers;
   var successes;
-  if(this.inquse.test) successes = this.inquse.test.Successes;
+  if(this.inquse.inqtest) successes = this.inquse.inqtest.Successes;
   if(mode == 'Single' && inqweapon.has('Accurate')){
     var aimmed = false;
     for(var modifier of modifiers){

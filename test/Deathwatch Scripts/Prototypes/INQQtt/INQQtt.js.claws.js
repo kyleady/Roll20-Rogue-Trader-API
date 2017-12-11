@@ -14,15 +14,15 @@ describe('INQQtt.prototype.claws()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Pistol; D10+2; Pen 3; Claws[2])'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 0};
+      inquse.inqtest = {Successes: 0};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(2);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 1};
+      inquse.inqtest = {Successes: 1};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(4);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 2};
+      inquse.inqtest = {Successes: 2};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(6);
       done();
@@ -39,15 +39,15 @@ describe('INQQtt.prototype.claws()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Pistol; D10+2; Pen 3; Claws)'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 0};
+      inquse.inqtest = {Successes: 0};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(2);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 1};
+      inquse.inqtest = {Successes: 1};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(3);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 2};
+      inquse.inqtest = {Successes: 2};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(4);
       done();
@@ -64,15 +64,15 @@ describe('INQQtt.prototype.claws()', function() {
     var options = {modifiers: '', custom: 'My Weapon(Pistol; D10+2; Pen 3; Tearing)'};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       var inqqtt = new INQQtt(inquse);
-      inquse.test = {Successes: 0};
+      inquse.inqtest = {Successes: 0};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(2);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 1};
+      inquse.inqtest = {Successes: 1};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(2);
       inquse.inqweapon.Damage.Modifier = 2;
-      inquse.test = {Successes: 2};
+      inquse.inqtest = {Successes: 2};
       inqqtt.claws();
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(2);
       done();

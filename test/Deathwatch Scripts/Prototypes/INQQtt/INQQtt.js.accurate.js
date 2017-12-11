@@ -15,7 +15,7 @@ describe('INQQtt.prototype.accurate()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.mode = 'Single';
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
@@ -38,7 +38,7 @@ describe('INQQtt.prototype.accurate()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.mode = 'Single';
 			inquse.parseModifiers();
-			inquse.test = {Successes: 0};
+			inquse.inqtest = {Successes: 0};
       var inqqtt = new INQQtt(inquse);
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
@@ -47,32 +47,32 @@ describe('INQQtt.prototype.accurate()', function() {
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(1);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 1};
+			inquse.inqtest = {Successes: 1};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(1);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 2};
+			inquse.inqtest = {Successes: 2};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(2);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(2);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 4};
+			inquse.inqtest = {Successes: 4};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(3);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 5};
+			inquse.inqtest = {Successes: 5};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(3);
 
 			inquse.inqweapon.Damage.DiceNumber = 1;
-			inquse.test = {Successes: 6};
+			inquse.inqtest = {Successes: 6};
 			inqqtt.accurate();
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(3);
       done();
@@ -90,14 +90,14 @@ describe('INQQtt.prototype.accurate()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.mode = 'Single';
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Aim</em>', Value: '+10'}
 			]);
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(1);
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Aim</em>', Value: '+10'}
@@ -118,14 +118,14 @@ describe('INQQtt.prototype.accurate()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.mode = 'Semi';
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Aim</em>', Value: '+10'}
 			]);
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(1);
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Aim</em>', Value: '+10'}
@@ -146,14 +146,14 @@ describe('INQQtt.prototype.accurate()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.mode = 'Single';
 			inquse.parseModifiers();
-			inquse.test = {Successes: undefined};
+			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Other</em>', Value: '+10'}
 			]);
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(1);
-			inquse.test = {Successes: 3};
+			inquse.inqtest = {Successes: 3};
       inqqtt.accurate();
 			expect(inquse.modifiers).to.deep.equal([
 				{Name: '<em>Other</em>', Value: '+10'}

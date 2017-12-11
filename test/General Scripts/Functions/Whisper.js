@@ -30,4 +30,13 @@ describe('whisper()', function() {
     });
     whisper('private message', {speakingAs: 'speaker', MOCK20tag: 'whisper_speakingAs'});
   });
+  it('should allow you to specify a delay', function(){
+		msgCount = 0;
+		on('chat:message:whisper_options', function(msg){
+      msgCount++;
+      done();
+    });
+    whisper('whisper() delay', {speakingAs: 'The Speaker', MOCK20tag: 'whisper_options', delay: 100});
+		expect(msgCount).to.equal(0);
+  });
 });

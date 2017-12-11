@@ -1,21 +1,24 @@
 INQQtt.prototype.beforeDamage = function(){
-  this.accurate();
   this.blast();
-  this.claws();
   this.damage();
   this.damageType();
   this.devastating();
   this.hordeDmg();
-  this.lance();
   this.melta();
   this.penetration();
   this.powerField();
   this.proven();
-  this.razorSharp();
   this.scatter();
   this.tearingFleshRender();
 
-  if(this.inquse.inqcharacter){
+  if(this.inquse.inqtest) {
+    this.accurate();
+    this.claws();
+    this.lance();
+    this.razorSharp();
+  }
+
+  if(this.inquse.inqcharacter) {
     this.crushingBlow();
     this.fist();
     this.force();

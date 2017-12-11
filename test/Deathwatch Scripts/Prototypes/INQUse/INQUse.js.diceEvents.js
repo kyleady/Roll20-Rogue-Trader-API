@@ -18,37 +18,37 @@ describe('INQUse.prototype.diceEvents()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.options.FocusStrength = 'Fettered';
       inquse.PsyPhe = false;
-      inquse.test = {Die: 29};
+      inquse.inqtest = {Die: 29};
       inquse.diceEvents();
       expect(inquse.PsyPhe).to.equal(false);
 
       inquse.options.FocusStrength = 'Unfettered';
       inquse.PsyPhe = false;
-      inquse.test = {Die: 28};
+      inquse.inqtest = {Die: 28};
       inquse.diceEvents();
       expect(inquse.PsyPhe).to.equal(false);
 
       inquse.options.FocusStrength = 'Unfettered';
       inquse.PsyPhe = false;
-      inquse.test = {Die: 29};
+      inquse.inqtest = {Die: 29};
       inquse.diceEvents();
       expect(inquse.PsyPhe).to.equal(true);
 
       inquse.options.FocusStrength = 'Push';
       inquse.PsyPhe = false;
-      inquse.test = {Die: 28};
+      inquse.inqtest = {Die: 28};
       inquse.diceEvents();
       expect(inquse.PsyPhe).to.equal(true);
 
       inquse.options.FocusStrength = 'True';
       inquse.PsyPhe = false;
-      inquse.test = {Die: 28};
+      inquse.inqtest = {Die: 28};
       inquse.diceEvents();
       expect(inquse.PsyPhe).to.equal(true);
       done();
     });
   });
-  it('should never autoFail if the weapon is Melee or Gear', function(done){
+  it('should never Jam if the weapon is Melee or Gear', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -62,41 +62,16 @@ describe('INQUse.prototype.diceEvents()', function() {
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.mode = 'Single';
       inquse.defaultProperties();
-      inquse.test = {Die: 100};
+      inquse.inqtest = {Die: 100, Successes: 4};
       inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
+      expect(inquse.warning).to.be.undefined;
       inquse.inqweapon.Class = 'Gear';
       inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
+      expect(inquse.warning).to.be.undefined;
       done();
     });
   });
-  it('should autoFail with Fail on 91+ if the weapon is Psychic', function(done){
-		Campaign().MOCK20reset();
-		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
-		var MyScript = fs.readFileSync(filePath, 'utf8');
-		eval(MyScript);
-		MOCK20endOfLastScript();
-
-    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
-    var options = {
-      custom: 'My Weapon(Psychic; D10+2; Pen 3)',
-      FocusStrength: 'Fettered'
-    };
-    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
-      inquse.mode = 'Full';
-      inquse.defaultProperties();
-      inquse.test = {Die: 90};
-      inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
-      inquse.test = {Die: 91};
-      inquse.diceEvents();
-      expect(inquse.autoFail).to.equal(true);
-      expect(inquse.jamResult).to.equal('Fail');
-      done();
-    });
-  });
-  it('should autoFail with Fail on 96+ if the weapon is Ranged and firing on Single', function(done){
+  it('should autoFail if the Die is >= jamsAt, delivering the jamResult as the warning', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -108,19 +83,20 @@ describe('INQUse.prototype.diceEvents()', function() {
       custom: 'My Weapon(Heavy; D10+2; Pen 3)'
     };
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
-      inquse.mode = 'Single';
-      inquse.defaultProperties();
-      inquse.test = {Die: 95};
+			inquse.jamsAt = 96;
+			inquse.jamResult = 'Jam';
+      inquse.inqtest = {Die: 95, Successes: 4};
       inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
-      inquse.test = {Die: 96};
+      expect(inquse.inqtest.Successes).to.equal(4);
+			expect(inquse.warning).to.be.undefined;
+      inquse.inqtest = {Die: 96, Successes: 4};
       inquse.diceEvents();
-      expect(inquse.autoFail).to.equal(true);
-      expect(inquse.jamResult).to.equal('Jam');
+      expect(inquse.inqtest.Successes).to.equal(-1);
+      expect(inquse.warning).to.include('Jam');
       done();
     });
   });
-  it('should autoFail with Fail on 94+ if the weapon is Ranged and firing on Semi/Full', function(done){
+	it('should detect if a Critical Success was rolled', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -132,27 +108,28 @@ describe('INQUse.prototype.diceEvents()', function() {
       custom: 'My Weapon(Heavy; D10+2; Pen 3)'
     };
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
-      inquse.mode = 'Semi';
-      inquse.defaultProperties();
-      inquse.test = {Die: 93};
+			inquse.inqtest = {Die: 1, Successes: 4};
       inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
-      inquse.test = {Die: 94};
-      inquse.diceEvents();
-      expect(inquse.autoFail).to.equal(true);
-      expect(inquse.jamResult).to.equal('Jam');
+      expect(inquse.critical).to.equal('Success!');
+      done();
+    });
+  });
+	it('should detect if a Critical Failure was rolled, and should autoFail', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
 
-      inquse.mode = 'Full';
-      inquse.autoFail = false;
-      inquse.jamResult = '';
-      inquse.defaultProperties();
-      inquse.test = {Die: 93};
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {
+      custom: 'My Weapon(Heavy; D10+2; Pen 3)'
+    };
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+			inquse.inqtest = {Die: 100, Successes: 4};
       inquse.diceEvents();
-      expect(inquse.autoFail).to.not.equal(true);
-      inquse.test = {Die: 94};
-      inquse.diceEvents();
-      expect(inquse.autoFail).to.equal(true);
-      expect(inquse.jamResult).to.equal('Jam');
+      expect(inquse.critical).to.equal('Failure!');
+			expect(inquse.inqtest.Successes).to.equal(-1);
       done();
     });
   });
