@@ -81,6 +81,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Accurate', Value: 10},
 				{Name: 'Horde', Value: 20},
 				{Name: 'Horde', Value: 40},
+				{Name: 'Indirect', Value: -10},
 				{Name: 'Weapon', Value: 30}
 			]);
 			expect(inquse.horde).to.equal(47);
@@ -178,6 +179,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Sharpshooter', Value: 10},
 				{Name: 'Accurate', Value: 10},
 				{Name: 'Horde', Value: 20},
+				{Name: 'Indirect', Value: -10},
 				{Name: 'Weapon', Value: 30}
 			]);
 			expect(inquse.PsyPheDrop).to.equal(1);
@@ -267,6 +269,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Gyro-Stabilised', Value: 10},
 				{Name: 'Gyro-Stabilised', Value: 10},
 				{Name: 'Horde', Value: 40},
+				{Name: 'Indirect', Value: -10},
 				{Name: 'Weapon', Value: 30}
 			]);
 			expect(inquse.PsyPheDrop).to.equal(0);

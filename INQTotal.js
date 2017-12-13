@@ -5263,10 +5263,12 @@ INQQtt.prototype.hordeDmg = function(){
 }
 INQQtt.prototype.indirect = function(){
   var inqweapon = this.inquse.inqweapon;
+  var modifiers = this.inquse.modifiers;
   var indirect = inqweapon.has('Indirect');
   if(indirect){
     var total = this.getTotal(indirect);
     this.inquse.indirect = total;
+    modifiers.push({Name: 'Indirect', Value: -10});
   }
 }
 INQQtt.prototype.lance = function(){
@@ -6221,6 +6223,44 @@ INQUse.prototype.calcRoF = function(){
 
   this.shotsFired = this.maxHits;
 }
+INQUse.prototype.calcScatter = function() {
+  var scatter = [];
+  var direction = [
+    'N', 'NNE', 'NE', 'ENE',
+    'E', 'ESE', 'SE', 'SSE',
+    'S', 'SSW', 'SW', 'WSW',
+    'W', 'WNW', 'NW', 'NNW'
+  ];
+  var maxHits = this.maxHits * this.maxHitsMultiplier;
+  if(this.indirect) {
+    for(var i = 0; i < this.hits; i++) {
+      scatter.push({
+        dir: direction[randomInteger(16)-1],
+        dis: Math.max(randomInteger(10) - this.inqcharacter.bonus('BS'), 0)
+      });
+    }
+
+    for(var i = 0; i < maxHits - this.hits; i++) {
+      var distance = new INQFormula('D10');
+      distance.DiceNumber = this.indirect;
+      scatter.push({
+        dir: direction[randomInteger(16)-1],
+        dis: distance.toInline()
+      });
+    }
+  } else if(this.inqweapon.isRanged() && this.inqweapon.has('Blast')) {
+    for(var i = 0; i < maxHits - this.hits; i++) {
+      var distance = new INQFormula('D10');
+      scatter.push({
+        dir: direction[randomInteger(16)-1],
+        dis: distance.toInline()
+      });
+    }
+  }
+
+  if(!scatter.length) return;
+  return {Name: 'Scatter', Content: scatter.map(roll => ' ' + roll.dis + ' ' + roll.dir).toString()};
+}
 INQUse.prototype.calcStatus = function(){
   var attacker, target;
   if(this.inqcharacter) attacker = getObj('graphic', this.inqcharacter.GraphicID);
@@ -6376,6 +6416,8 @@ INQUse.prototype.displayHitReport = function(){
     }
   }
 
+  var scatter = this.calcScatter();
+  if(scatter) extraLines.push(scatter);
   this.inqtest.display(this.playerid, name, this.gm, extraLines);
 }
 INQUse.prototype.getSpecialAmmo = function(){

@@ -126,4 +126,35 @@ describe('INQUse.prototype.displayHitReport()', function() {
       inquse.displayHitReport();
     });
   });
+	it('should include a scatter roll if the weapon scattered', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {modifiers: '+10 Aim', custom: 'My Weapon(Heavy; D10+2; Pen 3; Blast[3])'};
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+      inquse.inqcharacter = new INQCharacter();
+      inquse.inqcharacter.Name = 'Space Marine';
+      inquse.inqcharacter.controlledby = 'all';
+      inquse.inqcharacter.Attributes.BS = 40;
+      inquse.inqcharacter.Attributes['Unnatural BS'] = 2;
+      inquse.inqcharacter.Attributes.PR = 4;
+      inquse.calcModifiers();
+      inquse.mode = 'Semi';
+      inquse.maxHits = 3;
+			inquse.roll();
+			inquse.hits = 1;
+
+      on('chat:message', function(msg){
+        expect(msg.content).to.match(/{{Scatter=/);
+        expect(msg.inlinerolls.length).to.equal(5);
+        done();
+      });
+
+      inquse.displayHitReport();
+    });
+  });
 });

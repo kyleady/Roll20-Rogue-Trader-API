@@ -27,5 +27,7 @@ INQUse.prototype.displayHitReport = function(){
     }
   }
 
+  var scatter = this.calcScatter();
+  if(scatter) extraLines.push(scatter);
   this.inqtest.display(this.playerid, name, this.gm, extraLines);
 }
