@@ -11,8 +11,8 @@ describe('getRange()', function() {
 		MOCK20endOfLastScript();
 
     var page = createObj('page', {name: 'getRange Page', scale_number: 2, scale_units: 'm'}, {MOCK20override: true});
-    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1, left: 2, _pageid: page.id});
-    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4, left: 6, _pageid: page.id});
+    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1*70, left: 2*70, _pageid: page.id});
+    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4*70, left: 6*70, _pageid: page.id});
 
 		expect(getRange(graphic1.id, graphic2.id, {aura: true})).to.equal(10);
     expect(getRange(graphic2.id, graphic1.id, {aura: true})).to.equal(10);
@@ -26,8 +26,8 @@ describe('getRange()', function() {
 
     var page = createObj('page', {name: 'getRange Page', scale_number: 1, scale_units: 'm'}, {MOCK20override: true});
     var page2 = createObj('page', {name: 'getRange Page2', scale_number: 1, scale_units: 'm'}, {MOCK20override: true});
-    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1, left: 2, _pageid: page.id});
-    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4, left: 6, _pageid: page2.id});
+    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1*70, left: 2*70, _pageid: page.id});
+    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4*70, left: 6*70, _pageid: page2.id});
 
 		expect(getRange(graphic1.id, graphic2.id, {aura: true})).to.be.undefined;
     expect(getRange(graphic2.id, graphic1.id, {aura: true})).to.be.undefined;
@@ -40,7 +40,7 @@ describe('getRange()', function() {
 		MOCK20endOfLastScript();
 
     var page = createObj('page', {name: 'getRange Page', scale_number: 1, scale_units: 'm'}, {MOCK20override: true});
-    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1, left: 2, _pageid: page.id});
+    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1*70, left: 2*70, _pageid: page.id});
 
 		expect(getRange(graphic1.id)).to.be.undefined;
     expect(getRange(undefined, graphic1.id)).to.be.undefined;
@@ -53,8 +53,8 @@ describe('getRange()', function() {
 		MOCK20endOfLastScript();
 
     var page = createObj('page', {name: 'getRange Page', scale_number: 2, scale_units: 'km'}, {MOCK20override: true});
-    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1, left: 2, _pageid: page.id});
-    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4, left: 6, _pageid: page.id});
+    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1*70, left: 2*70, _pageid: page.id});
+    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4*70, left: 6*70, _pageid: page.id});
 
 		expect(getRange(graphic1.id, graphic2.id, {aura: true})).to.equal(10000);
     expect(getRange(graphic2.id, graphic1.id, {aura: true})).to.equal(10000);
@@ -67,8 +67,8 @@ describe('getRange()', function() {
 		MOCK20endOfLastScript();
 
     var page = createObj('page', {name: 'getRange Page', scale_number: 2, scale_units: 'km'}, {MOCK20override: true});
-    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1, left: 2, width: 1, height: 3, _pageid: page.id});
-    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4, left: 6, width: 2, height: 2, _pageid: page.id});
+    var graphic1 = createObj('graphic', {name: 'graphic1', top: 1*70, left: 2*70, width: 1*70, height: 3*70, _pageid: page.id});
+    var graphic2 = createObj('graphic', {name: 'graphic2', top: 4*70, left: 6*70, width: 2*70, height: 2*70, _pageid: page.id});
 
 		expect(getRange(graphic1.id, graphic2.id, {aura: false})).to.equal(6000);
     expect(getRange(graphic2.id, graphic1.id, {aura: false})).to.equal(6000);

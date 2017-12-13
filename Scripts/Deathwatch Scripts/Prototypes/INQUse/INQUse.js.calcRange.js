@@ -9,7 +9,6 @@ INQUse.prototype.calcRange = function(){
     if(distance <= range){
       this.range = 'Melee';
     } else {
-      whisper('Out of melee range.', {speakingTo: this.playerid, gmEcho: true});
       this.range = 'Impossible';
       this.autoFail = true;
     }
@@ -31,9 +30,15 @@ INQUse.prototype.calcRange = function(){
     this.modifiers.push({Name: 'Extreme Range', Value: -30});
     this.range = 'Extreme';
   } else {
-    whisper('Out of range: ' + distance  + 'm/' + range + 'm', {speakingTo: this.playerid, gmEcho: true});
     this.range = 'Impossible';
     this.autoFail = true;
+  }
+
+  if(this.range == 'Impossible') {
+    var output = '[' + this.inqcharacter.Name + '](!pingG ' + this.inqcharacter.GraphicID + ')'
+    output += ' is out of range. ';
+    output += '(' + distance + '/' + range + ')';
+    whisper(output, {speakingTo: this.playerid, gmEcho: true});
   }
 
   this.range += '(' + distance + '/' + range + ')';

@@ -14,8 +14,8 @@ describe('INQUse.prototype.calcStatus()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     graphic2.set('status_brown', true);
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
@@ -41,8 +41,8 @@ describe('INQUse.prototype.calcStatus()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     graphic2.set('status_green', true);
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
@@ -63,8 +63,8 @@ describe('INQUse.prototype.calcStatus()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     graphic2.set('status_yellow', true);
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
@@ -85,8 +85,8 @@ describe('INQUse.prototype.calcStatus()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     graphic1.set('status_purple', true);
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
@@ -116,8 +116,8 @@ describe('INQUse.prototype.calcStatus()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     graphic1.set('status_blue', true);
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){

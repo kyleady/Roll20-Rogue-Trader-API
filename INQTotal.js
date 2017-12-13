@@ -1355,6 +1355,8 @@ function useWeapon (matches, msg) {
   var name = matches[1];
   var originalOptions = matches[2];
   var options = carefulParse(originalOptions) || {};
+  INQSelection.useSelected(msg);
+  INQSelection.useInitiative(msg);
   if(!msg.selected || !msg.selected.length){
     if(playerIsGM(msg.playerid)){
       msg.selected = [{_type: 'unique'}];
@@ -6094,7 +6096,6 @@ INQUse.prototype.calcRange = function(){
     if(distance <= range){
       this.range = 'Melee';
     } else {
-      whisper('Out of melee range.', {speakingTo: this.playerid, gmEcho: true});
       this.range = 'Impossible';
       this.autoFail = true;
     }
@@ -6116,9 +6117,15 @@ INQUse.prototype.calcRange = function(){
     this.modifiers.push({Name: 'Extreme Range', Value: -30});
     this.range = 'Extreme';
   } else {
-    whisper('Out of range: ' + distance  + 'm/' + range + 'm', {speakingTo: this.playerid, gmEcho: true});
     this.range = 'Impossible';
     this.autoFail = true;
+  }
+
+  if(this.range == 'Impossible') {
+    var output = '[' + this.inqcharacter.Name + '](!pingG ' + this.inqcharacter.GraphicID + ')'
+    output += ' is out of range. ';
+    output += '(' + distance + '/' + range + ')';
+    whisper(output, {speakingTo: this.playerid, gmEcho: true});
   }
 
   this.range += '(' + distance + '/' + range + ')';
@@ -6269,13 +6276,19 @@ INQUse.prototype.display = function(){
   output += '<strong>Mode</strong>: ';
   output += this.mode + '(' + this.maxHits * this.maxHitsMultiplier + ')';
   output += '<br>';
+  if(this.inqclip) output += this.inqclip.display() + '<br>';
   if(this.range && !/^Melee/i.test(this.range)) {
     output += '<strong>Range</strong>: ';
     output += this.range;
     output += '<br>';
   }
 
-  if(this.inqclip) output += this.inqclip.display();
+  if(this.inqtarget) {
+    output += '<strong>Target</strong>: ';
+    output += '[' + this.inqtarget.Name + '](!pingG ' + this.inqtarget.GraphicID + ')';
+    output += '<br>';
+  }
+
   announce(output, {speakingAs: 'player|' + this.playerid});
   if(this.inqtest) this.displayHitReport();
   if(this.critical) announce('/em ' + this.critical, {speakingAs: 'Critical', delay: 100});
@@ -7529,6 +7542,19 @@ on('ready',function(){
   CentralInput.addCMD(/^!\s*find\s+(\S.*)$/i,journalSearch,true);
   CentralInput.addCMD(/^!\s*more\s*$/i,moreSearch,true);
 });
+function pingGraphic(matches, msg) {
+  var graphic = getObj('graphic', matches[1]);
+  if(!graphic) return whisper('Graphic does not exist.');
+  var x = graphic.get('left');
+  var y = graphic.get('top');
+  var pageid = graphic.get('_pageid');
+  sendPing(-100, -100, pageid, null, false);
+  sendPing(x, y, pageid, null, false);
+}
+
+on('ready', function() {
+  CentralInput.addCMD(/^!\s*ping\s*g(?:raphic)?\s*(\S+)\s*$/i, pingGraphic, true);
+});
 function returnPlayers(matches, msg){
   var playerPages = Campaign().get('playerspecificpages');
   if(!playerPages) return whisper('There are no players to return from their player specific pages.');
@@ -7906,6 +7932,19 @@ function getLink (Name, Link){
     return '<a href=\"' + Link + '\">' + Name + '</a>';
   }
 }
+function getPlayerPageID(playerid) {
+  var player = getObj('player', playerid);
+  if(!player) return whisper('Player does not exist.');
+  if(playerIsGM(playerid)) {
+    var pageid = player.get('_lastpage');
+  } else {
+    var specificPages = Campaign().get('playerspecificpages');
+    if(specificPages && specificPages[playerid]) var pageid = specificPages[playerid];
+  }
+
+  if(!pageid) pageid = Campaign().get('playerpageid');
+  return pageid;
+}
 function getRange(graphic1ID, graphic2ID, options){
   if(typeof options != 'object') options = {};
   var graphic1 = getObj('graphic', graphic1ID);
@@ -7924,6 +7963,7 @@ function getRange(graphic1ID, graphic2ID, options){
   }
   ds *= Number(page.get('scale_number'));
   if(/km/.test(page.get('scale_units'))) ds *= 1000;
+  ds /= 70;
   return Math.round(ds);
 }
 function matchingAttrNames(graphicid, phrase){
@@ -8267,6 +8307,67 @@ function encodeURIFixed(str){
   return encodeURIComponent(str).replace(/['()*]/g, function(c) {
     return '%' + c.charCodeAt(0).toString(16);
   });
+}
+var INQSelection = {};
+INQSelection.checkSelected = function(matches, msg) {
+  if(!INQSelection.selected) return whisper('Empty.');
+  var buttons = [];
+  for(var item of INQSelection.selected) {
+    if(item._type == 'graphic') {
+      var graphic = getObj('graphic', item._id);
+      var button = '';
+      button += ' [' + graphic.get('name') + ']';
+      button += '(!pingG ' + graphic.id + ')';
+      buttons.push(button);
+    }
+  }
+
+  whisper('Selected:' + buttons, {speakingTo: msg.playerid});
+}
+
+on('ready',() => CentralInput.addCMD(/^!\s*select(ed)?\s*\?\s*$/i, INQSelection.checkSelected, true));
+INQSelection.saveSelected = function(matches, msg) {
+  INQSelection.selected = msg.selected;
+  whisper('Selection Saved.', {speakingTo: msg.playerid, gmEcho: true});
+}
+
+on('ready',() => CentralInput.addCMD(/^!\s*select\s*$/i, INQSelection.saveSelected, true));
+INQSelection.useInitiative = function(msg) {
+  if(msg.selected && msg.selected.length) return;
+  var initOpen = Campaign().get('initiativepage');
+  if(!initOpen) return;
+  var turnOrderStr = Campaign().get('turnorder');
+  if(!turnOrderStr) return;
+  var turn = carefulParse(turnOrderStr)[0];
+  var pageID = turn._pageid;
+  var playerPageID = getPlayerPageID(msg.playerid);
+  if(pageID != playerPageID) return;
+  var turn = carefulParse(turnOrderStr)[0];
+  var graphic = getObj('graphic', turn.id);
+  if(!graphic) return;
+  var character = getObj('character', graphic.get('represents'));
+  if(!character) return;
+  if(!playerIsGM(msg.playerid)) {
+    var canControl = false;
+    for(var id of character.get('controlledby').split(',')) {
+      if(id == 'all' || id == msg.playerid) {
+        canControl = true;
+        break;
+      }
+    }
+
+    if(!canControl) return;
+  }
+
+  msg.selected = [{
+    _id: turn.id,
+    _type: 'graphic'
+  }];
+}
+INQSelection.useSelected = function(msg) {
+  if(msg.selected && msg.selected.length) return;
+  msg.selected = INQSelection.selected;
+  INQSelection.selected = undefined;
 }
 var numModifier = {};
 numModifier.calc = function(stat, operator, modifier){

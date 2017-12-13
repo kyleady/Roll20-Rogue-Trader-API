@@ -16,5 +16,6 @@ function getRange(graphic1ID, graphic2ID, options){
   }
   ds *= Number(page.get('scale_number'));
   if(/km/.test(page.get('scale_units'))) ds *= 1000;
+  ds /= 70;
   return Math.round(ds);
 }

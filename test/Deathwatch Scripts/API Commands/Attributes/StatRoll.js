@@ -42,7 +42,7 @@ describe('statRoll()', function() {
 
     on('chat:message', function(msg){
       if (msg.playerid == 'API' && msg.content.includes('S')) {
-        expect(msg.inlinerolls).to.not.be.undefined;
+				expect(msg.inlinerolls).to.not.be.undefined;
         expect(msg.inlinerolls[1].expression).to.match(/^\s*ceil\(\s*\(\s*4\s*\)\s*\/\s*2\s*\)\s*$/);
         done();
       }

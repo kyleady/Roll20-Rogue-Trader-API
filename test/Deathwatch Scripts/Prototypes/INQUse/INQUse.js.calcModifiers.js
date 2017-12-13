@@ -18,8 +18,8 @@ describe('INQUse.prototype.calcModifiers()', function() {
 			RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
-		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 91});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
+		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 91*70});
 		graphic2.set('status_green', true);
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.inqweapon.FocusModifier = -10;
@@ -57,8 +57,8 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
-		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 91});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
+		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 91*70});
 		graphic2.set('status_green', true);
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
@@ -102,7 +102,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
 			inquse.inqcharacter = new INQCharacter();
@@ -139,7 +139,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 91});
+		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 91*70});
 		graphic2.set('status_green', true);
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
@@ -173,7 +173,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 91});
+		var graphic2 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 91*70});
 		graphic2.set('status_green', true);
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
@@ -199,7 +199,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
 			inquse.inqcharacter = new INQCharacter();
@@ -231,7 +231,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.braced = false;
 			inquse.calcModifiers();
@@ -257,7 +257,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Single'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.calcModifiers();
 			expect(inquse.jamsAt).to.equal(96);
@@ -280,7 +280,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.calcModifiers();
 			expect(inquse.jamsAt).to.equal(94);
@@ -303,7 +303,7 @@ describe('INQUse.prototype.calcModifiers()', function() {
       RoF: 'Semi-Auto'
     };
 		var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
-		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2, height: 2, left: 0, top: 0});
+		var graphic1 = createObj('graphic', {_pageid: page.id, width: 2*70, height: 2*70, left: 0*70, top: 0*70});
 		new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
 			inquse.calcModifiers();
 			expect(inquse.jamsAt).to.equal(91);

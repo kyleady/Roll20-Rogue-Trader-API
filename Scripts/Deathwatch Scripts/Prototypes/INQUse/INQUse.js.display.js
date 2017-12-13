@@ -13,13 +13,19 @@ INQUse.prototype.display = function(){
   output += '<strong>Mode</strong>: ';
   output += this.mode + '(' + this.maxHits * this.maxHitsMultiplier + ')';
   output += '<br>';
+  if(this.inqclip) output += this.inqclip.display() + '<br>';
   if(this.range && !/^Melee/i.test(this.range)) {
     output += '<strong>Range</strong>: ';
     output += this.range;
     output += '<br>';
   }
 
-  if(this.inqclip) output += this.inqclip.display();
+  if(this.inqtarget) {
+    output += '<strong>Target</strong>: ';
+    output += '[' + this.inqtarget.Name + '](!pingG ' + this.inqtarget.GraphicID + ')';
+    output += '<br>';
+  }
+
   announce(output, {speakingAs: 'player|' + this.playerid});
   if(this.inqtest) this.displayHitReport();
   if(this.critical) announce('/em ' + this.critical, {speakingAs: 'Critical', delay: 100});

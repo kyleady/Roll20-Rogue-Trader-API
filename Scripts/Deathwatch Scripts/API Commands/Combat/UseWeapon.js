@@ -2,6 +2,8 @@ function useWeapon (matches, msg) {
   var name = matches[1];
   var originalOptions = matches[2];
   var options = carefulParse(originalOptions) || {};
+  INQSelection.useSelected(msg);
+  INQSelection.useInitiative(msg);
   if(!msg.selected || !msg.selected.length){
     if(playerIsGM(msg.playerid)){
       msg.selected = [{_type: 'unique'}];

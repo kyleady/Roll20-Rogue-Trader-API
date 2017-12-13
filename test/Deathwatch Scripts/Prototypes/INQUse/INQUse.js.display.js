@@ -26,6 +26,34 @@ describe('INQUse.prototype.display()', function() {
       inquse.display();
     });
   });
+	it('should display the target as a ping button if there is a target', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {modifiers: '+10 Aim', custom: 'My Weapon(Pistol; D10+2; Pen 3; Accurate)'};
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+			inquse.defaultProperties();
+      inquse.mode = 'Semi';
+      inquse.maxHits = 4;
+			inquse.inqtarget = new INQCharacter();
+			inquse.inqtarget.Name = 'Target Character';
+			var page = createObj('page', {name: 'Page'}, {MOCK20override: true});
+			var tgraphic = createObj('graphic', {name: 'Target Graphic', _pageid: page.id});
+			inquse.inqtarget.GraphicID = tgraphic.id;
+
+      on('chat:message', function(msg) {
+				var str = '<strong>Target</strong>: [Target Character](!pingG ' + tgraphic.id + ')';
+				expect(msg.content).to.include(str);
+        done();
+      });
+
+      inquse.display();
+    });
+  });
 	it('should include maxHitsMultiplier', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');

@@ -14,8 +14,8 @@ describe('INQUse.prototype.calcRoF()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.modifiers = [];
@@ -56,8 +56,8 @@ describe('INQUse.prototype.calcRoF()', function() {
 		var inqcharacter = new INQCharacter();
 		inqcharacter.Attributes.WS = 70;
     var character = inqcharacter.toCharacterObj();
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.PR = 3;
@@ -106,8 +106,8 @@ describe('INQUse.prototype.calcRoF()', function() {
 		var inqcharacter = new INQCharacter();
 		inqcharacter.Attributes.WS = 70;
     var character = inqcharacter.toCharacterObj();
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3, left: 4, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8, left: 16, represents: character.id});
+    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, represents: character.id});
+    var graphic2 = createObj('graphic', {_pageid: page.id, top: 8*70, left: 16*70, represents: character.id});
     var options = {target: graphic2.id};
     new INQUse('Weapon Handout', options, character, graphic1, player.id, function(inquse){
 			inquse.modifiers = [];

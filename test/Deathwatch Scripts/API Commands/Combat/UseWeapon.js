@@ -63,8 +63,8 @@ describe('useWeapon()', function() {
     var inqtarget = new INQCharacter();
     inqtarget.Name = 'Target';
     var target = inqtarget.toCharacterObj();
-    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0, left: 0, represents: character.id});
-    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 50, left: 0, represents: target.id});
+    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0*70, left: 0*70, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 50*70, left: 0*70, represents: target.id});
     var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Pistol<br><strong>Range</strong>: 10m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4'});
     useWeapon(['', 'Weapon Handout', '{"RoF":"Single","target":"' + graphic2.id + '"}'], {playerid: player.id, selected: [{_type: 'graphic', _id: graphic.id}]});
   });
@@ -99,8 +99,8 @@ describe('useWeapon()', function() {
     var inqtarget = new INQCharacter();
     inqtarget.Name = 'Target';
     var target = inqtarget.toCharacterObj();
-    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0, left: 0, represents: character.id});
-    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5, left: 0, represents: target.id});
+    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0*70, left: 0*70, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5*70, left: 0*70, represents: target.id});
     var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Pistol<br><strong>Range</strong>: 10m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4'});
     var clipObj = createObj('attribute', {name: 'Ammo - Weapon Handout', current: 0, max: 200, _characterid: character.id});
     useWeapon(['', 'Weapon Handout', '{"RoF":"Single","target":"' + graphic2.id + '"}'], {playerid: player.id, selected: [{_type: 'graphic', _id: graphic.id}]});
@@ -136,9 +136,76 @@ describe('useWeapon()', function() {
     var inqtarget = new INQCharacter();
     inqtarget.Name = 'Target';
     var target = inqtarget.toCharacterObj();
-    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0, left: 0, represents: character.id});
-    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5, left: 0, represents: target.id});
+    var graphic = createObj('graphic', {name: 'Graphic', _pageid: page.id, top: 0*70, left: 0*70, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5*70, left: 0*70, represents: target.id});
     var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Pistol<br><strong>Range</strong>: 10m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Clip</strong>: 10'});
     useWeapon(['', 'Weapon Handout', '{"modifiers":"-50","RoF":"Single","target":"' + graphic2.id + '"}'], {playerid: player.id, selected: [{_type: 'graphic', _id: graphic.id}]});
+  });
+  it('should use INQSelection initiative character if nothing was selected', function(done){
+    Campaign().MOCK20reset();
+    var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+    var MyScript = fs.readFileSync(filePath, 'utf8');
+    eval(MyScript);
+    MOCK20endOfLastScript();
+
+    var gmWarned = false;
+    var playerWarned = false;
+
+    on('chat:message', function(msg){
+      if(msg.rolltemplate){
+        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Init Character[^}]*}}/);
+        done();
+      }
+    });
+
+    var player = createObj('player', {_displayname: 'Player'}, {MOCK20override: true});
+    var page = createObj('page', {name: 'Page', scale_number: 1}, {MOCK20override: true});
+    var inqcharacter = new INQCharacter();
+    inqcharacter.Name = 'INQSelection Init Character';
+    inqcharacter.controlledby = 'all';
+    var character = inqcharacter.toCharacterObj();
+    var inqtarget = new INQCharacter();
+    inqtarget.Name = 'Target';
+    var target = inqtarget.toCharacterObj();
+    var graphic = createObj('graphic', {name: 'INQSelection Graphic', _pageid: page.id, top: 0*70, left: 0*70, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5*70, left: 0*70, represents: target.id});
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Pistol<br><strong>Range</strong>: 10m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Clip</strong>: 10'});
+    var turnorder = [{id: graphic.id, pr: 0, _pageid: page.id}];
+    Campaign().set('turnorder', JSON.stringify(turnorder));
+    Campaign().set('initiativepage', true);
+    Campaign().set('playerpageid', page.id);
+    useWeapon(['', 'Weapon Handout', '{"modifiers":"-50","RoF":"Single","target":"' + graphic2.id + '"}'], {playerid: player.id, selected: []});
+  });
+  it('should use a saved INQSelection if nothing was selected', function(done){
+    Campaign().MOCK20reset();
+    var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+    var MyScript = fs.readFileSync(filePath, 'utf8');
+    eval(MyScript);
+    MOCK20endOfLastScript();
+
+    var gmWarned = false;
+    var playerWarned = false;
+
+    on('chat:message', function(msg){
+      if(msg.rolltemplate){
+        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Character[^}]*}}/);
+        done();
+      }
+    });
+
+    var player = createObj('player', {_displayname: 'Player'}, {MOCK20override: true});
+    var page = createObj('page', {name: 'Page', scale_number: 1}, {MOCK20override: true});
+    var inqcharacter = new INQCharacter();
+    inqcharacter.Name = 'INQSelection Character';
+    inqcharacter.controlledby = 'all';
+    var character = inqcharacter.toCharacterObj();
+    var inqtarget = new INQCharacter();
+    inqtarget.Name = 'Target';
+    var target = inqtarget.toCharacterObj();
+    var graphic = createObj('graphic', {name: 'INQSelection Graphic', _pageid: page.id, top: 0*70, left: 0*70, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 5*70, left: 0*70, represents: target.id});
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Class</strong>: Pistol<br><strong>Range</strong>: 10m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Clip</strong>: 10'});
+    INQSelection.selected = [{_type: 'graphic', _id: graphic.id}];
+    useWeapon(['', 'Weapon Handout', '{"modifiers":"-50","RoF":"Single","target":"' + graphic2.id + '"}'], {playerid: player.id, selected: []});
   });
 });

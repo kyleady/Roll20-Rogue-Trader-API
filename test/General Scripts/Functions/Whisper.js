@@ -30,8 +30,8 @@ describe('whisper()', function() {
     });
     whisper('private message', {speakingAs: 'speaker', MOCK20tag: 'whisper_speakingAs'});
   });
-  it('should allow you to specify a delay', function(){
-		msgCount = 0;
+  it('should allow you to specify a delay', function(done){
+		var msgCount = 0;
 		on('chat:message:whisper_options', function(msg){
       msgCount++;
       done();
