@@ -128,6 +128,33 @@ describe('INQCharacter.prototype.horde()', function() {
       done();
     });
   });
+	it('should multiply horde damage by Semi Auto hits if attack is All Out', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var page = createObj('page', {}, {MOCK20override: true});
+    var graphic1 = createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
+    for(var i = 0; i < 16; i++) createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
+    var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
+    var options = {modifiers: '', custom: 'My Weapon(Pistol; D10+2 I; Pen 3; Volatile)'};
+    new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
+      inquse.inqcharacter = new INQCharacter();
+      inquse.inqtarget = new INQCharacter();
+      inquse.inqcharacter.GraphicID = graphic1.id;
+			inquse.hordeDamageMultiplier = 2;
+			inquse.options.RoF = 'All Out Attack';
+      var inqqtt = new INQQtt(inquse);
+      inquse.modifiers = [];
+      inqqtt.horde();
+      inquse.inqtest = {Successes: 4};
+      inqqtt.horde();
+			expect(inquse.hordeDamageMultiplier).to.equal(6);
+      done();
+    });
+  });
   it('should do nothing if the character and target are not hordes', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');

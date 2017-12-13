@@ -5,7 +5,14 @@ INQQtt.prototype.horde = function() {
   var inqtarget = inquse.inqtarget;
   var modifiers = inquse.modifiers;
   var Damage = inquse.inqweapon.Damage;
+  var RoF = inquse.options.RoF;
   if(inqtest && inqtest.Successes != undefined) {
+    if(/All\s*Out/i.test(RoF)) {
+      var hDam = 1;
+      hDam += Math.floor(inqtest.Successes/2);
+      inquse.hordeDamageMultiplier *= hDam;
+    }
+
     if(!inquse.horde) return;
     var max = Math.floor(inquse.horde/10);
     max = Math.min(max, 2);

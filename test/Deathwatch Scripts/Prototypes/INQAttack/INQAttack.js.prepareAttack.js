@@ -72,7 +72,7 @@ describe('INQAttack.prototype.prepareAttack()', function() {
 			inquse.inqtest = {Successes: 3};
       var inqattack = new INQAttack(inquse);
       inqattack.prepareAttack();
-      expect(inquse.hordeDamageMultiplier).to.equal(10);
+      expect(inquse.hordeDamageMultiplier).to.equal(14);
       expect(inquse.inqweapon.Damage.Modifier).to.equal(59);
       expect(inquse.inqweapon.DamageType).to.deep.equal(new INQLink('E'));
       expect(inquse.hordeDamage).to.equal(6);

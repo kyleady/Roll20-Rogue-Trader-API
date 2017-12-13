@@ -71,7 +71,7 @@ describe('INQQtt.prototype.applyBeforeDamage()', function() {
 			inquse.horde = 47;
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeDamage();
-			expect(inquse.hordeDamageMultiplier).to.equal(10);
+			expect(inquse.hordeDamageMultiplier).to.equal(14);
       expect(inquse.inqweapon.Damage.Modifier).to.equal(53);
 			expect(inquse.inqweapon.DamageType).to.deep.equal(new INQLink('E'));
       expect(inquse.hordeDamage).to.equal(6);
@@ -143,7 +143,7 @@ describe('INQQtt.prototype.applyBeforeDamage()', function() {
 			inquse.inqtest = {Successes: 3};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeDamage();
-			expect(inquse.hordeDamageMultiplier).to.equal(10);
+			expect(inquse.hordeDamageMultiplier).to.equal(14);
       expect(inquse.inqweapon.Damage.Modifier).to.equal(29);
       expect(inquse.inqweapon.DamageType).to.deep.equal(new INQLink('E'));
       expect(inquse.hordeDamage).to.equal(6);
