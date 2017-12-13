@@ -81,7 +81,8 @@ describe('getPlayerPageID()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      expect(msg.content).to.equal('Player does not exist.');
+			if(!/player/i.test(msg.content)) return;
+      expect(msg.content).to.include('does not exist');
       done();
     });
 

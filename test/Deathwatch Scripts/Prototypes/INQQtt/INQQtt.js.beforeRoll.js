@@ -27,8 +27,12 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			modifiers: '+10 Aim',
 			custom: 'My Weapon(Heavy; 100m; 10D10+20 R; Pen 3; ' + qualities.toString() + ')'
 		};
+		var page = createObj('page', {}, {MOCK20override: true});
+    var graphic1 = createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
+    for(var i = 0; i < 46; i++) createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqcharacter = new INQCharacter();
+			inquse.inqcharacter.GraphicID = graphic1.id;
       inquse.inqcharacter.List.Traits.push(new INQLink('Auto-stabilised'));
       inquse.inqcharacter.List.Talents.push(new INQLink('Bulging Biceps'));
 			inquse.inqcharacter.List.Talents.push(new INQLink('Dead Eye Shot'));
@@ -39,6 +43,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.inqcharacter.List.Talents.push(new INQLink('Sure Strike'));
 			inquse.inqtarget = new INQCharacter();
       inquse.inqtarget.List.Traits.push(new INQLink('Size(Puny)'));
+			inquse.inqtarget.GraphicID = graphic1.id;
 
 			inquse.braced = false;
 			inquse.range = 'Extended';
@@ -74,8 +79,11 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Sharpshooter', Value: 10},
 				{Name: 'Puny', Value: -20},
 				{Name: 'Accurate', Value: 10},
+				{Name: 'Horde', Value: 20},
+				{Name: 'Horde', Value: 40},
 				{Name: 'Weapon', Value: 30}
 			]);
+			expect(inquse.horde).to.equal(47);
 			expect(inquse.PsyPheDrop).to.equal(1);
 			expect(inquse.indirect).to.equal(4);
 			expect(inquse.ammoMultiplier).to.equal(5);
@@ -123,8 +131,12 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			modifiers: '+10 Aim',
 			custom: 'My Weapon(Heavy; 100m; 10D10+20 R; Pen 3; ' + qualities.toString() + ')'
 		};
+		var page = createObj('page', {}, {MOCK20override: true});
+    var graphic1 = createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
+    for(var i = 0; i < 46; i++) createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqcharacter = new INQCharacter();
+			inquse.inqcharacter.GraphicID = graphic1.id;
       inquse.inqcharacter.List.Traits.push(new INQLink('Auto-stabilised'));
       inquse.inqcharacter.List.Talents.push(new INQLink('Bulging Biceps'));
 			inquse.inqcharacter.List.Talents.push(new INQLink('Dead Eye Shot'));
@@ -156,6 +168,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			inquse.inqtest = {Successes: undefined};
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeRoll();
+			expect(inquse.horde).to.equal(47);
 			expect(inquse.jamsAt).to.equal(91);
 			expect(inquse.braced).to.equal(true);
 			expect(inquse.modifiers).to.have.deep.members([
@@ -164,6 +177,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Marksman', Value: 20},
 				{Name: 'Sharpshooter', Value: 10},
 				{Name: 'Accurate', Value: 10},
+				{Name: 'Horde', Value: 20},
 				{Name: 'Weapon', Value: 30}
 			]);
 			expect(inquse.PsyPheDrop).to.equal(1);
@@ -213,8 +227,12 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 			modifiers: '+10 Aim',
 			custom: 'My Weapon(Heavy; 100m; 10D10+20 R; Pen 3; ' + qualities.toString() + ')'
 		};
+		var page = createObj('page', {}, {MOCK20override: true});
+    var graphic1 = createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
+    for(var i = 0; i < 46; i++) createObj('graphic', {_pageid: page.id, bar2_value: 'H1'});
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqtarget = new INQCharacter();
+			inquse.inqtarget.GraphicID = graphic1.id;
       inquse.inqtarget.List.Traits.push(new INQLink('Size(Puny)'));
 
 			inquse.braced = false;
@@ -248,6 +266,7 @@ describe('INQQtt.prototype.applyBeforeRoll()', function() {
 				{Name: 'Accurate', Value: 10},
 				{Name: 'Gyro-Stabilised', Value: 10},
 				{Name: 'Gyro-Stabilised', Value: 10},
+				{Name: 'Horde', Value: 40},
 				{Name: 'Weapon', Value: 30}
 			]);
 			expect(inquse.PsyPheDrop).to.equal(0);

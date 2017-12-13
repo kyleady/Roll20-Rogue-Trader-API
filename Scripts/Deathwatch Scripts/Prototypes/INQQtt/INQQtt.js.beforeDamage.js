@@ -3,6 +3,7 @@ INQQtt.prototype.beforeDamage = function(){
   this.damage();
   this.damageType();
   this.devastating();
+  this.horde();
   this.hordeDmg();
   this.melta();
   this.penetration();

@@ -160,6 +160,7 @@ describe('INQUse.prototype.calcRange()', function() {
 		var playerWhisper = false;
 		var gmWhisper = false;
 		on('chat:message', function(msg) {
+			if(!/\//.test(msg.content)) return;
 			var str = '[Character Name](!pingG ' + graphic1.id + ')';
 			expect(msg.content).to.include(str);
 			if(msg.target == player.id) playerWhisper = true;

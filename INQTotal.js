@@ -3705,6 +3705,25 @@ INQCharacter.prototype.bonus = function(stat){
   if(this.Attributes['Unnatural ' + stat]) bonus += this.Attributes['Unnatural ' + stat];
   return bonus;
 }
+INQCharacter.prototype.calcHorde = function() {
+  if(!this.GraphicID) return 0;
+  var graphic = getObj('graphic', this.GraphicID);
+  if(!graphic) return;
+  var label = graphic.get('bar2_value');
+  if(!/^H/i.test(label)) return 0;
+  var members = findObjs({
+    _type: 'graphic',
+    bar2_value: label,
+    _pageid: graphic.get('_pageid')
+  });
+
+  var horde = 0;
+  for(var member of members) {
+    if(!member.get('status_dead')) horde++;
+  }
+
+  return horde;
+}
 INQCharacter.prototype.getCharacterBio = function(){
   //create the gmnotes of the character
   var gmnotes = '';
@@ -5004,6 +5023,7 @@ INQQtt.prototype.beforeDamage = function(){
   this.damage();
   this.damageType();
   this.devastating();
+  this.horde();
   this.hordeDmg();
   this.melta();
   this.penetration();
@@ -5053,6 +5073,7 @@ INQQtt.prototype.beforeRoll = function(){
 
   this.accurate();
   this.gyroStabilised();
+  this.horde();
   this.indirect();
   this.overcharge();
   this.spray();
@@ -5203,6 +5224,33 @@ INQQtt.prototype.hammerBlow = function(){
   if(inqcharacter.has('Hammer Blow', 'Talents') && /^\s*all\s*out\s*(attack)?\s*$/i.test(RoF)){
     inqweapon.Penetration.Modifier += Math.ceil(SB/2);
     inqweapon.set({Special: 'Concussive(2)'});
+  }
+}
+INQQtt.prototype.horde = function() {
+  var inquse = this.inquse;
+  var inqtest = inquse.inqtest;
+  var inqcharacter = inquse.inqcharacter;
+  var inqtarget = inquse.inqtarget;
+  var modifiers = inquse.modifiers;
+  var Damage = inquse.inqweapon.Damage;
+  if(inqtest && inqtest.Successes != undefined) {
+    if(!inquse.horde) return;
+    var max = Math.floor(inquse.horde/10);
+    max = Math.min(max, 2);
+    Damage.DiceNumber += Math.min(inqtest.Successes, max);
+  } else {
+    if(modifiers == undefined) return;
+    if(inqcharacter) {
+      inquse.horde = inqcharacter.calcHorde();
+      if(inquse.horde) modifiers.push({Name: 'Horde', Value: Math.min(inquse.horde, 20)});
+    }
+
+    if(inqtarget) {
+      var tHorde = inqtarget.calcHorde();
+      if(!tHorde) return;
+      tHorde = Math.floor(tHorde/10) * 10;
+      modifiers.push({Name: 'Horde', Value: tHorde});
+    }
   }
 }
 INQQtt.prototype.hordeDmg = function(){

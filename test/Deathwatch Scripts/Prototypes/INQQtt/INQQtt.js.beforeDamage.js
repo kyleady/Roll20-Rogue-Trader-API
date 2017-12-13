@@ -68,6 +68,7 @@ describe('INQQtt.prototype.applyBeforeDamage()', function() {
 			inquse.maxHitsMultiplier = 1;
 			inquse.parseModifiers();
 			inquse.inqtest = {Successes: 3};
+			inquse.horde = 47;
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeDamage();
 			expect(inquse.hordeDamageMultiplier).to.equal(10);
@@ -79,7 +80,7 @@ describe('INQQtt.prototype.applyBeforeDamage()', function() {
       expect(inquse.rerollDam).to.equal(3);
       expect(inquse.inqweapon.has('Primitive')).to.not.be.undefined;
       expect(inquse.dropDice).to.equal(2);
-      expect(inquse.inqweapon.Damage.DiceNumber).to.equal(13);
+      expect(inquse.inqweapon.Damage.DiceNumber).to.equal(15);
       var concussive = inquse.inqweapon.has('Concussive');
       var concussiveTotal = inqqtt.getTotal(concussive);
       expect(concussiveTotal).to.equal(2);
@@ -218,6 +219,7 @@ describe('INQQtt.prototype.applyBeforeDamage()', function() {
 			inquse.ammoMultiplier = 1;
 			inquse.hitsMultiplier = 1;
 			inquse.maxHitsMultiplier = 1;
+			inquse.horde = 47;
 			inquse.parseModifiers();
       var inqqtt = new INQQtt(inquse);
       inqqtt.beforeDamage();

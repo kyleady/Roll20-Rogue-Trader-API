@@ -16,6 +16,7 @@ INQQtt.prototype.beforeRoll = function(){
 
   this.accurate();
   this.gyroStabilised();
+  this.horde();
   this.indirect();
   this.overcharge();
   this.spray();
