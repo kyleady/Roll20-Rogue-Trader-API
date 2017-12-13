@@ -1,4 +1,5 @@
 INQUse.prototype.parseModifiers = function(){
+  if(this.options.Modifier) this.options.modifiers += this.options.Modifier;
   var modifierMatches = this.options.modifiers.match(/(\+|-|)\s*(\d+)([\sa-z]*)/gi);
   this.modifiers = [];
   if(modifierMatches){

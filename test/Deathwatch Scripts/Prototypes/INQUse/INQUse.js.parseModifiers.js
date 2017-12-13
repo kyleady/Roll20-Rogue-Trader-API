@@ -41,4 +41,23 @@ describe('INQUse.prototype.parseModifiers()', function() {
       done();
     });
   });
+	it('should be able to use the legacy Modifier instead of modifiers', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var handout = createObj('handout', {name: 'Weapon Handout', notes: '<strong>Range</strong>: 3 x SB m<br><strong>Dam</strong>: D10 R<br><strong>Pen</strong>: 4<br><strong>Special</strong>: Balanced'});
+    var player = createObj('player', {}, {MOCK20override: true});
+    var options = {Modifier: '+10 Aim +6 '};
+    new INQUse('Weapon Handout', options, undefined, undefined, player.id, function(inquse){
+      inquse.parseModifiers();
+      expect(inquse.modifiers).to.deep.equal([
+        {Name: '<em>Aim</em>', Value: '+10'},
+        {Name: '<em>Other</em>', Value: '+6'}
+      ]);
+      done();
+    });
+  });
 });
