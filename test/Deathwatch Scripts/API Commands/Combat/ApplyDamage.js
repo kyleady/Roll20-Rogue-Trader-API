@@ -134,13 +134,18 @@ describe('applyDamage()', function() {
 		character.set('controlledby', player.id);
 		var page = createObj('page', {name: 'applyDamage page'}, {MOCK20override: true});
     var graphic = createObj('graphic', {name: 'applyDamage graphic', _pageid: page.id, represents: character.id, bar3_value: 100, bar3_max: 100, bar2_value: 'H'});
+		var graphic2 = createObj('graphic', {name: 'applyDamage graphic', _pageid: page.id, represents: character.id, bar3_value: 100, bar3_max: 100, bar2_value: 'H'});
+		var graphic3 = createObj('graphic', {name: 'applyDamage graphic', _pageid: page.id, represents: character.id, bar3_value: 100, bar3_max: 100, bar2_value: 'H'});
     var attack = createObj('character', {name: 'Damage Catcher'});
     var values = {DamageType: 'I', Damage: '13', Penetration: '0', Felling: '1', Primitive: '0', Hits: '2', OnesLocation: '9', TensLocation: '8'};
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
-    expect(graphic.get('bar3_value')).to.equal(100);
     player.MOCK20chat('!dam', {MOCK20selected: [{_type: 'graphic', _id: graphic.id}]});
-    expect(graphic.get('bar3_value')).to.equal(98);
+		var dead = 0;
+		if(graphic.get('status_dead')) dead++;
+		if(graphic2.get('status_dead')) dead++;
+		if(graphic3.get('status_dead')) dead++;
+    expect(dead).to.equal(2);
   });
 	it('should allow Characters to go into negative health', function(){
 		Campaign().MOCK20reset();

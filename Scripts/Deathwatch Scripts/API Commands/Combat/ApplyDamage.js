@@ -30,19 +30,14 @@ function applyDamage (matches,msg){
     //reduce the damage by the target's Toughness Bonus
     damage = INQAttack_old.applyToughness(damage);
 
-    //a capital H in bar2 alerts the system that this graphic is a horde
-    if(graphic.get("bar2_value") == "H"){
-      damage = INQAttack_old.hordeDamage(damage);
-      log('horde damage: ' + damage)
-    }
-
-
     //be sure that the final result is a number
     damage = Number(damage);
     if(damage == undefined || damage == NaN){
       return whisper(graphic.get("name") + ": Damage undefined.");
     }
 
+    //a capital H in bar2 alerts the system that this graphic is a horde
+    if(/^H/i.test(graphic.get('bar2_value'))) return INQAttack_old.hordeDamage(damage);
     //apply the damage to the graphic's bar3_value. If bar3 is linked to a
     //character sheet's wounds, the wounds will be immediately updated as well
     var remainingWounds = Number(graphic.get("bar3_value")) - damage;

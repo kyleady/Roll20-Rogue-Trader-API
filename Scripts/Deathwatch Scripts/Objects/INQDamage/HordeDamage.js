@@ -1,16 +1,38 @@
 INQAttack_old = INQAttack_old || {};
 INQAttack_old.hordeDamage = function(damage){
-  //if the damage is non-zero, overwrite the damage with the number of Hits
-  //(gm's can add bonus horde damage beforehand by modifying the number of
-  //hits. This is will leave the damage unaffected on other tokens.)
   if(damage > 0){
-    //at base it is the number of hits
-    damage = INQAttack_old.Hits.get("current");
-    //explosive damage deals one extra point of horde damage
-    if(INQAttack_old.DamType.get("current").toUpperCase() == "X") damage++;
-    //FUTURE WORK: add devastating damage to the magnitude damage
+    damage = Number(INQAttack_old.Hits.get('current'));
+    if(!damage && damage != 0) return whisper(damage + ' is not valid.');
+    if(/X/i.test(INQAttack_old.DamType.get('current'))) damage++;
+    var members = findObjs({
+      _type: 'graphic',
+      bar2_value: INQAttack_old.graphic.get('bar2_value'),
+      _pageid: INQAttack_old.graphic.get('_pageid')
+    });
+
+    for(var i = 0; i < members.length; i++) {
+      if(members[i].get('status_dead')) {
+        members.splice(i, 1);
+        i--;
+      }
+    }
+
+    var killed = [];
+    for(var i = 0; i < damage; i++) {
+      if(!members.length) break;
+      var index = randomInteger(members.length) - 1;
+      killed.push(members[index]);
+      members.splice(index, 1);
+    }
+
+    INQAttack_old.Hits.set('current', damage - killed.length);
+    for(var i = 0; i < killed.length; i++) {
+      killed[i].set('status_dead', true);
+      damageFx(killed[i], attributeValue('DamageType'));
+    }
+  } else {
+    damage = 0;
   }
 
-  //return the magnitude damage
-  return damage;
+  announce(INQAttack_old.graphic.get('name') + ' Horde took [[' + damage + ']] damage.');
 }
