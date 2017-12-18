@@ -39,6 +39,7 @@ on("chat:message", function(msg) {
     var PenObj = details.Pen;
     var FellObj = details.Fell;
     var PrimObj = details.Prim;
+    var InaObj = details.Ina;
 
     //I don't know why I need to do this BUT for some reason when the message is sent by the API
     //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
@@ -57,7 +58,7 @@ on("chat:message", function(msg) {
     } else {//if(msg.content.indexOf(" Impact ") !== -1){
       DamageType = "I";
     }
-    DamTypeObj.set("current",DamageType);
+    DamTypeObj.set("current", DamageType);
 
     //record Damage
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
@@ -76,15 +77,18 @@ on("chat:message", function(msg) {
     //record Penetration
     PenObj.set('current', msg.inlinerolls[rollIndex + 1].results.total);
 
-    //record Felling
+    FellObj.set('current', 0);
+    InaObj.set('current', 0);
     var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
     if(notesMatches) {
       var notes = notesMatches[1];
       notes = notes.replace('(', '[').replace(')', ']');
       var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
       var felling = inqweapon.has('Felling');
+      var ina = inqweapon.has('Ignores Natural Armour');
       var inqqtt = new INQQtt({PR: 0, SB: 0});
       FellObj.set('current', inqqtt.getTotal(felling));
+      if(ina) InaObj.set('current', 1);
     }
 
     //record Primitive
@@ -120,6 +124,7 @@ on("chat:message", function(msg) {
     DamTypeObj.set("max",DamTypeObj.get("current"));
     PenObj.set("max",PenObj.get("current"));
     FellObj.set("max",FellObj.get("current"));
+    InaObj.set('max', InaObj.get('current'));
     PrimObj.set("max",PrimObj.get("current"));
   }
 });

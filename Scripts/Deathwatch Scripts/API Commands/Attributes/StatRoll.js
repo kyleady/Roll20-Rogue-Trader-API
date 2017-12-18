@@ -76,6 +76,7 @@ function getProperStatName(statName){
       //most Attributes begin each word with a capital letter (also known as TitleCase)
       statName = statName.toTitleCase();
   }
+  if(/Ignores?\s*Natural\s*Armou?r/i.test(statName)) statName = 'Ignores Natural Armour';
   statName = statName.replace(/^armour(?:_|\s*)(\w\w?)$/i, function(match, p1){
     return 'Armour_' + p1.toUpperCase();
   });
@@ -114,7 +115,7 @@ on('ready', function() {
     rollRegex += toRegex(rollableStat, {str: true}) + '|';
   }
   rollRegex = rollRegex.replace(/\|\s*$/, '');
-  rollRegex += ')';
+  rollRegex += ')\\s*';
   rollRegex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*$';
   var rollRe = new RegExp(rollRegex, 'i');
   CentralInput.addCMD(rollRe, statRoll, true);

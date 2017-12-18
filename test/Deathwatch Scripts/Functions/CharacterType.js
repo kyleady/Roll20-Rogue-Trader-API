@@ -12,7 +12,7 @@ describe('characterType()', function() {
 
     var inqcharacter = new INQCharacter();
     var character = inqcharacter.toCharacterObj();
-		expect(characterType(character)).to.equal('character');
+		expect(characterType(character.id)).to.equal('character');
   });
   it('should be able to detect vehicles', function(){
 		Campaign().MOCK20reset();
@@ -22,8 +22,8 @@ describe('characterType()', function() {
 		MOCK20endOfLastScript();
 
     var inqvehicle = new INQVehicle();
-    //var vehicle = inqvehicle.toCharacterObj();
-		//expect(characterType(vehicle)).to.equal('vehicle');
+    var vehicle = inqvehicle.toCharacterObj();
+		expect(characterType(vehicle.id)).to.equal('vehicle');
   });
   it('should be able to detect starships', function(){
 		Campaign().MOCK20reset();
@@ -34,6 +34,6 @@ describe('characterType()', function() {
 
     var inqstarship = new INQStarship();
     var starship = inqstarship.toCharacterObj();
-		expect(characterType(starship)).to.equal('starship');
+		expect(characterType(starship.id)).to.equal('starship');
   });
 });

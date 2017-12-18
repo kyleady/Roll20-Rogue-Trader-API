@@ -2,11 +2,13 @@ INQQtt.prototype.horde = function() {
   var inquse = this.inquse;
   var inqtest = inquse.inqtest;
   var inqcharacter = inquse.inqcharacter;
+  var inqweapon = inquse.inqweapon;
   var inqtarget = inquse.inqtarget;
   var modifiers = inquse.modifiers;
   var Damage = inquse.inqweapon.Damage;
   var RoF = inquse.options.RoF;
   if(inqtest && inqtest.Successes != undefined) {
+    if(/X/i.test(inqweapon.DamageType.Name)) inquse.hordeDamage++;
     if(/All\s*Out/i.test(RoF)) {
       var hDam = 1;
       hDam += Math.floor(inqtest.Successes/2);

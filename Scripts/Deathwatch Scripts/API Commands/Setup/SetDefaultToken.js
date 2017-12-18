@@ -14,7 +14,7 @@ function setDefaultToken(matches, msg){
   var characters = suggestCMD('!Give Token To $', name, msg.playerid, 'character');
   if(!characters) return;
   var character = characters[0];
-  switch(characterType(character)){
+  switch(characterType(character.id)){
     case 'character':
       var bar1 = getAttrByName(character.id, 'Fatigue', 'max');
       var bar2 = getAttrByName(character.id, 'Fate', 'max');

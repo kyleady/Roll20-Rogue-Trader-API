@@ -1,6 +1,6 @@
 INQUse.prototype.loadCharacter = function(character, graphic, callback) {
   var pilot;
-  if(character && characterType(character) != 'character' && !playerIsGM(this.playerid)){
+  if(character && characterType(character.id) != 'character' && !playerIsGM(this.playerid)){
     pilot = defaultCharacter(this.playerid);
   }
 

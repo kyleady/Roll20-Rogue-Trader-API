@@ -1,6 +1,10 @@
 //get the armor of the target at the location where the attack hit
 function getHitLocation(tensLoc, onesLoc, targetType){
   var hitLocation = "";
+  if(typeof tensLoc == 'object') tensLoc = tensLoc.get('current');
+  if(typeof onesLoc == 'object') onesLoc = onesLoc.get('current');
+  if(typeof tensLoc == 'number') tensLoc = tensLoc.toString();
+  if(typeof onesLoc == 'number') onesLoc = onesLoc.toString();
   targetType = targetType || "character";
   switch(targetType){
     case "character":

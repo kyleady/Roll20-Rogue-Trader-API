@@ -18,10 +18,10 @@ describe('critLink()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
     on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
-        expect(msg.content).to.include(getLink(handout.get('name')));
-        done();
-      }
+      if(msg.playerid != 'API') return;
+			if(msg.target != player.id) return;
+      expect(msg.content).to.include(getLink(handout.get('name')));
+      done();
     });
 
     player.MOCK20chat('!crit?');
@@ -41,10 +41,10 @@ describe('critLink()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
     on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
-        expect(msg.content).to.include(getLink(handout.get('name')));
-        done();
-      }
+			if(msg.playerid != 'API') return;
+			if(msg.target != player.id) return;
+      expect(msg.content).to.include(getLink(handout.get('name')));
+      done();
     });
 
     player.MOCK20chat('!crit? h');
@@ -64,10 +64,10 @@ describe('critLink()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
     on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
-        expect(msg.content).to.include(getLink(handout.get('name')));
-        done();
-      }
+			if(msg.playerid != 'API') return;
+			if(msg.target != player.id) return;
+      expect(msg.content).to.include(getLink(handout.get('name')));
+      done();
     });
 
     player.MOCK20chat('!crit? R');
@@ -87,10 +87,10 @@ describe('critLink()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
     on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
-        expect(msg.content).to.include(getLink(handout.get('name')));
-        done();
-      }
+			if(msg.playerid != 'API') return;
+			if(msg.target != player.id) return;
+      expect(msg.content).to.include(getLink(handout.get('name')));
+      done();
     });
 
     player.MOCK20chat('!crit? r h');
@@ -110,10 +110,10 @@ describe('critLink()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: values[attr], _characterid: attack.id});
 
     on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
-        expect(msg.content).to.include(getLink(handout.get('name')));
-        done();
-      }
+			if(msg.playerid != 'API') return;
+			if(msg.target != player.id) return;
+      expect(msg.content).to.include(getLink(handout.get('name')));
+      done();
     });
 
     player.MOCK20chat('!crit? s');

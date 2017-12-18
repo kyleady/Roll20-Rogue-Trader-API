@@ -6,7 +6,8 @@ INQVehicleParser.prototype.parseAttributes = function(graphic){
     _characterid: this.ObjID
   });
   for(var attr of attributes){
-    this.Attributes[attr.get('name')] = Number(attr.get('current'));
+    var value = attr.get('name') == 'Structural Integrity' ? 'max' : 'current';
+    this.Attributes[attr.get('name')] = Number(attr.get(value));
   }
   //when working with a generic enemy's current stats, we need to check for temporary values
   //generic enemies are those who represent a character, yet none of their stats are linked

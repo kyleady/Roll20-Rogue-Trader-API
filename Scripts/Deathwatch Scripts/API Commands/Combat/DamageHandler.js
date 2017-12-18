@@ -11,30 +11,27 @@ function attackShow(matches,msg){
   }
 
   if(matches && matches[1] && matches[1].toLowerCase() == "max"){
-    matches[1] = "max";
+    var value = "max";
   } else {
-    matches = [];
-    matches[1] = "current";
+    var value = "current";
   }
   //starship damage only cares about the straight damage and if there is any
   //penetration at all
-  if(details.DamType.get(matches[1]).toLowerCase() == "s"){
-    if(details.Pen.get(matches[1])){
-      whisper("Dam: [[" + details.Dam.get(matches[1]) + "]] Starship, Pen: true");
+  if(details.DamType.get(value).toLowerCase() == "s"){
+    if(details.Pen.get(value)){
+      whisper("Dam: [[" + details.Dam.get(value) + "]] Starship, Pen: true");
     } else {
-      whisper("Dam: [[" + details.Dam.get(matches[1]) + "]] Starship, Pen: false");
+      whisper("Dam: [[" + details.Dam.get(value) + "]] Starship, Pen: false");
     }
   //output normal damage
   } else {
-    var output = "Dam: [[" + details.Dam.get(matches[1]) + "]] " + details.DamType.get(matches[1]);
-    output += ", Pen: [[" +  details.Pen.get(matches[1]) + "]]";
-    output += ", Felling: [[" + details.Fell.get(matches[1]) + "]]";
-    output += ", Hits: [[" + details.Hits.get(matches[1]) + "]]";
-    if(Number(details.Prim.get(matches[1]))) {
-      whisper( output + ", Primitive");
-    } else {
-      whisper(output);
-    }
+    var output = "Dam: [[" + details.Dam.get(value) + "]] " + details.DamType.get(value);
+    output += ", Pen: [[" +  details.Pen.get(value) + "]]";
+    output += ", Felling: [[" + details.Fell.get(value) + "]]";
+    output += ", Hits: [[" + details.Hits.get(value) + "]]";
+    if(Number(details.Prim.get(value))) output += ', Primitive';
+    if(Number(details.Ina.get(value))) output += ', Ignores Natural Armour';
+    whisper(output);
   }
 }
 
@@ -46,7 +43,7 @@ on("ready",function(){
     attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets gm view damage variables without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive)\s*(\?)()()\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive|Ignores?\s*Natural\s*Armou?r)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     attributeHandler(matches,msg,{partyStat: true});
   });

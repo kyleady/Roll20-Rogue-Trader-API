@@ -1,7 +1,8 @@
 INQTest.prototype.display = function(playerid, name, gm, extraLines){
   extraLines = extraLines || [];
   var output = '';
-  var skillName = getLink(this.Skill);
+  var skillName;
+  if(this.Skill) skillName = getLink(this.Skill);
   if(this.Subgroup) skillName += '(' + this.Subgroup + ')';
   if(gm){
     output += '/w gm ';

@@ -1,5 +1,5 @@
 //the prototype for characters
-function INQStarship(){
+function INQStarship(character, graphic, callback){
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -42,6 +42,29 @@ function INQStarship(){
   this.Attributes.Crew = 10;
   this.Attributes.Manoeuvrability = 0;
   this.Attributes.Detection = 0;
+
+  var inqcharacter = this;
+  var myPromise = new Promise(function(resolve){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQStarshipParser());
+      inqcharacter.parse(character, graphic, function(){
+        resolve(inqcharacter);
+      });
+    } else {
+      resolve(inqcharacter);
+    }
+  });
+
+  myPromise.catch(function(e){log(e)});
+  myPromise.then(function(inqcharacter){
+    if(character != undefined){
+      Object.setPrototypeOf(inqcharacter, new INQStarship());
+    }
+
+    if(typeof callback == 'function'){
+      callback(inqcharacter);
+    }
+  });
 }
 
 INQStarship.prototype = new INQCharacter();

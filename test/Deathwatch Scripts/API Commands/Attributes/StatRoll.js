@@ -72,7 +72,7 @@ describe('statRoll()', function() {
       }
     });
 
-    player.MOCK20chat('!BS+20+10 Aim,-3');
+    player.MOCK20chat('!BS  +20+10 Aim,-3');
   });
   it('should allow you to whisper the skill check to the gm', function(done){
 		Campaign().MOCK20reset();

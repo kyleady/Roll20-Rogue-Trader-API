@@ -18,7 +18,7 @@ describe('damageHandler()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: maxValues[attr], _characterid: attack.id});
 
 		on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
+      if(msg.playerid == 'API' && msg.inlinerolls){
         expect(msg.inlinerolls).to.not.be.empty;
         expect(msg.inlinerolls[0].expression).to.equal('13');
         expect(msg.inlinerolls[1].expression).to.equal('4');
@@ -44,15 +44,17 @@ describe('damageHandler()', function() {
     var values = {DamageType: 'X', Damage: '13', Penetration: '4', Felling: '1', Primitive: '0', Hits: '2', OnesLocation: '9', TensLocation: '8'};
     var maxValues = {DamageType: 'R', Damage: '23', Penetration: '34', Felling: '2', Primitive: '3', Hits: '1', OnesLocation: '8', TensLocation: '3'};
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: maxValues[attr], _characterid: attack.id});
+		createObj('attribute', {name: 'Ignores Natural Armour', current: 0, max: 2, _characterid: attack.id});
 
 		on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
+      if(msg.playerid == 'API' && msg.inlinerolls){
         expect(msg.inlinerolls).to.not.be.empty;
         expect(msg.inlinerolls[0].expression).to.equal('23');
         expect(msg.inlinerolls[1].expression).to.equal('34');
         expect(msg.inlinerolls[2].expression).to.equal('2');
         expect(msg.inlinerolls[3].expression).to.equal('1');
         expect(msg.content).to.match(/primitive/i);
+				expect(msg.content).to.match(/ignores natural armour/i);
         expect(msg.content).to.match(/R/);
         done();
       }
@@ -74,7 +76,7 @@ describe('damageHandler()', function() {
     for (var attr in values) createObj('attribute', {name: attr, current: values[attr], max: maxValues[attr], _characterid: attack.id});
 
 		on('chat:message', function(msg){
-      if(msg.playerid == 'API'){
+      if(msg.playerid == 'API' && msg.inlinerolls){
         expect(msg.inlinerolls).to.not.be.empty;
         expect(msg.inlinerolls[0].expression).to.equal('13');
         expect(msg.content).to.match(/pen(etration)?\s*:\s*true/i);

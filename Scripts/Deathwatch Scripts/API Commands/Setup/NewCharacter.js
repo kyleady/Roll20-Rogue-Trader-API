@@ -4,36 +4,36 @@
 //matches[2] is the type of character to make (character, vehicle, starship)
 function newCharacter(matches, msg){
 
-  var characterType = undefined;
+  var charactertype = undefined;
   var character = undefined;
   //allow the new character to be player owned
   var playerOwned = /^\s*player\s*/i.test(matches[1]);
 
   //allow the character type to be a vehicle
   if(/^\s*vehicle\s*/i.test(matches[2])){
-    characterType = "Vehicle";
+    charactertype = "Vehicle";
     character = new INQVehicle();
   }
 
   //allow the character type to be a starship
   if(/^\s*star\s*ship\s*/i.test(matches[2])){
-    characterType = "Starship";
+    charactertype = "Starship";
     character = new INQStarship();
   }
 
   //by default, create a new character
-  if(characterType == undefined){
-    characterType = "Character";
+  if(charactertype == undefined){
+    charactertype = "Character";
     character = new INQCharacter();
   }
 
   //find a unique name for the character
   var counter = 0;
-  var characterName = "New " + characterType;
+  var characterName = "New " + charactertype;
   do {
    counter++;
    if(counter > 1){
-     characterName = "New " + characterType + " " + counter.toString();
+     characterName = "New " + charactertype + " " + counter.toString();
    }
    duplicateCharacters = findObjs({
      _type: "character",
