@@ -726,12 +726,12 @@ function attackShow(matches,msg){
 //waits until CentralInput has been initialized
 on("ready",function(){
   //Lets gm  view and edit damage variables with modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|fell|felling|prim|primitive)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam(?:age)?|pen(?:etration)?|hits|dam(?:age)\s*type|fell(?:ing)?|prim(?:itive)?|Ignores?\s*Natural\s*Armou?r)\s*(\?\s*\+|\?\s*-|\?\s*\*|\?\s*\/|=|\+\s*=|-\s*=|\*\s*=|\/\s*=)\s*(|\+|-)\s*(\d+|current|max|\$\[\[0\]\])\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets gm view damage variables without modifiers
-  CentralInput.addCMD(/^!\s*(|max)\s*(dam|damage|pen|penetration|hits|damtype|damage type|fell|felling|prim|primitive|Ignores?\s*Natural\s*Armou?r)\s*(\?)()()\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam(?:age)?|pen(?:etration)?|hits|dam(?:age)\s*type|fell(?:ing)?|prim(?:itive)?|Ignores?\s*Natural\s*Armou?r)\s*(\?)()()\s*$/i, function(matches,msg){
     matches[2] = getProperStatName(matches[2]);
     attributeHandler(matches,msg,{partyStat: true});
   });
