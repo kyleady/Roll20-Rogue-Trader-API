@@ -204,4 +204,21 @@ describe('suggestCMD()', function() {
 		var output = suggestCMD('!$ owe me $$10', ['phrase1', 'phrase2'], player.id, 'player');
 		expect(output).to.equal(false);
   });
+	it('should return an object that responds to get in place of an empty string', function () {
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', 'INQTotal.js');
+		INQTotal = fs.readFileSync(filePath, 'utf8');
+		eval(INQTotal);
+		MOCK20endOfLastScript();
+
+		var player = createObj('player', {_displayname: 'PHRASE11 player'}, {MOCK20override: true});
+    var player2 = createObj('player', {_displayname: 'PHRASE1  player'}, {MOCK20override: true});
+    var player3 = createObj('player', {_displayname: 'phrase2  player'}, {MOCK20override: true});
+    var phrase11 = 0;
+		var phrase1 = 0;
+		var output = suggestCMD('!$ owe me $$10', ['phrase11', ''], player.id, 'player');
+		expect(output[0]).to.deep.equal(player);
+		expect(output[1]).to.respondTo('get');
+		expect(output[1].get('name')).to.equal('');
+  });
 });

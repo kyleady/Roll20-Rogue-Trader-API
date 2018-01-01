@@ -13,6 +13,10 @@ function suggestCMD(suggestedCMD, names, playerid, type, additionalCriteria){
   var output = [];
   for(var i = 0; i < names.length; i++){
     var name = names[i];
+    if(name == '') {
+      output.push({get: () => ''});
+      continue;
+    }
     var items = matchingObjs(type, name.split(' '), additionalCriteria);
     items = trimToPerfectMatches(items, name);
     if(items.length <= 0){

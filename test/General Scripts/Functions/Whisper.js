@@ -39,4 +39,15 @@ describe('whisper()', function() {
     whisper('whisper() delay', {speakingAs: 'The Speaker', MOCK20tag: 'whisper_options', delay: 100});
 		expect(msgCount).to.equal(0);
   });
+  it('should warn if the player does not exist after the delay', function(done){
+		var msgCount = 0;
+		on('chat:message', function(msg){
+      if(msg.content =='This message should not arrive.') throw 'Message should not have sent.';
+      msgCount++;
+      done();
+    });
+    var player = createObj('player', {_displayname: 'tempPlayer'}, {MOCK20override: true});
+    whisper('This message should not arrive.', {speakingTo: player.id, delay: 100});
+    player.remove({MOCK20override: true});
+  });
 });
