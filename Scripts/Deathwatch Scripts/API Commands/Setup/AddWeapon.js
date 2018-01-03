@@ -13,7 +13,7 @@ var INQAttack_old = INQAttack_old || {};
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper('Please carefully select who we are giving these weapns to.', {speakingTo: msg.playerid});
+      whisper('Please carefully select who we are giving this weapon to.', {speakingTo: msg.playerid});
       return;
     }
   }
@@ -22,7 +22,10 @@ var INQAttack_old = INQAttack_old || {};
   var ammoStr, quantity;
   if(matches[2]) ammoStr = matches[2];
   if(matches[3]) quantity = matches[3];
-  var weapons = suggestCMD('!addWeapon $(' + ammoStr + ')', name, msg.playerid);
+  var suggestion = '!addWeapon $';
+  if(ammoStr) suggestion += '(' + ammoStr + ')';
+  if(quantity) suggestion += '[x' + quantity + ']';
+  var weapons = suggestCMD(suggestion, name, msg.playerid);
   if(!weapons) return;
   var weapon = weapons[0];
   var myPromise = new Promise(function(resolve){
@@ -34,7 +37,9 @@ var INQAttack_old = INQAttack_old || {};
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     if(ammoStr){
-      var clips = suggestCMD('!addWeapon ' + name + '($)', ammoStr.split(','), msg.playerid);
+      var ammoSuggestion = '!addWeapon ' + name + '($)';
+      if(quantity) ammoSuggestion += '[x' + quantity + ']';
+      var clips = suggestCMD(ammoSuggestion, ammoStr.split(','), msg.playerid);
       if(!clips) return;
       var ammoNames = [];
       for(var clip of clips){
@@ -68,7 +73,7 @@ on('ready', function(){
   regex += '\\s+(\\S[^\\(\\)\\[\\]]*)';
   regex += '(?:';
   regex += '\\(([^\\(\\)]+)\\)';
-  regex += ')?';
+  regex += ')?\\s*';
   regex += '(?:';
   regex += '\\[\\s*x\\s*(\\d+)\\s*\\]';
   regex += ')?';

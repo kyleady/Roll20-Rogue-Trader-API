@@ -10,62 +10,57 @@ function setDefaultToken(matches, msg){
     return whisper('Please select exactly one token.');
   }
 
-  var name = matches[1];
+  var isPlayer = matches[1];
+  var name = matches[2];
   var characters = suggestCMD('!Give Token To $', name, msg.playerid, 'character');
   if(!characters) return;
   var character = characters[0];
+  var bars = ['bar1', 'bar2', 'bar3'];
   switch(characterType(character.id)){
     case 'character':
-      var bar1 = getAttrByName(character.id, 'Fatigue', 'max');
-      var bar2 = getAttrByName(character.id, 'Fate', 'max');
-      var bar3 = getAttrByName(character.id, 'Wounds', 'max');
+      var names = {bar1: 'Fatigue', bar2: 'Fate', bar3: 'Wounds'};
     break;
     case 'vehicle':
-      var bar1 = getAttrByName(character.id, 'Tactical Speed', 'max') || 0;
-      var bar2 = getAttrByName(character.id, 'Aerial Speed', 'max')   || 0;
-      var bar3 = getAttrByName(character.id, 'Structural Integrity', 'max');
+      var names = {bar1: 'Tactical Speed', bar2: 'Aerial Speed', bar3: 'Structural Integrity'};
     break;
     case 'starship':
-      var bar1 = getAttrByName(character.id, 'Population', 'max') || 0;
-      var bar2 = getAttrByName(character.id, 'Morale', 'max') || 0;
-      var bar3 = getAttrByName(character.id, 'Hull', 'max');
+      var names = {bar1: 'Population', bar2: 'Morale', bar3: 'Hull'};
     break;
   }
 
-  //detail the graphic
-  graphic.set('bar1_link', '');
-  graphic.set('bar2_link', '');
-  graphic.set('bar3_link', '');
-
-  graphic.set('represents', character.id);
-  graphic.set('name', character.get('name'));
-
-  graphic.set('bar1_value', bar1);
-  graphic.set('bar2_value', bar2);
-  graphic.set('bar3_value', bar3);
-
-  graphic.set('bar1_max', bar1);
-  graphic.set('bar2_max', bar2);
-  graphic.set('bar3_max', bar3);
-
-  graphic.set('showname', true);
-  graphic.set('showplayers_name', true);
-  graphic.set('showplayers_bar1', true);
-  graphic.set('showplayers_bar2', true);
-  graphic.set('showplayers_bar3', true);
-  graphic.set('showplayers_aura1', true);
-  graphic.set('showplayers_aura2', true);
+  var attrs = {};
+  for(var bar of bars) attrs[bar] = findObjs({name: names[bar], _type: 'attribute', _characterid: character.id})[0] || {get: () => 0};
+  var links = {};
+  for(var bar of bars) links[bar] = attrs[bar].id || '';
+  if(!isPlayer) links = {bar1: '', bar2: '', bar3: ''};
+  var maxes = {};
+  for(var bar of bars) maxes[bar] = attrs[bar].get('max');
+  graphic.set({
+    bar1_link: links.bar1,
+    bar2_link: links.bar2,
+    bar3_link: links.bar3,
+    represents: character.id,
+    name: character.get('name'),
+    bar1_value: maxes.bar1,
+    bar2_value: maxes.bar2,
+    bar3_value: maxes.bar3,
+    bar1_max: maxes.bar1,
+    bar2_max: maxes.bar2,
+    bar3_max: maxes.bar3,
+    showname: true,
+    showplayers_name: true,
+    showplayers_bar1: true,
+    showplayers_bar2: true,
+    showplayers_bar3: true,
+    showplayers_aura1: true,
+    showplayers_aura2: true
+  });
 
   setDefaultTokenForCharacter(character, graphic);
-
-  //set the character's avatar as the token if they don't already have something
-  if(character.get('avatar') == ''){
-    character.set('avatar', graphic.get('imgsrc').replace('/thumb.png?', '/med.png?'));
-  }
-
+  if(!character.get('avatar')) character.set('avatar', graphic.get('imgsrc').replace('/thumb.png?', '/med.png?'));
   whisper('Default Token set for *' + getLink(character.get('name')) + '*.');
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*give\s*token\s*to\s+(.+)$/i, setDefaultToken);
+  CentralInput.addCMD(/^!\s*give\s*(player)?\s*token\s*to\s+(.+)$/i, setDefaultToken);
 });

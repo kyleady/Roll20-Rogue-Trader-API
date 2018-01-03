@@ -1402,7 +1402,7 @@ var INQAttack_old = INQAttack_old || {};
   //if nothing was selected and the player is the gm, quit
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
-      whisper('Please carefully select who we are giving these weapns to.', {speakingTo: msg.playerid});
+      whisper('Please carefully select who we are giving this weapon to.', {speakingTo: msg.playerid});
       return;
     }
   }
@@ -1411,7 +1411,10 @@ var INQAttack_old = INQAttack_old || {};
   var ammoStr, quantity;
   if(matches[2]) ammoStr = matches[2];
   if(matches[3]) quantity = matches[3];
-  var weapons = suggestCMD('!addWeapon $(' + ammoStr + ')', name, msg.playerid);
+  var suggestion = '!addWeapon $';
+  if(ammoStr) suggestion += '(' + ammoStr + ')';
+  if(quantity) suggestion += '[x' + quantity + ']';
+  var weapons = suggestCMD(suggestion, name, msg.playerid);
   if(!weapons) return;
   var weapon = weapons[0];
   var myPromise = new Promise(function(resolve){
@@ -1423,7 +1426,9 @@ var INQAttack_old = INQAttack_old || {};
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(inqweapon){
     if(ammoStr){
-      var clips = suggestCMD('!addWeapon ' + name + '($)', ammoStr.split(','), msg.playerid);
+      var ammoSuggestion = '!addWeapon ' + name + '($)';
+      if(quantity) ammoSuggestion += '[x' + quantity + ']';
+      var clips = suggestCMD(ammoSuggestion, ammoStr.split(','), msg.playerid);
       if(!clips) return;
       var ammoNames = [];
       for(var clip of clips){
@@ -1457,7 +1462,7 @@ on('ready', function(){
   regex += '\\s+(\\S[^\\(\\)\\[\\]]*)';
   regex += '(?:';
   regex += '\\(([^\\(\\)]+)\\)';
-  regex += ')?';
+  regex += ')?\\s*';
   regex += '(?:';
   regex += '\\[\\s*x\\s*(\\d+)\\s*\\]';
   regex += ')?';
@@ -1469,18 +1474,18 @@ function lastWatchWave (matches, msg) {
   var Troops = Number(matches[1]);
   var Elite = 0;
   var Master = 0;
-  var Chance = matches[2] || 4;
+  var Chance = matches[2] || 60;
   Chance = Number(Chance);
   var MasterPotential = Math.floor(Troops / 16);
   for (var i = 0; i < MasterPotential; i++) {
-    if (randomInteger(10) >= 4) {
+    if (randomInteger(100) <= Chance) {
       Troops -= 16;
       Master++;
     }
   }
   var ElitePotential = Math.floor(Troops / 4);
   for (var i = 0; i < ElitePotential; i++) {
-    if (randomInteger(10) >= 4) {
+    if (randomInteger(100) <= Chance) {
       Troops -= 4;
       Elite++;
     }
@@ -1489,12 +1494,12 @@ function lastWatchWave (matches, msg) {
   var output = '';
   if (Master) output += 'Master: ' + Master + ", ";
   if (Elite) output += 'Elite: ' + Elite + ", ";
-  if(Troop) output += 'Horde: ' + (Troop * 5);
-  whisper(output.replace(/,$/, ''));
+  if(Troops) output += 'Horde: ' + (Troops * 5);
+  whisper(output.replace(/,\s*$/, ''));
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*last\s*watch\s*wave\s*(\d+)\s*(?:|\s*(\d+)\s*)?$/i, lastWatchWave);
+  CentralInput.addCMD(/^!\s*last\s*watch\s*wave\s*(\d+)\s*(?:(\d+)%)?\s*$/i, lastWatchWave);
 });
 //allows the gm to create a new roll20 character sheet that represents a brand
 //new character.
@@ -1565,64 +1570,59 @@ function setDefaultToken(matches, msg){
     return whisper('Please select exactly one token.');
   }
 
-  var name = matches[1];
+  var isPlayer = matches[1];
+  var name = matches[2];
   var characters = suggestCMD('!Give Token To $', name, msg.playerid, 'character');
   if(!characters) return;
   var character = characters[0];
+  var bars = ['bar1', 'bar2', 'bar3'];
   switch(characterType(character.id)){
     case 'character':
-      var bar1 = getAttrByName(character.id, 'Fatigue', 'max');
-      var bar2 = getAttrByName(character.id, 'Fate', 'max');
-      var bar3 = getAttrByName(character.id, 'Wounds', 'max');
+      var names = {bar1: 'Fatigue', bar2: 'Fate', bar3: 'Wounds'};
     break;
     case 'vehicle':
-      var bar1 = getAttrByName(character.id, 'Tactical Speed', 'max') || 0;
-      var bar2 = getAttrByName(character.id, 'Aerial Speed', 'max')   || 0;
-      var bar3 = getAttrByName(character.id, 'Structural Integrity', 'max');
+      var names = {bar1: 'Tactical Speed', bar2: 'Aerial Speed', bar3: 'Structural Integrity'};
     break;
     case 'starship':
-      var bar1 = getAttrByName(character.id, 'Population', 'max') || 0;
-      var bar2 = getAttrByName(character.id, 'Morale', 'max') || 0;
-      var bar3 = getAttrByName(character.id, 'Hull', 'max');
+      var names = {bar1: 'Population', bar2: 'Morale', bar3: 'Hull'};
     break;
   }
 
-  //detail the graphic
-  graphic.set('bar1_link', '');
-  graphic.set('bar2_link', '');
-  graphic.set('bar3_link', '');
-
-  graphic.set('represents', character.id);
-  graphic.set('name', character.get('name'));
-
-  graphic.set('bar1_value', bar1);
-  graphic.set('bar2_value', bar2);
-  graphic.set('bar3_value', bar3);
-
-  graphic.set('bar1_max', bar1);
-  graphic.set('bar2_max', bar2);
-  graphic.set('bar3_max', bar3);
-
-  graphic.set('showname', true);
-  graphic.set('showplayers_name', true);
-  graphic.set('showplayers_bar1', true);
-  graphic.set('showplayers_bar2', true);
-  graphic.set('showplayers_bar3', true);
-  graphic.set('showplayers_aura1', true);
-  graphic.set('showplayers_aura2', true);
+  var attrs = {};
+  for(var bar of bars) attrs[bar] = findObjs({name: names[bar], _type: 'attribute', _characterid: character.id})[0] || {get: () => 0};
+  var links = {};
+  for(var bar of bars) links[bar] = attrs[bar].id || '';
+  if(!isPlayer) links = {bar1: '', bar2: '', bar3: ''};
+  var maxes = {};
+  for(var bar of bars) maxes[bar] = attrs[bar].get('max');
+  graphic.set({
+    bar1_link: links.bar1,
+    bar2_link: links.bar2,
+    bar3_link: links.bar3,
+    represents: character.id,
+    name: character.get('name'),
+    bar1_value: maxes.bar1,
+    bar2_value: maxes.bar2,
+    bar3_value: maxes.bar3,
+    bar1_max: maxes.bar1,
+    bar2_max: maxes.bar2,
+    bar3_max: maxes.bar3,
+    showname: true,
+    showplayers_name: true,
+    showplayers_bar1: true,
+    showplayers_bar2: true,
+    showplayers_bar3: true,
+    showplayers_aura1: true,
+    showplayers_aura2: true
+  });
 
   setDefaultTokenForCharacter(character, graphic);
-
-  //set the character's avatar as the token if they don't already have something
-  if(character.get('avatar') == ''){
-    character.set('avatar', graphic.get('imgsrc').replace('/thumb.png?', '/med.png?'));
-  }
-
+  if(!character.get('avatar')) character.set('avatar', graphic.get('imgsrc').replace('/thumb.png?', '/med.png?'));
   whisper('Default Token set for *' + getLink(character.get('name')) + '*.');
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*give\s*token\s*to\s+(.+)$/i, setDefaultToken);
+  CentralInput.addCMD(/^!\s*give\s*(player)?\s*token\s*to\s+(.+)$/i, setDefaultToken);
 });
 //searches every message for rolls to hit and damage rolls.
 on("chat:message", function(msg) {
@@ -7199,6 +7199,10 @@ function suggestCMD(suggestedCMD, names, playerid, type, additionalCriteria){
   var output = [];
   for(var i = 0; i < names.length; i++){
     var name = names[i];
+    if(name == '') {
+      output.push({get: () => ''});
+      continue;
+    }
     var items = matchingObjs(type, name.split(' '), additionalCriteria);
     items = trimToPerfectMatches(items, name);
     if(items.length <= 0){
@@ -7300,7 +7304,11 @@ function whisper(content, options){
   } else if(options.speakingTo) {
     if(getObj('player', options.speakingTo)){
       if(options.gmEcho && !playerIsGM(options.speakingTo)) whisper(content, new_options);
-      setTimeout(function(){sendChat(speakingAs, '/w \"' + getObj('player',options.speakingTo).get('_displayname') + '\" ' + content, options.callback, options)}, options.delay);
+      setTimeout(function(){
+        var player = getObj('player', options.speakingTo);
+        if(!player) return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized, AFTER THE DELAY, and the following msg failed to be delivered: ' + content);
+        sendChat(speakingAs, '/w \"' + player.get('_displayname') + '\" ' + content, options.callback, options);
+      }, options.delay);
     } else {
       return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
