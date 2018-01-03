@@ -16,11 +16,11 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var impactHead = createObj('handout', {name: 'Impact Critical Effects - Head'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
-        expect(msg.content).to.include(getLink(character));
+        expect(msg.content).to.include(inqcharacter.toLink());
         expect(msg.content).to.include(getLink(impactHead));
         expect(msg.content).to.include('(1)');
         done();
@@ -42,7 +42,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var impactHead = createObj('handout', {name: 'Impact Critical Effects - Head'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         throw true;
@@ -65,7 +65,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var explosiveHead = createObj('handout', {name: 'Explosive Critical Effects - Head'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -92,7 +92,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var energyBody = createObj('handout', {name: 'Energy Critical Effects - Body'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -122,7 +122,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var energyBody = createObj('handout', {name: 'Energy Critical Effects - Body'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -152,7 +152,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var rendingLeg = createObj('handout', {name: 'Rending Critical Effects - Leg'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -182,7 +182,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var energyBody = createObj('handout', {name: 'Energy Critical Effects - Body'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -210,7 +210,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var weaponCrit = createObj('handout', {name: 'Weapon Critical Effects'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -239,7 +239,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var motiveCrit = createObj('handout', {name: 'Motive Systems Critical Effects'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -268,7 +268,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var starshipCrit = createObj('handout', {name: 'Starship Critical Effects'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -297,7 +297,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var starshipCrit = createObj('handout', {name: 'Starship Critical Effects'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -326,7 +326,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var motiveCrit = createObj('handout', {name: 'Motive Systems Critical Effects'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');
@@ -355,7 +355,7 @@ describe('INQDamage.prototype.calcCrit()', function() {
     var character = inqcharacter.toCharacterObj();
     var energyBody = createObj('handout', {name: 'Energy Critical Effects - Body'});
     var page = createObj('page', {}, {MOCK20override: true});
-    var graphic = createObj('graphic', {_pageid: page.id})
+    var graphic = createObj('graphic', {name: 'Crit Character', _pageid: page.id})
     new INQDamage(character, graphic, function(inqdamage) {
       on('chat:message', function(msg) {
         expect(msg.target).to.equal('gm');

@@ -32,13 +32,13 @@ describe('addWeapon()', function() {
     });
 
     on('chat:message', function(msg) {
-      if(msg.content.indexOf(getLink(character1)) != -1) {
+      if(msg.content.indexOf(getLink(graphic1.get('name'), "http://journal.roll20.net/character/" + character1.id)) != -1) {
         if(msg.target == 'gm') {
           gm1msg = true;
         } else {
           msg1 = true;
         }
-      } else if(msg.content.indexOf(getLink(character2)) != -1) {
+      } else if(msg.content.indexOf(getLink(graphic2.get('name'), "http://journal.roll20.net/character/" + character2.id)) != -1) {
         if(msg.target == 'gm') {
           gm2msg = true;
         } else {
@@ -110,7 +110,7 @@ describe('addWeapon()', function() {
     });
 
     on('chat:message', function(msg) {
-      if(msg.content.indexOf(getLink(character1)) != -1) {
+      if(msg.content.indexOf(getLink(graphic1.get('name'), "http://journal.roll20.net/character/" + character1.id)) != -1) {
         if(msg.target == 'gm') {
           gm1msg = true;
         } else {
@@ -151,7 +151,7 @@ describe('addWeapon()', function() {
     });
 
     on('chat:message', function(msg) {
-      if(msg.content.indexOf(getLink(character1)) != -1) {
+      if(msg.content.indexOf(getLink(graphic1.get('name'), "http://journal.roll20.net/character/" + character1.id)) != -1) {
         if(msg.target == 'gm') {
           gm1msg = true;
         } else {

@@ -117,7 +117,7 @@ describe('useWeapon()', function() {
 
     on('chat:message', function(msg){
       if(msg.rolltemplate){
-        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*Character[^}]*}}/);
+        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*Graphic[^}]*}}/);
         expect(msg.content).to.match(/{{Successes=[^}]*}}/);
         expect(msg.content).to.match(/{{Unnatural=[^}]*}}/);
         expect(msg.content).to.match(/{{Modifiers=[^}]*Other[^}]*\(\-50\)[^}]*Close Range[^}]*\(\+10\)[^}]*Standard[^}]*\(\+10\)}}/);
@@ -153,7 +153,7 @@ describe('useWeapon()', function() {
 
     on('chat:message', function(msg){
       if(msg.rolltemplate){
-        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Init Character[^}]*}}/);
+        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Graphic[^}]*}}/);
         done();
       }
     });
@@ -188,7 +188,7 @@ describe('useWeapon()', function() {
 
     on('chat:message', function(msg){
       if(msg.rolltemplate){
-        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Character[^}]*}}/);
+        expect(msg.content).to.match(/{{name=[^}]*BS[^}]*INQSelection Graphic[^}]*}}/);
         done();
       }
     });

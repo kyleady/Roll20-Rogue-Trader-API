@@ -10,14 +10,13 @@ INQCharacterParser.prototype.parse = function(character, graphic, callback){
 
   myPromise.catch(function(e){log(e)});
   myPromise.then(function(parser){
-    inqcharacterparser.Name = character.get("name");
+    var name = character.get('name');
+    if(graphic) name = graphic.get('name');
+    inqcharacterparser.Name = name;
     inqcharacterparser.ObjID = character.id;
     inqcharacterparser.ObjType = character.get("_type");
-
     if(graphic) inqcharacterparser.GraphicID = graphic.id;
-
     inqcharacterparser.controlledby = character.get("controlledby");
-
     inqcharacterparser.parseLists();
     inqcharacterparser.parseMovement();
     inqcharacterparser.parseSpecialRules();

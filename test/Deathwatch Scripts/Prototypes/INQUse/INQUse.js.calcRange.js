@@ -153,15 +153,15 @@ describe('INQUse.prototype.calcRange()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var page = createObj('page', {scale_number: 1}, {MOCK20override: true});
     var character = createObj('character', {name: 'Character Name'});
-    var graphic1 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 4*70, height: 0.1, width: 0.1, represents: character.id});
-    var graphic2 = createObj('graphic', {_pageid: page.id, top: 3*70, left: 64*70, height: 0.1, width: 0.1, represents: character.id});
+    var graphic1 = createObj('graphic', {name: 'Graphic 1', _pageid: page.id, top: 3*70, left: 4*70, height: 0.1, width: 0.1, represents: character.id});
+    var graphic2 = createObj('graphic', {name: 'Graphic 2', _pageid: page.id, top: 3*70, left: 64*70, height: 0.1, width: 0.1, represents: character.id});
     var options = {target: graphic2.id};
 
 		var playerWhisper = false;
 		var gmWhisper = false;
 		on('chat:message', function(msg) {
 			if(!/\//.test(msg.content)) return;
-			var str = '[Character Name](!pingG ' + graphic1.id + ')';
+			var str = '[Graphic 1](!pingG ' + graphic1.id + ')';
 			expect(msg.content).to.include(str);
 			if(msg.target == player.id) playerWhisper = true;
 			if(msg.target == 'gm') gmWhisper = true;
