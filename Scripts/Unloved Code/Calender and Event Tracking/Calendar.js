@@ -997,7 +997,7 @@ function Calendar(day,month,year) {
 }
 
 on("chat:message", function(msg) {
-if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.playerid)){
+/*if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.playerid)){
     //load the GM variables
     var storage =  findObjs({type: 'character', name: "Calendar"})[0];
     //create the Calendar Object based on the stored GM variables
@@ -1037,7 +1037,7 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
     //get rid of the evidence
     delete myCalendar;
 
-} else if(msg.type == "api" && msg.content.indexOf("!Event ") == 0 && playerIsGM(msg.playerid)){
+} else*/ if(msg.type == "api" && msg.content.indexOf("!Event ") == 0 && playerIsGM(msg.playerid)){
     log(msg.content.substring(7))
     //create the Calendar Object based on the stored GM variables
     myCalendar = new Calendar();
@@ -1058,6 +1058,7 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
 
 //wait for the Central Input object to initialize
 on("ready",function(){
+  /*
   //Lets the user quickly learn the current date
   CentralInput.addCMD(/^!\s*time\s*\??\s*$/i,function(matches,msg){
     //load the GM variables
@@ -1100,6 +1101,5 @@ on("ready",function(){
     //get rid of the evidence
     delete myCalendar;
   });
-
-
+  */
 });

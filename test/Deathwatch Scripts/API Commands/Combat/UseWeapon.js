@@ -14,7 +14,7 @@ describe('useWeapon()', function() {
     var playerWarned = false;
 
     on('chat:message', function(msg){
-      expect(msg.content).to.match(/Invalid Weapon/);
+      if(msg.content.indexOf('Invalid Weapon') == -1) return;
       if(msg.target == player.id){
         gmWarned = true;
       } else if(msg.target == 'gm') {

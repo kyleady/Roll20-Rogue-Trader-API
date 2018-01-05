@@ -483,6 +483,41 @@ on('ready', function() {
     attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
+function timeDiff(matches, msg) {
+  INQTime.load();
+  var timeData = INQTime.parseDate(matches[1]);
+  var diffData = INQTime.diff(timeData);
+  var output = INQTime.showDiff(diffData);
+  output += INQTime.showDate(timeData) + '.';
+  whisper(output, {speakingTo: msg.playerid});
+}
+
+on('ready', function() {
+  CentralInput.addCMD(/^!\s*time\s*\??\s*(?:\+|-|)\s*(\d?(?:\d\d\d)?\d\d\d(?:\.M\d+)?)\s*$/i, timeDiff, true);
+});
+function timeHandler(matches, msg, options) {
+  if(typeof options != 'object') options = {};
+  var times = INQTime.parseInput(matches[2]);
+  INQTime.load();
+  if(matches[1] == '-') {
+    for(var time of times) time.quantity *= -1;
+  }
+
+  INQTime.add(times);
+  if(options.save) {
+    INQTime.save();
+    announce('It is now ' + INQTime.showDate());
+  } else {
+    whisper(INQTime.showDate(), {speakingTo: msg.playerid});
+  }
+}
+
+on('ready', function() {
+  CentralInput.addCMD(/^!\s*time\s*\??\s*(\+|-|)\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, timeHandler, true);
+  CentralInput.addCMD(/^!\s*time\s*(\+|-)\s*=\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, function(matches, msg){
+    timeHandler(matches, msg, {save: true});
+  });
+});
 //damages every selected character according to the stored damage variables
 function applyDamage (matches,msg){
   eachCharacter(msg, function(character, graphic) {
@@ -2266,6 +2301,209 @@ function saveHitLocation(roll, options){
   } else {
     announce(Location, {speakingAs: 'Location', delay: 100});
   }
+}
+var INQTime = {
+   vars: {
+    fraction: 'Year Fraction',
+    year: 'Year',
+    mill: 'Millennia'
+  },
+  timeEvents: []
+};
+INQTime.add = function(times) {
+  this.fraction += this.toFraction(times);
+  while(this.fraction >= 10000) {
+    this.fraction -= 10000;
+    this.year++;
+  }
+
+  while(this.fraction < 0) {
+    this.fraction += 10000;
+    this.year--;
+  }
+
+  while(this.year >= 1000) {
+    this.year -= 1000;
+    this.mill++;
+  }
+
+  while(this.year < 0) {
+    this.year += 1000;
+    this.mill--;
+  }
+}
+INQTime.diff = function(input) {
+  var dt = {
+    fraction: this.fraction - input.fraction,
+    year: this.year - input.year,
+    mill: this.mill - input.mill
+  };
+
+  var ttotal = dt.mill * 1000;
+  ttotal += dt.year;
+  ttotal += dt.fraction / 10000;
+  var output = {future: ttotal < 0};
+  if(output.future) ttotal *= -1;
+  output.years = Math.floor(ttotal);
+  var fraction = (ttotal - output.years) * 10000;
+  output.days = Math.round(fraction / 27.4);
+  output.weeks = Math.floor(output.days / 7);
+  output.days = output.days - output.weeks * 7;
+  return output;
+}
+INQTime.load = function() {
+  for(var prop in this.vars) {
+    this[prop + 'Attr'] = findObjs({_type: 'attribute', name: this.vars[prop]})[0];
+  }
+
+  var characterid;
+  for(var prop in this.vars) {
+    if(this[prop + 'Attr']) characterid = this[prop + 'Attr'].get('_characterid');
+  }
+
+  if(!characterid) {
+    var character = findObjs({_type: 'character', name: 'INQVariables'})[0];
+    if(!character) character = createObj('character', {name: 'INQVariables'});
+    characterid = character.id;
+  }
+
+  for(var prop in this.vars) {
+    if(!this[prop + 'Attr']) this[prop + 'Attr'] = createObj('attribute', {
+      name: this.vars[prop],
+      current: 0,
+      max: 0,
+      _characterid: characterid
+    });
+  }
+
+  for(var prop in this.vars) this[prop] = Number(this[prop + 'Attr'].get('max')) || 0;
+}
+INQTime.on = function(eventName, func) {
+  switch(eventName) {
+    case 'change:time':
+      INQTime.timeEvents.push(func);
+    break;
+  }
+}
+INQTime.parseDate = function(input) {
+  var dates = input.match(/^\d?(\d\d\d)?(\d\d\d)(?:\.M(\d+))?$/i);
+  var output = {
+    fraction: this.fraction,
+    year: this.year,
+    mill: this.mill
+  };
+
+  if(!dates) return whisper('Invalid 40k date.');
+  if(dates[1]) output.fraction = Number(dates[1]) * 10;
+  output.year = Number(dates[2]);
+  if(dates[3]) output.mill = Number(dates[3]);
+  return output;
+}
+INQTime.parseInput = function(input) {
+  var times = [];
+  var timeMatches = input || '';
+  timeMatches = timeMatches.match(/\d+\s*[a-z]+/gi) || [];
+  for(var timeMatch of timeMatches) {
+    var matches = timeMatch.match(/(\d+)\s*([a-z]+)/i);
+    times.push({quantity: Number(matches[1]), type: matches[2]});
+  }
+
+  return times;
+}
+INQTime.save = function() {
+  var prevTime = {
+    fraction: Number(this.fractionAttr.get('max')),
+    year: Number(this.yearAttr.get('max')),
+    mill: Number(this.millAttr.get('max'))
+  }
+
+  var currTime = {
+    fraction: this.fraction,
+    year: this.year,
+    mill: this.mill
+  }
+
+  var dt = currTime.mill - prevTime.mill;
+  dt *= 1000;
+  dt += currTime.year - prevTime.year;
+  dt += (currTime.fraction - prevTime.fraction) / 10000;
+
+  for(var func of this.timeEvents) func(currTime, prevTime, dt);
+  for(var prop in this.vars) {
+    this[prop + 'Attr'].set('current', this[prop]);
+    this[prop + 'Attr'].set('max',     this[prop]);
+  }
+}
+INQTime.showDate = function(date) {
+  if(!date) date = this;
+  var output = '8';
+  var zeroes = '';
+  if(date.fraction < 1000) zeroes += '0';
+  if(date.fraction < 100) zeroes += '0';
+  output += zeroes;
+  output += Math.floor(date.fraction / 10);
+  zeroes = '';
+  if(date.year < 100) zeroes += '0';
+  if(date.year < 10) zeroes += '0';
+  output += zeroes;
+  output += date.year;
+  output += '.M';
+  output += date.mill;
+  return output;
+}
+INQTime.showDiff = function(diffData) {
+  var output = '';
+  if(diffData.days > 1) output += diffData.days + ' days, ';
+  if(diffData.days == 1) output += diffData.days + ' day, ';
+  if(diffData.weeks > 1) output += diffData.weeks + ' weeks, ';
+  if(diffData.weeks == 1) output += diffData.weeks + ' week, ';
+  if(diffData.years > 1) output += diffData.years + ' years';
+  if(diffData.years == 1) output += diffData.years + ' year';
+  if(!output) output = 'No time';
+  output = output.replace(/,\s*$/i, '');
+  output += diffData.future ? ' until ' : ' since ';
+  return output;
+}
+INQTime.toFraction = function(times) {
+  if(!Array.isArray(times)) times = [times];
+  var total = 0;
+  for(var time of times) {
+    var outcomes = () => 1;
+    if(/minute/i.test(time.type)) {
+      outcomes = function() {
+        return randomInteger(100000) <= 1903 ? 1 : 0;
+      }
+    } else if(/hour/i.test(time.type)) {
+      outcomes = function() {
+        return randomInteger(1000) <= 858 ? 1 : 2;
+      }
+    } else if(/day/i.test(time.type)) {
+      outcomes = function() {
+        return randomInteger(10) <= 6 ? 27 : 28;
+      }
+    } else if(/week/i.test(time.type)) {
+      outcomes = function() {
+        return randomInteger(10) <= 2 ? 191 : 192;
+      }
+    } else if(/month/i.test(time.type)) {
+      outcomes = function() {
+        return randomInteger(10) <= 7 ? 833 : 834;
+      }
+    } else if(/year/i.test(time.type)) {
+      outcomes = () => 10000;
+    } else if(/decade/i.test(time.type)) {
+      outcomes = () => 100000;
+    } else if(/(century|centuries)/i.test(time.type)) {
+      outcomes = () => 1000000;
+    }
+    if(time.quantity > 0) {
+      for(var i = 0; i < time.quantity; i++) total += outcomes();
+    } else {
+      for(var i = 0; i < -1*time.quantity; i++) total -= outcomes();
+    }
+  }
+
+  return total;
 }
 function INQAttack(inquse){
   this.inquse = inquse;
@@ -5036,11 +5274,11 @@ INQUse.prototype.calcEffectivePsyRating = function(){
   this.PR = this.inqcharacter.Attributes.PR;
   if(this.inqweapon.Class != 'Psychic') return;
   if(!this.options.FocusStrength) this.options.FocusStrength = 'Fettered';
-  if(/^\s*Unfettered\s*$/i.test(this.options.FocusStrength)){
+  if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
     this.PR /= 2;
     this.PR = Math.ceil(this.PR);
     this.PsyPheModifier = 0;
-  } else if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
+  } else if(/^\s*Unfettered\s*$/i.test(this.options.FocusStrength)){
     this.PsyPheModifier = 0;
   } else if(/^\s*Push\s*$/i.test(this.options.FocusStrength)){
     this.PR *= 1.5;
@@ -8506,7 +8744,7 @@ function Calendar(day,month,year) {
 }
 
 on("chat:message", function(msg) {
-if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.playerid)){
+/*if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.playerid)){
     //load the GM variables
     var storage =  findObjs({type: 'character', name: "Calendar"})[0];
     //create the Calendar Object based on the stored GM variables
@@ -8546,7 +8784,7 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
     //get rid of the evidence
     delete myCalendar;
 
-} else if(msg.type == "api" && msg.content.indexOf("!Event ") == 0 && playerIsGM(msg.playerid)){
+} else*/ if(msg.type == "api" && msg.content.indexOf("!Event ") == 0 && playerIsGM(msg.playerid)){
     log(msg.content.substring(7))
     //create the Calendar Object based on the stored GM variables
     myCalendar = new Calendar();
@@ -8567,6 +8805,7 @@ if(msg.type == "api" && msg.content.indexOf("!Time += ") == 0 && playerIsGM(msg.
 
 //wait for the Central Input object to initialize
 on("ready",function(){
+  /*
   //Lets the user quickly learn the current date
   CentralInput.addCMD(/^!\s*time\s*\??\s*$/i,function(matches,msg){
     //load the GM variables
@@ -8609,8 +8848,7 @@ on("ready",function(){
     //get rid of the evidence
     delete myCalendar;
   });
-
-
+  */
 });
 //create a single character importer object
 charImport = {}
