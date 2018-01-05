@@ -3,4 +3,5 @@ INQQtt.prototype.beforeRange = function(){
     this.warpConduit();
   }
   this.maximal();
+  this.range();
 }

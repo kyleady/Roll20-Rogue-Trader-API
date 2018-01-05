@@ -13,7 +13,7 @@ describe('INQQtt.prototype.applyBeforeRange()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var options = {
 			modifiers: '',
-			custom: 'My Weapon(Pistol; 10m; 100D10+100 I; Pen 100; Use Maximal, Maximal, Blast[10])',
+			custom: 'My Weapon(Pistol; 10m; 100D10+100 I; Pen 100; Use Maximal, Maximal, Blast[10], Range[+1])',
 			FocusStrength: 'Push'
 		};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
@@ -30,6 +30,7 @@ describe('INQQtt.prototype.applyBeforeRange()', function() {
 			expect(inquse.inqweapon.Damage.DiceNumber).to.equal(150);
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(125);
 			expect(inquse.inqweapon.Penetration.Modifier).to.equal(120);
+			expect(inquse.inqweapon.Range.Modifier).to.equal(11);
       expect(inquse.inqweapon.Range.Multiplier).to.equal(1.33);
 			var blast = inquse.inqweapon.has('Blast');
 			expect(inqqtt.getTotal(blast)).to.equal(15);
@@ -48,7 +49,7 @@ describe('INQQtt.prototype.applyBeforeRange()', function() {
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
 		var options = {
 			modifiers: '',
-			custom: 'My Weapon(Pistol; 10m; 100D10+100 I; Pen 100; Use Maximal, Maximal, Blast[10])',
+			custom: 'My Weapon(Pistol; 10m; 100D10+100 I; Pen 100; Use Maximal, Maximal, Blast[10], Range[+1])',
 			FocusStrength: 'Push'
 		};
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
@@ -64,6 +65,7 @@ describe('INQQtt.prototype.applyBeforeRange()', function() {
 			expect(inquse.inqweapon.Damage.Modifier).to.equal(125);
 			expect(inquse.inqweapon.Penetration.Modifier).to.equal(120);
       expect(inquse.inqweapon.Range.Multiplier).to.equal(1.33);
+			expect(inquse.inqweapon.Range.Modifier).to.equal(11);
 			var blast = inquse.inqweapon.has('Blast');
 			expect(inqqtt.getTotal(blast)).to.equal(15);
 			done();
