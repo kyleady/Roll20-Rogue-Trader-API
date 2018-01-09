@@ -12,7 +12,7 @@ describe('INQTime.on()', function() {
 
     var myFunc = () => 'My Function';
     INQTime.on('change:time', myFunc);
-    expect(INQTime.timeEvents[0]).to.equal(myFunc);
+    expect(INQTime.timeEvents[INQTime.timeEvents.length-1]).to.equal(myFunc);
   });
   it('should do nothing if the wrong event label is given', function(){
 		Campaign().MOCK20reset();
@@ -23,6 +23,6 @@ describe('INQTime.on()', function() {
 
     var myFunc = () => 'My Function';
     INQTime.on('wrong label', myFunc);
-    expect(INQTime.timeEvents).to.be.empty;
+    expect(INQTime.timeEvents[INQTime.timeEvents.length-1]).to.not.equal(myFunc);
   });
 });

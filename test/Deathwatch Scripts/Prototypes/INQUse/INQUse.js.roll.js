@@ -122,6 +122,7 @@ describe('INQUse.prototype.roll()', function() {
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
+		this.retries(10);
 
     var player = createObj('player', {_displayname: 'Player Name'}, {MOCK20override: true});
     var options = {
@@ -151,6 +152,7 @@ describe('INQUse.prototype.roll()', function() {
     var options = {
       custom: 'My Weapon(Melee; D10+2; Pen 3; Storm)'
     };
+
     new INQUse('weapon will be detailed in options.custom', options, undefined, undefined, player.id, function(inquse){
       inquse.inqcharacter = new INQCharacter();
 			inquse.inqcharacter.Attributes.WS = 100;

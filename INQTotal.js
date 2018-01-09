@@ -1659,6 +1659,20 @@ function setDefaultToken(matches, msg){
 on('ready', function(){
   CentralInput.addCMD(/^!\s*give\s*(player)?\s*token\s*to\s+(.+)$/i, setDefaultToken);
 });
+on('ready', function() {
+  INQTime.on('change:time', function(currTime, prevTime, dt) {
+    var ages = findObjs({_type: 'attribute', name: 'Age'});
+    for(var age of ages) {
+      var value = Number(age.get('max')) || 0;
+      value += dt;
+      value *= 10000;
+      value = Math.floor(value);
+      value /= 10000;
+      age.set('current', value);
+      age.set('max', value);
+    }
+  });
+});
 //searches every message for rolls to hit and damage rolls.
 on("chat:message", function(msg) {
   //if a message matches one of two types of formats, the system records the
