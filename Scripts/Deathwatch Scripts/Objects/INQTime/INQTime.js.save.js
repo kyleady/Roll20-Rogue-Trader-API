@@ -1,8 +1,8 @@
 INQTime.save = function() {
   var prevTime = {
-    fraction: Number(this.fractionAttr.get('max')),
-    year: Number(this.yearAttr.get('max')),
-    mill: Number(this.millAttr.get('max'))
+    fraction: Number(this.fractionObj.get('max')),
+    year: Number(this.yearObj.get('max')),
+    mill: Number(this.millObj.get('max'))
   }
 
   var currTime = {
@@ -18,7 +18,7 @@ INQTime.save = function() {
 
   for(var func of this.timeEvents) func(currTime, prevTime, dt);
   for(var prop in this.vars) {
-    this[prop + 'Attr'].set('current', this[prop]);
-    this[prop + 'Attr'].set('max',     this[prop]);
+    this[prop + 'Obj'].set('current', this[prop]);
+    this[prop + 'Obj'].set('max',     this[prop]);
   }
 }

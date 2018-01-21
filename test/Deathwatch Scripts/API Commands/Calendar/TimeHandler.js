@@ -85,7 +85,7 @@ describe('timeHandler()', function() {
       if(msg.type == 'api') return;
       expect(msg.type).to.equal('general');
       expect(msg.content).to.include('8003002.M3');
-      expect(INQTime.fractionAttr.get('current')).to.be.within(30,31);
+      expect(INQTime.fractionObj.get('current')).to.be.within(30, 33);
       done();
     });
 
@@ -109,7 +109,7 @@ describe('timeHandler()', function() {
       if(msg.type == 'api') return;
       expect(msg.type).to.equal('general');
       expect(msg.content).to.include('8000000.M0');
-      expect(INQTime.fractionAttr.get('current')).to.be.equal(1);
+      expect(INQTime.fractionObj.get('current')).to.be.equal(1);
       done();
     });
 

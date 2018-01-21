@@ -28,7 +28,7 @@ INQWeapon.prototype.toNote = function(justText){
   }
 
   _.each(this.Special, function(rule){
-    output += rule.toNote(justText) + ', ';
+    output += rule.toNote(justText).replace('(', '[').replace(')', ']') + ', ';
   });
 
   output = output.replace(/(;|,)\s*$/, '');

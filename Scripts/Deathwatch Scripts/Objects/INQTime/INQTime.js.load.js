@@ -1,11 +1,11 @@
 INQTime.load = function() {
   for(var prop in this.vars) {
-    this[prop + 'Attr'] = findObjs({_type: 'attribute', name: this.vars[prop]})[0];
+    this[prop + 'Obj'] = findObjs({_type: 'attribute', name: this.vars[prop]})[0];
   }
 
   var characterid;
   for(var prop in this.vars) {
-    if(this[prop + 'Attr']) characterid = this[prop + 'Attr'].get('_characterid');
+    if(this[prop + 'Obj']) characterid = this[prop + 'Obj'].get('_characterid');
   }
 
   if(!characterid) {
@@ -15,7 +15,7 @@ INQTime.load = function() {
   }
 
   for(var prop in this.vars) {
-    if(!this[prop + 'Attr']) this[prop + 'Attr'] = createObj('attribute', {
+    if(!this[prop + 'Obj']) this[prop + 'Obj'] = createObj('attribute', {
       name: this.vars[prop],
       current: 0,
       max: 0,
@@ -23,5 +23,5 @@ INQTime.load = function() {
     });
   }
 
-  for(var prop in this.vars) this[prop] = Number(this[prop + 'Attr'].get('max')) || 0;
+  this.reset();
 }

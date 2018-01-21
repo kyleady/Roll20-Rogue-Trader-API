@@ -16,8 +16,14 @@ function timeHandler(matches, msg, options) {
 }
 
 on('ready', function() {
-  CentralInput.addCMD(/^!\s*time\s*\??\s*(\+|-|)\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, timeHandler, true);
-  CentralInput.addCMD(/^!\s*time\s*(\+|-)\s*=\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, function(matches, msg){
+  var regex = '^!\\s*time\\s*';
+  regex += '\\??\\s*(\\+|-|)\\s*';
+  regex += '(' + INQTime.modifierRegex() + ')$';
+  var re = RegExp(regex, 'i');
+  CentralInput.addCMD(re, timeHandler, true);
+  regex = regex.replace('\\??\\s*(\\+|-|)', '(\\+|-)\\s*=');
+  re = RegExp(regex, 'i');
+  CentralInput.addCMD(re, function(matches, msg){
     timeHandler(matches, msg, {save: true});
-  });
+  }, false);
 });

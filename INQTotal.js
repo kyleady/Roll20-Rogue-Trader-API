@@ -483,6 +483,61 @@ on('ready', function() {
     attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
+function logEvent(matches, msg) {
+  var isGM = matches[1] && playerIsGM(msg.playerid);
+  var content = matches[2];
+  var dt, date, sign, repeat;
+  var modifiers = matches[3].match(/(@|\+|\-|%)[^@\+\-%]+/g) || [];
+  for(var modifier of modifiers) {
+    var info = modifier.substring(1).trim();
+    switch(modifier[0]) {
+      case '@':
+        date = info;
+      break;
+      case '+':
+        sign = '+';
+        dt = info;
+      break;
+      case '-':
+        sign = '-';
+        dt = info;
+      break;
+      case '%':
+        repeat = info;
+      break;
+    }
+  }
+
+  var myPromise = new Promise(function(resolve) {
+    INQCalendar.load(resolve);
+  });
+
+  myPromise.then(function() {
+    var logbook = INQCalendar.addEvent(content, {
+      date: date,
+      sign: sign,
+      dt: dt,
+      isGM: isGM
+    });
+    INQCalendar.save();
+    var whisper = isGM ? '/w gm ' : '';
+    announce(whisper + getLink(logbook) + ' updated.');
+  });
+}
+
+on('ready', function() {
+  var regex = '!\\s*(gm)?';
+  regex += '\\s*log\\s+([^@%\\+\\-]+)';
+  regex += '(';
+  regex += '(?:';
+  regex += '@\\s*\\d?(?:\\d\\d\\d)?\\d\\d\\d(?:\\.M\\d+)?\\s*';
+  regex += '|';
+  regex += '(?:\\+|\\-|%)\\s*' + INQTime.modifierRegex();
+  regex += ')*';
+  regex += ')$';
+  var re = RegExp(regex, 'i');
+  CentralInput.addCMD(re, logEvent);
+});
 function timeDiff(matches, msg) {
   INQTime.load();
   var timeData = INQTime.parseDate(matches[1]);
@@ -513,10 +568,16 @@ function timeHandler(matches, msg, options) {
 }
 
 on('ready', function() {
-  CentralInput.addCMD(/^!\s*time\s*\??\s*(\+|-|)\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, timeHandler, true);
-  CentralInput.addCMD(/^!\s*time\s*(\+|-)\s*=\s*((?:\d+\s*(?:minutes?|hours?|days?|weeks?|months?|years?|decades?|century|centuries)\s*,?\s*)*)$/i, function(matches, msg){
+  var regex = '^!\\s*time\\s*';
+  regex += '\\??\\s*(\\+|-|)\\s*';
+  regex += '(' + INQTime.modifierRegex() + ')$';
+  var re = RegExp(regex, 'i');
+  CentralInput.addCMD(re, timeHandler, true);
+  regex = regex.replace('\\??\\s*(\\+|-|)', '(\\+|-)\\s*=');
+  re = RegExp(regex, 'i');
+  CentralInput.addCMD(re, function(matches, msg){
     timeHandler(matches, msg, {save: true});
-  });
+  }, false);
 });
 //damages every selected character according to the stored damage variables
 function applyDamage (matches,msg){
@@ -1505,6 +1566,48 @@ on('ready', function(){
   var re = RegExp(regex, 'i');
   CentralInput.addCMD(re, addWeapon, true);
 });
+on('ready', function() {
+  CentralInput.addCMD(/^!attack2\.0$/i, function(matches, msg) {
+    eachCharacter(msg, function(character, graphic) {
+      var wounds = findObjs({_type: 'attribute', _characterid: character.id, name: 'Wounds'});
+      var SIs = findObjs({_type: 'attribute', _characterid: character.id, name: 'Structural Integrity'});
+      if(wounds[0]) {
+        var prom = new Promise(function(resolve) {
+          new INQCharacter(character, graphic, function(inqcharacter){
+            resolve(inqcharacter);
+          });
+        });
+      } else if(SIs[0]) {
+        var prom = new Promise(function(resolve) {
+          new INQVehicle(r20character, graphic, function(inqcharacter){
+            resolve(inqcharacter);
+          });
+        });
+      } else {
+        return;
+      }
+
+      prom.then(function(inqcharacter){
+        var abilities = findObjs({_type: 'ability', _characterid: inqcharacter.ObjID});
+        for(var ability of abilities) ability.remove();
+        for(var weapon of inqcharacter.List.Weapons) {
+          if(weapon.toNote().indexOf('(') != -1) {
+            var inqweapon = new INQWeapon(weapon.toNote());
+            var action = inqweapon.toAbility(inqcharacter, {custom: true});
+            createObj('ability', {
+              _characterid: inqcharacter.ObjID,
+              name: inqweapon.Name,
+              action: action,
+              istokenaction: true
+            });
+          }
+        }
+
+        whisper(inqcharacter.Name + ' has been converted.');
+      });
+    });
+  });
+});
 function lastWatchWave (matches, msg) {
   var Troops = Number(matches[1]);
   var Elite = 0;
@@ -1849,6 +1952,19 @@ on("change:graphic:bar3_value", function(obj, prev) {
       whisper("Healing Cap set to " + MaxHealing + "/" + Wounds.max + ".");
     }
   }
+});
+on('ready', function() {
+  INQTime.on('change:time', function(currTime, prevTime, dt) {
+    var myPromise = new Promise(function(resolve) {
+      INQCalendar.load(resolve);
+    });
+
+    myPromise.then(function() {
+      INQCalendar.advance(currTime);
+      INQCalendar.announceEvents();
+      INQCalendar.save();
+    });
+  });
 });
 //If the message was a roll to hit, record the number of Hits. The roll to hit
 //must be a roll template and that roll template must have the following
@@ -2316,6 +2432,183 @@ function saveHitLocation(roll, options){
     announce(Location, {speakingAs: 'Location', delay: 100});
   }
 }
+var INQCalendar = {};
+INQCalendar.addEvent = function(content, options) {
+  if(typeof options != 'object') options = {};
+  INQTime.load();
+  if(options.date) {
+    var dateData = INQTime.parseDate(options.date);
+    for(var prop in INQTime.vars) INQTime[prop] = dateData[prop];
+  }
+
+  if(options.dt) {
+    var times = INQTime.parseInput(options.dt);
+    if(options.sign == '-') {
+      for(var time of times) time.quantity *= -1;
+    }
+
+    INQTime.add(times);
+  }
+
+  var name = INQTime.showDate();
+  var dateData = {};
+  for(var prop in INQTime.vars) dateData[prop] = INQTime[prop];
+  INQTime.reset();
+  var isFuture = INQTime.diff(dateData).future;
+
+  var time = isFuture ? 'future' : 'past';
+  var note = options.isGM ? 'gmnotes' : 'notes';
+  this[time][note].push({
+    Date: name,
+    Content: [' ' + content.trim()]
+  });
+
+  this.order(time, note);
+  return this[time + 'Obj'];
+}
+INQCalendar.advance = function() {
+  var notes = ['notes', 'gmnotes'];
+  this.announcements = {};
+
+  for(var note of notes) {
+    this.announcements[note] = [];
+    for(var i = 0; i < this.future[note].length; i++) {
+      if(!this.future[note][i].Date) continue;
+      var evTime = INQTime.parseDate(this.future[note][i].Date);
+      var stillInFuture = INQTime.diff(evTime).future;
+      if(!stillInFuture) {
+        this.announcements[note].push(this.future[note][i]);
+        this.future[note].splice(i, 1);
+        i--;
+      }
+    }
+  }
+}
+INQCalendar.announceEvents = function() {
+  var notes = ['notes', 'gmnotes'];
+  for(var note of notes) {
+    for(var ev of this.announcements[note]) {
+      var output = '';
+      if(note == 'gmnotes') output += '/w gm ';
+      output += '<strong>';
+      output += ev.Date;
+      output += '</strong>: ';
+      output += ev.Content;
+      output += ' [Log](';
+
+      var cmd = '';
+      if(note == 'gmnotes') cmd += 'gm';
+      cmd += 'log ' + ev.Content + '@' + ev.Date;
+
+      output += '!{URIFixed}' + encodeURIFixed(cmd);
+      output += ')';
+      announce(output);
+    }
+
+    this.announcements[note] = [];
+  }
+}
+INQCalendar.load = function(callback) {
+  this.pastObj = findObjs({_type: 'handout', name: 'Logbook'})[0];
+  this.futureObj = findObjs({_type: 'handout', name: 'Calendar'})[0];
+  if(!this.pastObj) this.pastObj = createObj('handout', {name: 'Logbook', inplayerjournals: 'all'});
+  if(!this.futureObj) this.futureObj = createObj('handout', {name: 'Calendar', inplayerjournals: 'all'});
+  this.parse(callback);
+}
+INQCalendar.order = function(time, note) {
+  if(!INQCalendar[time]) return whisper('INQCalendar.' + time + ' does not exist.');
+  if(!INQCalendar[time][note]) return whisper('INQCalendar.' + time + '.' + note + ' does not exist.');
+  INQCalendar[time][note].sort(function(ev1, ev2) {
+    if(!ev1.Date) return -1;
+    if(!ev2.Date) return 1;
+    var d1 = INQTime.parseDate(ev1.Date);
+    var d2 = INQTime.parseDate(ev2.Date);
+    var y1 = d1.mill * 1000 + d1.year + (d1.fraction / 10000);
+    var y2 = d2.mill * 1000 + d2.year + (d2.fraction / 10000);
+    return y1 - y2;
+  });
+}
+INQCalendar.parse = function(callback) {
+  var times = ['past', 'future'];
+  var notes = ['notes', 'gmnotes'];
+  var text = {};
+  var promises = [];
+  for(var time of times) {
+    text[time] = {};
+    for(var note of notes) {
+      promises.push(
+        new Promise(function(resolve) {
+          var saveTheTime = time;
+          var saveTheNote = note;
+          INQCalendar[saveTheTime + 'Obj'].get(saveTheNote, function(str) {
+            text[saveTheTime][saveTheNote] = str;
+            resolve();
+          });
+        })
+      );
+    }
+  }
+
+  Promise.all(promises).catch(function(e){log(e)});
+  Promise.all(promises).then(function() {
+    for(var time of times) {
+      INQCalendar[time] = {};
+      for(var note of notes) {
+        INQCalendar[time][note] = [];
+        if(!text[time][note]) continue;
+        var lines = text[time][note].split('<br>');
+        for(var line of lines) {
+          if(typeof line == 'string' && line.length > 0) {
+            var matches = line.match(/^<strong>([^<>]+)<\/strong>:(.+)$/);
+          } else {
+            var matches = null;
+          }
+
+          if(matches) {
+            INQCalendar[time][note].push({
+              Date: matches[1],
+              Content: [matches[2]]
+            });
+          } else if(INQCalendar[time][note].length) {
+            var last = INQCalendar[time][note].length-1;
+            INQCalendar[time][note][last].Content.push(line);
+          } else {
+            INQCalendar[time][note].push({
+              Content: [line]
+            });
+          }
+        }
+      }
+    }
+
+
+    if(typeof callback == 'function') callback();
+  });
+}
+INQCalendar.save = function() {
+  var times = ['future', 'past'];
+  var notes = ['notes', 'gmnotes'];
+  for(var time of times) {
+    for(var note of notes) {
+      var text = '';
+      for(var lines of INQCalendar[time][note]) {
+        if(lines.Date) {
+          text += '<strong>';
+          text += lines.Date;
+          text += '</strong>:';
+        }
+
+        for(var line of lines.Content) {
+          text += line;
+          text += '<br>';
+        }
+      }
+
+      text = text.replace(/<br>$/, '');
+      INQCalendar[time + 'Obj'].set(note, text);
+    }
+  }
+}
 var INQTime = {
    vars: {
     fraction: 'Year Fraction',
@@ -2367,12 +2660,12 @@ INQTime.diff = function(input) {
 }
 INQTime.load = function() {
   for(var prop in this.vars) {
-    this[prop + 'Attr'] = findObjs({_type: 'attribute', name: this.vars[prop]})[0];
+    this[prop + 'Obj'] = findObjs({_type: 'attribute', name: this.vars[prop]})[0];
   }
 
   var characterid;
   for(var prop in this.vars) {
-    if(this[prop + 'Attr']) characterid = this[prop + 'Attr'].get('_characterid');
+    if(this[prop + 'Obj']) characterid = this[prop + 'Obj'].get('_characterid');
   }
 
   if(!characterid) {
@@ -2382,7 +2675,7 @@ INQTime.load = function() {
   }
 
   for(var prop in this.vars) {
-    if(!this[prop + 'Attr']) this[prop + 'Attr'] = createObj('attribute', {
+    if(!this[prop + 'Obj']) this[prop + 'Obj'] = createObj('attribute', {
       name: this.vars[prop],
       current: 0,
       max: 0,
@@ -2390,7 +2683,30 @@ INQTime.load = function() {
     });
   }
 
-  for(var prop in this.vars) this[prop] = Number(this[prop + 'Attr'].get('max')) || 0;
+  this.reset();
+}
+INQTime.modifierRegex = function() {
+  var output = '(?:';
+  output += '\\d+\\s*';
+  output += '(?:';
+  var modifiers = [
+    'minutes?',
+    'hours?',
+    'days?',
+    'weeks?',
+    'months?',
+    'years?',
+    'decades?',
+    'century',
+    'centuries'
+  ];
+
+  for(var modifier of modifiers) output += modifier + '|';
+  output = output.replace(/|$/, '');
+  output += ')\\s*';
+  output += ',?\\s*(?:and)?\\s*';
+  output += ')*';
+  return output;
 }
 INQTime.on = function(eventName, func) {
   switch(eventName) {
@@ -2424,11 +2740,14 @@ INQTime.parseInput = function(input) {
 
   return times;
 }
+INQTime.reset = function() {
+  for(var prop in this.vars) this[prop] = Number(this[prop + 'Obj'].get('max')) || 0;
+}
 INQTime.save = function() {
   var prevTime = {
-    fraction: Number(this.fractionAttr.get('max')),
-    year: Number(this.yearAttr.get('max')),
-    mill: Number(this.millAttr.get('max'))
+    fraction: Number(this.fractionObj.get('max')),
+    year: Number(this.yearObj.get('max')),
+    mill: Number(this.millObj.get('max'))
   }
 
   var currTime = {
@@ -2444,8 +2763,8 @@ INQTime.save = function() {
 
   for(var func of this.timeEvents) func(currTime, prevTime, dt);
   for(var prop in this.vars) {
-    this[prop + 'Attr'].set('current', this[prop]);
-    this[prop + 'Attr'].set('max',     this[prop]);
+    this[prop + 'Obj'].set('current', this[prop]);
+    this[prop + 'Obj'].set('max',     this[prop]);
   }
 }
 INQTime.showDate = function(date) {
@@ -6306,7 +6625,7 @@ INQWeapon.prototype.toNote = function(justText){
   }
 
   _.each(this.Special, function(rule){
-    output += rule.toNote(justText) + ', ';
+    output += rule.toNote(justText).replace('(', '[').replace(')', ']') + ', ';
   });
 
   output = output.replace(/(;|,)\s*$/, '');

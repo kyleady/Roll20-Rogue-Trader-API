@@ -314,8 +314,7 @@ describe('INQUse.prototype.display()', function() {
 			inquse.inqtest.Die = 99;
 			inquse.diceEvents();
       on('chat:message', function(msg){
-				if(msg.type == 'emote'){
-					expect(msg.content).to.match(/My Weapon/);
+				if(msg.type == 'emote' && msg.content.indexOf('My Weapon') != -1){
 					expect(msg.content).to.match(/Jam/);
 	        done();
 				}

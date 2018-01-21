@@ -51,11 +51,11 @@ describe('INQTime.diff()', function() {
     INQTime.load();
     expect(INQTime.fraction).to.equal(1);
     expect(INQTime.year).to.equal(2);
-    expect(INQTime.millAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.millAttr.get('name')).to.equal('Millennia');
-    expect(INQTime.millAttr.get('current')).to.equal(0);
-    expect(INQTime.millAttr.get('max')).to.equal(0);
-    expect(INQTime.millAttr.get('_characterid')).to.equal(character2.id)
+    expect(INQTime.millObj.get('_type')).to.equal('attribute');
+    expect(INQTime.millObj.get('name')).to.equal('Millennia');
+    expect(INQTime.millObj.get('current')).to.equal(0);
+    expect(INQTime.millObj.get('max')).to.equal(0);
+    expect(INQTime.millObj.get('_characterid')).to.equal(character2.id)
   });
   it('should attach the created attributes to INQVariables, if it exists and none of the other attributes exist', function(){
 		Campaign().MOCK20reset();
@@ -66,23 +66,23 @@ describe('INQTime.diff()', function() {
 
     var INQVariables = createObj('character', {name: 'INQVariables'});
     INQTime.load();
-    expect(INQTime.fractionAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.fractionAttr.get('name')).to.equal('Year Fraction');
-    expect(INQTime.fractionAttr.get('current')).to.equal(0);
-    expect(INQTime.fractionAttr.get('max')).to.equal(0);
-    expect(INQTime.fractionAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.fractionObj.get('_type')).to.equal('attribute');
+    expect(INQTime.fractionObj.get('name')).to.equal('Year Fraction');
+    expect(INQTime.fractionObj.get('current')).to.equal(0);
+    expect(INQTime.fractionObj.get('max')).to.equal(0);
+    expect(INQTime.fractionObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.yearAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.yearAttr.get('name')).to.equal('Year');
-    expect(INQTime.yearAttr.get('current')).to.equal(0);
-    expect(INQTime.yearAttr.get('max')).to.equal(0);
-    expect(INQTime.yearAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.yearObj.get('_type')).to.equal('attribute');
+    expect(INQTime.yearObj.get('name')).to.equal('Year');
+    expect(INQTime.yearObj.get('current')).to.equal(0);
+    expect(INQTime.yearObj.get('max')).to.equal(0);
+    expect(INQTime.yearObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.millAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.millAttr.get('name')).to.equal('Millennia');
-    expect(INQTime.millAttr.get('current')).to.equal(0);
-    expect(INQTime.millAttr.get('max')).to.equal(0);
-    expect(INQTime.millAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.millObj.get('_type')).to.equal('attribute');
+    expect(INQTime.millObj.get('name')).to.equal('Millennia');
+    expect(INQTime.millObj.get('current')).to.equal(0);
+    expect(INQTime.millObj.get('max')).to.equal(0);
+    expect(INQTime.millObj.get('_characterid')).to.equal(INQVariables.id);
   });
   it('should create INQVariables if it does not exist and none of the attributes exist', function(){
 		Campaign().MOCK20reset();
@@ -96,23 +96,23 @@ describe('INQTime.diff()', function() {
     expect(INQVariables.get('_type')).to.equal('character');
     expect(INQVariables.get('name')).to.equal('INQVariables');
 
-    expect(INQTime.fractionAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.fractionAttr.get('name')).to.equal('Year Fraction');
-    expect(INQTime.fractionAttr.get('current')).to.equal(0);
-    expect(INQTime.fractionAttr.get('max')).to.equal(0);
-    expect(INQTime.fractionAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.fractionObj.get('_type')).to.equal('attribute');
+    expect(INQTime.fractionObj.get('name')).to.equal('Year Fraction');
+    expect(INQTime.fractionObj.get('current')).to.equal(0);
+    expect(INQTime.fractionObj.get('max')).to.equal(0);
+    expect(INQTime.fractionObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.yearAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.yearAttr.get('name')).to.equal('Year');
-    expect(INQTime.yearAttr.get('current')).to.equal(0);
-    expect(INQTime.yearAttr.get('max')).to.equal(0);
-    expect(INQTime.yearAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.yearObj.get('_type')).to.equal('attribute');
+    expect(INQTime.yearObj.get('name')).to.equal('Year');
+    expect(INQTime.yearObj.get('current')).to.equal(0);
+    expect(INQTime.yearObj.get('max')).to.equal(0);
+    expect(INQTime.yearObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.millAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.millAttr.get('name')).to.equal('Millennia');
-    expect(INQTime.millAttr.get('current')).to.equal(0);
-    expect(INQTime.millAttr.get('max')).to.equal(0);
-    expect(INQTime.millAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.millObj.get('_type')).to.equal('attribute');
+    expect(INQTime.millObj.get('name')).to.equal('Millennia');
+    expect(INQTime.millObj.get('current')).to.equal(0);
+    expect(INQTime.millObj.get('max')).to.equal(0);
+    expect(INQTime.millObj.get('_characterid')).to.equal(INQVariables.id);
   });
   it('should convert strings into numbers', function(){
 		Campaign().MOCK20reset();
@@ -142,22 +142,22 @@ describe('INQTime.diff()', function() {
     createObj('attribute', {name: 'Year', current: '20', max: '2', _characterid: INQVariables.id});
     createObj('attribute', {name: 'Millennia', current: '30', max: '3', _characterid: INQVariables.id});
     INQTime.load();
-    expect(INQTime.fractionAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.fractionAttr.get('name')).to.equal('Year Fraction');
-    expect(INQTime.fractionAttr.get('current')).to.equal('10');
-    expect(INQTime.fractionAttr.get('max')).to.equal('1');
-    expect(INQTime.fractionAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.fractionObj.get('_type')).to.equal('attribute');
+    expect(INQTime.fractionObj.get('name')).to.equal('Year Fraction');
+    expect(INQTime.fractionObj.get('current')).to.equal('10');
+    expect(INQTime.fractionObj.get('max')).to.equal('1');
+    expect(INQTime.fractionObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.yearAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.yearAttr.get('name')).to.equal('Year');
-    expect(INQTime.yearAttr.get('current')).to.equal('20');
-    expect(INQTime.yearAttr.get('max')).to.equal('2');
-    expect(INQTime.yearAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.yearObj.get('_type')).to.equal('attribute');
+    expect(INQTime.yearObj.get('name')).to.equal('Year');
+    expect(INQTime.yearObj.get('current')).to.equal('20');
+    expect(INQTime.yearObj.get('max')).to.equal('2');
+    expect(INQTime.yearObj.get('_characterid')).to.equal(INQVariables.id);
 
-    expect(INQTime.millAttr.get('_type')).to.equal('attribute');
-    expect(INQTime.millAttr.get('name')).to.equal('Millennia');
-    expect(INQTime.millAttr.get('current')).to.equal('30');
-    expect(INQTime.millAttr.get('max')).to.equal('3');
-    expect(INQTime.millAttr.get('_characterid')).to.equal(INQVariables.id);
+    expect(INQTime.millObj.get('_type')).to.equal('attribute');
+    expect(INQTime.millObj.get('name')).to.equal('Millennia');
+    expect(INQTime.millObj.get('current')).to.equal('30');
+    expect(INQTime.millObj.get('max')).to.equal('3');
+    expect(INQTime.millObj.get('_characterid')).to.equal(INQVariables.id);
   });
 });

@@ -19,14 +19,14 @@ describe('INQTime.save()', function() {
     INQTime.year = 99;
     INQTime.mill = 999;
     INQTime.save();
-    expect(INQTime.fractionAttr.get('current')).to.equal(9);
-    expect(INQTime.fractionAttr.get('max')).to.equal(9);
+    expect(INQTime.fractionObj.get('current')).to.equal(9);
+    expect(INQTime.fractionObj.get('max')).to.equal(9);
 
-    expect(INQTime.yearAttr.get('current')).to.equal(99);
-    expect(INQTime.yearAttr.get('max')).to.equal(99);
+    expect(INQTime.yearObj.get('current')).to.equal(99);
+    expect(INQTime.yearObj.get('max')).to.equal(99);
 
-    expect(INQTime.millAttr.get('current')).to.equal(999);
-    expect(INQTime.millAttr.get('max')).to.equal(999);
+    expect(INQTime.millObj.get('current')).to.equal(999);
+    expect(INQTime.millObj.get('max')).to.equal(999);
   });
   it('should execute time events in the order they were added', function(){
 		Campaign().MOCK20reset();
