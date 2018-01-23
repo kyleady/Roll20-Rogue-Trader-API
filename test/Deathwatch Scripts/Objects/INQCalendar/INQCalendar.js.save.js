@@ -21,25 +21,25 @@ describe('INQCalendar.save()', function() {
 			var calendar = INQCalendar.futureObj;
 			var p1 = new Promise(function(resolve) {
 				calendar.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8000001.M42</strong>: Event 1');
+					expect(notes).to.equal('<u>Upcoming Events</u><br><strong>8000001.M42</strong>: Event 1');
 					resolve();
 				});
 			});
 			var p2 = new Promise(function(resolve) {
 				calendar.get('gmnotes', function(notes) {
-					expect(notes).to.equal('<strong>8000002.M42</strong>: Event 2');
+					expect(notes).to.equal('<u>Upcoming Hidden Events</u><br><strong>8000002.M42</strong>: Event 2');
 					resolve();
 				});
 			});
 			var p3 = new Promise(function(resolve) {
 				logbook.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8000003.M42</strong>: Event 3');
+					expect(notes).to.equal('<u>Recorded Events</u><br><strong>8000003.M42</strong>: Event 3');
 					resolve();
 				});
 			});
 			var p4 = new Promise(function(resolve) {
 				logbook.get('gmnotes', function(notes) {
-					expect(notes).to.equal('<strong>8000004.M42</strong>: Event 4');
+					expect(notes).to.equal('<u>Recorded Hidden Events</u><br><strong>8000004.M42</strong>: Event 4');
 					resolve();
 				});
 			});
@@ -108,7 +108,7 @@ describe('INQCalendar.save()', function() {
 			var calendar = INQCalendar.futureObj;
 			var p1 = new Promise(function(resolve) {
 				calendar.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8000001.M42%10000</strong>: Event 1');
+					expect(notes).to.equal('<u>Upcoming Events</u><br><strong>8000001.M42%10000</strong>: Event 1');
 					resolve();
 				});
 			});

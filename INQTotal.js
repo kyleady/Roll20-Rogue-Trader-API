@@ -503,7 +503,7 @@ function logEvent(matches, msg) {
         dt = info;
       break;
       case '%':
-        repeat = info;
+        repeat = Number(info) || info;
       break;
     }
   }
@@ -522,7 +522,7 @@ function logEvent(matches, msg) {
     });
     INQCalendar.save();
     var whisper = isGM ? '/w gm ' : '';
-    announce(whisper + getLink(logbook) + ' updated.');
+    announce(whisper + '**' + getLink(logbook) + '** updated.');
   });
 }
 
@@ -2451,7 +2451,17 @@ var INQCalendar = {
   pastName: 'Logbook',
   futureName: 'Calendar',
   times: ['past', 'future'],
-  notes: ['notes', 'gmnotes']
+  notes: ['notes', 'gmnotes'],
+  title: {
+    past: {
+      notes: 'Recorded Events',
+      gmnotes: 'Recorded Hidden Events'
+    },
+    future: {
+      notes: 'Upcoming Events',
+      gmnotes: 'Upcoming Hidden Events'
+    }
+  }
 };
 INQCalendar.addEvent = function(content, options) {
   if(typeof options != 'object') options = {};
@@ -2475,10 +2485,15 @@ INQCalendar.addEvent = function(content, options) {
   var repeatFraction;
   if(options.repeat) {
     var repeatTime = INQTime.toNumber(options.repeat, 'diff');
-    while(!isFuture) {
-      INQTime.add(repeatTime);
-      isFuture = INQTime.diff(time_i) > 0;
+    if(repeatTime > 0) {
+      while(!isFuture) {
+        INQTime.add(repeatTime);
+        isFuture = INQTime.diff(time_i) > 0;
+      }
+    } else {
+      return whisper('Repetition Period must be greater than zero.');
     }
+
   }
 
 
@@ -2566,10 +2581,16 @@ INQCalendar.load = function(callback) {
       name: this[time + 'Name']
     })[0];
 
-    if(!this[time + 'Obj']) this[time + 'Obj'] = createObj('handout', {
-      name: this[time + 'Name'],
-      inplayerjournals: 'all'
-    });
+    if(!this[time + 'Obj']) {
+      this[time + 'Obj'] = createObj('handout', {
+        name: this[time + 'Name'],
+        inplayerjournals: 'all'
+      });
+      for(var note of this.notes) {
+        this[time + 'Obj'].set(note, '<u>' + this.title[time][note] + '</u>');
+      }
+
+    }
   }
 
   this.parse(callback);

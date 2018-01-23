@@ -18,7 +18,7 @@ function logEvent(matches, msg) {
         dt = info;
       break;
       case '%':
-        repeat = info;
+        repeat = Number(info) || info;
       break;
     }
   }
@@ -37,7 +37,7 @@ function logEvent(matches, msg) {
     });
     INQCalendar.save();
     var whisper = isGM ? '/w gm ' : '';
-    announce(whisper + getLink(logbook) + ' updated.');
+    announce(whisper + '**' + getLink(logbook) + '** updated.');
   });
 }
 

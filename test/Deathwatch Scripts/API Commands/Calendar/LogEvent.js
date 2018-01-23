@@ -11,11 +11,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8000000.M0</strong>: Event Test');
+					expect(notes).to.equal('<u>Recorded Events</u><br><strong>8000000.M0</strong>: Event Test');
 					done();
 				});
       }
@@ -33,11 +33,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8765900.M41</strong>: Event Date Test');
+					expect(notes).to.equal('<u>Recorded Events</u><br><strong>8765900.M41</strong>: Event Date Test');
 					done();
 				});
       }
@@ -61,11 +61,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8111222.M3</strong>: Specific Date Test');
+					expect(notes).to.equal('<u>Recorded Events</u><br><strong>8111222.M3</strong>: Specific Date Test');
 					done();
 				});
       }
@@ -89,11 +89,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Calendar') + ' updated.') {
+      if(msg.content == '**' + getLink('Calendar') + '** updated.') {
         var calendar = findObjs({name: 'Calendar', _type: 'handout'})[0];
         expect(calendar.get('_type')).to.equal('handout');
 				calendar.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8765938.M41</strong>: Altered Date Test');
+					expect(notes).to.equal('<u>Upcoming Events</u><br><strong>8765938.M41</strong>: Altered Date Test');
 					done();
 				});
       }
@@ -117,11 +117,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {
-					expect(notes).to.equal('<strong>8765800.M41</strong>: Altered Date Test Minus');
+					expect(notes).to.equal('<u>Recorded Events</u><br><strong>8765800.M41</strong>: Altered Date Test Minus');
 					done();
 				});
       }
@@ -145,11 +145,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('gmnotes', function(notes) {
-					expect(notes).to.equal('<strong>8765900.M41</strong>: GM Test');
+					expect(notes).to.equal('<u>Recorded Hidden Events</u><br><strong>8765900.M41</strong>: GM Test');
 					done();
 				});
       }
@@ -173,11 +173,11 @@ describe('logEvent()', function() {
 		MOCK20endOfLastScript();
 
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Calendar') + ' updated.') {
+      if(msg.content == '**' + getLink('Calendar') + '** updated.') {
         var calendar = findObjs({name: 'Calendar', _type: 'handout'})[0];
         expect(calendar.get('_type')).to.equal('handout');
 				calendar.get('gmnotes', function(notes) {
-					expect(notes).to.equal('<strong>8765910.M41%100000</strong>: GM Test');
+					expect(notes).to.equal('<u>Upcoming Hidden Events</u><br><strong>8765910.M41%100000</strong>: GM Test');
 					done();
 				});
       }
@@ -193,6 +193,34 @@ describe('logEvent()', function() {
     player.MOCK20gm = true;
     player.MOCK20chat('!gmLog GM Test % 1 decade');
   });
+	it('should be able to set a repetition period with a number or list of times', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    on('chat:message', function(msg) {
+      if(msg.content == '**' + getLink('Calendar') + '** updated.') {
+        var calendar = findObjs({name: 'Calendar', _type: 'handout'})[0];
+        expect(calendar.get('_type')).to.equal('handout');
+				calendar.get('gmnotes', function(notes) {
+					expect(notes).to.equal('<u>Upcoming Hidden Events</u><br><strong>8765910.M41%100000</strong>: GM Test');
+					done();
+				});
+      }
+    });
+
+		INQTime.load();
+		INQTime.mill = 41;
+		INQTime.year = 900;
+		INQTime.fraction = 7653;
+		INQTime.save();
+
+    var player = createObj('player', {_displayname: 'Player'}, {MOCK20override: true});
+    player.MOCK20gm = true;
+    player.MOCK20chat('!gmLog GM Test % 100000');
+  });
 	it('should append the event on a new line', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
@@ -202,16 +230,16 @@ describe('logEvent()', function() {
 
 		var logCount = 0;
     on('chat:message', function(msg) {
-      if(msg.content == getLink('Logbook') + ' updated.') {
+      if(msg.content == '**' + getLink('Logbook') + '** updated.') {
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {
 					logCount++;
 					if(logCount == 1) {
-						expect(notes).to.equal('<strong>8765900.M41</strong>: Base Test');
+						expect(notes).to.equal('<u>Recorded Events</u><br><strong>8765900.M41</strong>: Base Test');
 						player.MOCK20chat('!Log Append Test');
 					} else if(logCount == 2) {
-						expect(notes).to.equal('<strong>8765900.M41</strong>: Base Test<br><strong>8765900.M41</strong>: Append Test');
+						expect(notes).to.equal('<u>Recorded Events</u><br><strong>8765900.M41</strong>: Base Test<br><strong>8765900.M41</strong>: Append Test');
 						done();
 					}
 				});

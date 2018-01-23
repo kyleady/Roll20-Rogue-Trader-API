@@ -19,12 +19,14 @@ describe('INQCalendar.advance()', function() {
 			INQTime.mill = 3;
 			expect(INQTime.toString()).to.equal('8000030.M3');
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000010.M3', Content: [' Event 2'], Repeat: undefined},
 				{Date: '8000020.M3', Content: [' Event 1'], Repeat: undefined},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			INQCalendar.advance();
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.announcements.notes).to.deep.equal([
@@ -52,12 +54,14 @@ describe('INQCalendar.advance()', function() {
 			INQTime.mill = 3;
 			expect(INQTime.toString()).to.equal('8000030.M3');
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000010.M3', Content: [' Event 2'], Repeat: 50000},
 				{Date: '8000020.M3', Content: [' Event 1'], Repeat: undefined},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			INQCalendar.advance();
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.announcements.notes).to.deep.equal([
@@ -90,10 +94,12 @@ describe('INQCalendar.advance()', function() {
 			INQCalendar.addEvent('Event 3', {date: '220.M3'});
 			expect(INQTime.toString()).to.equal('8000030.M3');
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			INQCalendar.advance();
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.announcements.notes).to.deep.equal([]);
@@ -117,14 +123,17 @@ describe('INQCalendar.advance()', function() {
 			INQTime.mill = 3;
 			expect(INQTime.toString()).to.equal('8000030.M3');
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000020.M3', Content: [' Event 1'], Repeat: undefined},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.future.gmnotes).to.deep.equal([
+				{Content: ['<u>Upcoming Hidden Events</u>']},
 				{Date: '8000010.M3', Content: [' Event 2'], Repeat: undefined}
 			]);
 			INQCalendar.advance();
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.announcements.notes).to.deep.equal([
@@ -154,15 +163,18 @@ describe('INQCalendar.advance()', function() {
 			INQTime.mill = 3;
 			expect(INQTime.toString()).to.equal('8000030.M3');
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Content: ['Title', '']},
 				{Date: '8000020.M3', Content: [' Event 1'], Repeat: undefined},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);
 			expect(INQCalendar.future.gmnotes).to.deep.equal([
+				{Content: ['<u>Upcoming Hidden Events</u>']},
 				{Date: '8000010.M3', Content: [' Event 2'], Repeat: undefined}
 			]);
 			INQCalendar.advance();
 			expect(INQCalendar.future.notes).to.deep.equal([
+				{Content: ['<u>Upcoming Events</u>']},
 				{Content: ['Title', '']},
 				{Date: '8000220.M3', Content: [' Event 3'], Repeat: undefined}
 			]);

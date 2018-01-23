@@ -20,10 +20,15 @@ INQCalendar.addEvent = function(content, options) {
   var repeatFraction;
   if(options.repeat) {
     var repeatTime = INQTime.toNumber(options.repeat, 'diff');
-    while(!isFuture) {
-      INQTime.add(repeatTime);
-      isFuture = INQTime.diff(time_i) > 0;
+    if(repeatTime > 0) {
+      while(!isFuture) {
+        INQTime.add(repeatTime);
+        isFuture = INQTime.diff(time_i) > 0;
+      }
+    } else {
+      return whisper('Repetition Period must be greater than zero.');
     }
+
   }
 
 

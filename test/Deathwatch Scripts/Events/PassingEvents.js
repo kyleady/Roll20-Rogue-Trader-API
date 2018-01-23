@@ -58,8 +58,8 @@ describe('passingEvents()', function() {
 
 			if(passedA && passedB) {
 				INQCalendar.load(function(){
-					log(INQCalendar.future.notes)
 					expect(INQCalendar.future.notes).to.deep.equal([
+						{Content: ['<u>Upcoming Events</u>']},
 						{Date: '8000003.M0', Content: [' Future Event C'], Repeat: undefined}
 					]);
 					done();
@@ -94,11 +94,13 @@ describe('passingEvents()', function() {
 
 			if(passedA && passedB) {
 				INQCalendar.load(function(){
-					log(INQCalendar.future.notes)
 					expect(INQCalendar.future.notes).to.deep.equal([
+						{Content: ['<u>Upcoming Events</u>']},
 						{Date: '8000003.M0', Content: [' Future Event C'], Repeat: undefined}
 					]);
-					expect(INQCalendar.past.notes).to.deep.equal([]);
+					expect(INQCalendar.past.notes).to.deep.equal([
+						{Content: ['<u>Recorded Events</u>']}
+					]);
 					done();
 				});
 			}
