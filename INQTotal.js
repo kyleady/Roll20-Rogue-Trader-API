@@ -517,7 +517,8 @@ function logEvent(matches, msg) {
       date: date,
       sign: sign,
       dt: dt,
-      isGM: isGM
+      isGM: isGM,
+      repeat: repeat
     });
     INQCalendar.save();
     var whisper = isGM ? '/w gm ' : '';
@@ -540,10 +541,10 @@ on('ready', function() {
 });
 function timeDiff(matches, msg) {
   INQTime.load();
-  var timeData = INQTime.parseDate(matches[1]);
-  var diffData = INQTime.diff(timeData);
-  var output = INQTime.showDiff(diffData);
-  output += INQTime.showDate(timeData) + '.';
+  var date = INQTime.toObj(matches[1]);
+  var dt = INQTime.diff(date);
+  var output = INQTime.toString(dt, 'diff');
+  output += INQTime.toString(date) + '.';
   whisper(output, {speakingTo: msg.playerid});
 }
 
@@ -552,7 +553,7 @@ on('ready', function() {
 });
 function timeHandler(matches, msg, options) {
   if(typeof options != 'object') options = {};
-  var times = INQTime.parseInput(matches[2]);
+  var times = INQTime.toArray(matches[2], 'diff');
   INQTime.load();
   if(matches[1] == '-') {
     for(var time of times) time.quantity *= -1;
@@ -561,9 +562,9 @@ function timeHandler(matches, msg, options) {
   INQTime.add(times);
   if(options.save) {
     INQTime.save();
-    announce('It is now ' + INQTime.showDate());
+    announce('It is now ' + INQTime.toString());
   } else {
-    whisper(INQTime.showDate(), {speakingTo: msg.playerid});
+    whisper(INQTime.toString(), {speakingTo: msg.playerid});
   }
 }
 
@@ -2436,13 +2437,14 @@ var INQCalendar = {};
 INQCalendar.addEvent = function(content, options) {
   if(typeof options != 'object') options = {};
   INQTime.load();
+  var time_i = INQTime.toNumber();
   if(options.date) {
-    var dateData = INQTime.parseDate(options.date);
+    var dateData = INQTime.toObj(options.date);
     for(var prop in INQTime.vars) INQTime[prop] = dateData[prop];
   }
 
   if(options.dt) {
-    var times = INQTime.parseInput(options.dt);
+    var times = INQTime.toArray(options.dt, 'diff');
     if(options.sign == '-') {
       for(var time of times) time.quantity *= -1;
     }
@@ -2450,17 +2452,23 @@ INQCalendar.addEvent = function(content, options) {
     INQTime.add(times);
   }
 
-  var name = INQTime.showDate();
-  var dateData = {};
-  for(var prop in INQTime.vars) dateData[prop] = INQTime[prop];
-  INQTime.reset();
-  var isFuture = INQTime.diff(dateData).future;
+  var isFuture = INQTime.diff(time_i) > 0;
+  var repeatFraction;
+  if(options.repeat) {
+    var repeatTime = INQTime.toNumber(options.repeat, 'diff');
+    while(!isFuture) {
+      INQTime.add(repeatTime);
+      isFuture = INQTime.diff(time_i) > 0;
+    }
+  }
+
 
   var time = isFuture ? 'future' : 'past';
   var note = options.isGM ? 'gmnotes' : 'notes';
   this[time][note].push({
-    Date: name,
-    Content: [' ' + content.trim()]
+    Date: INQTime.toString(),
+    Content: [' ' + content.trim()],
+    Repeat: repeatTime
   });
 
   this.order(time, note);
@@ -2473,16 +2481,31 @@ INQCalendar.advance = function() {
   for(var note of notes) {
     this.announcements[note] = [];
     for(var i = 0; i < this.future[note].length; i++) {
-      if(!this.future[note][i].Date) continue;
-      var evTime = INQTime.parseDate(this.future[note][i].Date);
-      var stillInFuture = INQTime.diff(evTime).future;
-      if(!stillInFuture) {
-        this.announcements[note].push(this.future[note][i]);
+      var ev = this.future[note][i];
+      if(!ev.Date) continue;
+      var dt = INQTime.diff(ev.Date);
+      if(dt >= 0) {
+        this.announcements[note].push(ev);
+        if(ev.Repeat) {
+          var repetitions = Math.floor(dt / ev.Repeat);
+          INQTime.equals(ev.Date);
+          for(var j = 0; j < repetitions; j++) {
+            INQTime.add(ev.Repeat);
+            this.announcements[note].push({
+              Date: INQTime.toString(),
+              Content: ev.Content,
+              Repeat: ev.Repeat
+            });
+          }
+        }
+        
         this.future[note].splice(i, 1);
         i--;
       }
     }
   }
+
+  INQTime.reset();
 }
 INQCalendar.announceEvents = function() {
   var notes = ['notes', 'gmnotes'];
@@ -2494,14 +2517,26 @@ INQCalendar.announceEvents = function() {
       output += ev.Date;
       output += '</strong>: ';
       output += ev.Content;
-      output += ' [Log](';
 
+      output += ' [Log](';
       var cmd = '';
       if(note == 'gmnotes') cmd += 'gm';
-      cmd += 'log ' + ev.Content + '@' + ev.Date;
-
+      cmd += 'log ' + ev.Content;
+      cmd += '@' + ev.Date;
       output += '!{URIFixed}' + encodeURIFixed(cmd);
       output += ')';
+
+      if(ev.Repeat) {
+        output += ' [Repeat](';
+        cmd = '';
+        if(note == 'gmnotes') cmd += 'gm';
+        cmd += 'log ' + ev.Content;
+        cmd += '@' + ev.Date;
+        cmd += '%' + ev.Repeat;
+        output += '!{URIFixed}' + encodeURIFixed(cmd);
+        output += ')';
+      }
+
       announce(output);
     }
 
@@ -2521,12 +2556,11 @@ INQCalendar.order = function(time, note) {
   INQCalendar[time][note].sort(function(ev1, ev2) {
     if(!ev1.Date) return -1;
     if(!ev2.Date) return 1;
-    var d1 = INQTime.parseDate(ev1.Date);
-    var d2 = INQTime.parseDate(ev2.Date);
-    var y1 = d1.mill * 1000 + d1.year + (d1.fraction / 10000);
-    var y2 = d2.mill * 1000 + d2.year + (d2.fraction / 10000);
-    return y1 - y2;
+    INQTime.equals(ev1.Date);
+    return INQTime.diff(ev2.Date);
   });
+  
+  INQTime.reset();
 }
 INQCalendar.parse = function(callback) {
   var times = ['past', 'future'];
@@ -2559,15 +2593,17 @@ INQCalendar.parse = function(callback) {
         var lines = text[time][note].split('<br>');
         for(var line of lines) {
           if(typeof line == 'string' && line.length > 0) {
-            var matches = line.match(/^<strong>([^<>]+)<\/strong>:(.+)$/);
+            var matches = line.match(/^<strong>(\d+\.M\d+)(?:%(\d+))?<\/strong>:(.+)$/);
           } else {
             var matches = null;
           }
 
           if(matches) {
+
             INQCalendar[time][note].push({
               Date: matches[1],
-              Content: [matches[2]]
+              Repeat: Number(matches[2]) || undefined,
+              Content: [matches[3]]
             });
           } else if(INQCalendar[time][note].length) {
             var last = INQCalendar[time][note].length-1;
@@ -2595,6 +2631,7 @@ INQCalendar.save = function() {
         if(lines.Date) {
           text += '<strong>';
           text += lines.Date;
+          if(lines.Repeat) text += '%' + lines.Repeat;
           text += '</strong>:';
         }
 
@@ -2617,8 +2654,8 @@ var INQTime = {
   },
   timeEvents: []
 };
-INQTime.add = function(times) {
-  this.fraction += this.toFraction(times);
+INQTime.add = function(input) {
+  this.fraction += this.toNumber(input, 'diff');
   while(this.fraction >= 10000) {
     this.fraction -= 10000;
     this.year++;
@@ -2640,23 +2677,13 @@ INQTime.add = function(times) {
   }
 }
 INQTime.diff = function(input) {
-  var dt = {
-    fraction: this.fraction - input.fraction,
-    year: this.year - input.year,
-    mill: this.mill - input.mill
-  };
-
-  var ttotal = dt.mill * 1000;
-  ttotal += dt.year;
-  ttotal += dt.fraction / 10000;
-  var output = {future: ttotal < 0};
-  if(output.future) ttotal *= -1;
-  output.years = Math.floor(ttotal);
-  var fraction = (ttotal - output.years) * 10000;
-  output.days = Math.round(fraction / 27.4);
-  output.weeks = Math.floor(output.days / 7);
-  output.days = output.days - output.weeks * 7;
-  return output;
+  var time_f = INQTime.toNumber(input);
+  var time_i = INQTime.toNumber();
+  return time_i - time_f;
+}
+INQTime.equals = function(input) {
+  var date = INQTime.toObj(input);
+  for(var prop in INQTime.vars) INQTime[prop] = date[prop];
 }
 INQTime.load = function() {
   for(var prop in this.vars) {
@@ -2715,33 +2742,11 @@ INQTime.on = function(eventName, func) {
     break;
   }
 }
-INQTime.parseDate = function(input) {
-  var dates = input.match(/^\d?(\d\d\d)?(\d\d\d)(?:\.M(\d+))?$/i);
-  var output = {
-    fraction: this.fraction,
-    year: this.year,
-    mill: this.mill
-  };
-
-  if(!dates) return whisper('Invalid 40k date.');
-  if(dates[1]) output.fraction = Number(dates[1]) * 10;
-  output.year = Number(dates[2]);
-  if(dates[3]) output.mill = Number(dates[3]);
-  return output;
-}
-INQTime.parseInput = function(input) {
-  var times = [];
-  var timeMatches = input || '';
-  timeMatches = timeMatches.match(/\d+\s*[a-z]+/gi) || [];
-  for(var timeMatch of timeMatches) {
-    var matches = timeMatch.match(/(\d+)\s*([a-z]+)/i);
-    times.push({quantity: Number(matches[1]), type: matches[2]});
-  }
-
-  return times;
-}
 INQTime.reset = function() {
-  for(var prop in this.vars) this[prop] = Number(this[prop + 'Obj'].get('max')) || 0;
+  for(var prop in this.vars) {
+    if(!this[prop + 'Obj']) continue;
+    this[prop] = Number(this[prop + 'Obj'].get('max')) || 0;
+  }
 }
 INQTime.save = function() {
   var prevTime = {
@@ -2750,93 +2755,174 @@ INQTime.save = function() {
     mill: Number(this.millObj.get('max'))
   }
 
-  var currTime = {
-    fraction: this.fraction,
-    year: this.year,
-    mill: this.mill
-  }
-
-  var dt = currTime.mill - prevTime.mill;
-  dt *= 1000;
-  dt += currTime.year - prevTime.year;
-  dt += (currTime.fraction - prevTime.fraction) / 10000;
-
+  var currTime = INQTime.toObj();
+  var dt = INQTime.diff(prevTime) / 10000;
   for(var func of this.timeEvents) func(currTime, prevTime, dt);
   for(var prop in this.vars) {
     this[prop + 'Obj'].set('current', this[prop]);
     this[prop + 'Obj'].set('max',     this[prop]);
   }
 }
-INQTime.showDate = function(date) {
-  if(!date) date = this;
-  var output = '8';
-  var zeroes = '';
-  if(date.fraction < 1000) zeroes += '0';
-  if(date.fraction < 100) zeroes += '0';
-  output += zeroes;
-  output += Math.floor(date.fraction / 10);
-  zeroes = '';
-  if(date.year < 100) zeroes += '0';
-  if(date.year < 10) zeroes += '0';
-  output += zeroes;
-  output += date.year;
-  output += '.M';
-  output += date.mill;
-  return output;
-}
-INQTime.showDiff = function(diffData) {
-  var output = '';
-  if(diffData.days > 1) output += diffData.days + ' days, ';
-  if(diffData.days == 1) output += diffData.days + ' day, ';
-  if(diffData.weeks > 1) output += diffData.weeks + ' weeks, ';
-  if(diffData.weeks == 1) output += diffData.weeks + ' week, ';
-  if(diffData.years > 1) output += diffData.years + ' years';
-  if(diffData.years == 1) output += diffData.years + ' year';
-  if(!output) output = 'No time';
-  output = output.replace(/,\s*$/i, '');
-  output += diffData.future ? ' until ' : ' since ';
-  return output;
-}
-INQTime.toFraction = function(times) {
-  if(!Array.isArray(times)) times = [times];
-  var total = 0;
-  for(var time of times) {
-    var outcomes = () => 1;
-    if(/minute/i.test(time.type)) {
-      outcomes = function() {
-        return randomInteger(100000) <= 1903 ? 1 : 0;
+INQTime.toArray = function(input, type) {
+  if(Array.isArray(input)) return input;
+  var times = [];
+  if(type == 'diff') {
+    if(typeof input == 'string') {
+      var sign =  input.indexOf('since') != -1 ? -1 : 1;
+      input = input.replace(/(since|until)/i, '');
+      var timeMatches = input.match(/\d+\s*[a-z]+/gi) || [];
+      for(var timeMatch of timeMatches) {
+        var matches = timeMatch.match(/(\d+)\s*([a-z]+)/i);
+        times.push({quantity: Number(matches[1]), type: matches[2]});
       }
-    } else if(/hour/i.test(time.type)) {
-      outcomes = function() {
-        return randomInteger(1000) <= 858 ? 1 : 2;
-      }
-    } else if(/day/i.test(time.type)) {
-      outcomes = function() {
-        return randomInteger(10) <= 6 ? 27 : 28;
-      }
-    } else if(/week/i.test(time.type)) {
-      outcomes = function() {
-        return randomInteger(10) <= 2 ? 191 : 192;
-      }
-    } else if(/month/i.test(time.type)) {
-      outcomes = function() {
-        return randomInteger(10) <= 7 ? 833 : 834;
-      }
-    } else if(/year/i.test(time.type)) {
-      outcomes = () => 10000;
-    } else if(/decade/i.test(time.type)) {
-      outcomes = () => 100000;
-    } else if(/(century|centuries)/i.test(time.type)) {
-      outcomes = () => 1000000;
-    }
-    if(time.quantity > 0) {
-      for(var i = 0; i < time.quantity; i++) total += outcomes();
+
+      for(var time of times) time.quantity *= sign;
     } else {
-      for(var i = 0; i < -1*time.quantity; i++) total -= outcomes();
+      var data = INQTime.toObj(input, type);
+      var sign = data.future ? -1 : 1;
+      if(data.years) times.push({quantity: data.years * sign, type: 'years'});
+      if(data.weeks) times.push({quantity: data.weeks * sign, type: 'weeks'});
+      if(data.days)  times.push({quantity: data.days  * sign, type: 'days'});
     }
+  } else {
+    return [INQTime.toObj(input, type)];
+  }
+
+  return times;
+}
+INQTime.toNumber = function(input, type) {
+  if(typeof input == 'number') return input;
+  var times = INQTime.toArray(input, type);
+  var total = 0;
+  if(type == 'diff') {
+    var conversions = {
+      minute: {chance: 1903, value: 0},
+      hour: {chance: 85800, value: 1},
+      day: {chance: 60000, value: 27},
+      week: {chance: 20000, value: 191},
+      month: {chance: 70000, value: 833},
+      year: {chance: 0, value: 10000},
+      decade: {chance: 0, value: 100000},
+      "(century|centuries)": {chance: 0, value: 1000000}
+    }
+
+
+    for(var time of times) {
+      var sign = time.quantity < 0 ? -1 : 1;
+      var quantity = time.quantity * sign;
+      var subtotal = 0;
+      for(var name in conversions) {
+        var re = RegExp(name + 's?', 'i');
+        if(re.test(time.type)) break;
+      }
+
+      for(var i = 0; i < quantity; i++) {
+        subtotal += conversions[name].value;
+        if(randomInteger(100000) <= conversions[name].chance) subtotal++;
+      }
+
+      total += subtotal * sign;
+    }
+  } else {
+    var data = times[0];
+    total += (data.mill - 1) * 10000000;
+    total += data.year * 10000;
+    total += data.fraction;
   }
 
   return total;
+}
+INQTime.toObj = function(input, type) {
+  if(!input) {
+    input = {};
+    for(var prop in INQTime.vars) input[prop] = INQTime[prop];
+  }
+
+  if(type == 'diff') {
+    switch(typeof input) {
+      case 'string':
+        var sign =  input.indexOf('since') != -1 ? -1 : 1;
+        input = input.replace(/(since|until)/i, '');
+        var times = [];
+        var timeMatches = input.match(/\d+\s*[a-z]+/gi) || [];
+        for(var timeMatch of timeMatches) {
+          var matches = timeMatch.match(/(\d+)\s*([a-z]+)/i);
+          times.push({quantity: Number(matches[1]), type: matches[2]});
+        }
+
+        for(var time of times) time.quantity *= sign;
+        return INQTime.toObj(times, 'diff');
+      break;
+      case 'number':
+        var output = {future: input < 0};
+        if(output.future) input *= -1;
+        output.years = Math.floor(input / 10000);
+        var fraction = (input - output.years * 10000);
+        output.days = Math.round(fraction / 27.4);
+        output.weeks = Math.floor(output.days / 7);
+        output.days = output.days - output.weeks * 7;
+      break;
+      case 'object':
+        if(Array.isArray(input)) {
+          var dt = INQTime.toNumber(input, 'diff');
+          return INQTime.toObj(dt, 'diff');
+        } else {
+          return input;
+        }
+      break;
+    }
+  } else {
+    switch(typeof input) {
+      case 'string':
+        var dates = input.match(/^\d?(\d\d\d)?(\d\d\d)(?:\.M(\d+))?$/i);
+        var output = {fraction: this.fraction, year: this.year, mill: this.mill};
+        if(!dates) return whisper('Invalid 40k date.');
+        if(dates[1]) output.fraction = Number(dates[1]) * 10;
+        output.year = Number(dates[2]);
+        if(dates[3]) output.mill = Number(dates[3]);
+      break;
+      case 'number':
+        var output = {};
+        output.mill = Math.floor(input / 10000000);
+        output.year = Math.floor(input / 10000) - output.mill*1000;
+        output.fraction = input - output.year * 10000 - output.mill * 10000000;
+        output.mill++;
+      break;
+      case 'object':
+        if(Array.isArray(input)) {
+          return input[0];
+        } else {
+          return input;
+        }
+      break;
+    }
+  }
+
+  return output;
+}
+INQTime.toString = function(input, type) {
+  if(typeof input == 'string') return input;
+  var data = INQTime.toObj(input, type);
+  if(type == 'diff') {
+    var output = '';
+    if(data.days >= 1) output += data.days + ' days, ';
+    if(data.weeks >= 1) output += data.weeks + ' weeks, ';
+    if(data.years >= 1) output += data.years + ' years';
+    output = output.replace(/1 (day|week|year)s/g, '1 $1');
+    if(!output) output = 'No time';
+    output = output.replace(/,\s*$/i, '');
+    output += data.future ? ' until ' : ' since ';
+  } else {
+    var output = '8';
+    if(data.fraction < 1000) output += '0';
+    if(data.fraction < 100) output += '0';
+    output += Math.floor(data.fraction / 10);
+    if(data.year < 100) output += '0';
+    if(data.year < 10) output += '0';
+    output += data.year + '.M' + data.mill;
+  }
+
+  return output;
 }
 function INQAttack(inquse){
   this.inquse = inquse;

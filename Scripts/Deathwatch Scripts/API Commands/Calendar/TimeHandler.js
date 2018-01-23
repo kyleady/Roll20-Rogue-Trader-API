@@ -1,6 +1,6 @@
 function timeHandler(matches, msg, options) {
   if(typeof options != 'object') options = {};
-  var times = INQTime.parseInput(matches[2]);
+  var times = INQTime.toArray(matches[2], 'diff');
   INQTime.load();
   if(matches[1] == '-') {
     for(var time of times) time.quantity *= -1;
@@ -9,9 +9,9 @@ function timeHandler(matches, msg, options) {
   INQTime.add(times);
   if(options.save) {
     INQTime.save();
-    announce('It is now ' + INQTime.showDate());
+    announce('It is now ' + INQTime.toString());
   } else {
-    whisper(INQTime.showDate(), {speakingTo: msg.playerid});
+    whisper(INQTime.toString(), {speakingTo: msg.playerid});
   }
 }
 

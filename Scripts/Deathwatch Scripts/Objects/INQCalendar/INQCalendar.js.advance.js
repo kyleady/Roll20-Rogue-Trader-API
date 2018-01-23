@@ -5,14 +5,29 @@ INQCalendar.advance = function() {
   for(var note of notes) {
     this.announcements[note] = [];
     for(var i = 0; i < this.future[note].length; i++) {
-      if(!this.future[note][i].Date) continue;
-      var evTime = INQTime.parseDate(this.future[note][i].Date);
-      var stillInFuture = INQTime.diff(evTime).future;
-      if(!stillInFuture) {
-        this.announcements[note].push(this.future[note][i]);
+      var ev = this.future[note][i];
+      if(!ev.Date) continue;
+      var dt = INQTime.diff(ev.Date);
+      if(dt >= 0) {
+        this.announcements[note].push(ev);
+        if(ev.Repeat) {
+          var repetitions = Math.floor(dt / ev.Repeat);
+          INQTime.equals(ev.Date);
+          for(var j = 0; j < repetitions; j++) {
+            INQTime.add(ev.Repeat);
+            this.announcements[note].push({
+              Date: INQTime.toString(),
+              Content: ev.Content,
+              Repeat: ev.Repeat
+            });
+          }
+        }
+        
         this.future[note].splice(i, 1);
         i--;
       }
     }
   }
+
+  INQTime.reset();
 }

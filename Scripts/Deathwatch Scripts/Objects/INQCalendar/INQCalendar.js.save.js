@@ -8,6 +8,7 @@ INQCalendar.save = function() {
         if(lines.Date) {
           text += '<strong>';
           text += lines.Date;
+          if(lines.Repeat) text += '%' + lines.Repeat;
           text += '</strong>:';
         }
 

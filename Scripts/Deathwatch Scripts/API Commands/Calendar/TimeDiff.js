@@ -1,9 +1,9 @@
 function timeDiff(matches, msg) {
   INQTime.load();
-  var timeData = INQTime.parseDate(matches[1]);
-  var diffData = INQTime.diff(timeData);
-  var output = INQTime.showDiff(diffData);
-  output += INQTime.showDate(timeData) + '.';
+  var date = INQTime.toObj(matches[1]);
+  var dt = INQTime.diff(date);
+  var output = INQTime.toString(dt, 'diff');
+  output += INQTime.toString(date) + '.';
   whisper(output, {speakingTo: msg.playerid});
 }
 

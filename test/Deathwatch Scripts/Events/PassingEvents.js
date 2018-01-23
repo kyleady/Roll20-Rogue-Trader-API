@@ -17,7 +17,7 @@ describe('passingEvents()', function() {
 			INQCalendar.save();
 
 			INQTime.load();
-			INQTime.add({quantity: 2, type: 'years'});
+			INQTime.add([{quantity: 2, type: 'years'}]);
 			INQTime.save();
 		});
 
@@ -45,7 +45,7 @@ describe('passingEvents()', function() {
 			INQCalendar.save();
 
 			INQTime.load();
-			INQTime.add({quantity: 2, type: 'years'});
+			INQTime.add([{quantity: 2, type: 'years'}]);
 			INQTime.save();
 		});
 
@@ -60,7 +60,7 @@ describe('passingEvents()', function() {
 				INQCalendar.load(function(){
 					log(INQCalendar.future.notes)
 					expect(INQCalendar.future.notes).to.deep.equal([
-						{Date: '8000003.M0', Content: [' Future Event C']}
+						{Date: '8000003.M0', Content: [' Future Event C'], Repeat: undefined}
 					]);
 					done();
 				});
@@ -81,7 +81,7 @@ describe('passingEvents()', function() {
 			INQCalendar.save();
 
 			INQTime.load();
-			INQTime.add({quantity: 2, type: 'years'});
+			INQTime.add([{quantity: 2, type: 'years'}]);
 			INQTime.save();
 		});
 
@@ -96,7 +96,7 @@ describe('passingEvents()', function() {
 				INQCalendar.load(function(){
 					log(INQCalendar.future.notes)
 					expect(INQCalendar.future.notes).to.deep.equal([
-						{Date: '8000003.M0', Content: [' Future Event C']}
+						{Date: '8000003.M0', Content: [' Future Event C'], Repeat: undefined}
 					]);
 					expect(INQCalendar.past.notes).to.deep.equal([]);
 					done();
@@ -118,7 +118,7 @@ describe('passingEvents()', function() {
 			INQCalendar.save();
 
 			INQTime.load();
-			INQTime.add({quantity: 2, type: 'years'});
+			INQTime.add([{quantity: 2, type: 'years'}]);
 			INQTime.save();
 		});
 

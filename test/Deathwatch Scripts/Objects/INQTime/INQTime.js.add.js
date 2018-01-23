@@ -62,7 +62,7 @@ describe('INQTime.add()', function() {
     var year = createObj('attribute', {name: 'Year', current: 20, max: 999, _characterid: INQVariables.id});
     var mill = createObj('attribute', {name: 'Millennia', current: 30, max: 3, _characterid: INQVariables.id});
     INQTime.load();
-    INQTime.add({type: 'hour', quantity: 1});
+    INQTime.add([{type: 'hour', quantity: 1}]);
 
     expect(INQTime.fraction).to.be.within(0, 1);
     expect(INQTime.year).to.equal(0);
@@ -80,7 +80,7 @@ describe('INQTime.add()', function() {
     var year = createObj('attribute', {name: 'Year', current: 20, max: 0, _characterid: INQVariables.id});
     var mill = createObj('attribute', {name: 'Millennia', current: 30, max: 41, _characterid: INQVariables.id});
     INQTime.load();
-    INQTime.add({type: 'hour', quantity: -1});
+    INQTime.add([{type: 'hour', quantity: -1}]);
 
     expect(INQTime.fraction).to.be.within(9998, 9999);
     expect(INQTime.year).to.equal(999);

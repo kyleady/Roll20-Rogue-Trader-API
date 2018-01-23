@@ -2,27 +2,32 @@ var expect = require('chai').expect;
 var fs = require('fs');
 var path = require('path');
 require('mock20');
-describe('INQTime.parseInput()', function() {
-	it('should parse a string of times into an array of objects', function(){
+describe('INQTime.toNumber()', function() {
+	it('should convert the input into a number of year 10000ths', function(){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    expect(INQTime.parseInput('4 daYs, 3 MONTHS, and 2 years')).to.deep.equal([
-      {type: 'daYs', quantity: 4},
-      {type: 'MONTHS', quantity: 3},
-      {type: 'years', quantity: 2}
-    ]);
+    expect(INQTime.toNumber({
+      mill: 41,
+      year: 998,
+      fraction: 8765
+    })).to.equal(409988765);
   });
-  it('should return an empty array if no input is given', function(){
+  it('should convert the input into the difference in year 10000ths, if the type is diff', function(){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
 		eval(MyScript);
 		MOCK20endOfLastScript();
 
-    expect(INQTime.parseInput()).to.deep.equal([]);
+    expect(INQTime.toNumber({
+      years: 40000,
+      days: 3,
+      weeks: 18,
+      future: true
+    }, 'diff')).to.be.within(-400003540, -400003519);
   });
 });

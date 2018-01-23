@@ -20,7 +20,8 @@ describe('INQTime.diff()', function() {
 			year: 0,
 			mill: 0
 		};
-    expect(INQTime.diff(time)).to.deep.equal({
+
+		expect(INQTime.toObj(INQTime.diff(time), 'diff')).to.deep.equal({
       future: false,
       days: 0,
       years: 3002,
@@ -44,7 +45,7 @@ describe('INQTime.diff()', function() {
 			year: 0,
 			mill: 4
 		};
-    expect(INQTime.diff(time)).to.deep.equal({
+    expect(INQTime.toObj(INQTime.diff(time), 'diff')).to.deep.equal({
       future: true,
       days: 1,
       years: 997,
@@ -68,7 +69,7 @@ describe('INQTime.diff()', function() {
 			year: 4,
 			mill: 3
 		};
-    expect(INQTime.diff(time)).to.deep.equal({
+    expect(INQTime.toObj(INQTime.diff(time), 'diff')).to.deep.equal({
       future: true,
       days: 4,
       years: 2,

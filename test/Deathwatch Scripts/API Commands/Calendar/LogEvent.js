@@ -165,6 +165,34 @@ describe('logEvent()', function() {
     player.MOCK20gm = true;
     player.MOCK20chat('!gmLog GM Test');
   });
+	it('should be able to set a repetition period with a %', function(done){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    on('chat:message', function(msg) {
+      if(msg.content == getLink('Calendar') + ' updated.') {
+        var calendar = findObjs({name: 'Calendar', _type: 'handout'})[0];
+        expect(calendar.get('_type')).to.equal('handout');
+				calendar.get('gmnotes', function(notes) {
+					expect(notes).to.equal('<strong>8765910.M41%100000</strong>: GM Test');
+					done();
+				});
+      }
+    });
+
+		INQTime.load();
+		INQTime.mill = 41;
+		INQTime.year = 900;
+		INQTime.fraction = 7653;
+		INQTime.save();
+
+    var player = createObj('player', {_displayname: 'Player'}, {MOCK20override: true});
+    player.MOCK20gm = true;
+    player.MOCK20chat('!gmLog GM Test % 1 decade');
+  });
 	it('should append the event on a new line', function(done){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
@@ -175,7 +203,6 @@ describe('logEvent()', function() {
 		var logCount = 0;
     on('chat:message', function(msg) {
       if(msg.content == getLink('Logbook') + ' updated.') {
-
         var logbook = findObjs({name: 'Logbook', _type: 'handout'})[0];
         expect(logbook.get('_type')).to.equal('handout');
 				logbook.get('notes', function(notes) {

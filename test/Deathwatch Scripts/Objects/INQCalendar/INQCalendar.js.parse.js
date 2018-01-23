@@ -42,21 +42,21 @@ describe('INQCalendar.parse()', function() {
 		INQCalendar.pastObj = logbook;
 		INQCalendar.parse(function() {
       expect(INQCalendar.future.notes).to.deep.equal([
-        {Date: '8000001.M1', Content: [' Event 1a', '']},
-        {Date: '8000002.M1', Content: [' Event 2a']}
+        {Date: '8000001.M1', Content: [' Event 1a', ''], Repeat: undefined},
+        {Date: '8000002.M1', Content: [' Event 2a'], Repeat: undefined}
       ]);
       expect(INQCalendar.future.gmnotes).to.deep.equal([
-        {Date: '8000003.M1', Content: [' Event 3a', '']},
-        {Date: '8000004.M1', Content: [' Event 4a']}
+        {Date: '8000003.M1', Content: [' Event 3a', ''], Repeat: undefined},
+        {Date: '8000004.M1', Content: [' Event 4a'], Repeat: undefined}
       ]);
 
       expect(INQCalendar.past.notes).to.deep.equal([
-        {Date: '8000001.M0', Content: [' Event 1', '']},
-        {Date: '8000002.M0', Content: [' Event 2']}
+        {Date: '8000001.M0', Content: [' Event 1', ''], Repeat: undefined},
+        {Date: '8000002.M0', Content: [' Event 2'], Repeat: undefined}
       ]);
       expect(INQCalendar.past.gmnotes).to.deep.equal([
-        {Date: '8000003.M0', Content: [' Event 3', '']},
-        {Date: '8000004.M0', Content: [' Event 4']}
+        {Date: '8000003.M0', Content: [' Event 3', ''], Repeat: undefined},
+        {Date: '8000004.M0', Content: [' Event 4'], Repeat: undefined}
       ]);
 
       done();
@@ -116,8 +116,8 @@ describe('INQCalendar.parse()', function() {
       expect(INQCalendar.future.gmnotes).to.deep.equal([]);
 
       expect(INQCalendar.past.notes).to.deep.equal([
-        {Date: '8000001.M0', Content: [' Event 1', 'Extra 1', '']},
-        {Date: '8000002.M0', Content: [' Event 2', 'Extra 2']}
+        {Date: '8000001.M0', Content: [' Event 1', 'Extra 1', ''], Repeat: undefined},
+        {Date: '8000002.M0', Content: [' Event 2', 'Extra 2'], Repeat: undefined}
       ]);
       expect(INQCalendar.past.gmnotes).to.deep.equal([]);
 
@@ -160,11 +160,40 @@ describe('INQCalendar.parse()', function() {
 
 			expect(INQCalendar.past.notes).to.deep.equal([
 				{Content: ['A Title', 'Something Else']},
-        {Date: '8000001.M0', Content: [' Event 1', 'Extra 1', '']},
-        {Date: '8000002.M0', Content: [' Event 2', 'Extra 2']}
+        {Date: '8000001.M0', Content: [' Event 1', 'Extra 1', ''], Repeat: undefined},
+        {Date: '8000002.M0', Content: [' Event 2', 'Extra 2'], Repeat: undefined}
       ]);
       expect(INQCalendar.past.gmnotes).to.deep.equal([]);
 
+      done();
+    });
+  });
+	it('should be able to parse dates with repetition periods', function(done){
+    Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var logbook = createObj('handout', {name: 'Logbook', inplayerjournals: 'all'});
+		var calendar = createObj('handout', {name: 'Calendar', inplayerjournals: 'all'});
+    var events = '';
+    events += '<strong>8000001.M1%10000</strong>: Event 1';
+    events += '<br><br>';
+    events += '<strong>8000002.M1</strong>: Event 2';
+    logbook.set('notes', events);
+
+    INQTime.load();
+    INQTime.mill = 1;
+    INQTime.save();
+
+		INQCalendar.futureObj = calendar;
+		INQCalendar.pastObj = logbook;
+		INQCalendar.parse(function() {
+			expect(INQCalendar.past.notes).to.deep.equal([
+        {Date: '8000001.M1', Content: [' Event 1', ''], Repeat: 10000},
+        {Date: '8000002.M1', Content: [' Event 2'], Repeat: undefined}
+      ]);
       done();
     });
   });

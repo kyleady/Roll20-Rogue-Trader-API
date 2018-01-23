@@ -66,21 +66,21 @@ describe('INQCalendar.load()', function() {
 
 		INQCalendar.load(function() {
 			expect(INQCalendar.future.notes).to.deep.equal([
-        {Date: '8000001.M1', Content: [' Event 1a', '']},
-        {Date: '8000002.M1', Content: [' Event 2a']}
+        {Date: '8000001.M1', Content: [' Event 1a', ''], Repeat: undefined},
+        {Date: '8000002.M1', Content: [' Event 2a'], Repeat: undefined}
       ]);
 			expect(INQCalendar.future.gmnotes).to.deep.equal([
-        {Date: '8000003.M1', Content: [' Event 3a', '']},
-        {Date: '8000004.M1', Content: [' Event 4a']}
+        {Date: '8000003.M1', Content: [' Event 3a', ''], Repeat: undefined},
+        {Date: '8000004.M1', Content: [' Event 4a'], Repeat: undefined}
       ]);
 
 			expect(INQCalendar.past.notes).to.deep.equal([
-        {Date: '8000001.M0', Content: [' Event 1', '']},
-        {Date: '8000002.M0', Content: [' Event 2']}
+        {Date: '8000001.M0', Content: [' Event 1', ''], Repeat: undefined},
+        {Date: '8000002.M0', Content: [' Event 2'], Repeat: undefined}
       ]);
 			expect(INQCalendar.past.gmnotes).to.deep.equal([
-        {Date: '8000003.M0', Content: [' Event 3', '']},
-        {Date: '8000004.M0', Content: [' Event 4']}
+        {Date: '8000003.M0', Content: [' Event 3', ''], Repeat: undefined},
+        {Date: '8000004.M0', Content: [' Event 4'], Repeat: undefined}
       ]);
 
       done();

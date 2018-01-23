@@ -94,4 +94,26 @@ describe('INQCalendar.save()', function() {
 			});
 		});
   });
+	it('should record if an event has a repeating period', function(done){
+    Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+		INQCalendar.load(function() {
+			INQCalendar.future.notes.push({Content: [' Event 1'], Date: '8000001.M42', Repeat: 10000});
+			INQCalendar.save();
+			var logbook = INQCalendar.pastObj;
+			var calendar = INQCalendar.futureObj;
+			var p1 = new Promise(function(resolve) {
+				calendar.get('notes', function(notes) {
+					expect(notes).to.equal('<strong>8000001.M42%10000</strong>: Event 1');
+					resolve();
+				});
+			});
+
+			p1.then(done);
+		});
+  });
 });

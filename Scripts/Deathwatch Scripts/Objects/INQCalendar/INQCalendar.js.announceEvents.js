@@ -8,14 +8,26 @@ INQCalendar.announceEvents = function() {
       output += ev.Date;
       output += '</strong>: ';
       output += ev.Content;
-      output += ' [Log](';
 
+      output += ' [Log](';
       var cmd = '';
       if(note == 'gmnotes') cmd += 'gm';
-      cmd += 'log ' + ev.Content + '@' + ev.Date;
-
+      cmd += 'log ' + ev.Content;
+      cmd += '@' + ev.Date;
       output += '!{URIFixed}' + encodeURIFixed(cmd);
       output += ')';
+
+      if(ev.Repeat) {
+        output += ' [Repeat](';
+        cmd = '';
+        if(note == 'gmnotes') cmd += 'gm';
+        cmd += 'log ' + ev.Content;
+        cmd += '@' + ev.Date;
+        cmd += '%' + ev.Repeat;
+        output += '!{URIFixed}' + encodeURIFixed(cmd);
+        output += ')';
+      }
+
       announce(output);
     }
 

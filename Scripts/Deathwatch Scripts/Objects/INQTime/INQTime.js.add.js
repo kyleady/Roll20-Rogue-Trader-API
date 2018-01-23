@@ -1,5 +1,5 @@
-INQTime.add = function(times) {
-  this.fraction += this.toFraction(times);
+INQTime.add = function(input) {
+  this.fraction += this.toNumber(input, 'diff');
   while(this.fraction >= 10000) {
     this.fraction -= 10000;
     this.year++;

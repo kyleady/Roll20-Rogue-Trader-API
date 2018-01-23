@@ -29,15 +29,17 @@ INQCalendar.parse = function(callback) {
         var lines = text[time][note].split('<br>');
         for(var line of lines) {
           if(typeof line == 'string' && line.length > 0) {
-            var matches = line.match(/^<strong>([^<>]+)<\/strong>:(.+)$/);
+            var matches = line.match(/^<strong>(\d+\.M\d+)(?:%(\d+))?<\/strong>:(.+)$/);
           } else {
             var matches = null;
           }
 
           if(matches) {
+
             INQCalendar[time][note].push({
               Date: matches[1],
-              Content: [matches[2]]
+              Repeat: Number(matches[2]) || undefined,
+              Content: [matches[3]]
             });
           } else if(INQCalendar[time][note].length) {
             var last = INQCalendar[time][note].length-1;

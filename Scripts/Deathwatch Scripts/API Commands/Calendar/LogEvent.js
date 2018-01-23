@@ -32,7 +32,8 @@ function logEvent(matches, msg) {
       date: date,
       sign: sign,
       dt: dt,
-      isGM: isGM
+      isGM: isGM,
+      repeat: repeat
     });
     INQCalendar.save();
     var whisper = isGM ? '/w gm ' : '';
