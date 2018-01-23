@@ -46,6 +46,7 @@ describe('INQUse.prototype.calcEffectivePsyRating()', function() {
       inquse.options.BonusPR = 1;
       inquse.calcEffectivePsyRating();
       expect(inquse.PsyPheModifier).to.equal(0);
+			expect(inquse.PR).to.equal(3);
       done();
     });
   });
