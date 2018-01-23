@@ -43,7 +43,7 @@ function logEvent(matches, msg) {
 
 on('ready', function() {
   var regex = '!\\s*(gm)?';
-  regex += '\\s*log\\s+([^@%\\+\\-]+)';
+  regex += '\\s*log\\s+([^=@%\\+\\-]+)';
   regex += '(';
   regex += '(?:';
   regex += '@\\s*\\d?(?:\\d\\d\\d)?\\d\\d\\d(?:\\.M\\d+)?\\s*';

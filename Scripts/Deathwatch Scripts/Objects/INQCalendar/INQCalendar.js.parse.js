@@ -1,11 +1,9 @@
 INQCalendar.parse = function(callback) {
-  var times = ['past', 'future'];
-  var notes = ['notes', 'gmnotes'];
   var text = {};
   var promises = [];
-  for(var time of times) {
+  for(var time of this.times) {
     text[time] = {};
-    for(var note of notes) {
+    for(var note of this.notes) {
       promises.push(
         new Promise(function(resolve) {
           var saveTheTime = time;
@@ -21,9 +19,9 @@ INQCalendar.parse = function(callback) {
 
   Promise.all(promises).catch(function(e){log(e)});
   Promise.all(promises).then(function() {
-    for(var time of times) {
+    for(var time of INQCalendar.times) {
       INQCalendar[time] = {};
-      for(var note of notes) {
+      for(var note of INQCalendar.notes) {
         INQCalendar[time][note] = [];
         if(!text[time][note]) continue;
         var lines = text[time][note].split('<br>');

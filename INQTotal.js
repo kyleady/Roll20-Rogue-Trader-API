@@ -528,7 +528,7 @@ function logEvent(matches, msg) {
 
 on('ready', function() {
   var regex = '!\\s*(gm)?';
-  regex += '\\s*log\\s+([^@%\\+\\-]+)';
+  regex += '\\s*log\\s+([^=@%\\+\\-]+)';
   regex += '(';
   regex += '(?:';
   regex += '@\\s*\\d?(?:\\d\\d\\d)?\\d\\d\\d(?:\\.M\\d+)?\\s*';
@@ -538,6 +538,20 @@ on('ready', function() {
   regex += ')$';
   var re = RegExp(regex, 'i');
   CentralInput.addCMD(re, logEvent);
+});
+on('ready', function() {
+  CentralInput.addCMD(/^!\s*log\s*=\s*(.*)$/i, function(matches, msg) {
+    var title = matches[1].trim();
+    if(title == '' || title == 'default') {
+      INQCalendar.pastName = 'Logbook';
+      INQCalendar.futureName = 'Calendar';
+      whisper('Log target reset.');
+    } else {
+      INQCalendar.pastName = title + ' - Logbook';
+      INQCalendar.futureName = title + ' - Calendar';
+      whisper('Log target = ' + title + '.');
+    }
+  });
 });
 function timeDiff(matches, msg) {
   INQTime.load();
@@ -2433,7 +2447,12 @@ function saveHitLocation(roll, options){
     announce(Location, {speakingAs: 'Location', delay: 100});
   }
 }
-var INQCalendar = {};
+var INQCalendar = {
+  pastName: 'Logbook',
+  futureName: 'Calendar',
+  times: ['past', 'future'],
+  notes: ['notes', 'gmnotes']
+};
 INQCalendar.addEvent = function(content, options) {
   if(typeof options != 'object') options = {};
   INQTime.load();
@@ -2475,10 +2494,8 @@ INQCalendar.addEvent = function(content, options) {
   return this[time + 'Obj'];
 }
 INQCalendar.advance = function() {
-  var notes = ['notes', 'gmnotes'];
   this.announcements = {};
-
-  for(var note of notes) {
+  for(var note of this.notes) {
     this.announcements[note] = [];
     for(var i = 0; i < this.future[note].length; i++) {
       var ev = this.future[note][i];
@@ -2498,7 +2515,7 @@ INQCalendar.advance = function() {
             });
           }
         }
-        
+
         this.future[note].splice(i, 1);
         i--;
       }
@@ -2508,8 +2525,7 @@ INQCalendar.advance = function() {
   INQTime.reset();
 }
 INQCalendar.announceEvents = function() {
-  var notes = ['notes', 'gmnotes'];
-  for(var note of notes) {
+  for(var note of this.notes) {
     for(var ev of this.announcements[note]) {
       var output = '';
       if(note == 'gmnotes') output += '/w gm ';
@@ -2544,10 +2560,18 @@ INQCalendar.announceEvents = function() {
   }
 }
 INQCalendar.load = function(callback) {
-  this.pastObj = findObjs({_type: 'handout', name: 'Logbook'})[0];
-  this.futureObj = findObjs({_type: 'handout', name: 'Calendar'})[0];
-  if(!this.pastObj) this.pastObj = createObj('handout', {name: 'Logbook', inplayerjournals: 'all'});
-  if(!this.futureObj) this.futureObj = createObj('handout', {name: 'Calendar', inplayerjournals: 'all'});
+  for(var time of this.times) {
+    this[time + 'Obj'] = findObjs({
+      _type: 'handout',
+      name: this[time + 'Name']
+    })[0];
+
+    if(!this[time + 'Obj']) this[time + 'Obj'] = createObj('handout', {
+      name: this[time + 'Name'],
+      inplayerjournals: 'all'
+    });
+  }
+
   this.parse(callback);
 }
 INQCalendar.order = function(time, note) {
@@ -2563,13 +2587,11 @@ INQCalendar.order = function(time, note) {
   INQTime.reset();
 }
 INQCalendar.parse = function(callback) {
-  var times = ['past', 'future'];
-  var notes = ['notes', 'gmnotes'];
   var text = {};
   var promises = [];
-  for(var time of times) {
+  for(var time of this.times) {
     text[time] = {};
-    for(var note of notes) {
+    for(var note of this.notes) {
       promises.push(
         new Promise(function(resolve) {
           var saveTheTime = time;
@@ -2585,9 +2607,9 @@ INQCalendar.parse = function(callback) {
 
   Promise.all(promises).catch(function(e){log(e)});
   Promise.all(promises).then(function() {
-    for(var time of times) {
+    for(var time of INQCalendar.times) {
       INQCalendar[time] = {};
-      for(var note of notes) {
+      for(var note of INQCalendar.notes) {
         INQCalendar[time][note] = [];
         if(!text[time][note]) continue;
         var lines = text[time][note].split('<br>');
@@ -2622,10 +2644,8 @@ INQCalendar.parse = function(callback) {
   });
 }
 INQCalendar.save = function() {
-  var times = ['future', 'past'];
-  var notes = ['notes', 'gmnotes'];
-  for(var time of times) {
-    for(var note of notes) {
+  for(var time of this.times) {
+    for(var note of this.notes) {
       var text = '';
       for(var lines of INQCalendar[time][note]) {
         if(lines.Date) {

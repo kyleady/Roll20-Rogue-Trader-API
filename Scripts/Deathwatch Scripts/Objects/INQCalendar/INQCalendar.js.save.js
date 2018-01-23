@@ -1,8 +1,6 @@
 INQCalendar.save = function() {
-  var times = ['future', 'past'];
-  var notes = ['notes', 'gmnotes'];
-  for(var time of times) {
-    for(var note of notes) {
+  for(var time of this.times) {
+    for(var note of this.notes) {
       var text = '';
       for(var lines of INQCalendar[time][note]) {
         if(lines.Date) {

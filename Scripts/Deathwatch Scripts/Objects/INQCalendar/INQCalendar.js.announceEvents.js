@@ -1,6 +1,5 @@
 INQCalendar.announceEvents = function() {
-  var notes = ['notes', 'gmnotes'];
-  for(var note of notes) {
+  for(var note of this.notes) {
     for(var ev of this.announcements[note]) {
       var output = '';
       if(note == 'gmnotes') output += '/w gm ';

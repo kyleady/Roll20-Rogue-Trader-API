@@ -1,8 +1,6 @@
 INQCalendar.advance = function() {
-  var notes = ['notes', 'gmnotes'];
   this.announcements = {};
-
-  for(var note of notes) {
+  for(var note of this.notes) {
     this.announcements[note] = [];
     for(var i = 0; i < this.future[note].length; i++) {
       var ev = this.future[note][i];
@@ -22,7 +20,7 @@ INQCalendar.advance = function() {
             });
           }
         }
-        
+
         this.future[note].splice(i, 1);
         i--;
       }
