@@ -1,5 +1,4 @@
 function carefulParse(str) {
-  var obj = undefined;
   try {
     return JSON.parse(str);
   } catch(e) {

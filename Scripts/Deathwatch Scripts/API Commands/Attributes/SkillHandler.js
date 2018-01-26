@@ -15,8 +15,6 @@ function skillHandler(matches, msg){
       modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
     }
   }
-  log('modifiers');
-  log(modifiers);
 
   var characteristic = matches[4];
   var inqtest = new INQTest({skill: skill, characteristic: characteristic});

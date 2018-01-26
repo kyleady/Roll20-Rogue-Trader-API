@@ -1,149 +1,77 @@
 
-//publicly makes a cohesion test
 function cohesionHandler(matches,msg){
-  //find the party attribute
   var cohesionObjs = findObjs({
-    _type: "attribute",
-    name: "Cohesion"
+    _type: 'attribute',
+    name: 'Cohesion'
   }) || [];
-  //are there no cohesion attributes anywhere?
+
   if(cohesionObjs.length <= 0){
-    //no stat to work with. alert the gm and player
-    return whisper("There is nothing in the campaign with a(n) " + "Cohesion" + " Attribute.", {speakingTo: msg.playerid, gmEcho: true});
-  //were there too many cohesion attributes?
+    return whisper('There is nothing in the campaign with a Cohesion Attribute.', {speakingTo: msg.playerid, gmEcho: true});
   } else if(cohesionObjs.length >= 2){
-    //warn the gm, but continue forward
-    whisper("There were multiple " + "Cohesion" + " attributes. Using the first one found. A log has been posted in the terminal.")
-    log("Cohesion" + " Attributes")
-    log(cohesionObjs)
+    whisper('There were multiple Cohesion attributes. Using the first one found. A log has been posted in the terminal.');
+    log('Cohesion' + ' Attributes');
+    log(cohesionObjs);
   }
 
-  //make a cohesion test
-  sendChat("player|" + msg.playerid, "/r D10<" + cohesionObjs[0].get("current") + " Cohesion Test");
+  var cohesion = cohesionObjs[0].get('current');
+  announce('/r D10<' + cohesion + ' Cohesion Test', {speakingAs: msg.playerid});
 }
 
-//waits until CentralInput has been initialized
-on("ready",function(){
-  //Lets anyone make a cohesion test
+on('ready',function(){
   CentralInput.addCMD(/^!\s*cohesion\s*$/i, cohesionHandler, true);
 
-  //Lets players freely view and edit cohesion with modifiers
   var re = makeAttributeHandlerRegex('cohesion');
   CentralInput.addCMD(re, function(matches,msg){
-    matches[2] = "Cohesion";
+    matches[2] = 'Cohesion';
     attributeHandler(matches,msg,{partyStat: true});
   }, true);
 });
-//lets players use and view their fate points
-//matches[0] is the same as msg.content
 function fateHandler(matches,msg){
-  //work through each selected character
   eachCharacter(msg, function(character, graphic){
-      var Fate = attributeValue("Fate",{characterid: character.id, graphicid: graphic.id});
-      var name = character.get("name");
-
-      //exit if the character does not have Fate Points
-      if(Fate == undefined){
-        //while exiting, tell the user which character did not have a Fate Attribute
-        return whisper(name + " does not have a Fate Attribute!", {speakingTo: msg.playerid, gmEcho: true});
-      }
-
-      //be sure the player has enough fate points to spend
+      var Fate = attributeValue('Fate', {characterid: character.id, graphicid: graphic.id});
+      var name = character.get('name');
+      if(Fate == undefined) return whisper(name + ' does not have a Fate Attribute!', {speakingTo: msg.playerid, gmEcho: true});
       if(Fate < 1){
-        return whisper(name + " does not have enough Fate to spend.", {speakingTo: msg.playerid});
+        return whisper(name + ' does not have enough Fate to spend.', {speakingTo: msg.playerid});
       } else {
-        //announce that the player is spending a fate point
-        announce(name + " spends a Fate Point!");
-        //reduce the number of fate points by one
-        attributeValue("Fate", {setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
-        //report what remains
-        var finalReport = name + " has [[" + Fate + "-1]] Fate Point";
-        if(Fate-1 != 1){
-          finalReport += "s";
-        }
-        whisper(finalReport + " left.", {speakingTo: msg.playerid});
+        announce(name + ' spends a Fate Point!');
+        attributeValue('Fate', {setTo: Fate - 1, characterid: character.id, graphicid: graphic.id});
+        var finalReport = name + ' has [[' + Fate + '-1]] Fate Point';
+        if(Fate-1 != 1) finalReport += 's';
+        whisper(finalReport + ' left.', {speakingTo: msg.playerid});
       }
   });
 }
 
-//adds the commands after CentralInput has been initialized
-on("ready",function(){
-  //lets the user quickly spend one fate point (as long as they have fate points
-  //to spend)
-  CentralInput.addCMD(/^!\s*fate\s*$/i,fateHandler,true);
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*fate\s*$/i, fateHandler, true);
 });
-/*
-medic command to heal a character up to their highest healing, while recording
-how high they healed to. With these rules you can be healed as many times as you
-want, but each time you record how high you healed up to. After that, you can
-only heal up to that point until you receive proper care.
-*/
  function medic(matches, msg){
-  //get the number of wounds to be healed
   var Healing = Number(matches[1]);
-  //be sure the number is valid
-  if(!Healing){
-      return whisper("Invalid amount to be healed.")
-  }
-
+  if(!Healing) return whisper('Invalid amount to be healed.');
   eachCharacter(msg, function(character, graphic){
-    //the red bar is used to represent the characters wounds
-    //it may or may not be linked to the wounds attribute, that is not important
     var Wounds = {
-      current: Number(graphic.get("bar3_value")),
-      max: Number(graphic.get("bar3_max"))
-    }
-    //if the wounds were not properly defined, then this is not a character
-    if(Wounds.current == NaN || Wounds.max == NaN){
-      return whisper(character.get("name") + " has no wounds.");
-    }
-    //add the current Wounds to the healing done
-    var NewWounds = Wounds.current + Healing;
-    //find the Max Healing attribute
-    var MaxHealing = attributeValue("Max Healing", {graphicid: graphic.id, characterid: character.id, alert: false});
-    //does the Max Healing attribute exist?
-    if(MaxHealing != undefined) {
-      //turn the max healing into a number
-      MaxHealing = Number(MaxHealing);
-      //be sure max healing is a valid number
-      if(MaxHealing != NaN && MaxHealing > 0){
-        //are the wounds more than the max healing allowed?
-        if(NewWounds > MaxHealing){
-          //reduce the new healed wounds to the cap
-          NewWounds = MaxHealing;
-        }
-      }
-    }
-    //are the wounds more than the max wounds?
-    if(NewWounds > Wounds.max){
-      //reduce the new healed wounds to the cap
-      NewWounds = Wounds.max;
-    }
-    //create/edit the Max Healing attribute and set it to the NewWounds
-    attributeValue("Max Healing", {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
-    //set the max healing attribute's max value equal to its current value (if it exists!)
-    //if a character has their max healing attribute set to its max value for some reason,
-    //we don't want it to be some old value that we forgot about
-    var MaxHealingobjs = findObjs({
-      name: "Max Healing",
-      _characterid: character.id,
-      _type: "attribute"
-    });
-    if(MaxHealingobjs && MaxHealingobjs.length > 0){
-      MaxHealingobjs[0].set("max", MaxHealingobjs[0].get("current"));
+      current: Number(graphic.get('bar3_value')),
+      max: Number(graphic.get('bar3_max'))
     }
 
-    //now that all the healing has been done, set the character's wounds wounds equal to the NewWounds
-    graphic.set("bar3_value", NewWounds);
-    //report the total healing
-    announce(character.get("name") + " has been healed to [[" + NewWounds.toString() + "]]/" + Wounds.max.toString() + " Wounds.");
+    if(Wounds.current == NaN || Wounds.max == NaN) return whisper(character.get('name') + ' has no wounds.');
+    var NewWounds = Wounds.current + Healing;
+
+    var MaxHealing = attributeValue('Max Healing', {graphicid: graphic.id, characterid: character.id, alert: false});
+    MaxHealing = Number(MaxHealing);
+
+    if(MaxHealing != NaN && NewWounds > MaxHealing) NewWounds = MaxHealing;
+    if(NewWounds > Wounds.max) NewWounds = Wounds.max;
+
+    attributeValue('Max Healing', {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
+    attributeValue('Max Healing', {max: true, setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
+    graphic.set('bar3_value', NewWounds);
+    announce(character.get('name') + ' has been healed to [[' + NewWounds.toString() + ']]/' + Wounds.max.toString() + ' Wounds.');
   });
 }
 
-//adds the commands after CentralInput has been initialized
-on("ready", function() {
-  //Lets players use medicae on other characters while keeping track of the
-  //healing done.
+on('ready', function() {
   CentralInput.addCMD(/^!\s*medic\s*(\d+)\s*$/i, medic, true);
 });
 function painSuppress(matches, msg) {
@@ -170,59 +98,46 @@ function painSuppress(matches, msg) {
 on('ready', function(){
   CentralInput.addCMD(/^!\s*pain\s*suppress\s*(.+)\s*$/i, painSuppress, true);
 });
-//allows a player to reload a weapon of theirs
-  //matches[1] is the weapon to be reloaded
 function reloadWeapon(matches, msg){
-  //save the input variables
-  var ammoPhrase = "Ammo - " + matches[1];
+  var ammoPhrase = 'Ammo - ' + matches[1];
   eachCharacter(msg, function(character, graphic){
-    if(ammoPhrase == 'Ammo - all') {
+    if(/Ammo -\s+all\s*$/i.test(ammoPhrase)) {
       var localAttributes = new LocalAttributes(graphic);
       for(var prop in localAttributes.Attributes) {
         if(/^Ammo - /.test(prop)) localAttributes.remove(prop);
       }
 
-      var clips = matchingObjs('attribute', ['Ammo - '], function(obj){
+      var clips = filterObjs(function(obj) {
+        if(obj.get('_type') != 'attribute') return false;
+        if(obj.get('name').indexOf('Ammo - ') != 0) return false;
         return obj.get('_characterid') == character.id;
       });
 
-      _.each(clips, function(clip){
-        clip.remove();
-      });
-
+      _.each(clips, (clip) => clip.remove());
       return whisper(getLink(character) + ' has reloaded every clip.', {speakingTo: msg.playerid, gmEcho: true});
     }
 
-    //get a list of all of the ammo attribute names that match
     var ammoNames = matchingAttrNames(graphic.id, ammoPhrase);
-    //warn the player that that clip does not exist yet if nothing was found
-    if(ammoNames.length <= 0){
-      return whisper("A clip for *" + ammoPhrase.replace(/^Ammo - /, "") + "* does not exist yet.");
-    }
-    //determine which clip the player wants to reload before proceeding
+    if(ammoNames.length <= 0) return whisper('A clip for *' + ammoPhrase.replace(/^Ammo - /, '') + '* does not exist yet.');
     if(ammoNames.length >= 2){
-      whisper("Which clip did you want to reload?");
+      whisper('Which clip did you want to reload?');
       _.each(ammoNames, function(ammo){
-        //use the clip's exact name
-        var name = ammo.replace(/^Ammo - /, "");
-        var suggestion = "reload " + name;
-        //the suggested command must be encoded before it is placed inside the button
-        suggestion = "!{URIFixed}" + encodeURIFixed(suggestion);
-        whisper("[" + name + "](" + suggestion  + ")", {speakingTo: msg.playerid});
+        var name = ammo.replace(/^Ammo - /, '');
+        var suggestion = 'reload ' + name;
+        suggestion = '!{URIFixed}' + encodeURIFixed(suggestion);
+        whisper('[' + name + '](' + suggestion  + ')', {speakingTo: msg.playerid});
       });
       return;
     }
-    //the clip the player wants has been made clear
-    //use the stat handler to show the reload
     var fakeMsg = {
       playerid: msg.playerid,
       selected: [graphic]
     };
-    attributeHandler(["","",ammoNames[0],"=","","max"], fakeMsg);
+    attributeHandler(['','',ammoNames[0],'=','','max'], fakeMsg);
   });
 }
 
-on("ready", function(){
+on('ready', function(){
   CentralInput.addCMD(/!\s*reload\s+(\S.*)$/i, reloadWeapon, true);
 });
 //allows players to roll against a skill they may or may not have
@@ -242,8 +157,6 @@ function skillHandler(matches, msg){
       modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
     }
   }
-  log('modifiers');
-  log(modifiers);
 
   var characteristic = matches[4];
   var inqtest = new INQTest({skill: skill, characteristic: characteristic});
@@ -7502,7 +7415,6 @@ function attributeValue(name, options){
   return attribute.get(workingWith);
 }
 function carefulParse(str) {
-  var obj = undefined;
   try {
     return JSON.parse(str);
   } catch(e) {
