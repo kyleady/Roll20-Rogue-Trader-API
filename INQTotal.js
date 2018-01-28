@@ -1734,18 +1734,17 @@ on("chat:message", function(msg) {
   && /{{\s*(damage|dam)\s*=\s*\$\[\[0\]\]\s*}}/i.test(msg.content)
   && /{{\s*(penetration|pen)\s*=\s*\$\[\[1\]\]\s*}}/i.test(msg.content))
   && msg.inlinerolls.length >= 2) {
-    //get the damage details obj
+
     var details = damDetails();
-    //quit if one of the details was not found
-    if(details == undefined){
-      return;
-    }
+    if(!details) return;
     var DamTypeObj = details.DamType;
     var DamObj = details.Dam;
     var PenObj = details.Pen;
     var FellObj = details.Fell;
     var PrimObj = details.Prim;
     var InaObj = details.Ina;
+    var onesLocObj = details.OnesLoc;
+    var tensLocObj = details.TensLoc;
 
     //I don't know why I need to do this BUT for some reason when the message is sent by the API
     //instead of a player, the inline rolls start with a null object, and accessing a null object is dangerous
@@ -1770,12 +1769,13 @@ on("chat:message", function(msg) {
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
 
     //record the highest damage roll
-    var lowest = 10
+    var firstDie = 0
     for(var roll of msg.inlinerolls[rollIndex].results.rolls) {
       if(!roll.results) continue;
       for(var result of roll.results){
-        if(!result.d && result.v < lowest){
-          lowest = result.v;
+        if(!result.d){
+          firstDie = result.v;
+          break;
         }
       }
     }
@@ -1812,17 +1812,18 @@ on("chat:message", function(msg) {
     }
 
     //create a button to report the lowest damage roll
-    var lowestButton = "[" + lowest.toString() + "]";
-    lowestButton += "("
-    lowestButton += "!{URIFixed}" + encodeURIFixed("Crit?");
-    lowestButton += ")";
+    var firstButton = "[" + firstDie + "]";
+    firstButton += "(";
+    var hitLocation = getHitLocation(tensLocObj.get("current"), onesLocObj.get("current"));
+    firstButton += "!{URIFixed}" + encodeURIFixed("Crit? " + DamTypeObj.get("current") + ' ' + hitLocation);
+    firstButton += ")";
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
-      whisper(lowestButton, {speakingAs: 'Lowest'});
+      whisper(firstButton, {speakingAs: 'First Die'});
     } else {
       //report the highest roll publicly
-      announce(lowestButton, {speakingAs: 'Lowest'});
+      announce(firstButton, {speakingAs: 'First Die'});
     }
 
     //save the damage variables to their maximums as well
