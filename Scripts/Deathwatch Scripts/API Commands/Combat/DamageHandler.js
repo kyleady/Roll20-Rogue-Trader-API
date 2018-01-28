@@ -48,7 +48,7 @@ on("ready",function(){
     attributeHandler(matches,msg,{partyStat: true});
   });
   //Lets the gm set the damage type
-  CentralInput.addCMD(/^!\s*(|max)\s*(damtype|damage type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
+  CentralInput.addCMD(/^!\s*(|max)\s*(dam(?:age)?\s*type)\s*(=)\s*()(i|r|e|x|s)\s*$/i, function(matches,msg){
     matches[2] = 'DamageType';
     matches[5] = matches[5].toUpperCase();
     attributeHandler(matches,msg,{partyStat: true});
