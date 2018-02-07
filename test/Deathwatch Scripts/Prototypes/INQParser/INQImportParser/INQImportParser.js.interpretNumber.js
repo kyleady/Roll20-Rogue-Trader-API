@@ -16,4 +16,17 @@ describe('INQImportParser.prototype.interpretNumber()', function() {
       ["Movement", ["Half" , "Full", "Charge", "Run"]]);
     expect(inqcharacter.Movement).to.deep.equal({Half: '3', Full: '6', Charge: '9', Run: '18'});
   });
+	it('should be able to parse alternate dashes as minus signs', function(){
+		Campaign().MOCK20reset();
+		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
+		var MyScript = fs.readFileSync(filePath, 'utf8');
+		eval(MyScript);
+		MOCK20endOfLastScript();
+
+    var inqcharacter = new INQCharacter();
+    var inqimportparser = new INQImportParser(inqcharacter);
+    inqimportparser.interpretNumber('-1+4–2—3',
+      ["Movement", ["Half" , "Full", "Charge", "Run"]]);
+    expect(inqcharacter.Movement).to.deep.equal({Half: '-1', Full: '+4', Charge: '-2', Run: '-3'});
+  });
 });

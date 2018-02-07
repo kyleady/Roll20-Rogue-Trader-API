@@ -17,6 +17,7 @@ INQUse.prototype.roll = function(){
   this.inqtest.roll();
   this.diceEvents();
   this.hits = 0;
+  state.Successes = this.inqtest.Successes;
   if(this.inqtest.Successes >= 0) {
     this.hits++;
     switch(this.mode){

@@ -4,6 +4,10 @@ INQUse.prototype.displayHitReport = function(){
   var extraLines = [];
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
+    extraLines.push({
+      Name: 'Psy Rating',
+      Content: '[[' + (this.PR - this.options.BonusPR) + '+' + this.options.BonusPR + ']]'
+    });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
       PsyPhe.DiceNumber = 1;

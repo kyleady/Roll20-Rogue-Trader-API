@@ -2,7 +2,7 @@ var expect = require('chai').expect;
 var fs = require('fs');
 var path = require('path');
 require('mock20');
-describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
+describe('INQCharacterImportParser.prototype.adjustWeapons()', function() {
 	it('should subtract out Str Bonuses for melee weapons', function(){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
@@ -18,9 +18,7 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
     var inqweapon = new INQWeapon();
     inqweapon.Name = 'Knife';
     inqweapon.Class = 'Melee';
-    inqweapon.DiceType = 5;
-    inqweapon.DiceNumber = 1;
-    inqweapon.DamageBase = 7;
+		inqweapon.Damage = new INQFormula('D5+7');
     inqweapon.DamType = new INQLink('R');
 
     inqcharacterimport.List = {};
@@ -29,7 +27,7 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
 
     inqcharacterimport.adjustWeapons();
 
-    expect(inqweapon.DamageBase).to.equal(2);
+    expect(inqweapon.Damage.Modifier).to.equal(2);
   });
   it('should subtract out Fist and Crushing Blow for melee weapons', function(){
 		Campaign().MOCK20reset();
@@ -46,9 +44,7 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
     var inqweapon = new INQWeapon();
     inqweapon.Name = 'Knife';
     inqweapon.Class = 'Melee';
-    inqweapon.DiceType = 5;
-    inqweapon.DiceNumber = 1;
-    inqweapon.DamageBase = 15;
+		inqweapon.Damage = new INQFormula('D5+15');
     inqweapon.DamType = new INQLink('R');
     inqweapon.Special = [new INQLink('Fist')];
 
@@ -58,9 +54,9 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
 
     inqcharacterimport.adjustWeapons();
 
-    expect(inqweapon.DamageBase).to.equal(3);
+    expect(inqweapon.Damage.Modifier).to.equal(3);
   });
-  it('should subtract out Fist and Crushing Blow for melee weapons', function(){
+  it('should subtract out Mighty Shot for ranged weapons', function(){
 		Campaign().MOCK20reset();
 		var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
 		var MyScript = fs.readFileSync(filePath, 'utf8');
@@ -75,11 +71,8 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
     var inqweapon = new INQWeapon();
     inqweapon.Name = 'Lasgun';
     inqweapon.Class = 'Basic';
-    inqweapon.DiceType = 10;
-    inqweapon.DiceNumber = 1;
-    inqweapon.DamageBase = 15;
+		inqweapon.Damage = new INQFormula('D5+15');
     inqweapon.DamType = new INQLink('E');
-    inqweapon.Special = [new INQLink('Fist')];
 
     inqcharacterimport.List = {};
     inqcharacterimport.List.Talents = [new INQLink('Crushing Blow'), new INQLink('Mighty Shot')];
@@ -87,6 +80,6 @@ describe('INQCharacterImportParser.prototype.adjustBonus()', function() {
 
     inqcharacterimport.adjustWeapons();
 
-    expect(inqweapon.DamageBase).to.equal(13);
+    expect(inqweapon.Damage.Modifier).to.equal(13);
   });
 });

@@ -29,7 +29,7 @@ INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
           name: item.Name,
           _characterid: this.ObjID,
           istokenaction: true,
-          action: item.toAbility(this, undefined, customWeapon)
+          action: item.toAbility(this, customWeapon)
         });
       }
     }

@@ -23,7 +23,7 @@ CentralInput.input = function(msg){
   }
 
   if(!inputRecognized){
-    whisper('The command ' + msg.content + ' was not recognized. See ' + getLink('!help') + ' for a list of commands.', {speakingTo: msg.playerid});
+    whisper('The command ' + msg.content + ' was not recognized. See **' + getLink('!help') + '** for a list of commands.', {speakingTo: msg.playerid});
   }
 }
 

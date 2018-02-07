@@ -116,7 +116,7 @@ describe('INQCharacter()', function() {
 			done();
 		});
   });
-	it('should be able to parse a import character text', function(){
+	it('should be able to parse imported character text', function(){
     Campaign().MOCK20reset();
     var filePath = path.join(__dirname, '..', '..', '..', '..', '..', 'INQTotal.js');
     var MyScript = fs.readFileSync(filePath, 'utf8');

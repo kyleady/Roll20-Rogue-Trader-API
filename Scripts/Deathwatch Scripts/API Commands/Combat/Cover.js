@@ -8,14 +8,8 @@ function applyCover(matches,msg){
   var primitiveAttack = Number(details.Prim.get('current'));
 
   var coverMultiplier = 1;
-  if(primitiveCover){
-    coverMultiplier /= 2;
-  }
-
-  if(primitiveAttack){
-    coverMultiplier *= 2;
-  }
-
+  if(primitiveCover) coverMultiplier /= 2;
+  if(primitiveAttack) coverMultiplier *= 2;
   pen -= ( cover * coverMultiplier / 2);
   if (pen <= 0) {
     dam += pen * 2;

@@ -140,13 +140,7 @@ function reloadWeapon(matches, msg){
 on('ready', function(){
   CentralInput.addCMD(/!\s*reload\s+(\S.*)$/i, reloadWeapon, true);
 });
-//allows players to roll against a skill they may or may not have
-  //matches[1] - skill name
-  //matches[2] - skill subgroup
-  //matches[3] - modifiers
-  //matches[4] - alternate characteristic
 function skillHandler(matches, msg){
-  //store the input variables
   var toGM = matches[1];
   var skill = matches[2];
   var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
@@ -199,97 +193,17 @@ on('ready', function(){
 
   CentralInput.addCMD(RegExp(regex, 'i'), skillHandler, true);
 });
-//resets every stat of the selected characters to its maximum (creates an
-//exception for Fatigue as it resets to 0).
-function statReset(matches,msg){
-    //prepare a record of everyone who was reset
-  var resetAnnounce = "The following characters were reset: ";
-
-  eachCharacter(msg, function(character, graphic){
-    //create a list of all of the attributes this character has
-    attribList = findObjs({
-      _type: "attribute",
-      _characterid: character.id
-    });
-
-    //work with every attribute the character has
-    _.each(attribList,function(attrib){
-      attrib.set("current",attrib.get("max"));
-    });
-
-    //reset each graphic bar
-    for(var bar = 1; bar <= 3; bar++){
-      graphic.set("bar" + bar.toString() + "_value", graphic.get("bar" + bar.toString() + "_max"));
-    }
-
-    //clear all status markers
-    graphic.set("statusmarkers", "");
-
-    //remove any local attributes or notes
-    graphic.set("gmnotes", "");
-
-    //add the character to the list of characters that were reset
-    resetAnnounce += graphic.get("name") + ", ";
-  });
-  //report to the gm all of the characters that were reset
-  //remove the last comma
-  whisper(resetAnnounce.substring(0,resetAnnounce.lastIndexOf(",")));
-}
-
-//waits for CentralInput to be initialized
-on("ready",function(){
-  //resets the attributes and status markets of every selected token (or every
-  //token on the map)
-  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?|all)?)\s*$/i,statReset);
-});
-//rolls a D100 against the designated stat and outputs the number of successes
-//takes into account corresponding unnatural bonuses
-//negative success equals the number of failures
-
-//matches[0] is the same as msg.content
-//matches[1] is either 'gm' or null
-//matches[2] is that name of the stat being rolled (it won't always be capitalized properly) and is null if no modifier is included
-//matches[3] is the list of modifiers
-function statRoll(matches, msg){
-  var toGM = matches[1] && matches[1].toLowerCase() == 'gm';
-  var characteristic = matches[2];
-  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
-  var modifiers = [];
-  if(modifierMatches){
-    for(var modifierMatch of modifierMatches){
-      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
-      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
-    }
-  }
-
-  var inqtest = new INQTest({characteristic: characteristic, modifier: modifiers});
-  eachCharacter(msg, function(character, graphic){
-    var isNPC = false;
-    new INQCharacter(character, graphic, function(inqcharacter){
-      var isNPC = inqcharacter.controlledby == '';
-      inqtest.getStats(inqcharacter);
-      inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
-    });
-  });
-}
-
-//trims down and properly capitalizes any alternate stat names that the user
-//enters
 function getProperStatName(statName){
-  var isUnnatural = /^unnatural /i.test(statName);
-  if(isUnnatural){
-    statName = statName.replace(/^unnatural /i,'');
-  }
-  switch(statName.toLowerCase()){
+  var isUnnatural = /^unnatural\s*/i.test(statName);
+  if(isUnnatural) statName = statName.replace(/^unnatural\s*/i,'');
+  switch(statName.replace(/ /g, '').toLowerCase()){
     case 'pr': case 'pe':
-      //replace pr with Per (due to conflicts with PsyRating(PR))
       statName = 'Per';
       break;
-    case 'psy rating':
+    case 'psyrating':
       statName = 'PR';
       break;
     case 'ws': case 'bs':
-      //capitalize every letter
       statName = statName.toUpperCase();
       break;
     case 'int': case 'in':
@@ -313,44 +227,126 @@ function getProperStatName(statName){
     case 'fell':
       statName = 'Felling';
       break;
+    case 'structuralintegrity': case 'si':
+      statName = 'Structural Integrity';
+      break;
+    case 'voidshields':
+      statName = 'VoidShields';
+      break;
+    case 'tacticalspeed':
+      statName = 'Tactical Speed';
+      break;
+    case 'aerialspeed':
+      statName = 'Aerial Speed';
+      break;
     case 'damtype':
       statName = 'DamageType';
       break;
     default:
-      //most Attributes begin each word with a capital letter (also known as TitleCase)
       statName = statName.toTitleCase();
   }
+
   if(/Ignores?\s*Natural\s*Armou?r/i.test(statName)) statName = 'Ignores Natural Armour';
-  statName = statName.replace(/^armour(?:_|\s*)(\w\w?)$/i, function(match, p1){
+  statName = statName.replace(/^armou?r(?:_|\s*)(\w\w?)$/i, function(match, p1){
     return 'Armour_' + p1.toUpperCase();
   });
-  if(isUnnatural){
-    statName = 'Unnatural ' + statName;
-  }
+
+  if(isUnnatural) statName = 'Unnatural ' + statName;
   return statName;
 }
 
-//returns barX, if the given stat is represented by barX on a token
-//if it isn't represented by any bar, it returns undefined
 function defaultToTokenBars(name){
-  switch(name.toTitleCase()){
-    case 'Fatigue':
-    case 'Population':
-    case 'Tactical Speed':
+  switch(name.toLowerCase().replace(/\s/g, '')){
+    case 'fatigue': case 'population': case 'tacticalspeed':
       return 'bar1';
-    case 'Fate':
-    case 'Morale':
-    case 'Aerial Speed':
+    case 'fate': case 'morale': case 'aerialspeed':
       return 'bar2';
-    case 'Wounds':
-    case 'Structural Integrity':
-    case 'Hull':
+    case 'wounds': case 'structuralintegrity': case 'si': case 'hull':
       return 'bar3';
   }
-  return undefined;
 }
 
-//adds the commands after CentralInput has been initialized
+on('ready', function() {
+  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Structural\\s*Integrity', 'S\\s*I'];
+  var inqLocations = ['H', 'RA', 'LA', 'B', 'RL', 'LL', 'F', 'S', 'R', 'P', 'A'];
+  var inqAttributes = ['Psy\\s*Rating', 'Fate', 'Insanity', 'Renown', 'Crew', 'Fatigue', 'Population', 'Morale', 'Hull', 'Void\\s*Shields', 'Turret', 'Manoeuvrability', 'Detection', 'Tactical\\s*Speed', 'Aerial\\s*Speed'];
+  var inqUnnatural = 'Unnatural\\s*(?:';
+  for(var inqStat of inqStats){
+    inqAttributes.push(inqStat);
+    inqUnnatural += inqStat + '|';
+  }
+  inqUnnatural = inqUnnatural.replace(/\|$/,')');
+  inqAttributes.push(inqUnnatural);
+  var inqArmour = 'Armou?r(?:_|\\s*)(?:';
+  for(var inqLocation of inqLocations){
+    inqArmour += inqLocation + '|';
+  }
+  inqArmour = inqArmour.replace(/\|$/,')');
+  inqAttributes.push(inqArmour);
+  var re = makeAttributeHandlerRegex(inqAttributes);
+  CentralInput.addCMD(re, function(matches,msg){
+    matches[2] = getProperStatName(matches[2]);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    attributeHandler(matches,msg,{bar: tokenBar});
+  },true);
+
+  var profitFactorRe = makeAttributeHandlerRegex(['Profit Factor', 'P\\s*F']);
+  CentralInput.addCMD(profitFactorRe, function(matches,msg){
+    matches[2] = 'Profit Factor';
+    attributeHandler(matches,msg,{partyStat: true});
+  }, true);
+});
+function statReset(matches,msg){
+  var names = [];
+  eachCharacter(msg, function(character, graphic){
+    attribList = findObjs({
+      _type: 'attribute',
+      _characterid: character.id
+    });
+
+    _.each(attribList,function(attrib){
+      attrib.set('current', attrib.get('max'));
+    });
+
+    for(var bar = 1; bar <= 3; bar++){
+      graphic.set('bar' + bar + '_value', graphic.get('bar' + bar + '_max'));
+    }
+
+    graphic.set('statusmarkers', '');
+    graphic.set('gmnotes', '');
+    names.push(' ' + graphic.get('name'));
+  });
+
+  var output = 'The following characters were reset:' + names.join();
+  whisper(output.replace(/,\s*$/, '.'));
+}
+
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*(?:(?:everything|all)\s*=\s*max|reset\s*(?:tokens?|all)?)\s*$/i, statReset);
+});
+function statRoll(matches, msg){
+  var toGM = matches[1] && matches[1].toLowerCase() == 'gm';
+  var characteristic = matches[2];
+  var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);
+  var modifiers = [];
+  if(modifierMatches){
+    for(var modifierMatch of modifierMatches){
+      var details = modifierMatch.match(/(\+|-)\s*(\d+)([\sa-z]*)/i);
+      modifiers.push({Value: details[1] + details[2], Name: details[3].trim()});
+    }
+  }
+
+  var inqtest = new INQTest({characteristic: characteristic, modifier: modifiers});
+  eachCharacter(msg, function(character, graphic){
+    var isNPC = false;
+    new INQCharacter(character, graphic, function(inqcharacter){
+      var isNPC = inqcharacter.controlledby == '';
+      inqtest.getStats(inqcharacter);
+      inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
+    });
+  });
+}
+
 on('ready', function() {
   var rollableStats = INQTest.characteristics();
   var rollRegex = '^!\\s*(gm)?\\s*';
@@ -363,38 +359,6 @@ on('ready', function() {
   rollRegex += '((?:(?:\\+|-)\\s*(?:\\d+)[\\sa-z]*,?\\s*)*)\\s*$';
   var rollRe = new RegExp(rollRegex, 'i');
   CentralInput.addCMD(rollRe, statRoll, true);
-
-  //lets the user quickly view their stats with modifiers
-  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Structural Integrity'];
-  var inqLocations = ['H', 'RA', 'LA', 'B', 'RL', 'LR', 'F', 'S', 'R', 'P', 'A'];
-  var inqAttributes = ['Psy Rating', 'Fate', 'Insanity', 'Renown', 'Crew', 'Fatigue', 'Population', 'Morale', 'Hull', 'Void Shields', 'Turret', 'Manoeuvrability', 'Detection', 'Tactical Speed', 'Aerial Speed'];
-  var inqUnnatural = 'Unnatural (?:';
-  for(var inqStat of inqStats){
-    inqAttributes.push(inqStat);
-    inqUnnatural += inqStat + '|';
-  }
-  inqUnnatural = inqUnnatural.replace(/|$/,'');
-  inqUnnatural += ')';
-  inqAttributes.push(inqUnnatural);
-  var inqArmour = 'Armour_(?:';
-  for(var inqLocation of inqLocations){
-    inqArmour += inqLocation + '|';
-  }
-  inqArmour = inqArmour.replace(/|$/,'');
-  inqArmour += ')';
-  inqAttributes.push(inqArmour);
-  var re = makeAttributeHandlerRegex(inqAttributes);
-  CentralInput.addCMD(re, function(matches,msg){
-    matches[2] = getProperStatName(matches[2]);
-    var tokenBar = defaultToTokenBars(matches[2]);
-    attributeHandler(matches,msg,{bar: tokenBar});
-  },true);
-
-  var profitFactorRe = makeAttributeHandlerRegex('Profit Factor');
-  CentralInput.addCMD(profitFactorRe, function(matches,msg){
-    matches[2] = 'Profit Factor';
-    attributeHandler(matches,msg,{partyStat: true});
-  }, true);
 });
 function logEvent(matches, msg) {
   var isGM = matches[1] && playerIsGM(msg.playerid);
@@ -530,22 +494,14 @@ function applyDamage (matches,msg){
 on('ready',function(){
   CentralInput.addCMD(/^!\s*(?:dam(?:age)?|attack)\s*$/i, applyDamage);
 });
-//resets all the damage variables to their maximum values (the attack before any
-//modifications)
 function attackReset(matches,msg){
-  //get the damage details obj
   var details = damDetails();
-  //quit if one of the details was not found
   if(details == undefined) return;
-  //reset the damage variables to their maximums
-  for(var k in details) details[k].set("current", details[k].get("max"));
-  //report the resut
+  for(var k in details) details[k].set('current', details[k].get('max'));
   attackShow();
 }
 
 on('ready', function(){
-  //Lets the gm reset an attack back to how it was first detected, before
-  //modifications
   CentralInput.addCMD(/^!\s*attack\s*=\s*max$/i, attackReset);
 });
 function applyCover(matches,msg){
@@ -558,14 +514,8 @@ function applyCover(matches,msg){
   var primitiveAttack = Number(details.Prim.get('current'));
 
   var coverMultiplier = 1;
-  if(primitiveCover){
-    coverMultiplier /= 2;
-  }
-
-  if(primitiveAttack){
-    coverMultiplier *= 2;
-  }
-
+  if(primitiveCover) coverMultiplier /= 2;
+  if(primitiveAttack) coverMultiplier *= 2;
   pen -= ( cover * coverMultiplier / 2);
   if (pen <= 0) {
     dam += pen * 2;
@@ -1705,6 +1655,8 @@ on('ready', function() {
   });
 });
 //searches every message for rolls to hit and damage rolls.
+state = state || {};
+state.Successes = 0;
 on("chat:message", function(msg) {
   //if a message matches one of two types of formats, the system records the
   //Damage, Damage Type, Penetration, Primitive, and Felling of the attack.
@@ -1769,13 +1721,14 @@ on("chat:message", function(msg) {
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
 
     //record the highest damage roll
-    var firstDie = 0
+    var firstDie = 0;
+    var lowestDie = 11;
     for(var roll of msg.inlinerolls[rollIndex].results.rolls) {
       if(!roll.results) continue;
       for(var result of roll.results){
         if(!result.d){
-          firstDie = result.v;
-          break;
+          if(!firstDie) firstDie = result.v;
+          if(result.v < lowestDie) lowestDie = result.v;
         }
       }
     }
@@ -1788,12 +1741,12 @@ on("chat:message", function(msg) {
     var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
     if(notesMatches) {
       var notes = notesMatches[1];
-      notes = notes.replace('(', '[').replace(')', ']');
+      notes = notes.replace('(', '[').replace(')', ']') || 'D10 I';
       var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
       var felling = inqweapon.has('Felling');
       var ina = inqweapon.has('Ignores Natural Armour');
       var inqqtt = new INQQtt({PR: 0, SB: 0});
-      FellObj.set('current', inqqtt.getTotal(felling));
+      FellObj.set('current', inqqtt.getTotal(felling, 0));
       if(ina) InaObj.set('current', 1);
     }
 
@@ -1817,6 +1770,11 @@ on("chat:message", function(msg) {
     var hitLocation = getHitLocation(tensLocObj.get("current"), onesLocObj.get("current"));
     firstButton += "!{URIFixed}" + encodeURIFixed("Crit? " + DamTypeObj.get("current") + ' ' + hitLocation);
     firstButton += ")";
+
+    var replaceButton = '[' + lowestDie + ' -> ' + state.Successes + '](';
+    var replaceCMD = 'dam += ' + Math.max(state.Successes - lowestDie, 0);
+    replaceButton += '!{URIFixed}' + encodeURIFixed(replaceCMD);
+    replaceButton += ')'
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
@@ -1825,6 +1783,8 @@ on("chat:message", function(msg) {
       //report the highest roll publicly
       announce(firstButton, {speakingAs: 'First Die'});
     }
+
+    whisper(replaceButton, {speakingAs: 'Replace Die'});
 
     //save the damage variables to their maximums as well
     DamObj.set("max",DamObj.get("current"));
@@ -1918,9 +1878,11 @@ on("chat:message", function(msg){
       //Single Shot mode, but later commands such as (!Full and !Semi) will
       //convert these negative numbers into a positive number of hits.
       attributeValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
+      state.Successes = Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total);
     //otherwise record that there were no hits
     } else {
       attributeValue('Hits', {setTo: 0});
+      state.Successes = 0;
     }
     //check for perils of the warp
     if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){
@@ -3207,7 +3169,7 @@ INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
           name: item.Name,
           _characterid: this.ObjID,
           istokenaction: true,
-          action: item.toAbility(this, undefined, customWeapon)
+          action: item.toAbility(this, customWeapon)
         });
       }
     }
@@ -3235,17 +3197,14 @@ INQCharacterImportParser.prototype.adjustBonus = function(){
 INQCharacterImportParser.prototype.adjustWeapons = function(){
   for(var i = 0; i < this.List.Weapons.length; i++){
     var weapon = this.List.Weapons[i];
-    if(weapon.Class == "Melee"){
-      weapon.DamageBase -= this.bonus("S");
-      if(weapon.has("Fist")){
-        weapon.DamageBase -= this.bonus("S");
-      }
-      if(this.has("Crushing Blow", "Talents")){
-        weapon.DamageBase -= 2;
-      }
-    } else if(this.has("Mighty Shot", "Talents")){
-      weapon.DamageBase -= 2;
+    if(weapon.Class == 'Melee'){
+      weapon.Damage.Modifier -= this.bonus('S');
+      if(weapon.has('Fist')) weapon.Damage.Modifier -= this.bonus('S');
+      if(this.has('Crushing Blow', 'Talents')) weapon.Damage.Modifier -= 2;
+    } else if(this.has('Mighty Shot', 'Talents')){
+      weapon.Damage.Modifier -= 2;
     }
+
     weapon.Name = weapon.Name.toTitleCase();
   }
 }
@@ -4079,6 +4038,7 @@ INQImportParser.prototype.interpretArmour = function(content, properties){
 }
 INQImportParser.prototype.interpretContent = function(content, properties){
   var inqlink = new INQLink(content);
+  if(!inqlink.Name) inqlink.Name = content;
   this.saveProperty(inqlink, properties);
 }
 INQImportParser.prototype.interpretLabeled = function(labeledLines){
@@ -4127,8 +4087,9 @@ INQImportParser.prototype.interpretList = function(content, properties){
   this.saveProperty(List, properties);
 }
 INQImportParser.prototype.interpretNumber = function(content, properties){
-  var matches = content.match(/(?:\+\s*|-\s*|)\d+/g);
+  var matches = content.match(/((\+|-|–|—)\s*|)\d+/g);
   if(!matches){return;}
+  for(var i = 0; i < matches.length; i++) matches[i] = matches[i].replace(/(-|–|—)/, '-').replace(/ /g, '');
   if(matches.length == 1){
     this.saveProperty(matches[0], properties);
   } else {
@@ -5256,18 +5217,15 @@ function INQTest(options){
   this.getSkillModifier(options.inqcharacter);
 }
 INQTest.prototype.addModifier = function(modifiers){
-  if(!modifiers) return;
-  if(typeof modifiers == 'string') modifiers = Number(modifiers);
-  if(typeof modifiers == 'number') this.Modifiers.push({Name: 'Other', Value: modifiers});
   if(Array.isArray(modifiers)) {
     for(var modifier of modifiers) {
       this.addModifier(modifier);
     }
-    return;
-  }
-  if(typeof modifiers == 'object'){
+  } else if (typeof modifiers == 'string' || typeof modifiers == 'number') {
+    this.addModifier({Value: modifiers});
+  } else if(typeof modifiers == 'object'){
     if(!modifiers.Name) modifiers.Name = 'Other';
-    if(typeof modifiers.Value == 'string') modifiers.Value = Number(modifiers.Value);
+    modifiers.Value = Number(modifiers.Value);
     if(!modifiers.Value) return;
     this.Modifiers.push(modifiers);
   }
@@ -5370,7 +5328,7 @@ INQTest.prototype.getSkillModifier = function(inqcharacter){
   this.addModifier({Name: 'Skill', Value: modifier});
 }
 INQTest.prototype.getStats = function(inqcharacter){
-  if(!this.Characteristic || !inqcharacter) return;
+  if(!this.Characteristic || (!inqcharacter && !this.PartyStat)) return;
   if(!this.PartyStat){
     this.Stat = inqcharacter.Attributes[this.Characteristic];
     this.Unnatural = inqcharacter.Attributes['Unnatural ' + this.Characteristic];
@@ -5449,7 +5407,7 @@ INQTest.skills = function(){
     {Name: 'Climb',           DefaultStat: 'S'},
     {Name: 'Commerce',        DefaultStat: 'Fe'},
     {Name: 'Command',         DefaultStat: 'Fe'},
-    {Name: 'Common Lore',     DefaultStat: 'It'},
+    {Name: 'Common Lore',     DefaultStat: 'It', Alternates: ['C L']},
     {Name: 'Concealment',     DefaultStat: 'Ag'},
     {Name: 'Contortionist',   DefaultStat: 'Ag'},
     {Name: 'Deceive',         DefaultStat: 'Fe'},
@@ -5458,20 +5416,23 @@ INQTest.skills = function(){
     {Name: 'Dodge',           DefaultStat: 'Ag'},
     {Name: 'Drive',           DefaultStat: 'Ag'},
     {Name: 'Evaluate',        DefaultStat: 'It'},
-    {Name: 'Forbidden Lore',  DefaultStat: 'It'},
+    {Name: 'Forbidden Lore',  DefaultStat: 'It', Alternates: ['F L']},
     {Name: 'Gamble',          DefaultStat: 'It'},
     {Name: 'Inquiry',         DefaultStat: 'Fe'},
     {Name: 'Interrogation',   DefaultStat: 'It'},
     {Name: 'Intimidate',      DefaultStat: 'S'},
     {Name: 'Invocation',      DefaultStat: 'Wp'},
     {Name: 'Literacy',        DefaultStat: 'It'},
+    {Name: 'Linguistics',     DefaultStat: 'It'},
+    {Name: 'Lip Reading',     DefaultStat: 'Per'},
     {Name: 'Logic',           DefaultStat: 'It'},
     {Name: 'Medicae',         DefaultStat: 'It'},
-    {Name: 'Navigation',      DefaultStat: 'It'},
+    {Name: 'Navigation',      DefaultStat: 'It', Alternates: ['Navigate']},
+    {Name: 'Parry',           DefaultStat: 'WS'},
     {Name: 'Performer',       DefaultStat: 'Fe'},
     {Name: 'Pilot',           DefaultStat: 'Ag'},
     {Name: 'Psyniscience',    DefaultStat: 'Per'},
-    {Name: 'Scholastic Lore', DefaultStat: 'It'},
+    {Name: 'Scholastic Lore', DefaultStat: 'It', Alternates: ['S L']},
     {Name: 'Scrutiny',        DefaultStat: 'Per'},
     {Name: 'Search',          DefaultStat: 'Per'},
     {Name: 'Secret Tongue',   DefaultStat: 'It'},
@@ -5480,6 +5441,7 @@ INQTest.skills = function(){
     {Name: 'Silent Move',     DefaultStat: 'Ag'},
     {Name: 'Sleight of Hand', DefaultStat: 'Ag'},
     {Name: 'Speak Language',  DefaultStat: 'It'},
+    {Name: 'Stealth',         DefaultStat: 'Ag'},
     {Name: 'Survival',        DefaultStat: 'It'},
     {Name: 'Swim',            DefaultStat: 'S'},
     {Name: 'Tactics',         DefaultStat: 'It'},
@@ -5806,7 +5768,7 @@ INQUse.prototype.calcRoF = function(){
     this.maxHits = 1;
     this.mode = 'Single';
   } else if(/All\s*Out/i.test(this.options.RoF)){
-    this.modifiers.push({Name: 'All Out Attack', Value: 30});
+    this.modifiers.push({Name: 'All Out Attack', Value: 40});
     this.maxHits = 1;
     this.mode = 'Single';
   } else { //if(/single/i.test(this.options.RoF))
@@ -5987,6 +5949,10 @@ INQUse.prototype.displayHitReport = function(){
   var extraLines = [];
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
+    extraLines.push({
+      Name: 'Psy Rating',
+      Content: '[[' + (this.PR - this.options.BonusPR) + '+' + this.options.BonusPR + ']]'
+    });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
       PsyPhe.DiceNumber = 1;
@@ -6151,6 +6117,7 @@ INQUse.prototype.roll = function(){
   this.inqtest.roll();
   this.diceEvents();
   this.hits = 0;
+  state.Successes = this.inqtest.Successes;
   if(this.inqtest.Successes >= 0) {
     this.hits++;
     switch(this.mode){
@@ -7986,7 +7953,7 @@ CentralInput.input = function(msg){
   }
 
   if(!inputRecognized){
-    whisper('The command ' + msg.content + ' was not recognized. See ' + getLink('!help') + ' for a list of commands.', {speakingTo: msg.playerid});
+    whisper('The command ' + msg.content + ' was not recognized. See **' + getLink('!help') + '** for a list of commands.', {speakingTo: msg.playerid});
   }
 }
 
@@ -8125,72 +8092,37 @@ function LocalAttributes(graphic) {
 String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
-//create a single character importer object
 charImport = {}
-
-//save the content of the character bio
-charImport.getCharacterBio = function(charName, callback){
-  //create a list of charactersheets that have the given name
-  this.charName = charName;
-  var charList = findObjs({_type: "character", name: charName});
-
-  //are there too few matches?
-  if(charList.length <= 0){
-    whisper("Character not found.");
-    return false;
-  //are there too many matches?
-  } else if(charList.length >= 2){
-    whisper("Multiple matches. Aborting. See log for details.")
-    _.each(charList,function(char){
-      log(char.get("name"));
-    });
-    return false;
-  }
-  //save the character object
-  charImport.CharObj = charList[0];
-  //otherwise try to load the Bio of the given character
-  charImport.CharObj.get("bio", function(bio){
-    //was the bio empty?
-    if(bio == ""){
-      whisper("Bio is empty.")
-      if(typeof callback == 'function') callback(false);
-    } else {
-    //there was no problem saving the bio
-      charImport.charText = bio;
-      if(typeof callback == 'function') callback(true);
+function importCharacter(matches, msg) {
+  var isPlayer = matches[1];
+  var charType = matches[2].toLowerCase();
+  var charPhrase = matches[3];
+  var charObjs = suggestCMD('!import ' + isPlayer + ' ' + charType + ' $', charPhrase, msg.playerid, 'character');
+  if(!charObjs) return;
+  var charObj = charObjs[0];
+  charObj.get('bio', function(importText){
+    if(!importText) return whisper('Bio is empty.');
+    var character = {};
+    switch(charType) {
+      case 'character':
+        character = new INQCharacter(importText);
+      break;
+      case 'vehicle':
+        character = new INQVehicle(importText);
+      break;
+      default:
+        return whisper('Unknown character type.');
     }
+
+    character.Name = charObj.get('name');
+    character.toCharacterObj(isPlayer, charObj.id);
+    if(isPlayer) charObj.set('gmnotes', importText);
+    whisper('*' + getLink(charObj) + '* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.');
   });
 }
 
-//convert text into character
-charImport.makeCharacter = function(){
-  this.character = new INQCharacter(this.charText);
-  this.character.Name = this.charName;
-  this.character.toCharacterObj(false, this.CharObj.id);
-}
-
-//convert text into character
-charImport.makeVehicle = function(){
-  this.character = new INQVehicle(this.charText);
-  this.character.Name = this.charName;
-  this.character.toCharacterObj(false, this.CharObj.id);
-}
-
-on("ready",function(){
-  CentralInput.addCMD(/^!\s*import\s*character\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
-    charImport.getCharacterBio(matches[1], function(valid){
-      if(!valid) return;
-      charImport.makeCharacter();
-      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
-    });
-  });
-  CentralInput.addCMD(/^!\s*import\s*vehicle\s*(\S(?:.*\S)?)\s*$/i,function(matches,msg){
-    charImport.getCharacterBio(matches[1], function(valid){
-      if(!valid) return;
-      charImport.makeVehicle();
-      whisper("*" + getLink(charImport.CharObj.get("name")) + "* has been imported. Note that attributes will not be shown until the character sheet has been closed and opened again.");
-    });
-  });
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*import\s*(|player)\s*(character|vehicle)\s+(\S.*)\s*$/i, importCharacter);
 });
 //imports a weapon from text and converts it into an ability for the selected characters
 
@@ -8199,41 +8131,30 @@ on("ready",function(){
 function importWeapon(matches, msg){
   //be sure at least one character is selected
   if(msg.selected == undefined || msg.selected.length != 1){
-    whisper("Please select one character.");
-    return;
+    return whisper('Please select one character.');
   }
   //convert the text into an INQWeapon
-  var details = matches[2].replace("(","[").replace(")","]");
-  var weapon = new INQWeapon(matches[1] + "(" + details + ")");
+  var name = matches[1];
+  var details = matches[2].replace('(','[').replace(')',']');
+  var weapon = new INQWeapon(name + '(' + details + ')');
 
   //give each selected character a custom weapon
   var customWeapon = {custom: true};
   eachCharacter(msg, function(character, graphic){
-    new INQCharacter(character, graphic, function(inqcharacter){
-      if(weapon.Class == "Melee"){
-        weapon.DamageBase -= inqcharacter.bonus("S");
-        if(weapon.has("Fist")){
-          weapon.DamageBase -= inqcharacter.bonus("S");
-        }
-        if(inqcharacter.has("Crushing Blow", "Talents")){
-          weapon.DamageBase -= 2;
-        }
-      } else if(inqcharacter.has("Mighty Shot", "Talents")){
-        weapon.DamageBase -= 2;
-      }
-      createObj("ability", {
+    new INQCharacter(character, graphic, function(inqcharacter) {
+      createObj('ability', {
         characterid: character.id,
-        name: weapon.Name,
-        action: weapon.toAbility(inqcharacter, undefined, customWeapon),
+        name: name,
+        action: weapon.toAbility(inqcharacter, customWeapon),
         istokenaction: true
       });
 
-      whisper("*" + character.get("name") + "* has been given a(n) *" + weapon.Name + "*");
+      whisper('*' + character.get('name') + '* has been given a(n) *' + name + '*');
     });
   });
 }
 
-on("ready", function(){
+on('ready', function(){
   CentralInput.addCMD(/^!\s*import\s*weapon\s+(.*?)\((.*?)\)\s*$/i, importWeapon);
 });
 function randomDisposition(matches, msg){

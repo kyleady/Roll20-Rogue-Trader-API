@@ -21,9 +21,11 @@ on("chat:message", function(msg){
       //Single Shot mode, but later commands such as (!Full and !Semi) will
       //convert these negative numbers into a positive number of hits.
       attributeValue('Hits', {setTo: (-1)*(1 + Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total))});
+      state.Successes = Math.floor(msg.inlinerolls[0].results.total) + Math.floor(msg.inlinerolls[1].results.total);
     //otherwise record that there were no hits
     } else {
       attributeValue('Hits', {setTo: 0});
+      state.Successes = 0;
     }
     //check for perils of the warp
     if(/^\s*{{\s*name\s*=\s*<strong>\s*Wp\s*<\/strong>:.*}}/i.test(msg.content)){

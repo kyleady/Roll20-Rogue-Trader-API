@@ -1,4 +1,6 @@
 //searches every message for rolls to hit and damage rolls.
+state = state || {};
+state.Successes = 0;
 on("chat:message", function(msg) {
   //if a message matches one of two types of formats, the system records the
   //Damage, Damage Type, Penetration, Primitive, and Felling of the attack.
@@ -63,13 +65,14 @@ on("chat:message", function(msg) {
     DamObj.set('current', msg.inlinerolls[rollIndex].results.total);
 
     //record the highest damage roll
-    var firstDie = 0
+    var firstDie = 0;
+    var lowestDie = 11;
     for(var roll of msg.inlinerolls[rollIndex].results.rolls) {
       if(!roll.results) continue;
       for(var result of roll.results){
         if(!result.d){
-          firstDie = result.v;
-          break;
+          if(!firstDie) firstDie = result.v;
+          if(result.v < lowestDie) lowestDie = result.v;
         }
       }
     }
@@ -82,12 +85,12 @@ on("chat:message", function(msg) {
     var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
     if(notesMatches) {
       var notes = notesMatches[1];
-      notes = notes.replace('(', '[').replace(')', ']');
+      notes = notes.replace('(', '[').replace(')', ']') || 'D10 I';
       var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
       var felling = inqweapon.has('Felling');
       var ina = inqweapon.has('Ignores Natural Armour');
       var inqqtt = new INQQtt({PR: 0, SB: 0});
-      FellObj.set('current', inqqtt.getTotal(felling));
+      FellObj.set('current', inqqtt.getTotal(felling, 0));
       if(ina) InaObj.set('current', 1);
     }
 
@@ -111,6 +114,11 @@ on("chat:message", function(msg) {
     var hitLocation = getHitLocation(tensLocObj.get("current"), onesLocObj.get("current"));
     firstButton += "!{URIFixed}" + encodeURIFixed("Crit? " + DamTypeObj.get("current") + ' ' + hitLocation);
     firstButton += ")";
+
+    var replaceButton = '[' + lowestDie + ' -> ' + state.Successes + '](';
+    var replaceCMD = 'dam += ' + Math.max(state.Successes - lowestDie, 0);
+    replaceButton += '!{URIFixed}' + encodeURIFixed(replaceCMD);
+    replaceButton += ')'
     //was this a private attack?
     if(msg.type == "whisper"){
       //report the highest roll privately
@@ -119,6 +127,8 @@ on("chat:message", function(msg) {
       //report the highest roll publicly
       announce(firstButton, {speakingAs: 'First Die'});
     }
+
+    whisper(replaceButton, {speakingAs: 'Replace Die'});
 
     //save the damage variables to their maximums as well
     DamObj.set("max",DamObj.get("current"));

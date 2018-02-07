@@ -30,7 +30,7 @@ INQUse.prototype.calcRoF = function(){
     this.maxHits = 1;
     this.mode = 'Single';
   } else if(/All\s*Out/i.test(this.options.RoF)){
-    this.modifiers.push({Name: 'All Out Attack', Value: 30});
+    this.modifiers.push({Name: 'All Out Attack', Value: 40});
     this.maxHits = 1;
     this.mode = 'Single';
   } else { //if(/single/i.test(this.options.RoF))

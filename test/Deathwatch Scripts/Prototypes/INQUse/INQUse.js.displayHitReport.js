@@ -88,7 +88,7 @@ describe('INQUse.prototype.displayHitReport()', function() {
 
       on('chat:message', function(msg){
         expect(msg.content).to.match(/{{Phenomena=[^{]*}}/);
-        expect(msg.inlinerolls.length).to.equal(4);
+        expect(msg.inlinerolls.length).to.equal(5);
         done();
       });
 
@@ -119,7 +119,7 @@ describe('INQUse.prototype.displayHitReport()', function() {
 
       on('chat:message', function(msg){
         expect(msg.content).to.match(/{{Phenomena=-}}/);
-        expect(msg.inlinerolls.length).to.equal(3);
+        expect(msg.inlinerolls.length).to.equal(4);
         done();
       });
 

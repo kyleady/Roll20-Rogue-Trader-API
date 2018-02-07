@@ -1,10 +1,4 @@
-//allows players to roll against a skill they may or may not have
-  //matches[1] - skill name
-  //matches[2] - skill subgroup
-  //matches[3] - modifiers
-  //matches[4] - alternate characteristic
 function skillHandler(matches, msg){
-  //store the input variables
   var toGM = matches[1];
   var skill = matches[2];
   var modifierMatches = matches[3].match(/(\+|-)\s*(\d+)([\sa-z]*)/gi);

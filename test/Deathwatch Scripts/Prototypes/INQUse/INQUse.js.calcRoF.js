@@ -133,7 +133,7 @@ describe('INQUse.prototype.calcRoF()', function() {
 			inquse.modifiers = [];
 			inquse.options.RoF = 'all out attack';
 			inquse.calcRoF();
-      expect(inquse.modifiers).to.deep.equal([{Name: 'All Out Attack', Value: 30}]);
+      expect(inquse.modifiers).to.deep.equal([{Name: 'All Out Attack', Value: 40}]);
 			inquse.modifiers = [];
 			inquse.options.RoF = 'something else';
 			inquse.calcRoF();
