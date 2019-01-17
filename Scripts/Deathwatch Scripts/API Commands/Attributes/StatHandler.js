@@ -100,4 +100,11 @@ on('ready', function() {
     matches[2] = 'Profit Factor';
     attributeHandler(matches,msg,{partyStat: true});
   }, true);
+
+  var bonusRe = makeAttributeBonusHandlerRegex(inqStats);
+  CentralInput.addCMD(bonusRe, function(matches,msg){
+    matches[2] = getProperStatName(matches[2]);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    attributeBonusHandler(matches,msg,{bar: tokenBar});
+  }, true);
 });

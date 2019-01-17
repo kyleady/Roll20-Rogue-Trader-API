@@ -1,17 +1,17 @@
 //Generates a random vehicle for the use of a native Xenos
-    this.RandomVehicle = function(type, tech, creature){
+    System.prototype.RandomVehicle = function(type, tech, creature){
         //type is selected outside of this function, the type will determine the weapons, size, movement, and special abilities
         //the possibilities for type are as follows: miniature, light vehicle, transport, heavy vehicle, artillery, fighter, bomber, lander, titan
-        
-        //tech is selected outside of this function, it 
+
+        //tech is selected outside of this function, it
         //the possibilities for tech range from -3 to 1
-        
+
         //creature is the entire creature object with all of its stats and abilities
-        
+
         //create an object to contain all of the vehicle stats
         vehicle =  {WS: 0, BS:0, S:0, T:0, Ag:0, Wp:0, It:0, Pr:0, Fe:0,
                     Unnatural_WS: 0, Unnatural_BS:0, Unnatural_S:0, Unnatural_T:0, Unnatural_Ag:0, Unnatural_Wp:0, Unnatural_It:0, Unnatural_Pr:0, Unnatural_Fe:0,
-                    Weapons: [], 
+                    Weapons: [],
                     MType: "",
                     TSpeed: 0,
                     AUs: 0,
@@ -21,7 +21,7 @@
                     FArmour: 0, SArmour: 0, RArmour: 0,
                     CarryC: 0,
                     Special: ""};
-        
+
         //use the vehicle type to generate all of its weapons and bonuses
         switch(type){
             case "miniature":
@@ -109,16 +109,16 @@
             case "titan":
                 break;
         }
-        
+
         //randomly determine movement type
         switch(this.TechRoll(tech-1,10)){
-            case 1:  
+            case 1:
                 vehicle.Movement = "beast";
                 break;
-            case 2:  
+            case 2:
                 vehicle.Movement = "chariot";
                 break;
-            case 3: case 4: case 5:  
+            case 3: case 4: case 5:
                 vehicle.Movement = "locomotion";
                 break;
             case 6: case 7: case 8:
@@ -128,6 +128,6 @@
                 vehicle.Movement = "skimmer";
                 break;
         }
-        
-        
+
+
     }

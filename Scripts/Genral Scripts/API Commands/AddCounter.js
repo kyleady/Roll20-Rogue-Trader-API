@@ -17,5 +17,5 @@ function addCounter(matches, msg) {
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*add\s*counter\s*(.+\D)\s*(\d+)$/i, addCounter);
+  CentralInput.addCMD(/^!\s*add\s*counter\s*(.+\D)\s*(\d+)$/i, addCounter, true);
 });

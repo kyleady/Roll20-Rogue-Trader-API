@@ -1,5 +1,5 @@
     //Generates a random Xenos to complicate a planet or adventure. Saves it into a handout.
-    RandomCreature  = function(input,location) {
+    System.prototype.RandomCreature  = function(input,location) {
         input = input || "";
 
         input = input.toLowerCase();

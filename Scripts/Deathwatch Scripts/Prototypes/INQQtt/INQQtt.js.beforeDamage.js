@@ -1,4 +1,5 @@
 INQQtt.prototype.beforeDamage = function(){
+  log('===QTT Before Damage===');
   this.blast();
   this.damage();
   this.damageType();
@@ -9,7 +10,6 @@ INQQtt.prototype.beforeDamage = function(){
   this.penetration();
   this.powerField();
   this.proven();
-  this.scatter();
   this.tearingFleshRender();
 
   if(this.inquse.inqtest) {
@@ -22,10 +22,12 @@ INQQtt.prototype.beforeDamage = function(){
   if(this.inquse.inqcharacter) {
     this.crushingBlow();
     this.fist();
+    this.independent();
     this.force();
     this.hammerBlow();
     this.legacy();
     this.mightyShot();
     this.tainted();
   }
+  log('=');
 }

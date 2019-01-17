@@ -1,7 +1,7 @@
 INQUse.prototype.diceEvents = function(){
   var die = this.inqtest.Die;
   var tens = Math.floor(die / 10);
-  var ones = die - tens * 10;
+  var ones = (die - tens * 10) || 10;
   if(die == 100) {
     this.critical = 'Failure!';
     this.inqtest.Successes = -1;
@@ -10,8 +10,11 @@ INQUse.prototype.diceEvents = function(){
   }
 
   switch(this.options.FocusStrength){
+    case 'Fettered':
+      this.PsyPhe = die == 100;
+    break;
     case 'Unfettered':
-      this.PsyPhe = ones == 9;
+      this.PsyPhe = ones == tens;
     break;
     case 'Push': case 'True':
       this.PsyPhe = true;

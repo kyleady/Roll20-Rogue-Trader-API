@@ -85,8 +85,8 @@ on("chat:message", function(msg) {
     var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
     if(notesMatches) {
       var notes = notesMatches[1];
-      notes = notes.replace('(', '[').replace(')', ']') || 'D10 I';
-      var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
+      notes = notes.replace(/\(/g, '[').replace(/\)/g, ']') || 'D10 I';
+      var inqweapon = new INQWeapon('Damage Catcher Weapon(' + notes + ')');
       var felling = inqweapon.has('Felling');
       var ina = inqweapon.has('Ignores Natural Armour');
       var inqqtt = new INQQtt({PR: 0, SB: 0});

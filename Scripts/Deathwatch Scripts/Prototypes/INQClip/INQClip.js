@@ -4,4 +4,5 @@ function INQClip(inqweapon, characterid, options){
   if(typeof options != 'object') options = {};
   this.options = options;
   this.getName();
+  log(this.options)
 }

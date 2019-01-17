@@ -30,7 +30,7 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
   if(inqcharacter && this.Class == 'Psychic') {
     if(inqcharacter.has('Unbound Psyker', 'Traits')) {
       options.FocusStrength = '?{Focus Strength|Unfettered|Push|True}';
-    } else if(inqcharacter.has('Bound Psyker', 'Traits')) {
+    } else {
       options.FocusStrength = '?{Focus Strength|Fettered|Unfettered|Push}';
     }
 
@@ -69,7 +69,7 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     options.Special += '?{Fire on Overcharge?|Use Overcharge|}';
   }
 
-  if(!this.Damage.onlyZero()) options.target = '@{target|token_id}';
+  if(!this.Damage.onlyZero() && GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
   output += JSON.stringify(options);
   return output;
 }

@@ -19,6 +19,31 @@ numModifier.calc = function(stat, operator, modifier){
   }
 }
 
-numModifier.regexStr = function(){
-  return '(\\?\\s*\\+|\\?\\s*-|\\?\\s*\\*|\\?\\s*\\/|\\?|=|\\+\\s*=|-\\s*=|\\*\\s*=|\\/\\s*=)\s*(|\\+|-)'
+numModifier.regexStr = function(options){
+  options = typeof options == 'object' ? options : {};
+  var basicOperators = [
+    '\\+',
+    '-',
+    '\\*',
+    '\\/',
+  ];
+  var signs = [
+    '',
+    '\\+',
+    '-',
+  ];
+  var queryOperators = basicOperators.map(basicOperator => '\\?\\s*' + basicOperator);
+  queryOperators.push('\\?');
+  var writeOperators = basicOperators.map(basicOperator => basicOperator + '\\s*=');
+  writeOperators.push('=');
+  var operators = [];
+  if(options.queryOnly) {
+    operators = queryOperators;
+  } else if(options.writeOnly) {
+    operators = writeOperators;
+  } else {
+    operators = operators.concat(queryOperators, writeOperators);
+  }
+  
+  return '(' + operators.join('|') + ')\\s*(' + signs.join('|') + ')';
 }

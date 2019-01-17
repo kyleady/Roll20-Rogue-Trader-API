@@ -1,5 +1,5 @@
 function painSuppress(matches, msg) {
-  var text = matches[1];
+  var text = matches[1] || '?';
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
       whisper('Please carefully select who is using pain suppressants.', {speakingTo: msg.playerid});
@@ -20,5 +20,5 @@ function painSuppress(matches, msg) {
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*pain\s*suppress\s*(.+)\s*$/i, painSuppress, true);
+  CentralInput.addCMD(/^!\s*pain\s*suppress(?:ant)?\s*(.*)\s*$/i, painSuppress, true);
 });

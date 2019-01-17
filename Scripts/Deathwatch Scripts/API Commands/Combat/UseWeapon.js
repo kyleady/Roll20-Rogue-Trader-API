@@ -21,11 +21,11 @@ function useWeapon (matches, msg) {
           freeShot: inquse.freeShot,
           inqammo: inquse.inqammo,
           shots: inquse.maxHits,
-          ammoMultilpier: inquse.ammoMultilpier,
+          ammoMultilpier: inquse.ammoMultiplier,
           playerid: msg.playerid
         });
 
-        if(!inquse.inqclip.spend()) return;
+        if(!inquse.freeShot && !inquse.inqclip.spend()) return;
       }
 
       if(inquse.autoHit || inquse.inqtest.Successes >= 0) {

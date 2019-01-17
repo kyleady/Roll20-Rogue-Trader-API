@@ -6,6 +6,8 @@ INQUse.prototype.calcScatter = function() {
     'S', 'SSW', 'SW', 'WSW',
     'W', 'WNW', 'NW', 'NNW'
   ];
+  log('maxHitsMultiplier')
+  log(this.maxHitsMultiplier)
   var maxHits = this.maxHits * this.maxHitsMultiplier;
   if(this.indirect) {
     for(var i = 0; i < this.hits; i++) {

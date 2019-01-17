@@ -4,9 +4,12 @@ INQUse.prototype.displayHitReport = function(){
   var extraLines = [];
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
+    var bonusPR = Number(this.options.BonusPR);
+    var pushPR = Number(this.options.PushPR);
+    var basePR = this.PR - bonusPR - pushPR;
     extraLines.push({
       Name: 'Psy Rating',
-      Content: '[[' + (this.PR - this.options.BonusPR) + '+' + this.options.BonusPR + ']]'
+      Content: '[[' + basePR + '+' + pushPR + '+' + bonusPR + ']]'
     });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
@@ -16,12 +19,12 @@ INQUse.prototype.displayHitReport = function(){
       var PsyPheDiceRule = '';
       if(this.PsyPheDropDice){
         PsyPhe.DiceNumber += this.PsyPheDropDice;
-        PsyPheDiceRule = 'dl' + this.PsyPheDropDice;
+        PsyPheDiceRule = 'dh' + this.PsyPheDropDice;
       }
 
       extraLines.push({
         Name: 'Phenomena',
-        Content: PsyPhe.toInline(PsyPheDiceRule)
+        Content: PsyPhe.toInline({dicerule: PsyPheDiceRule})
       });
     } else {
       extraLines.push({

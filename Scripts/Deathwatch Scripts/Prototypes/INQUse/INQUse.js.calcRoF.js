@@ -15,7 +15,7 @@ INQUse.prototype.calcRoF = function(){
     this.maxHits = this.inqweapon.Semi.roll({PR: this.PR, SB: this.SB});
     this.mode = 'Semi';
   } else if(/Swift/i.test(this.options.RoF)){
-    this.maxHits = Math.max(2, Math.round(this.inqcharacter.bonus('WS')/3));
+    this.maxHits = Math.max(2, Math.round(this.inqcharacter.bonus('WS')/2));
     this.mode = 'Semi';
   } else if(/Full/i.test(this.options.RoF)){
     if(this.inqweapon.Class != 'Psychic') this.modifiers.push({Name: 'Full Auto', Value: -10});

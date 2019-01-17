@@ -30,6 +30,14 @@ INQUse.prototype.roll = function(){
     }
   }
 
+  log('=Hits=')
+  log(this.hits)
+  log('=Hits Multiplier=')
+  log(this.hitsMultiplier)
+  log('=Max Hits=')
+  log(this.maxHits)
+  log('=Max Hits Multiplier=')
+  log(this.maxHitsMultiplier)
   this.hits *= this.hitsMultiplier;
   var maxHits = this.maxHits * this.maxHitsMultiplier;
   if(this.hits > maxHits) this.hits = maxHits;

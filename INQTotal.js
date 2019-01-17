@@ -1,4 +1,95 @@
 
+function attributeBonusHandler(matches,msg,options){
+  if(typeof options != 'object') options = {};
+  if(options['show'] == undefined) options['show'] = true;
+  var workingWith = (matches[1].toLowerCase() == 'max') ? 'max' : 'current';
+  var statName = matches[2];
+  var operator = matches[3].replace('/\s/g','');
+  var sign = matches[4] || '';
+  var modifier = matches[5] || '';
+  if(options['partyStat']) msg.selected = [{_type: 'unique'}];
+  eachCharacter(msg, function(character, graphic){
+    graphic = graphic || {};
+    character = character || {};
+    var attribute = {
+      current: attributeValue(statName, {graphicid: graphic.id, max: false, bar: options['bar']}),
+      max: attributeValue(statName, {graphicid: graphic.id, max: true, alert: false, bar: options['bar']})
+    };
+    var attributeUnnatural = {
+      current: attributeValue('Unnatural ' + statName, {graphicid: graphic.id, max: false, alert: false}),
+      max: attributeValue('Unnatural ' + statName, {graphicid: graphic.id, max: true, alert: false})
+    };
+    var attributeBonus = {
+      current: '-',
+      max: '-',
+    }
+    var name = (options.partyStat) ? '' : character.get('name');
+    if (attribute.current == undefined) return;
+    if(attribute.max == undefined){
+      if(workingWith == 'max' || modifier == 'max') {
+        return whisper('Local attributes do not have maximums to work with.', {speakingTo: msg.playerid, gmEcho: true});
+      } else {
+        attribute.max = '-';
+      }
+    } else {
+      attribute.max = Number(attribute.max) || 0;
+      attributeUnnatural.max = Number(attributeUnnatural.max) || 0;
+      attributeBonus.max = Math.floor(attribute.max / 10) + attributeUnnatural.max;
+    }
+
+    attribute.current = Number(attribute.current) || 0;
+    attributeUnnatural.current = Number(attributeUnnatural.current) || 0;
+    attributeBonus.current = Math.floor(attribute.current / 10) + attributeUnnatural.current;
+
+    var modifiedAttribute = modifyAttribute(attributeBonus, {
+      workingWith: workingWith,
+      operator: operator,
+      sign: sign,
+      modifier: modifier,
+      inlinerolls: msg.inlinerolls
+    });
+    if(!modifiedAttribute) return;
+    whisper(name + attributeTable(statName + ' Bonus', modifiedAttribute), {speakingTo: msg.playerid});
+  });
+}
+
+function makeAttributeBonusHandlerRegex(yourAttributes){
+  var regex = "!\\s*";
+  if(typeof yourAttributes == 'string'){
+    yourAttributes = [yourAttributes];
+  }
+  if(yourAttributes == undefined){
+    regex += "attr\\s+";
+    regex += "(max|)\\s*";
+    regex += "(\\S[^-\\+=/\\?\\*]*)\\s*";
+  } else if(Array.isArray(yourAttributes)){
+    regex += "(|max)\\s*";
+    regex += "("
+    for(var yourAttribute of yourAttributes){
+      regex += yourAttribute + "|";
+    }
+    regex = regex.replace(/\|$/, "");
+    regex += ")";
+  } else {
+    whisper('Invalid yourAttributes');
+    log('Invalid yourAttributes');
+    log(yourAttributes);
+    return;
+  }
+  regex += '\\s*(?:B|Bonus)';
+  regex += "\\s*" + numModifier.regexStr({ queryOnly: true });
+  regex += "\\s*(|\\d+\\.?\\d*|max|current|\\$\\[\\[\\d\\]\\])";
+  regex += "\\s*$";
+  return RegExp(regex, "i");
+};
+
+on("ready", function(){
+  var re = makeAttributeBonusHandlerRegex();
+  CentralInput.addCMD(re, function(matches, msg){
+    matches[2] = correctAttributeName(matches[2]);
+    attributeBonusHandler(matches, msg);
+  }, true);
+});
 function cohesionHandler(matches,msg){
   var cohesionObjs = findObjs({
     _type: 'attribute',
@@ -75,7 +166,7 @@ on('ready', function() {
   CentralInput.addCMD(/^!\s*medic\s*(\d+)\s*$/i, medic, true);
 });
 function painSuppress(matches, msg) {
-  var text = matches[1];
+  var text = matches[1] || '?';
   if(msg.selected == undefined || msg.selected == []){
     if(playerIsGM(msg.playerid)){
       whisper('Please carefully select who is using pain suppressants.', {speakingTo: msg.playerid});
@@ -96,7 +187,7 @@ function painSuppress(matches, msg) {
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*pain\s*suppress\s*(.+)\s*$/i, painSuppress, true);
+  CentralInput.addCMD(/^!\s*pain\s*suppress(?:ant)?\s*(.*)\s*$/i, painSuppress, true);
 });
 function reloadWeapon(matches, msg){
   var ammoPhrase = 'Ammo - ' + matches[1];
@@ -294,6 +385,13 @@ on('ready', function() {
   CentralInput.addCMD(profitFactorRe, function(matches,msg){
     matches[2] = 'Profit Factor';
     attributeHandler(matches,msg,{partyStat: true});
+  }, true);
+
+  var bonusRe = makeAttributeBonusHandlerRegex(inqStats);
+  CentralInput.addCMD(bonusRe, function(matches,msg){
+    matches[2] = getProperStatName(matches[2]);
+    var tokenBar = defaultToTokenBars(matches[2]);
+    attributeBonusHandler(matches,msg,{bar: tokenBar});
   }, true);
 });
 function statReset(matches,msg){
@@ -1275,11 +1373,11 @@ function useWeapon (matches, msg) {
           freeShot: inquse.freeShot,
           inqammo: inquse.inqammo,
           shots: inquse.maxHits,
-          ammoMultilpier: inquse.ammoMultilpier,
+          ammoMultilpier: inquse.ammoMultiplier,
           playerid: msg.playerid
         });
 
-        if(!inquse.inqclip.spend()) return;
+        if(!inquse.freeShot && !inquse.inqclip.spend()) return;
       }
 
       if(inquse.autoHit || inquse.inqtest.Successes >= 0) {
@@ -1486,11 +1584,79 @@ on('ready', function() {
     });
   });
 });
+const INQSkillsQuery = (matches, msg) => {
+  eachCharacter(msg, (character, graphic) => {
+    log(`==${character.get('name')} Skills==`)
+    INQCharacter(character, graphic, (inqcharacter) => {
+      inqcharacter.List.Skills.forEach((inqskill) => {
+        if(inqskill.Groups.length) {
+          inqskill.Groups.forEach((group) => {
+            group.split(',').forEach((subgroup) => {
+              log(`${inqskill.Name} : (${subgroup.trim()}) : +${inqskill.Bonus}`)
+            });
+          });
+        } else {
+          log(`${inqskill.Name} : +${inqskill.Bonus}`)
+        }
+      });
+      whisper(`${character.get('name')} skills logged.`);
+    });
+  });
+}
+
+const INQTalentsQuery = (matches, msg, options) => {
+  options = options || {};
+  const type = options.type || 'Talents';
+  eachCharacter(msg, (character, graphic) => {
+    log(`==${character.get('name')} ${type}==`)
+    INQCharacter(character, graphic, (inqcharacter) => {
+      inqcharacter.List[type].forEach((inqtalent) => {
+        if(inqtalent.Groups.length) {
+          inqtalent.Groups.forEach((group) => {
+            group.split(',').forEach((subgroup) => {
+              log(`${inqtalent.Name} : (${subgroup.trim()})`)
+            });
+          });
+        } else {
+          log(`${inqtalent.Name}`)
+        }
+      });
+      whisper(`${character.get('name')} ${type} logged.`);
+    });
+  });
+}
+
+const INQTraitsQuery = (matches, msg) => INQTalentsQuery(matches, msg, { type: 'Traits' });
+
+const INQBioQuery = (matches, msg) => {
+    const type = matches[1].toLowerCase();
+    eachCharacter(msg, (character, graphic) => {
+       character.get(type, (notes) => {
+          log(`==${character.get('name')} ${type.toTitleCase()}==`);
+          notes.split(/\s*<(?:\/?p|br)[^>]*>\s*/).forEach((line) => {
+            log(line);
+          });
+          whisper(`${character.get('name')} ${type.toTitleCase()} logged.`);
+       });
+    });
+}
+
+on('ready', () => {
+  CentralInput.addCMD(/!\s*skills\s*\?\s*$/i, INQSkillsQuery);
+  CentralInput.addCMD(/!\s*talents\s*\?\s*$/i, INQTalentsQuery);
+  CentralInput.addCMD(/!\s*traits\s*\?\s*$/i, INQTraitsQuery);
+  CentralInput.addCMD(/!\s*(gmnotes|bio)\s*\?\s*$/i, INQBioQuery);
+});
 function lastWatchWave (matches, msg) {
   var Troops = Number(matches[1]);
+  var Wave = matches[2] || '';
+  Wave = Wave.trim();
+  if(matches[2]) {
+    Troops *= Math.ceil(Math.pow(1.5, Wave));
+  }
   var Elite = 0;
   var Master = 0;
-  var Chance = matches[2] || 60;
+  var Chance = matches[3] || 60;
   Chance = Number(Chance);
   var MasterPotential = Math.floor(Troops / 16);
   for (var i = 0; i < MasterPotential; i++) {
@@ -1515,7 +1681,7 @@ function lastWatchWave (matches, msg) {
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*last\s*watch\s*wave\s*(\d+)\s*(?:(\d+)%)?\s*$/i, lastWatchWave);
+  CentralInput.addCMD(/^!\s*wave\s*(\d+)\s*(?:x\s*(\d+))?\s*(?:p\s*(\d+))?\s*$/i, lastWatchWave);
 });
 //allows the gm to create a new roll20 character sheet that represents a brand
 //new character.
@@ -1573,6 +1739,15 @@ function newCharacter(matches, msg){
 //waits until CentralInput has been initialized
 on("ready",function(){
   CentralInput.addCMD(/^!\s*new\s*(|player)\s*(character|vehicle|starship)\s*$/i,newCharacter);
+});
+function newWeapon() {
+  var inqweapon = new INQWeapon();
+  inqweapon.toHandoutObj();
+  whisper('A *' + inqweapon.toLink() + '* was created.');
+}
+
+on('ready',function(){
+  CentralInput.addCMD(/^!\s*new\s*weapon\s*$/i, newWeapon);
 });
 //sets the selected token as the default token for the named character after
 //detailing the token
@@ -1741,8 +1916,8 @@ on("chat:message", function(msg) {
     var notesMatches = msg.content.match(/{{\s*Notes\s*=\s*([^}]*)}}/);
     if(notesMatches) {
       var notes = notesMatches[1];
-      notes = notes.replace('(', '[').replace(')', ']') || 'D10 I';
-      var inqweapon = new INQWeapon('Fake Weapon(' + notes + ')');
+      notes = notes.replace(/\(/g, '[').replace(/\)/g, ']') || 'D10 I';
+      var inqweapon = new INQWeapon('Damage Catcher Weapon(' + notes + ')');
       var felling = inqweapon.has('Felling');
       var ina = inqweapon.has('Ignores Natural Armour');
       var inqqtt = new INQQtt({PR: 0, SB: 0});
@@ -1973,11 +2148,22 @@ function calcInitBonus(charObj, graphicObj, initCallback){
   charObj = charObj || {};
   graphicObj = graphicObj || {};
   //if this character sheet has Detection, then it is a starship
-  if(findObjs({
-    _type: "attribute",
-    name: "Detection",
-    _characterid: charObj.id
-  })[0] != undefined){
+  if (
+    findObjs({
+      _type: "attribute",
+      name: "Initiative",
+      _characterid: charObj.id
+    })[0] != undefined
+  ){
+    var initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
+    if(typeof initCallback == 'function') initCallback(initBonus);
+  } else if(
+    findObjs({
+      _type: "attribute",
+      name: "Detection",
+      _characterid: charObj.id
+    })[0] != undefined
+  ){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     var DetectionBonus = Math.floor(Detection/10);
@@ -2885,16 +3071,22 @@ INQAttack.prototype.display = function(extraLines){
     output += '}} ';
   }
 
-  announce(output, {speakingAs: 'player|' + this.inquse.playerid});
+  announce(output, {speakingAs: 'player|' + this.inquse.playerid, delay: 200});
 }
 INQAttack.prototype.prepareAttack = function(){
   var special = new INQQtt(this.inquse);
   special.beforeDamage();
   if(this.inquse.inqweapon.Class == 'Melee') this.inquse.inqweapon.Damage.Modifier += this.inquse.SB;
   if(this.inquse.hits) {
-    this.hordeDamage = this.inquse.hits;
-    this.hordeDamage *= this.inquse.hordeDamageMultiplier;
-    this.hordeDamage += this.inquse.hordeDamage;
+    if(this.inquse.inqweapon.Class == 'Psychic') {
+      this.hordeDamage = this.inquse.PR;
+      if(this.inquse.inqweapon.has('Blast')) this.hordeDamage += randomInteger(10);
+    } else {
+      this.hordeDamage = this.inquse.hits;
+      this.hordeDamage *= this.inquse.hordeDamageMultiplier;
+      this.hordeDamage += this.inquse.hordeDamage;
+    }
+
     attributeValue('Hits', {setTo: this.hordeDamage});
     attributeValue('Hits', {setTo: this.hordeDamage, max: true});
   }
@@ -3099,12 +3291,14 @@ INQCharacter.prototype.has = function(ability, list){
         });
       }
       _.each(newRules, function(newRule){
-        _.each(info, function(oldRule){
-          if(newRule.Name == oldRule.Name){
-            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
-            newRule.Repeat = true;
-          }
-        });
+        if(list == 'Skills'){
+          _.each(info, function(oldRule){
+            if(newRule.Name == oldRule.Name){
+              if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
+              newRule.Repeat = true;
+            }
+          });
+        }
         if(!newRule.Repeat) info.push(newRule);
       });
     }
@@ -3117,9 +3311,10 @@ INQCharacter.prototype.has = function(ability, list){
     if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
   });
 
-
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   if(info.length == 0) return undefined;
+  log(`Has ${ability} in ${list}`);
+  log(info);
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   return info;
 }
 INQCharacter.prototype.removeChildren = function(characterid){
@@ -3433,6 +3628,7 @@ function INQClip(inqweapon, characterid, options){
   if(typeof options != 'object') options = {};
   this.options = options;
   this.getName();
+  log(this.options)
 }
 INQClip.prototype.display = function(){
   if(!this.clipObj) return '';
@@ -3485,6 +3681,7 @@ INQClip.prototype.spend = function(){
   if(!this.clipObj) return true;
   var clip = Number(this.clipObj.get('current'));
   var total = this.options.shots || 1;
+  log(this.options.ammoMultilpier)
   total *= this.options.ammoMultilpier || 1;
   clip -= total;
   if(clip < 0) {
@@ -3951,7 +4148,7 @@ INQLinkParser.prototype.parse = function(text){
       this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
     }
   } else {
-    whisper('Invalid INQLink');
+    //whisper('Invalid INQLink');
     log('Invalid INQLink');
     log(text);
   }
@@ -3994,6 +4191,12 @@ function INQImportParser(targetObj){
   this.target = targetObj;
   this.Patterns = [];
   this.UnlabledPatterns = [];
+}
+INQImportParser.prototype.clean = function(text){
+  text = text.replace(/<span[^>]*>/g, '');
+  text = text.replace(/<\/span[^>]*>/g, '');
+  text = text.replace(/&nbsp;/g, ' ');
+  return text;
 }
 INQImportParser.prototype.getArmour = function(regex, property){
   this.Patterns.push({regex: regex, property: property, interpret: this.interpretArmour});
@@ -4126,12 +4329,15 @@ INQImportParser.prototype.interpretWeapons = function(content, properties){
 }
 INQImportParser.prototype.parse = function(text){
   //split the input by line
-  var lines = text.split(/\s*<br>\s*/);
+  text = this.clean(text);
+  var lines = text.split(/\s*<(?:\/?p|br)[^>]*>\s*/);
   //disect each line into label and content (by the colon)
   var labeled = [];
   var unlabeled = [];
   this.SpecialRules = [];
+  log('==Lines==');
   _.each(lines,function(line){
+    log(line);
     if(line.match(/:/g)){
       //disect the content by label
       var label = line.substring(0,line.indexOf(":"));
@@ -4150,6 +4356,10 @@ INQImportParser.prototype.parse = function(text){
     }
   });
 
+  log('==Labeled==')
+  log(labeled)
+  log('==Unlabeled==')
+  log(unlabeled)
   //interpret the lines
   this.interpretLabeled(labeled);
   this.saveProperty(this.SpecialRules, "SpecialRules");
@@ -4336,9 +4546,11 @@ INQParser.prototype.parse = function(){
   this.Misc   = [];
 
   //break the text up by lines
-  var Lines = this.Text.split(/(?:<br>|\n|<\/?ul>|<\/?div>|<\/?li>)/);
+  this.Text = this.Text.replace(/\s*style\s*=\s*"background-color:\s*rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)\s*"/g, '');
+  var Lines = this.Text.split(/(?:<br>|\n|<\/?p>|<\/?ul>|<\/?div>|<\/?li>)/);
   Lines = this.balanceTags(Lines);
-  for(var i = 0; i < Lines.length; i++){
+  for(var i = 0; i < Lines.length; i++) {
+    if(/<hr>/.test(Lines[i])) break;
     this.parseLine(Lines[i]);
   }
   //finish off any in-progress lists
@@ -4449,33 +4661,38 @@ INQQtt.prototype.accurate = function(){
   var mode = this.inquse.mode;
   var inqweapon = this.inquse.inqweapon;
   var modifiers = this.inquse.modifiers;
-  var successes;
-  if(this.inquse.inqtest) successes = this.inquse.inqtest.Successes;
-  if(mode == 'Single' && inqweapon.has('Accurate')){
-    var aimmed = false;
-    for(var modifier of modifiers){
-      if(/^\s*(<em>\s*)?Aim(\s*<\/em>)?\s*$/i.test(modifier.Name)) {
-        aimmed = true;
-        break;
-      }
+  var successes = this.inquse.inqtest ? this.inquse.inqtest.Successes : undefined;
+  if(!inqweapon.has('Accurate')) return;
+  var aimmed = false;
+  for(var modifier of modifiers){
+    if(/^\s*(<em>\s*)?Aim(\s*<\/em>)?\s*$/i.test(modifier.Name)) {
+      aimmed = true;
+      break;
     }
+  }
 
-    if(!aimmed) return;
-    if(successes == undefined){
-      modifiers.push({Name: 'Accurate', Value: 10});
-    } else {
-      var twoSuccesses = Math.floor(successes / 2);
-      inqweapon.Damage.DiceNumber += Math.max(Math.min(twoSuccesses, 2), 0);
-    }
+  if(!aimmed) return;
+  if(successes == undefined){
+    log('Accurate')
+    modifiers.push({Name: 'Accurate', Value: 10});
+  } else {
+    if(mode != 'Single') return;
+    const twoSuccesses = Math.floor(successes / 2);
+    const bonus = Math.max(Math.min(twoSuccesses, 2), 0);
+    log(`Accurate(${bonus})`)
+    inqweapon.Damage.DiceNumber += bonus;
   }
 }
 INQQtt.prototype.autoStabilised = function(){
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Auto-stabilised', 'Traits')){
-    this.inquse.braced = true;
-  }
+  var inqweapon = this.inquse.inqweapon;
+  if(!inqcharacter.has('Auto-stabilised', 'Traits')) return;
+  if(!inqweapon.isRanged()) return;
+  log('Auto-stabilised')
+  this.inquse.braced = true;
 }
 INQQtt.prototype.beforeDamage = function(){
+  log('===QTT Before Damage===');
   this.blast();
   this.damage();
   this.damageType();
@@ -4486,7 +4703,6 @@ INQQtt.prototype.beforeDamage = function(){
   this.penetration();
   this.powerField();
   this.proven();
-  this.scatter();
   this.tearingFleshRender();
 
   if(this.inquse.inqtest) {
@@ -4499,21 +4715,26 @@ INQQtt.prototype.beforeDamage = function(){
   if(this.inquse.inqcharacter) {
     this.crushingBlow();
     this.fist();
+    this.independent();
     this.force();
     this.hammerBlow();
     this.legacy();
     this.mightyShot();
     this.tainted();
   }
+  log('=');
 }
 INQQtt.prototype.beforeRange = function(){
+  log('===QTT Before Range===');
   if(this.inquse.inqcharacter){
     this.warpConduit();
   }
   this.maximal();
   this.range();
+  log('=');
 }
 INQQtt.prototype.beforeRoll = function(){
+  log('===QTT Before Roll===')
   if(this.inquse.inqcharacter){
     this.autoStabilised();
     this.bulgingBiceps();
@@ -4534,6 +4755,7 @@ INQQtt.prototype.beforeRoll = function(){
   this.horde();
   this.indirect();
   this.overcharge();
+  this.scatter();
   this.spray();
   this.storm();
   this.toHit();
@@ -4541,38 +4763,43 @@ INQQtt.prototype.beforeRoll = function(){
   this.overheats();
   this.reliable();
   this.unreliable();
+  log('=');
 }
 INQQtt.prototype.blast = function(){
   var inqweapon = this.inquse.inqweapon;
   var inquse = this.inquse;
   var blast = inqweapon.has('Blast');
-  if(blast){
-    var total = this.getTotal(blast);
-    inquse.hordeDamageMultiplier *= total;
-  }
+  if(!blast) return;
+  var total = this.getTotal(blast);
+  log(`Blast(${total})`);
+  inquse.hordeDamageMultiplier *= total;
+
 }
 INQQtt.prototype.bulgingBiceps = function(){
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Bulging Biceps', 'Talents')){
-    this.inquse.braced = true;
-  }
+  var inqweapon = this.inquse.inqweapon;
+  if(!inqcharacter.has('Bulging Biceps', 'Talents')) return;
+  if(!inqweapon.isRanged()) return;
+  log('Bulging Biceps')
+  this.inquse.braced = true;
 }
 INQQtt.prototype.claws = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.inqtest.Successes;
-  if(successes <= 0) return;
   var claws = inqweapon.has('Claws');
-  if(claws){
-    var total = this.getTotal(claws);
-    inqweapon.Damage.Modifier += total * successes;
-  }
+  if(!claws) return;
+  var total = this.getTotal(claws);
+  log(`Claws(${total})`)
+  if(successes <= 0) return;
+  inqweapon.Damage.Modifier += total * successes;
 }
 INQQtt.prototype.crushingBlow = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Crushing Blow', 'Talents') && inqweapon.Class == 'Melee'){
-    inqweapon.Damage.Modifier += 2;
-  }
+  if(!inqcharacter.has('Crushing Blow', 'Talents')) return;
+  if(!inqweapon.Class == 'Melee') return;
+  log('Crushing Blow');
+  inqweapon.Damage.Modifier += 2;
 }
 INQQtt.prototype.damage = function(){
   var inqweapon = this.inquse.inqweapon;
@@ -4603,40 +4830,42 @@ INQQtt.prototype.deadeye = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
   var RoF = this.inquse.options.RoF;
-  if(inqcharacter.has(/Dead\s*Eye\s*(Shot)?/i, 'Talents')
-  && /called/i.test(RoF)
-  && inqweapon.isRanged()){
-    this.inquse.modifiers.push({Name: 'Deadeye', Value: 10});
-  }
+  if(!inqcharacter.has(/Dead\s*Eye\s*(Shot)?/i, 'Talents')) return;
+  if(!inqweapon.isRanged()) return;
+  if(!/called/i.test(RoF)) return;
+  log('Dead Eye Shot');
+  this.inquse.modifiers.push({Name: 'Deadeye', Value: 10});
 }
 INQQtt.prototype.devastating = function(){
   var inqweapon = this.inquse.inqweapon;
   var devastating = inqweapon.has('Devastating');
-  if(devastating){
-    var total = this.getTotal(devastating);
-    this.inquse.hordeDamage += total;
-  }
+  if(!devastating) return;
+  var total = this.getTotal(devastating);
+  log(`Devastating(${total})`);
+  this.inquse.hordeDamageMultiplier += total;
 }
 INQQtt.prototype.favouredByTheWarp = function(){
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has(/Favou?red By The Warp/i, 'Talents')){
-    this.inquse.PsyPheDrop++;
-  }
+  var inqweapon = this.inquse.inqweapon;
+  if(!inqcharacter.has(/Favou?red By The Warp/i, 'Talents')) return;
+  if(!inqweapon.Class == 'Psychic') return;
+  log('Favoured By The Warp')
+  this.inquse.PsyPheDropDice++;
 }
 INQQtt.prototype.fist = function(){
   var inqweapon = this.inquse.inqweapon;
   var SB = this.inquse.SB;
-  if(inqweapon.has('Fist')){
-    inqweapon.Damage.Modifier += SB;
-  }
+  if(!inqweapon.has('Fist')) return;
+  log(`Fist(${SB})`)
+  inqweapon.Damage.Modifier += SB;
 }
 INQQtt.prototype.force = function(){
   var inqweapon = this.inquse.inqweapon;
   var PR = this.inquse.inqcharacter.Attributes.PR;
-  if(inqweapon.has('Force')){
-    this.inquse.inqweapon.Damage.Modifier += PR;
-    this.inquse.inqweapon.Penetration.Modifier += PR;
-  }
+  if(!inqweapon.has('Force')) return;
+  log(`Force(${PR})`);
+  this.inquse.inqweapon.Damage.Modifier += PR;
+  this.inquse.inqweapon.Penetration.Modifier += PR;
 }
 INQQtt.prototype.getTotal = function(subgroups, min){
   if(min == undefined) min = 1;
@@ -4661,28 +4890,31 @@ INQQtt.prototype.gyroStabilised = function(){
   var range = this.inquse.range;
   var modifiers = this.inquse.modifiers;
   var braced = this.inquse.braced;
-  if(inqweapon.has(/Gyro(-|\s*)Stabilised/i)){
-    if(/^Extended/i.test(range)
-    && (!inqcharacter || !inqcharacter.has('Marksman', 'Talents'))){
-      modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
-    } else if(/^Extreme/i.test(range)){
-      modifiers.push({Name: 'Gyro-Stabilised', Value: 20});
-    }
-
-    if(!braced && inqweapon.Class == 'Heavy'){
-      modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
-    }
+  if(!inqweapon.has(/Gyro(-|\s*)Stabilised/i)) return;
+  log('Gyro Stabiliised')
+  if(/^Extended/i.test(range)
+  && (!inqcharacter || !inqcharacter.has('Marksman', 'Talents'))){
+    modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
+  } else if(/^Extreme/i.test(range)){
+    modifiers.push({Name: 'Gyro-Stabilised', Value: 20});
   }
+
+  if(!braced && inqweapon.Class == 'Heavy'){
+    modifiers.push({Name: 'Gyro-Stabilised', Value: 10});
+  }
+
 }
 INQQtt.prototype.hammerBlow = function(){
   var inqcharacter = this.inquse.inqcharacter;
   var inqweapon = this.inquse.inqweapon;
   var RoF = this.inquse.options.RoF;
   var SB = this.inquse.SB;
-  if(inqcharacter.has('Hammer Blow', 'Talents') && /^\s*all\s*out\s*(attack)?\s*$/i.test(RoF)){
-    inqweapon.Penetration.Modifier += Math.ceil(SB/2);
-    inqweapon.set({Special: 'Concussive(2)'});
-  }
+  const bonus_pen =  Math.ceil(SB/2);
+  if(!inqcharacter.has('Hammer Blow', 'Talents')) return;
+  if(!/^\s*all\s*out\s*(attack)?\s*$/i.test(RoF)) return;
+  log(`Hammer Blow(${bonus_pen})`);
+  inqweapon.Penetration.Modifier += bonus_pen;
+  inqweapon.set({Special: 'Concussive(2)'});
 }
 INQQtt.prototype.horde = function() {
   var inquse = this.inquse;
@@ -4728,239 +4960,247 @@ INQQtt.prototype.hordeDmg = function(){
     this.inquse.hordeDamageMultiplier += total;
   }
 }
+INQQtt.prototype.independent= function(){
+  var inqweapon = this.inquse.inqweapon;
+  var SB = this.inquse.SB;
+  if(!inqweapon.has('Independent')) return;
+  log(`Independent(${-1 * SB})`);
+  inqweapon.Damage.Modifier -= SB;
+}
 INQQtt.prototype.indirect = function(){
   var inqweapon = this.inquse.inqweapon;
   var modifiers = this.inquse.modifiers;
   var indirect = inqweapon.has('Indirect');
-  if(indirect){
-    var total = this.getTotal(indirect);
-    this.inquse.indirect = total;
-    modifiers.push({Name: 'Indirect', Value: -10});
-  }
+  if(!indirect) return;
+  var total = this.getTotal(indirect);
+  log(`Indirect(${total})`);
+  this.inquse.indirect = total;
+  modifiers.push({Name: 'Indirect', Value: -10});
 }
 INQQtt.prototype.lance = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.inqtest.Successes;
   if(successes <= 0) return;
-  if(inqweapon.has('Lance')){
-    inqweapon.Penetration.Multiplier *= 1 + successes;
-  }
+  if(!inqweapon.has('Lance')) return;
+  log(`Lance(${1+successes})`);
+  inqweapon.Penetration.Multiplier *= 1 + successes;
 }
 INQQtt.prototype.legacy = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqweapon.has('Legacy')){
-    var bonus = inqcharacter.bonus('Renown');
-    bonus = Math.ceil(bonus/2);
-    inqweapon.Damage.Modifier += bonus;
-    inqweapon.Penetration.Modifier += bonus;
-  }
+  if(!inqweapon.has('Legacy')) return;
+  const renown = inqcharacter.bonus('Renown');
+  const bonus = Math.ceil(renown/2);
+  log(`Legacy(${bonus})`)
+  inqweapon.Damage.Modifier += bonus;
+  inqweapon.Penetration.Modifier += bonus;
 }
 INQQtt.prototype.marksman = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
   var modifiers = this.inquse.modifiers;
   var range = this.inquse.range;
-  if(inqcharacter.has('Marksman', 'Talents')){
-    if(/^Long/i.test(range)) {
-      modifiers.push({Name: 'Marksman', Value: 10});
-    } else if(/^Extended/i.test(range)) {
-      modifiers.push({Name: 'Marksman', Value: 20});
-    } else if(/^Extreme/i.test(range)) {
-      modifiers.push({Name: 'Marksman', Value: 30});
-    }
+  if(!inqcharacter.has('Marksman', 'Talents')) return;
+  if(!inqweapon.isRanged()) return;
+  log('Marksman')
+  if(/^Long/i.test(range)) {
+    modifiers.push({Name: 'Marksman', Value: 10});
+  } else if(/^Extended/i.test(range)) {
+    modifiers.push({Name: 'Marksman', Value: 20});
+  } else if(/^Extreme/i.test(range)) {
+    modifiers.push({Name: 'Marksman', Value: 30});
   }
 }
 INQQtt.prototype.maximal = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Use Maximal')){
-    this.inquse.ammoMultiplier     += 2;
-    inqweapon.Range.Multiplier     *= 1.33;
-    inqweapon.Damage.DiceNumber    += Math.round(inqweapon.Damage.DiceNumber / 2);
-    inqweapon.Damage.Modifier      += Math.round(inqweapon.Damage.Modifier / 4);
-    inqweapon.Penetration.Modifier += Math.round(inqweapon.Penetration.Modifier / 5);
-    inqweapon.set({Special: 'Recharge'});
-    var blast = inqweapon.has('Blast');
-    if(blast){
-      var total = this.getTotal(blast);
-      total = Math.ceil(total/2);
-      inqweapon.set({Special: 'Blast(' + total + ')'});
-    }
-
-    inqweapon.removeQuality('Use Maximal')
-  } else {
-    inqweapon.removeQuality('Maximal');
+  if(!inqweapon.has('Use Maximal')) return inqweapon.removeQuality('Maximal');
+  log(`Maximal`);
+  this.inquse.ammoMultiplier     += 2;
+  inqweapon.Range.Multiplier     *= 1.33;
+  inqweapon.Damage.DiceNumber    += Math.round(inqweapon.Damage.DiceNumber / 2);
+  inqweapon.Damage.Modifier      += Math.round(inqweapon.Damage.Modifier / 4);
+  inqweapon.Penetration.Modifier += Math.round(inqweapon.Penetration.Modifier / 5);
+  inqweapon.set({Special: 'Recharge'});
+  var blast = inqweapon.has('Blast');
+  if(blast){
+    var total = this.getTotal(blast);
+    total = Math.ceil(total/2);
+    inqweapon.set({Special: 'Blast(' + total + ')'});
   }
+
+  inqweapon.removeQuality('Use Maximal');
 }
 INQQtt.prototype.melta = function(){
   var inqweapon = this.inquse.inqweapon;
   var range = this.inquse.range;
-  if(inqweapon.has('Melta') && /^(Point Blank|Short)/i.test(range)){
-    inqweapon.Penetration.Multiplier *= 2;
-  }
+  if(!inqweapon.has('Melta')) return;
+  if(!/^(Point Blank|Short)/i.test(range)) return;
+  log('Melta');
+  inqweapon.Penetration.Multiplier *= 2;
 }
 INQQtt.prototype.mightyShot = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqcharacter.has('Mighty Shot', 'Talents') && inqweapon.isRanged()){
-    inqweapon.Damage.Modifier += 2;
-  }
+  if(!inqcharacter.has('Mighty Shot', 'Talents')) return;
+  if(!inqweapon.isRanged()) return;
+  log('Mighty Shot');
+  inqweapon.Damage.Modifier += 2;
 }
 INQQtt.prototype.overcharge = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Use Overcharge')){
-    this.inquse.ammoMultiplier += 2;
-    inqweapon.set({Special: 'Concussive(2), Devastating(2), Overheats, Recharge'});
-    inqweapon.removeQuality('Use Overcharge')
-  } else {
-    inqweapon.removeQuality('Overcharge');
-  }
+  if(!inqweapon.has('Use Overcharge')) return inqweapon.removeQuality('Overcharge');
+  log('Overcharge');
+  this.inquse.ammoMultiplier += 2;
+  inqweapon.set({Special: 'Concussive(2), Devastating(2), Overheats, Recharge'});
+  inqweapon.removeQuality('Use Overcharge');
 }
 INQQtt.prototype.overheats = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Overheats')){
-    this.inquse.jamResult = 'Overheats';
-    this.inquse.jamsAt = 91;
-  }
+  if(!inqweapon.has('Overheats')) return;
+  log('Overheats');
+  this.inquse.jamResult = 'Overheats';
+  this.inquse.jamsAt = 91;
 }
 INQQtt.prototype.penetration = function(){
   var inqweapon = this.inquse.inqweapon;
   var pen = inqweapon.has(/Pen(etration)?/i);
-  if(pen){
-    _.each(pen, function(value){
-      if(/=/.test(value.Name)){
-        var text = value.Name.replace('=', '');
-        var formula = new INQFormula(text);
-        inqweapon.Penetration = formula;
-      }
-    });
+  if(!pen) return;
+  _.each(pen, function(value){
+    if(/=/.test(value.Name)){
+      var text = value.Name.replace('=', '');
+      var formula = new INQFormula(text);
+      inqweapon.Penetration = formula;
+    }
+  });
 
-    var total = this.getTotal(pen, 0);
-    inqweapon.Penetration.Modifier += total;
-  }
+  var total = this.getTotal(pen, 0);
+  log(`Pen(${total})`);
+  inqweapon.Penetration.Modifier += total;
 }
 INQQtt.prototype.powerField = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Power Field')){
-    this.inquse.hordeDamage++;
-  }
+  if(!inqweapon.has('Power Field')) return;
+  log('Power Field');
+  this.inquse.hordeDamage++;
 }
 INQQtt.prototype.preciseBlow = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
   var RoF = this.inquse.options.RoF;
-  if(inqcharacter.has('Precise Blow', 'Talents')
-  && /called/i.test(RoF)
-  && inqweapon.Class == 'Melee'){
-    this.inquse.modifiers.push({Name: 'Precise Blow', Value: 10});
-  }
+  if(!inqcharacter.has('Precise Blow', 'Talents')) return;
+  if(!/called/i.test(RoF)) return;
+  if(!inqweapon.Class == 'Melee') return;
+  log('Precise Blow');
+  this.inquse.modifiers.push({Name: 'Precise Blow', Value: 10});
 }
 INQQtt.prototype.proven = function(){
   var inqweapon = this.inquse.inqweapon;
   var PR = this.inquse.PR;
   var SB = this.inquse.SB;
   var proven = inqweapon.has('Proven');
-  if(proven){
-    var largest = 1;
-    var current = 1;
-    for(value of proven){
-      var formula = new INQFormula(value.Name);
-      current = formula.roll({SB: SB, PR: PR});
-      if(current > largest) largest = current;
-    }
-
-    this.inquse.rerollDam = largest - 1;
+  if(!proven) return;
+  var largest = 1;
+  var current = 1;
+  for(value of proven){
+    var formula = new INQFormula(value.Name);
+    current = formula.roll({SB: SB, PR: PR});
+    if(current > largest) largest = current;
   }
+
+  log(`Proven(${largest})`);
+  this.inquse.rerollDam = largest - 1;
 }
 INQQtt.prototype.range = function(){
   var inqweapon = this.inquse.inqweapon;
   var range = inqweapon.has(/^range$/i);
-  if(range){
-    var rangeM = 1;
-    var rangeA = [];
-    _.each(range, function(value){
-      if(/=/.test(value.Name)){
-        var text = value.Name.replace('=', '');
-        var formula = new INQFormula(text);
-        inqweapon.Range = formula;
-      } else if(/%\s*$/.test(value.Name)) {
-        var mMatches = value.Name.match(/(\-|)\s*\d+/);
-        if(!mMatches) return log(value.Name);
-        var percent = Number(mMatches[0]) || 0;
-        rangeM *= 1 + (percent / 100);
-      } else {
-        rangeA.push(value);
-      }
-    });
+  if(!range) return;
+  var rangeM = 1;
+  var rangeA = [];
+  _.each(range, function(value){
+    if(/=/.test(value.Name)){
+      var text = value.Name.replace('=', '');
+      var formula = new INQFormula(text);
+      inqweapon.Range = formula;
+    } else if(/%\s*$/.test(value.Name)) {
+      var mMatches = value.Name.match(/(\-|)\s*\d+/);
+      if(!mMatches) return log(value.Name);
+      var percent = Number(mMatches[0]) || 0;
+      rangeM *= 1 + (percent / 100);
+    } else {
+      rangeA.push(value);
+    }
+  });
 
-    inqweapon.Range.Multiplier *= rangeM;
-    var total = this.getTotal(rangeA, -1 * inqweapon.Range.Modifier);
-    inqweapon.Range.Modifier += total;
-  }
+  inqweapon.Range.Multiplier *= rangeM;
+  var total = this.getTotal(rangeA, -1 * inqweapon.Range.Modifier);
+  log(`Range(${total})`);
+  inqweapon.Range.Modifier += total;
 }
 INQQtt.prototype.razorSharp = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.inqtest.Successes;
-  if(inqweapon.has('Razor Sharp') && successes >= 2){
-    inqweapon.Penetration.Multiplier *= 2;
-  }
+  if(!inqweapon.has('Razor Sharp')) return;
+  if(successes >= 2) return;
+  log('Razor Sharp');
+  inqweapon.Penetration.Multiplier *= 2;
 }
 INQQtt.prototype.reliable = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Reliable')){
-    this.inquse.jamsAt = 100;
-  }
+  if(!inqweapon.has('Reliable')) return;
+  log('Reliable');
+  this.inquse.jamsAt = 100;
 }
 INQQtt.prototype.scatter = function() {
   var inqweapon = this.inquse.inqweapon;
   var range = this.inquse.range;
-  if(inqweapon.has('Scatter')){
-    if(/^Point Blank/i.test(range)){
-      this.inquse.hitsMultiplier *= 2;
-    } else if(/^(Long|Extended|Extreme|Impossible)/.test(range)){
-      inqweapon.set({Special: 'Primitive'});
-    }
+  if(!inqweapon.has('Scatter')) return;
+  log('Scatter');
+  if(/^Point Blank/i.test(range)){
+    inqweapon.Damage.DiceNumber += 2;
+  } else if(/^(Long|Extended|Extreme|Impossible)/.test(range)){
+    inqweapon.set({Special: 'Primitive'});
   }
 }
 INQQtt.prototype.sharpshooter = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
   var RoF = this.inquse.options.RoF;
-  if(inqcharacter.has('Sharpshooter', 'Talents')
-  && /called/i.test(RoF)
-  && inqweapon.isRanged()){
-    this.inquse.modifiers.push({Name: 'Sharpshooter', Value: 10});
-  }
+  if(!inqcharacter.has('Sharpshooter', 'Talents')) return;
+  if(!/called/i.test(RoF)) return;
+  if(!inqweapon.isRanged()) return;
+  log('Sharpshooter')
+  this.inquse.modifiers.push({Name: 'Sharpshooter', Value: 10});
 }
 INQQtt.prototype.size = function(){
   var inqtarget = this.inquse.inqtarget;
   var modifiers = this.inquse.modifiers;
   var inqweapon = this.inquse.inqweapon;
   if(!(inqweapon.Class == 'Melee' || inqweapon.isRanged())) return;
-  var size = inqtarget.has('Size', 'Traits');
-  if(size){
-    for(var value of size){
-      if(/^(1|Miniscule)$/i.test(value.Name)){
-        modifiers.push({Name: 'Miniscule', Value: -30});
-      } else if(/^(2|Puny)$/i.test(value.Name)){
-        modifiers.push({Name: 'Puny', Value: -20});
-      } else if(/^(3|Scrawny)$/i.test(value.Name)){
-        modifiers.push({Name: 'Scrawny', Value: -10});
-      } else if(/^(4|Average)$/i.test(value.Name)){
+  var size = inqtarget.has('Size', 'Traits') || [];
+  if(inqtarget.Bio) size.push(inqtarget.Bio.Size);
+  if(!size.length) return;
+  log('Size');
+  for(var value of size){
+    if(/^(1|Miniscule)$/i.test(value.Name)){
+      modifiers.push({Name: 'Miniscule', Value: -30});
+    } else if(/^(2|Puny)$/i.test(value.Name)){
+      modifiers.push({Name: 'Puny', Value: -20});
+    } else if(/^(3|Scrawny)$/i.test(value.Name)){
+      modifiers.push({Name: 'Scrawny', Value: -10});
+    } else if(/^(4|Average)$/i.test(value.Name)){
 
-      } else if(/^(5|Hulking)$/i.test(value.Name)){
-        modifiers.push({Name: 'Hulking', Value: 10});
-      } else if(/^(6|Enormous)$/i.test(value.Name)){
-        modifiers.push({Name: 'Enormous', Value: 20});
-      } else if(/^(7|Massive)$/i.test(value.Name)){
-        modifiers.push({Name: 'Massive', Value: 30});
-      } else if(/^(8|Immense)$/i.test(value.Name)){
-        modifiers.push({Name: 'Immense', Value: 40});
-      } else if(/^(9|Monumental)$/i.test(value.Name)){
-        modifiers.push({Name: 'Monumental', Value: 50});
-      } else if(/^(10|Titanic)$/i.test(value.Name)){
-        modifiers.push({Name: 'Titanic', Value: 60});
-      }
+    } else if(/^(5|Hulking)$/i.test(value.Name)){
+      modifiers.push({Name: 'Hulking', Value: 10});
+    } else if(/^(6|Enormous)$/i.test(value.Name)){
+      modifiers.push({Name: 'Enormous', Value: 20});
+    } else if(/^(7|Massive)$/i.test(value.Name)){
+      modifiers.push({Name: 'Massive', Value: 30});
+    } else if(/^(8|Immense)$/i.test(value.Name)){
+      modifiers.push({Name: 'Immense', Value: 40});
+    } else if(/^(9|Monumental)$/i.test(value.Name)){
+      modifiers.push({Name: 'Monumental', Value: 50});
+    } else if(/^(10|Titanic)$/i.test(value.Name)){
+      modifiers.push({Name: 'Titanic', Value: 60});
     }
   }
 }
@@ -4968,80 +5208,83 @@ INQQtt.prototype.spray = function(){
   var inqweapon = this.inquse.inqweapon;
   var PR = this.inquse.PR;
   var SB = this.inquse.SB;
-  if(inqweapon.has('Spray')){
-    var hits = Math.ceil(inqweapon.Range.roll({PR: PR, SB: SB})/4) + randomInteger(5);
-    this.inquse.hordeDamageMultiplier *= hits;
-    if(inqweapon.Class != 'Psychic') this.inquse.autoHit = true;
-  }
+  if(!inqweapon.has('Spray')) return;
+  log('Spray');
+  var hits = Math.ceil(inqweapon.Range.roll({PR: PR, SB: SB})/4) + randomInteger(5);
+  this.inquse.hordeDamageMultiplier *= hits;
+  if(inqweapon.Class != 'Psychic') this.inquse.autoHit = true;
 }
 INQQtt.prototype.storm = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Storm')){
-    this.inquse.ammoMultiplier++;
-    this.inquse.hitsMultiplier++;
-  }
+  if(!inqweapon.has('Storm')) return;
+  log('Storm')
+  this.inquse.ammoMultiplier++;
+  this.inquse.hitsMultiplier++;
+  this.inquse.maxHitsMultiplier++;
 }
 INQQtt.prototype.sureStrike = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
   var RoF = this.inquse.options.RoF;
-  if(inqcharacter.has('Sure Strike', 'Talents')
-  && /called/i.test(RoF)
-  && inqweapon.Class == 'Melee'){
-    this.inquse.modifiers.push({Name: 'Sure Strike', Value: 10});
-  }
+  if(!inqcharacter.has('Sure Strike', 'Talents')) return;
+  if(!/called/i.test(RoF)) return;
+  if(!inqweapon.Class == 'Melee') return;
+  log('Sure Strike');
+  this.inquse.modifiers.push({Name: 'Sure Strike', Value: 10});
 }
 INQQtt.prototype.tainted = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqweapon.has('Tainted')){
-    inqweapon.Damage.Modifier += inqcharacter.bonus('Corruption');
-  }
+  if(!inqweapon.has('Tainted')) return;
+  log('Tainted');
+  inqweapon.Damage.Modifier += inqcharacter.bonus('Corruption');
 }
 INQQtt.prototype.tearingFleshRender = function(){
   var inqweapon = this.inquse.inqweapon;
   var inqcharacter = this.inquse.inqcharacter;
-  if(inqweapon.has('Tearing')){
-    this.inquse.dropDice = 1;
-    inqweapon.Damage.DiceNumber++;
-    if(inqcharacter
-    && inqcharacter.has('Flesh Render', 'Talents')
-    && inqweapon.Class == 'Melee'){
-      this.inquse.dropDice++;
-      inqweapon.Damage.DiceNumber++;
-    }
-  }
+  if(!inqweapon.has('Tearing')) return;
+  log('Tearing');
+  this.inquse.dropDice = 1;
+  inqweapon.Damage.DiceNumber++;
+
+  if(!inqcharacter) return;
+  if(!inqcharacter.has('Flesh Render', 'Talents')) return;
+  if(!inqweapon.Class == 'Melee') return;
+  log('Flesh Render')
+  this.inquse.dropDice++;
+  inqweapon.Damage.DiceNumber++;
 }
 INQQtt.prototype.toHit = function(){
   var inqweapon = this.inquse.inqweapon;
   var toHit = inqweapon.has(/To\s*Hit/i);
   var modifiers = this.inquse.modifiers;
-  if(toHit){
-    var total = this.getTotal(toHit);
-    modifiers.push({Name: 'Weapon', Value: total});
-  }
+  if(!toHit) return;
+  var total = this.getTotal(toHit, -100);
+  log(`To Hit(${total})`);
+  modifiers.push({Name: 'Weapon', Value: total});
 }
 INQQtt.prototype.twinLinked = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Twin-linked')){
-    this.inquse.ammoMultiplier++;
-    this.inquse.maxHitsMultiplier++;
-    if(this.inquse.mode == 'Single') this.inquse.mode = 'Semi';
-  }
+  if(!inqweapon.has('Twin-linked')) return;
+  log('Twin-linked')
+  this.inquse.ammoMultiplier++;
+  this.inquse.maxHitsMultiplier++;
+  if(this.inquse.mode == 'Single') this.inquse.mode = 'Semi';
 }
 INQQtt.prototype.unreliable = function(){
   var inqweapon = this.inquse.inqweapon;
-  if(inqweapon.has('Unreliable')){
-    this.inquse.jamsAt = 91;
-  }
+  if(!inqweapon.has('Unreliable')) return;
+  log('Unreliable');
+  this.inquse.jamsAt = 91;
 }
 INQQtt.prototype.warpConduit = function(){
   var inqcharacter = this.inquse.inqcharacter;
   var FocusStrength = this.inquse.options.FocusStrength;
-  if(inqcharacter.has('Warp Conduit', 'Talents') && /(Push|True)/i.test(FocusStrength)){
-    this.inquse.PR++;
-    this.inquse.PsyPheModifier -= 10;
-  }
+  if(!inqcharacter.has('Warp Conduit', 'Talents')) return;
+  if(!/(Push|True)/i.test(FocusStrength)) return;
+  log('Warp Conduit')
+  this.inquse.PR++;
+  this.inquse.PsyPheModifier -= 10;
 }
 //the prototype for characters
 function INQStarship(character, graphic, callback){
@@ -5333,8 +5576,8 @@ INQTest.prototype.getStats = function(inqcharacter){
     this.Stat = inqcharacter.Attributes[this.Characteristic];
     this.Unnatural = inqcharacter.Attributes['Unnatural ' + this.Characteristic];
   } else {
-    this.Stat = attributeValue(this.Characteristic);
-    this.Unnatural = attributeValue('Unnatural ' + this.Characteristic, {alert: false});
+    this.Stat = Number(attributeValue(this.Characteristic));
+    this.Unnatural = Number(attributeValue('Unnatural ' + this.Characteristic, {alert: false}));
   }
 }
 INQTest.prototype.roll = function(){
@@ -5635,24 +5878,35 @@ INQUse.prototype.applySpecialAmmo = function(){
 INQUse.prototype.calcEffectivePsyRating = function(){
   if(!this.inqcharacter) return;
   this.PR = this.inqcharacter.Attributes.PR;
+  var bonusPR = Number(this.options.BonusPR) || 0;
+  var pushPR = Number(this.options.PushPR) || 0;
   if(this.inqweapon.Class != 'Psychic') return;
   if(!this.options.FocusStrength) this.options.FocusStrength = 'Fettered';
+  var ModifierMultiplier = 0;
+  var Strength = 'Invalid';
   if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
     this.PR /= 2;
     this.PR = Math.ceil(this.PR);
+    ModifierMultiplier = 2;
+    Strength = 'Fettered';
     this.PsyPheModifier = 0;
   } else if(/^\s*Unfettered\s*$/i.test(this.options.FocusStrength)){
+    ModifierMultiplier = 3;
+    Strength = 'Unfettered';
     this.PsyPheModifier = 0;
   } else if(/^\s*Push\s*$/i.test(this.options.FocusStrength)){
-    this.PR *= 1.5;
-    this.PR = Math.ceil(this.PR);
-    this.PsyPheModifier = 10;
+    ModifierMultiplier = 5;
+    Strength = 'Push';
+    this.PsyPheModifier = pushPR * 5;
   } else if(/^\s*True\s*$/i.test(this.options.FocusStrength)){
-    this.PR *= 2;
-    this.PsyPheModifier = 50;
+    ModifierMultiplier = 10;
+    Strength = 'True';
+    this.PsyPheModifier = pushPR * 5;
   }
 
-  if(this.options.BonusPR) this.PR += Number(this.options.BonusPR);
+  this.PR += bonusPR;
+  this.PR += pushPR;
+  this.modifiers.push({Name: Strength, Value: ModifierMultiplier * this.PR});
 }
 INQUse.prototype.calcModifiers = function(){
   this.defaultProperties();
@@ -5667,10 +5921,6 @@ INQUse.prototype.calcModifiers = function(){
   this.calcEffectivePsyRating();
   if(this.inqcharacter) this.SB = this.inqcharacter.bonus('S');
   special.beforeRange();
-  if(this.PR && this.inqweapon.Class == 'Psychic') {
-    this.modifiers.push({Name: 'Psy Rating', Value: 5 * this.PR});
-  }
-
   this.calcRange();
   this.calcStatus();
   this.calcRoF();
@@ -5688,7 +5938,8 @@ INQUse.prototype.calcModifiers = function(){
   if(this.inqcharacter) this.gm = this.inqcharacter.controlledby == '';
   this.applyOptions();
   if(this.inqweapon.Class == 'Heavy' && !this.braced){
-    this.modifiers.push({Name: 'Unbraced', Value: -30});
+    whisper(this.inqcharacter.Name + ' is Unbraced.', { delay: 500 })
+    //this.modifiers.push({Name: 'Unbraced', Value: -30});
   }
 }
 INQUse.prototype.calcRange = function(){
@@ -5699,12 +5950,8 @@ INQUse.prototype.calcRange = function(){
   var range = this.inqweapon.Range.roll({PR: this.PR, SB: this.SB});
   if(!range) range = 1;
   if(this.inqweapon.Class == 'Melee') {
-    if(distance <= range){
-      this.range = 'Melee';
-    } else {
-      this.range = 'Impossible';
-      this.autoFail = true;
-    }
+    whisper(this.inqcharacter.Name + ' is out of range!', { delay: 500 });
+    this.range = 'Melee';
   } else if (distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
     this.range = 'Point Blank';
@@ -5753,7 +6000,7 @@ INQUse.prototype.calcRoF = function(){
     this.maxHits = this.inqweapon.Semi.roll({PR: this.PR, SB: this.SB});
     this.mode = 'Semi';
   } else if(/Swift/i.test(this.options.RoF)){
-    this.maxHits = Math.max(2, Math.round(this.inqcharacter.bonus('WS')/3));
+    this.maxHits = Math.max(2, Math.round(this.inqcharacter.bonus('WS')/2));
     this.mode = 'Semi';
   } else if(/Full/i.test(this.options.RoF)){
     if(this.inqweapon.Class != 'Psychic') this.modifiers.push({Name: 'Full Auto', Value: -10});
@@ -5787,6 +6034,8 @@ INQUse.prototype.calcScatter = function() {
     'S', 'SSW', 'SW', 'WSW',
     'W', 'WNW', 'NW', 'NNW'
   ];
+  log('maxHitsMultiplier')
+  log(this.maxHitsMultiplier)
   var maxHits = this.maxHits * this.maxHitsMultiplier;
   if(this.indirect) {
     for(var i = 0; i < this.hits; i++) {
@@ -5864,7 +6113,7 @@ INQUse.prototype.defaultProperties = function(){
   this.jamsAt = 101;
   this.jamResult = '?';
 
-  this.PsyPheDrop = 0;
+  this.PsyPheDropDice = 0;
   this.PsyPheModifier = 0;
 
   this.hordeDamageMultiplier = 1;
@@ -5880,7 +6129,7 @@ INQUse.prototype.defaultProperties = function(){
 INQUse.prototype.diceEvents = function(){
   var die = this.inqtest.Die;
   var tens = Math.floor(die / 10);
-  var ones = die - tens * 10;
+  var ones = (die - tens * 10) || 10;
   if(die == 100) {
     this.critical = 'Failure!';
     this.inqtest.Successes = -1;
@@ -5889,8 +6138,11 @@ INQUse.prototype.diceEvents = function(){
   }
 
   switch(this.options.FocusStrength){
+    case 'Fettered':
+      this.PsyPhe = die == 100;
+    break;
     case 'Unfettered':
-      this.PsyPhe = ones == 9;
+      this.PsyPhe = ones == tens;
     break;
     case 'Push': case 'True':
       this.PsyPhe = true;
@@ -5949,9 +6201,12 @@ INQUse.prototype.displayHitReport = function(){
   var extraLines = [];
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
+    var bonusPR = Number(this.options.BonusPR);
+    var pushPR = Number(this.options.PushPR);
+    var basePR = this.PR - bonusPR - pushPR;
     extraLines.push({
       Name: 'Psy Rating',
-      Content: '[[' + (this.PR - this.options.BonusPR) + '+' + this.options.BonusPR + ']]'
+      Content: '[[' + basePR + '+' + pushPR + '+' + bonusPR + ']]'
     });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
@@ -5961,12 +6216,12 @@ INQUse.prototype.displayHitReport = function(){
       var PsyPheDiceRule = '';
       if(this.PsyPheDropDice){
         PsyPhe.DiceNumber += this.PsyPheDropDice;
-        PsyPheDiceRule = 'dl' + this.PsyPheDropDice;
+        PsyPheDiceRule = 'dh' + this.PsyPheDropDice;
       }
 
       extraLines.push({
         Name: 'Phenomena',
-        Content: PsyPhe.toInline(PsyPheDiceRule)
+        Content: PsyPhe.toInline({dicerule: PsyPheDiceRule})
       });
     } else {
       extraLines.push({
@@ -6130,6 +6385,14 @@ INQUse.prototype.roll = function(){
     }
   }
 
+  log('=Hits=')
+  log(this.hits)
+  log('=Hits Multiplier=')
+  log(this.hitsMultiplier)
+  log('=Max Hits=')
+  log(this.maxHits)
+  log('=Max Hits Multiplier=')
+  log(this.maxHitsMultiplier)
   this.hits *= this.hitsMultiplier;
   var maxHits = this.maxHits * this.maxHitsMultiplier;
   if(this.hits > maxHits) this.hits = maxHits;
@@ -6473,15 +6736,7 @@ INQWeapon.prototype.has = function(ability){
           Bonus: rule.Bonus
         });
       }
-      _.each(newRules, function(newRule){
-        _.each(info, function(oldRule){
-          if(newRule.Name == oldRule.Name){
-            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
-            newRule.Repeat = true;
-          }
-        });
-        if(!newRule.Repeat) info.push(newRule);
-      });
+      _.each(newRules, newRule => info.push(newRule));
     }
   });
   var highestAll = -99999;
@@ -6491,10 +6746,10 @@ INQWeapon.prototype.has = function(ability){
   _.each(info, function(oldRule){
     if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
   });
-
-
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   if(info.length == 0) return undefined;
+  log(`Has ${ability} in Skills`);
+  log(info);
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   return info;
 }
 INQWeapon.prototype.isRanged = function(){
@@ -6560,7 +6815,7 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
   if(inqcharacter && this.Class == 'Psychic') {
     if(inqcharacter.has('Unbound Psyker', 'Traits')) {
       options.FocusStrength = '?{Focus Strength|Unfettered|Push|True}';
-    } else if(inqcharacter.has('Bound Psyker', 'Traits')) {
+    } else {
       options.FocusStrength = '?{Focus Strength|Fettered|Unfettered|Push}';
     }
 
@@ -6599,9 +6854,42 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     options.Special += '?{Fire on Overcharge?|Use Overcharge|}';
   }
 
-  if(!this.Damage.onlyZero()) options.target = '@{target|token_id}';
+  if(!this.Damage.onlyZero() && GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
   output += JSON.stringify(options);
   return output;
+}
+INQWeapon.prototype.toHandoutObj = function() {
+  var notes = 'Description';
+  notes += '<br><br>';
+  var properties = {
+    Class: this.Class,
+    Range: this.Range.toNote() + ' m',
+    'Rate of Fire': '',
+    Damage: this.Damage.toNote() + ' ' + this.DamageType.toNote(),
+    Penetration: this.Penetration.toNote(),
+    Clip: this.Clip,
+    Reload: '',
+    Special: '',
+    Weight: this.Weight + 'kg',
+    Requisition: this.Requisition,
+    Renown: this.Renown,
+    Availability: this.Availability,
+    Action: '',
+    'Focus Power': '',
+    Opposed: 'No',
+    Sustained: 'No'
+  };
+
+  for(var prop in properties) {
+    notes += '<strong>' + prop + '</strong>: ';
+    notes += properties[prop].toString();
+    notes += '<br>'
+  }
+
+  var weapon = createObj('handout', {name: 'New Weapon', inplayerjournal: 'all'});
+  weapon.set('notes', notes);
+  this.Name = 'New Weapon';
+  this.ObjID = weapon.id;
 }
 //turns the weapon prototype into text for an NPC's notes
 INQWeapon.prototype.toNote = function(justText){
@@ -7058,7 +7346,7 @@ function addCounter(matches, msg) {
 }
 
 on('ready', function(){
-  CentralInput.addCMD(/^!\s*add\s*counter\s*(.+\D)\s*(\d+)$/i, addCounter);
+  CentralInput.addCMD(/^!\s*add\s*counter\s*(.+\D)\s*(\d+)$/i, addCounter, true);
 });
 function attributeHandler(matches,msg,options){
   if(typeof options != 'object') options = {};
@@ -7417,20 +7705,8 @@ function defaultCharacter(playerid){
 }
 function eachCharacter(msg, givenFunction){
   if(msg.selected == undefined || msg.selected.length <= 0){
-    if(playerIsGM(msg.playerid)){
-      var gm = getObj('player', msg.playerid)
-      var pageid = gm.get('_lastpage') || Campaign().get('playerpageid');
-      msg.selected = findObjs({
-        _pageid: pageid,
-        _type: 'graphic',
-        _subtype: 'token',
-        isdrawing: false,
-        layer: 'objects'
-      });
-    } else {
-      msg.selected = [defaultCharacter(msg.playerid)];
-      if(msg.selected[0] == undefined){return;}
-    }
+    msg.selected = [defaultCharacter(msg.playerid)];
+    if(msg.selected[0] == undefined) return;
   }
 
   _.each(msg.selected, function(obj){
@@ -7987,11 +8263,16 @@ INQSelection.checkSelected = function(matches, msg) {
 
 on('ready',() => CentralInput.addCMD(/^!\s*select(ed)?\s*\?\s*$/i, INQSelection.checkSelected, true));
 INQSelection.saveSelected = function(matches, msg) {
-  INQSelection.selected = msg.selected;
-  whisper('Selection Saved.', {speakingTo: msg.playerid, gmEcho: true});
+  if(!msg.selected || !msg.selected.length) {
+    INQSelection.selected = undefined;
+    whisper('Selection Cleared.', {speakingTo: msg.playerid, gmEcho: true});
+  } else {
+    INQSelection.selected = msg.selected;
+    whisper('Selection Saved.', {speakingTo: msg.playerid, gmEcho: true});
+  }
 }
 
-on('ready',() => CentralInput.addCMD(/^!\s*select\s*$/i, INQSelection.saveSelected, true));
+on('ready',() => CentralInput.addCMD(/^!\s*(select|!)\s*$/i, INQSelection.saveSelected, true));
 INQSelection.useInitiative = function(msg) {
   if(msg.selected && msg.selected.length) return;
   var initOpen = Campaign().get('initiativepage');
@@ -8050,8 +8331,33 @@ numModifier.calc = function(stat, operator, modifier){
   }
 }
 
-numModifier.regexStr = function(){
-  return '(\\?\\s*\\+|\\?\\s*-|\\?\\s*\\*|\\?\\s*\\/|\\?|=|\\+\\s*=|-\\s*=|\\*\\s*=|\\/\\s*=)\s*(|\\+|-)'
+numModifier.regexStr = function(options){
+  options = typeof options == 'object' ? options : {};
+  var basicOperators = [
+    '\\+',
+    '-',
+    '\\*',
+    '\\/',
+  ];
+  var signs = [
+    '',
+    '\\+',
+    '-',
+  ];
+  var queryOperators = basicOperators.map(basicOperator => '\\?\\s*' + basicOperator);
+  queryOperators.push('\\?');
+  var writeOperators = basicOperators.map(basicOperator => basicOperator + '\\s*=');
+  writeOperators.push('=');
+  var operators = [];
+  if(options.queryOnly) {
+    operators = queryOperators;
+  } else if(options.writeOnly) {
+    operators = writeOperators;
+  } else {
+    operators = operators.concat(queryOperators, writeOperators);
+  }
+  
+  return '(' + operators.join('|') + ')\\s*(' + signs.join('|') + ')';
 }
 function LocalAttributes(graphic) {
   this.graphic = graphic;
@@ -11054,19 +11360,19 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
     delete mySystem;
 } 
 });//Generates a random vehicle for the use of a native Xenos
-    this.RandomVehicle = function(type, tech, creature){
+    System.prototype.RandomVehicle = function(type, tech, creature){
         //type is selected outside of this function, the type will determine the weapons, size, movement, and special abilities
         //the possibilities for type are as follows: miniature, light vehicle, transport, heavy vehicle, artillery, fighter, bomber, lander, titan
-        
-        //tech is selected outside of this function, it 
+
+        //tech is selected outside of this function, it
         //the possibilities for tech range from -3 to 1
-        
+
         //creature is the entire creature object with all of its stats and abilities
-        
+
         //create an object to contain all of the vehicle stats
         vehicle =  {WS: 0, BS:0, S:0, T:0, Ag:0, Wp:0, It:0, Pr:0, Fe:0,
                     Unnatural_WS: 0, Unnatural_BS:0, Unnatural_S:0, Unnatural_T:0, Unnatural_Ag:0, Unnatural_Wp:0, Unnatural_It:0, Unnatural_Pr:0, Unnatural_Fe:0,
-                    Weapons: [], 
+                    Weapons: [],
                     MType: "",
                     TSpeed: 0,
                     AUs: 0,
@@ -11076,7 +11382,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                     FArmour: 0, SArmour: 0, RArmour: 0,
                     CarryC: 0,
                     Special: ""};
-        
+
         //use the vehicle type to generate all of its weapons and bonuses
         switch(type){
             case "miniature":
@@ -11164,16 +11470,16 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             case "titan":
                 break;
         }
-        
+
         //randomly determine movement type
         switch(this.TechRoll(tech-1,10)){
-            case 1:  
+            case 1:
                 vehicle.Movement = "beast";
                 break;
-            case 2:  
+            case 2:
                 vehicle.Movement = "chariot";
                 break;
-            case 3: case 4: case 5:  
+            case 3: case 4: case 5:
                 vehicle.Movement = "locomotion";
                 break;
             case 6: case 7: case 8:
@@ -11183,18 +11489,19 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                 vehicle.Movement = "skimmer";
                 break;
         }
-        
-        
-    }    //Re-roll multiple dice a number of times seeking the lowest or highest result
-    this.TechRoll = function(rerolls, diceSides, diceNum){
+
+
+    }
+    //Re-roll multiple dice a number of times seeking the lowest or highest result
+    System.prototype.TechRoll = function(rerolls, diceSides, diceNum){
         //how many dice are we rolling each time?
         diceNum = diceNum || 1;
         //is this a D5, D10, D100, etc?
         diceSides = diceSides || 10;
-        //how many times are we attempting to reroll this 
+        //how many times are we attempting to reroll this
         //and are we searching for the lowest (negative) or the highest (positive)
         rerolls = rerolls || -1;
-        
+
         //save the output
         var output = 0;
         //roll the dice for the first time
@@ -11207,7 +11514,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //keep rerolling for all of the rerolls
         for(var i = 0; i < Math.abs(rerolls); i++){
             //make a temporary variable for each re-roll
-            var temproll = 0;    
+            var temproll = 0;
             //keep rolling dice for the roll up to diceNum
             for(var j = 0; j < diceNum; j++){
                 //roll a D5, D10, etc as speciied
@@ -11223,9 +11530,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         //report the final roll
         return output;
     }
-    
+
     //Generates a random weapon to detail a native creature or their vehicle.
-    this.RandomWeapon = function(type, tech, qualities, blast, rangemultiplier, clipmultiplier){
+    System.prototype.RandomWeapon = function(type, tech, qualities, blast, rangemultiplier, clipmultiplier){
       //==input==
         //what type of weapon is this? (Melee, Thrown, Pistol, Basic, Heavy, Superheavy)
         type = type || "melee"
@@ -11244,11 +11551,11 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
       //==output==
         //create an object that will contain all of the weapon's stats
         weapon = {};
-    
+
         //how many qualities does this weapon have?
         var totalQualities = this.TechRoll(tech,5)-1;
         weapon.Qualities = "";
-    
+
         //which type of weapon are we working with?
         switch(type){
             case "thrown":
@@ -11399,7 +11706,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         } else{
             weapon.Range = 0;
         }
-        
+
         //determine the damage type (Impact, Rending, Explosive, Energy)
         //lower tech nations are much more likely to have impact weapons
         switch(this.TechRoll(tech,10)){
@@ -11423,7 +11730,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
             //reduce the number of weapon qualities by one
             totalQualities--;
         }
-        
+
         //add the total number of random qualities to the weapon
         var randomQuality;
         //preset all of the valued qualities to negative one
@@ -11561,7 +11868,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                                 break;
                             case 2:
                                 weapon.Qualities += getLink("Defensive") + ", ";
-                                break;    
+                                break;
                             case 3:
                                 weapon.Qualities += getLink("Fist") + ", ";
                                 break;
@@ -11646,7 +11953,7 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
                         }
                     }
             }
-            
+
         }
         //add the numerical qualities to the weapons
         if(weapon.Blast >= 0){
@@ -11694,8 +12001,9 @@ if(msg.type == "api" && msg.content.indexOf("!NewSystem") == 0 && playerIsGM(msg
         weapon.Qualities = weapon.Qualities.substring(0,weapon.Qualities.length - 2);
         //return all the aspects of the weapon
         return weapon;
-    }    //Generates a random Xenos to complicate a planet or adventure. Saves it into a handout.
-    RandomCreature  = function(input,location) {
+    }
+    //Generates a random Xenos to complicate a planet or adventure. Saves it into a handout.
+    System.prototype.RandomCreature  = function(input,location) {
         input = input || "";
 
         input = input.toLowerCase();

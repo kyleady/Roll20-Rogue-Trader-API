@@ -24,7 +24,7 @@ INQLinkParser.prototype.parse = function(text){
       this.Bonus = Number(matches[4].replace('–', '-') + matches[5]);
     }
   } else {
-    whisper('Invalid INQLink');
+    //whisper('Invalid INQLink');
     log('Invalid INQLink');
     log(text);
   }

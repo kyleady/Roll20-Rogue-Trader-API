@@ -6,12 +6,8 @@ INQUse.prototype.calcRange = function(){
   var range = this.inqweapon.Range.roll({PR: this.PR, SB: this.SB});
   if(!range) range = 1;
   if(this.inqweapon.Class == 'Melee') {
-    if(distance <= range){
-      this.range = 'Melee';
-    } else {
-      this.range = 'Impossible';
-      this.autoFail = true;
-    }
+    whisper(this.inqcharacter.Name + ' is out of range!', { delay: 500 });
+    this.range = 'Melee';
   } else if (distance <= 2) {
     this.modifiers.push({Name: 'Point Blank', Value: 30});
     this.range = 'Point Blank';

@@ -11,10 +11,6 @@ INQUse.prototype.calcModifiers = function(){
   this.calcEffectivePsyRating();
   if(this.inqcharacter) this.SB = this.inqcharacter.bonus('S');
   special.beforeRange();
-  if(this.PR && this.inqweapon.Class == 'Psychic') {
-    this.modifiers.push({Name: 'Psy Rating', Value: 5 * this.PR});
-  }
-
   this.calcRange();
   this.calcStatus();
   this.calcRoF();
@@ -32,6 +28,7 @@ INQUse.prototype.calcModifiers = function(){
   if(this.inqcharacter) this.gm = this.inqcharacter.controlledby == '';
   this.applyOptions();
   if(this.inqweapon.Class == 'Heavy' && !this.braced){
-    this.modifiers.push({Name: 'Unbraced', Value: -30});
+    whisper(this.inqcharacter.Name + ' is Unbraced.', { delay: 500 })
+    //this.modifiers.push({Name: 'Unbraced', Value: -30});
   }
 }

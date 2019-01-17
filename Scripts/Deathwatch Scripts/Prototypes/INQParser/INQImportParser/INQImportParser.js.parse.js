@@ -1,11 +1,14 @@
 INQImportParser.prototype.parse = function(text){
   //split the input by line
-  var lines = text.split(/\s*<br>\s*/);
+  text = this.clean(text);
+  var lines = text.split(/\s*<(?:\/?p|br)[^>]*>\s*/);
   //disect each line into label and content (by the colon)
   var labeled = [];
   var unlabeled = [];
   this.SpecialRules = [];
+  log('==Lines==');
   _.each(lines,function(line){
+    log(line);
     if(line.match(/:/g)){
       //disect the content by label
       var label = line.substring(0,line.indexOf(":"));
@@ -24,6 +27,10 @@ INQImportParser.prototype.parse = function(text){
     }
   });
 
+  log('==Labeled==')
+  log(labeled)
+  log('==Unlabeled==')
+  log(unlabeled)
   //interpret the lines
   this.interpretLabeled(labeled);
   this.saveProperty(this.SpecialRules, "SpecialRules");

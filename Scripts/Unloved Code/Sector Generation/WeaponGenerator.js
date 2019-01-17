@@ -1,13 +1,13 @@
     //Re-roll multiple dice a number of times seeking the lowest or highest result
-    this.TechRoll = function(rerolls, diceSides, diceNum){
+    System.prototype.TechRoll = function(rerolls, diceSides, diceNum){
         //how many dice are we rolling each time?
         diceNum = diceNum || 1;
         //is this a D5, D10, D100, etc?
         diceSides = diceSides || 10;
-        //how many times are we attempting to reroll this 
+        //how many times are we attempting to reroll this
         //and are we searching for the lowest (negative) or the highest (positive)
         rerolls = rerolls || -1;
-        
+
         //save the output
         var output = 0;
         //roll the dice for the first time
@@ -20,7 +20,7 @@
         //keep rerolling for all of the rerolls
         for(var i = 0; i < Math.abs(rerolls); i++){
             //make a temporary variable for each re-roll
-            var temproll = 0;    
+            var temproll = 0;
             //keep rolling dice for the roll up to diceNum
             for(var j = 0; j < diceNum; j++){
                 //roll a D5, D10, etc as speciied
@@ -36,9 +36,9 @@
         //report the final roll
         return output;
     }
-    
+
     //Generates a random weapon to detail a native creature or their vehicle.
-    this.RandomWeapon = function(type, tech, qualities, blast, rangemultiplier, clipmultiplier){
+    System.prototype.RandomWeapon = function(type, tech, qualities, blast, rangemultiplier, clipmultiplier){
       //==input==
         //what type of weapon is this? (Melee, Thrown, Pistol, Basic, Heavy, Superheavy)
         type = type || "melee"
@@ -57,11 +57,11 @@
       //==output==
         //create an object that will contain all of the weapon's stats
         weapon = {};
-    
+
         //how many qualities does this weapon have?
         var totalQualities = this.TechRoll(tech,5)-1;
         weapon.Qualities = "";
-    
+
         //which type of weapon are we working with?
         switch(type){
             case "thrown":
@@ -212,7 +212,7 @@
         } else{
             weapon.Range = 0;
         }
-        
+
         //determine the damage type (Impact, Rending, Explosive, Energy)
         //lower tech nations are much more likely to have impact weapons
         switch(this.TechRoll(tech,10)){
@@ -236,7 +236,7 @@
             //reduce the number of weapon qualities by one
             totalQualities--;
         }
-        
+
         //add the total number of random qualities to the weapon
         var randomQuality;
         //preset all of the valued qualities to negative one
@@ -374,7 +374,7 @@
                                 break;
                             case 2:
                                 weapon.Qualities += getLink("Defensive") + ", ";
-                                break;    
+                                break;
                             case 3:
                                 weapon.Qualities += getLink("Fist") + ", ";
                                 break;
@@ -459,7 +459,7 @@
                         }
                     }
             }
-            
+
         }
         //add the numerical qualities to the weapons
         if(weapon.Blast >= 0){

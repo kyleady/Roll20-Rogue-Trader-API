@@ -1,19 +1,7 @@
 function eachCharacter(msg, givenFunction){
   if(msg.selected == undefined || msg.selected.length <= 0){
-    if(playerIsGM(msg.playerid)){
-      var gm = getObj('player', msg.playerid)
-      var pageid = gm.get('_lastpage') || Campaign().get('playerpageid');
-      msg.selected = findObjs({
-        _pageid: pageid,
-        _type: 'graphic',
-        _subtype: 'token',
-        isdrawing: false,
-        layer: 'objects'
-      });
-    } else {
-      msg.selected = [defaultCharacter(msg.playerid)];
-      if(msg.selected[0] == undefined){return;}
-    }
+    msg.selected = [defaultCharacter(msg.playerid)];
+    if(msg.selected[0] == undefined) return;
   }
 
   _.each(msg.selected, function(obj){

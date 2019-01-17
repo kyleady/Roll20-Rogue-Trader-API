@@ -3,6 +3,7 @@ INQClip.prototype.spend = function(){
   if(!this.clipObj) return true;
   var clip = Number(this.clipObj.get('current'));
   var total = this.options.shots || 1;
+  log(this.options.ammoMultilpier)
   total *= this.options.ammoMultilpier || 1;
   clip -= total;
   if(clip < 0) {

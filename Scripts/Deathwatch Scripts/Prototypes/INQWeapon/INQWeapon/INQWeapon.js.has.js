@@ -20,15 +20,7 @@ INQWeapon.prototype.has = function(ability){
           Bonus: rule.Bonus
         });
       }
-      _.each(newRules, function(newRule){
-        _.each(info, function(oldRule){
-          if(newRule.Name == oldRule.Name){
-            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
-            newRule.Repeat = true;
-          }
-        });
-        if(!newRule.Repeat) info.push(newRule);
-      });
+      _.each(newRules, newRule => info.push(newRule));
     }
   });
   var highestAll = -99999;
@@ -38,9 +30,9 @@ INQWeapon.prototype.has = function(ability){
   _.each(info, function(oldRule){
     if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
   });
-
-
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   if(info.length == 0) return undefined;
+  log(`Has ${ability} in Skills`);
+  log(info);
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   return info;
 }

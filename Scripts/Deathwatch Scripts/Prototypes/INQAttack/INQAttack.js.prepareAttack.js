@@ -3,9 +3,15 @@ INQAttack.prototype.prepareAttack = function(){
   special.beforeDamage();
   if(this.inquse.inqweapon.Class == 'Melee') this.inquse.inqweapon.Damage.Modifier += this.inquse.SB;
   if(this.inquse.hits) {
-    this.hordeDamage = this.inquse.hits;
-    this.hordeDamage *= this.inquse.hordeDamageMultiplier;
-    this.hordeDamage += this.inquse.hordeDamage;
+    if(this.inquse.inqweapon.Class == 'Psychic') {
+      this.hordeDamage = this.inquse.PR;
+      if(this.inquse.inqweapon.has('Blast')) this.hordeDamage += randomInteger(10);
+    } else {
+      this.hordeDamage = this.inquse.hits;
+      this.hordeDamage *= this.inquse.hordeDamageMultiplier;
+      this.hordeDamage += this.inquse.hordeDamage;
+    }
+
     attributeValue('Hits', {setTo: this.hordeDamage});
     attributeValue('Hits', {setTo: this.hordeDamage, max: true});
   }

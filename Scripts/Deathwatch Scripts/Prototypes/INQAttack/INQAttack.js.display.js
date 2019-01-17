@@ -25,5 +25,5 @@ INQAttack.prototype.display = function(extraLines){
     output += '}} ';
   }
 
-  announce(output, {speakingAs: 'player|' + this.inquse.playerid});
+  announce(output, {speakingAs: 'player|' + this.inquse.playerid, delay: 200});
 }

@@ -25,12 +25,14 @@ INQCharacter.prototype.has = function(ability, list){
         });
       }
       _.each(newRules, function(newRule){
-        _.each(info, function(oldRule){
-          if(newRule.Name == oldRule.Name){
-            if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
-            newRule.Repeat = true;
-          }
-        });
+        if(list == 'Skills'){
+          _.each(info, function(oldRule){
+            if(newRule.Name == oldRule.Name){
+              if(newRule.Bonus > oldRule.Bonus) oldRule.Bonus = newRule.Bonus;
+              newRule.Repeat = true;
+            }
+          });
+        }
         if(!newRule.Repeat) info.push(newRule);
       });
     }
@@ -43,8 +45,9 @@ INQCharacter.prototype.has = function(ability, list){
     if(highestAll > oldRule.Bonus) oldRule.Bonus = highestAll;
   });
 
-
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   if(info.length == 0) return undefined;
+  log(`Has ${ability} in ${list}`);
+  log(info);
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
   return info;
 }

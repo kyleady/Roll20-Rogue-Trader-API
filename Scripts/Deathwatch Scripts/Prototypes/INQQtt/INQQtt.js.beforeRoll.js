@@ -1,4 +1,5 @@
 INQQtt.prototype.beforeRoll = function(){
+  log('===QTT Before Roll===')
   if(this.inquse.inqcharacter){
     this.autoStabilised();
     this.bulgingBiceps();
@@ -19,6 +20,7 @@ INQQtt.prototype.beforeRoll = function(){
   this.horde();
   this.indirect();
   this.overcharge();
+  this.scatter();
   this.spray();
   this.storm();
   this.toHit();
@@ -26,4 +28,5 @@ INQQtt.prototype.beforeRoll = function(){
   this.overheats();
   this.reliable();
   this.unreliable();
+  log('=');
 }

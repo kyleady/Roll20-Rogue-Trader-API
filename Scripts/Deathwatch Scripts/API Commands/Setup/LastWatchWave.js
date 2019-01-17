@@ -1,8 +1,13 @@
 function lastWatchWave (matches, msg) {
   var Troops = Number(matches[1]);
+  var Wave = matches[2] || '';
+  Wave = Wave.trim();
+  if(matches[2]) {
+    Troops *= Math.ceil(Math.pow(1.5, Wave));
+  }
   var Elite = 0;
   var Master = 0;
-  var Chance = matches[2] || 60;
+  var Chance = matches[3] || 60;
   Chance = Number(Chance);
   var MasterPotential = Math.floor(Troops / 16);
   for (var i = 0; i < MasterPotential; i++) {
@@ -27,5 +32,5 @@ function lastWatchWave (matches, msg) {
 }
 
 on("ready", function(){
-  CentralInput.addCMD(/^!\s*last\s*watch\s*wave\s*(\d+)\s*(?:(\d+)%)?\s*$/i, lastWatchWave);
+  CentralInput.addCMD(/^!\s*wave\s*(\d+)\s*(?:x\s*(\d+))?\s*(?:p\s*(\d+))?\s*$/i, lastWatchWave);
 });

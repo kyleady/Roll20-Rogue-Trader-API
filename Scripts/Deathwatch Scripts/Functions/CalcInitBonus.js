@@ -4,11 +4,22 @@ function calcInitBonus(charObj, graphicObj, initCallback){
   charObj = charObj || {};
   graphicObj = graphicObj || {};
   //if this character sheet has Detection, then it is a starship
-  if(findObjs({
-    _type: "attribute",
-    name: "Detection",
-    _characterid: charObj.id
-  })[0] != undefined){
+  if (
+    findObjs({
+      _type: "attribute",
+      name: "Initiative",
+      _characterid: charObj.id
+    })[0] != undefined
+  ){
+    var initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
+    if(typeof initCallback == 'function') initCallback(initBonus);
+  } else if(
+    findObjs({
+      _type: "attribute",
+      name: "Detection",
+      _characterid: charObj.id
+    })[0] != undefined
+  ){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
     var DetectionBonus = Math.floor(Detection/10);

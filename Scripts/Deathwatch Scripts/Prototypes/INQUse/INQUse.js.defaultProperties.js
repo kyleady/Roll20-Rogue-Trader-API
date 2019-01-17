@@ -7,7 +7,7 @@ INQUse.prototype.defaultProperties = function(){
   this.jamsAt = 101;
   this.jamResult = '?';
 
-  this.PsyPheDrop = 0;
+  this.PsyPheDropDice = 0;
   this.PsyPheModifier = 0;
 
   this.hordeDamageMultiplier = 1;
