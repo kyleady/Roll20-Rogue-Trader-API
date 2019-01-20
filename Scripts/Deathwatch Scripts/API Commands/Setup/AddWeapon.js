@@ -69,7 +69,7 @@ var INQAttack_old = INQAttack_old || {};
 }
 
 on('ready', function(){
-  var regex = '^!\\s*add\\s*weapon';
+  var regex = '^!\\s*(?:add|give)\\s*weapon';
   regex += '\\s+(\\S[^\\(\\)\\[\\]]*)';
   regex += '(?:';
   regex += '\\(([^\\(\\)]+)\\)';
