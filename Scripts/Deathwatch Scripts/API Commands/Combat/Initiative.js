@@ -124,10 +124,10 @@ on("ready",function(){
   //same as above, except this is a querry without any modifiers
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler,true);
 
-  //similar to above, but allows the gm to roll and edit initiative with modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler);
-  //similar to above, but allows the gm to roll and edit initiative without modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler);
+  //similar to above, but allows the player to roll and edit initiative with modifiers
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler, true);
+  //similar to above, but allows the player to roll and edit initiative without modifiers
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler, true);
   //allow the gm to clear the turn tracker
   CentralInput.addCMD(/^!\s*init(?:iative)?\s+(clear|reset)$/i, function(){
     Campaign().set("turnorder", "");
