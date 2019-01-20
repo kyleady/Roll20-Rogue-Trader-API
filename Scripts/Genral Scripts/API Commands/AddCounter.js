@@ -7,13 +7,14 @@ function addCounter(matches, msg) {
   } else {
     turnorder = [];
   }
-  turnorder.unshift({
+  turnorder.push({
     id: '-1',
     pr: turns,
     custom: name.trim(),
     formula: '-1'
   });
   Campaign().set('turnorder', JSON.stringify(turnorder));
+  whisper('Counter added.', { speakingTo: msg.playerid, gmEcho: true });
 }
 
 on('ready', function(){
