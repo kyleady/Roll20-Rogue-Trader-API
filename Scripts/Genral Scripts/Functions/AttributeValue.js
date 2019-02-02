@@ -1,4 +1,5 @@
 function attributeValue(name, options){
+  if(INQ_CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(typeof options != 'object') options = false;
   options = options || {};
   if(options['alert'] == undefined) options['alert'] = true;
@@ -43,6 +44,11 @@ function attributeValue(name, options){
     }
 
     options['characterid'] = graphic.get('represents');
+  }
+
+  if(options['characterid'] && options['setTo'] == undefined) {
+    const value = getAttrByName(options['characterid'], name, workingWith);
+    if(value != undefined) return value;
   }
 
   var attribute = getAttribute(name, options);
