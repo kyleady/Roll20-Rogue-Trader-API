@@ -90,13 +90,7 @@ INQCharacterSheet.prototype.getSkills = function() {
     }
   }
 
-  const characterid = this.characterid;
-  const extra_skills = filterObjs((obj) => {
-    if(obj.get('_type') != 'attribute') return false;
-    if(obj.get('_characterid') != characterid) return false;
-    return /^repeating_advancedskills_[^_]+_advancedskillname$/.test(obj.get('name'));
-  });
-
+  const extra_skills = this.getRepeating(/^repeating_advancedskills_[^_]+_advancedskillname$/);
   for (let extra_skill of extra_skills) {
     let skill_name = extra_skill.get('current');
     let modifier_name = extra_skill.get('name').replace(/name$/, 'box');

@@ -2257,8 +2257,10 @@ function calcInitBonus(charObj, graphicObj, initCallback){
 "RunMove"
 
 //Special Rules
-"repeating_sabilities_-LXWc09nIZ5LbyjBZzSM_othernotesRe"
+"SpecialTitle"
 "Specialnotes"
+"repeating_sabilities_-LXlHyv6o8JiUUHgBhx4_SpecialTitleRe"
+"repeating_sabilities_-LXlHyv6o8JiUUHgBhx4_othernotesRe"
 
 //skills
 "AcrobaticsCharacteristic"
@@ -4265,6 +4267,19 @@ function INQCharacterSheet() {}
 
 INQCharacterSheet.prototype = Object.create(INQCharacter.prototype);
 INQCharacterSheet.prototype.constructor = INQCharacterSheet;
+INQCharacterSheet.prototype.getList = function(re, first_name) {
+  const objs = this.getRepeating(re, first_name);
+  const list_of_names = objs.map((obj) => new INQLink(obj.get('current')));
+  return list_of_names;
+}
+INQCharacterSheet.prototype.getRepeating = function(re, first_name) {
+  return filterObjs((obj) => {
+    if(obj.get('_type') != 'attribute') return false;
+    if(obj.get('_characterid') != this.characterid) return false;
+    if(obj.get('name') == first_name) return true;
+    return re.test(obj.get('name'));
+  });
+}
 INQCharacterSheet.prototype.getSkill = function(skill_name, group_name, modifier_name) {
   //should add in logic for custom default characteristic
   modifier_name = modifier_name || group_name || skill_name;
@@ -4374,13 +4389,7 @@ INQCharacterSheet.prototype.getSkills = function() {
     }
   }
 
-  const characterid = this.characterid;
-  const extra_skills = filterObjs((obj) => {
-    if(obj.get('_type') != 'attribute') return false;
-    if(obj.get('_characterid') != characterid) return false;
-    return /^repeating_advancedskills_[^_]+_advancedskillname$/.test(obj.get('name'));
-  });
-
+  const extra_skills = this.getRepeating(/^repeating_advancedskills_[^_]+_advancedskillname$/);
   for (let extra_skill of extra_skills) {
     let skill_name = extra_skill.get('current');
     let modifier_name = extra_skill.get('name').replace(/name$/, 'box');
@@ -4388,6 +4397,26 @@ INQCharacterSheet.prototype.getSkills = function() {
   }
 
   return skills;
+}
+INQCharacterSheet.prototype.getSpecialRules = function() {
+  const title_re = /^repeating_sabilities_([^_]+)_SpecialTitleRe$/;
+  const titles = this.getRepeating(title_re);
+  const options = { characterid: this.characterid, graphicid: this.graphicid };
+  const specialRules = [{
+    Name: attributeValue("SpecialTitle", options),
+    Rule: attributeValue("Specialnotes", options)
+  }];
+
+  titles.forEach((title) => {
+    const matches = title.get('name').match(title_re);
+    const rule_id = matches[1];
+    specialRules.push({
+      Name: title.get('current'),
+      Rule: attributeValue(`repeating_sabilities_${rule_id}_othernotesRe`, options)
+    });
+  });
+
+  return specialRules;
 }
 INQCharacterSheet.listArmour = function() {
   return {
@@ -4474,7 +4503,13 @@ INQCharacterSheet.prototype.parseAttributes = function() {
   }
 }
 INQCharacterSheet.prototype.parseRepeating = function() {
-  this.List.Skills = this.getSkills();
+  this.List.Skills            = this.getSkills();
+  this.List["Psychic Powers"] = this.getList(/^repeating_psypowers_[^_]+_PsyName2?$/);
+  this.List.Weapons           = this.getList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
+  this.List.Gear              = this.getList(/^repeating_gears_[^_]+_Gears$/, "GearCarry");
+  this.List.Talents           = this.getList(/^repeating_talents_[^_]+_Talents$/, "Talent");
+  this.List.Traits            = this.getList(/^repeating_abilities_[^_]+_Abilities$/, "Ability");
+  this.SpecialRules           = this.getSpecialRules();
 }
 INQCharacterSheet.translateAttribute = function(old_name) {
   return INQCharacterSheet.listArmour()[old_name] ||

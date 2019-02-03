@@ -48,8 +48,10 @@
 "RunMove"
 
 //Special Rules
-"repeating_sabilities_-LXWc09nIZ5LbyjBZzSM_othernotesRe"
+"SpecialTitle"
 "Specialnotes"
+"repeating_sabilities_-LXlHyv6o8JiUUHgBhx4_SpecialTitleRe"
+"repeating_sabilities_-LXlHyv6o8JiUUHgBhx4_othernotesRe"
 
 //skills
 "AcrobaticsCharacteristic"
