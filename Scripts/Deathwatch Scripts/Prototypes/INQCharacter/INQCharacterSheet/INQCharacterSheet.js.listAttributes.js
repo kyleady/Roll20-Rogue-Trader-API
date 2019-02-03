@@ -1,4 +1,4 @@
-INQCharacterSheet.attributes = () => {
+INQCharacterSheet.listAttributes = function() {
   return {
     "Fate": "Fate",
     "Fatigue": "Fatigue",

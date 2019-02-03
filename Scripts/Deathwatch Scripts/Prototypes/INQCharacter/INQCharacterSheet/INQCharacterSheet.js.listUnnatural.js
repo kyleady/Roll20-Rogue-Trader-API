@@ -1,4 +1,4 @@
-INQCharacterSheet.unnatural = () => {
+INQCharacterSheet.listUnnatural = function() {
   return {
     "Unnatural WS": "UnWS",
     "Unnatural BS": "UnBS",

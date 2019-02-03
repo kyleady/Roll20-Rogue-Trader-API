@@ -3652,6 +3652,7 @@ INQTime.toString = function(input, type) {
 
   return output;
 }
+INQ_VARIABLES = {};
 function INQAttack(inquse){
   this.inquse = inquse;
 }
@@ -3783,8 +3784,16 @@ function INQCharacter(character, graphic, callback){
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
 
-  //allow the user to immediately parse a character in the constructor
   var inqcharacter = this;
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+    Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
+    inqcharacter.parse(character, graphic);
+    callback(inqcharacter);
+    return;
+  }
+
+  //allow the user to immediately parse a character in the constructor
+
   var myPromise = new Promise(function(resolve){
     if(character != undefined){
       if(typeof character == "string"){
@@ -3793,7 +3802,7 @@ function INQCharacter(character, graphic, callback){
         resolve(inqcharacter);
       } else {
         Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
-        inqcharacter.parse(character, graphic, function(){
+        inqcharacter.parse(character, graphic, (inqcharacter) => {
           resolve(inqcharacter);
         });
       }
@@ -3802,7 +3811,12 @@ function INQCharacter(character, graphic, callback){
     }
   });
 
-  myPromise.catch(function(e){log(e)});
+  myPromise.catch(function(e){
+    log('INQCharacter Error');
+    log(character)
+    log(graphic)
+    log(e);
+  });
   myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());
@@ -4247,10 +4261,135 @@ INQCharacterParser.prototype.parseMovement = function(){
 INQCharacterParser.prototype.parseSpecialRules = function(){
   this.SpecialRules = this.Content.Rules;
 }
-function INQCharacterSheet(characterid) {
-  this.characterid = characterid;
+function INQCharacterSheet() {}
+
+INQCharacterSheet.prototype = Object.create(INQCharacter.prototype);
+INQCharacterSheet.prototype.constructor = INQCharacterSheet;
+INQCharacterSheet.prototype.getSkill = function(skill_name, group_name, modifier_name) {
+  //should add in logic for custom default characteristic
+  modifier_name = modifier_name || group_name || skill_name;
+  let modifier = -20;
+  for(let count = 1; count <= 4; count++) {
+    modifier += Number(attributeValue(`${modifier_name}${count}`, {
+      characterid: this.characterid,
+      graphicid: this.graphicid
+    }));
+  }
+
+  let text = skill_name;
+  if(group_name) text += `(${group_name})`;
+  const inqlink = new INQLink(text);
+  inqlink.Bonus = modifier;
+  return inqlink;
 }
-INQCharacterSheet.armour = () => {
+INQCharacterSheet.prototype.getSkills = function() {
+  const skills = [];
+  const base_skills = [
+    "Acrobatics",
+    "Athletics",
+    "Awareness",
+    "Charm",
+    "Command",
+    "Commerce",
+    "Deceive",
+    "Inquiry",
+    "Interrogation",
+    "Intimidate",
+    "Logic",
+    "Medicae",
+    "Psyniscience",
+    "Scrutiny",
+    "Security",
+    "Stealth",
+    "Survival"
+  ];
+  skills.push(this.getSkill("Tech Use", undefined, "TechUse"));
+  skills.push(this.getSkill("Sleight Of Hand", undefined, "SleightOfHand"));
+  for (let skill_name of base_skills) {
+    skills.push(this.getSkill(skill_name));
+  }
+
+  const navigation_groups = [
+    "Surface",
+    "Warp",
+    "Stellar"
+  ];
+  for(let group_name of navigation_groups) {
+    skills.push(this.getSkill("Navigate", group_name));
+  }
+
+  skills.push(this.getSkill("Operate", "Surface", "OSurface"));
+  const operate_groups = [
+    "Aeronautica",
+    "Voidship"
+  ];
+  for(let group_name of navigation_groups) {
+    skills.push(this.getSkill("Operate", group_name));
+  }
+
+  const custom_groups = [
+    {
+      'count': 3,
+      'modifier_name': 'Language',
+      'skill_name': 'Linguistics'
+    },
+    {
+      'count': 4,
+      'modifier_name': 'Trade',
+      'skill_name': 'Trade'
+    },
+    {
+      'count': 4,
+      'modifier_name': 'Common',
+      'skill_name': 'Common Lore'
+    },
+    {
+      'count': 6,
+      'modifier_name': 'Scholastic',
+      'skill_name': 'Scholastic Lore'
+    },
+    {
+      'count': 6,
+      'modifier_name': 'Forbidden',
+      'skill_name': 'Forbidden Lore'
+    }
+  ];
+  const counters = [
+    "1st",
+    "2nd",
+    "3rd",
+    "4th",
+    "5th",
+    "6th"
+  ];
+  for (let custom_group of custom_groups) {
+    let modifier_name = custom_group['modifier_name'];
+    let skill_name = custom_group['skill_name'];
+    for (let count = 1; count <= 6; count++) {
+      if(count >= custom_group['count']) break;
+      let counter = counters[count];
+      let group_name = getAttrByName(this.characterid, `${counter}${modifier_name}`);
+      if(!group_name) continue;
+      skills.push(this.getSkill(skill_name, group_name, `${counter}${modifier_name}`));
+    }
+  }
+
+  const characterid = this.characterid;
+  const extra_skills = filterObjs((obj) => {
+    if(obj.get('_type') != 'attribute') return false;
+    if(obj.get('_characterid') != characterid) return false;
+    return /^repeating_advancedskills_[^_]+_advancedskillname$/.test(obj.get('name'));
+  });
+
+  for (let extra_skill of extra_skills) {
+    let skill_name = extra_skill.get('current');
+    let modifier_name = extra_skill.get('name').replace(/name$/, 'box');
+    skills.push(this.getSkill(skill_name, undefined, modifier_name));
+  }
+
+  return skills;
+}
+INQCharacterSheet.listArmour = function() {
   return {
     "Armour_H":  "HArmour",
     "Armour_RA": "ArArmour",
@@ -4260,7 +4399,7 @@ INQCharacterSheet.armour = () => {
     "Armour_LL": "LlArmour"
   }
 }
-INQCharacterSheet.attributes = () => {
+INQCharacterSheet.listAttributes = function() {
   return {
     "Fate": "Fate",
     "Fatigue": "Fatigue",
@@ -4270,7 +4409,7 @@ INQCharacterSheet.attributes = () => {
     "Corruption": "Corruption"
   }
 }
-INQCharacterSheet.characteristics = () => {
+INQCharacterSheet.listCharacteristics = function() {
   return {
     "WS":"WeaponSkill",
     "It": "Intelligence",
@@ -4284,14 +4423,7 @@ INQCharacterSheet.characteristics = () => {
     "Renown": "Influence"
   }
 }
-INQCharacterSheet.translateAttribute = (old_name) => {
-  return INQCharacterSheet.armour()[old_name] ||
-    INQCharacterSheet.attributes()[old_name] ||
-    INQCharacterSheet.characteristics()[old_name] ||
-    INQCharacterSheet.unnatural()[old_name] ||
-    old_name;
-}
-INQCharacterSheet.unnatural = () => {
+INQCharacterSheet.listUnnatural = function() {
   return {
     "Unnatural WS": "UnWS",
     "Unnatural BS": "UnBS",
@@ -4304,6 +4436,52 @@ INQCharacterSheet.unnatural = () => {
     "Unnatural Fe": "UnFel",
     "Unnatural Renown": "UnInf"
   }
+}
+INQCharacterSheet.prototype.parse = function(character, graphic) {
+  this.characterid = character.id;
+  this.graphicid = graphic.id;
+  this.parseAttributes();
+  this.parseRepeating();
+}
+INQCharacterSheet.prototype.parseAttributes = function() {
+  /*
+  const attr_lists = [
+    INQCharacterSheet.armour(),
+    INQCharacterSheet.attributes(),
+    INQCharacterSheet.characteristics(),
+    INQCharacteristics.unnatural()
+  ];
+
+  for(let attr_list of attr_lists) {
+    for(let old_name in attr_list) {
+      let new_name = attr_list[old_name];
+      this.Attributes[old_name] = attributeValue(new_name, {
+                                                  graphicid: this.graphicid,
+                                                  characterid: this.characterid
+                                                });
+    }
+  }
+  */
+  for(let old_name in this.Attributes) {
+      let new_value = attributeValue(old_name, {
+                                                  graphicid: this.graphicid,
+                                                  characterid: this.characterid
+                                                });
+      this.Attributes[old_name] = Number(new_value);
+      if(this.Attributes[old_name] === NaN) {
+        this.Attributes[old_name] = new_value;
+      }
+  }
+}
+INQCharacterSheet.prototype.parseRepeating = function() {
+  this.List.Skills = this.getSkills();
+}
+INQCharacterSheet.translateAttribute = function(old_name) {
+  return INQCharacterSheet.listArmour()[old_name] ||
+    INQCharacterSheet.listAttributes()[old_name] ||
+    INQCharacterSheet.listCharacteristics()[old_name] ||
+    INQCharacterSheet.listUnnatural()[old_name] ||
+    old_name;
 }
 function INQClip(inqweapon, characterid, options){
   this.inqweapon = inqweapon;
@@ -7537,7 +7715,7 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     options.Special += '?{Fire on Overcharge?|Use Overcharge|}';
   }
 
-  if(!this.Damage.onlyZero() && GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
+  if(!this.Damage.onlyZero() && INQ_VARIABLES.GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
   output += JSON.stringify(options);
   return output;
 }
@@ -8289,7 +8467,7 @@ function attributeTable(name, attribute, options){
   return attrTable;
 }
 function attributeValue(name, options){
-  if(INQ_CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(typeof options != 'object') options = false;
   options = options || {};
   if(options['alert'] == undefined) options['alert'] = true;

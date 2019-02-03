@@ -1,5 +1,5 @@
 function attributeValue(name, options){
-  if(INQ_CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(typeof options != 'object') options = false;
   options = options || {};
   if(options['alert'] == undefined) options['alert'] = true;

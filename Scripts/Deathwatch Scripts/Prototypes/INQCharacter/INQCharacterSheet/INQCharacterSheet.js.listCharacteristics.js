@@ -1,4 +1,4 @@
-INQCharacterSheet.characteristics = () => {
+INQCharacterSheet.listCharacteristics = function() {
   return {
     "WS":"WeaponSkill",
     "It": "Intelligence",

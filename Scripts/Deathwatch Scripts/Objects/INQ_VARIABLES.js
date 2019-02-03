@@ -1,0 +1,1 @@
+INQ_VARIABLES = {};

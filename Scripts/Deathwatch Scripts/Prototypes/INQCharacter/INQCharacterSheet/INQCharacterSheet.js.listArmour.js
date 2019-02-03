@@ -1,4 +1,4 @@
-INQCharacterSheet.armour = () => {
+INQCharacterSheet.listArmour = function() {
   return {
     "Armour_H":  "HArmour",
     "Armour_RA": "ArArmour",

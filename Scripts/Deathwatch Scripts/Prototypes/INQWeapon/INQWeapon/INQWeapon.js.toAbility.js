@@ -69,7 +69,7 @@ INQWeapon.prototype.toAbility = function(inqcharacter, options, ammo){
     options.Special += '?{Fire on Overcharge?|Use Overcharge|}';
   }
 
-  if(!this.Damage.onlyZero() && GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
+  if(!this.Damage.onlyZero() && INQ_VARIABLES.GAME_OWNER != 'Abhinav') options.target = '@{target|token_id}';
   output += JSON.stringify(options);
   return output;
 }

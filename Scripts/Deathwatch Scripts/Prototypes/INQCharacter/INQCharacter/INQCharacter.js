@@ -65,8 +65,16 @@ function INQCharacter(character, graphic, callback){
   this.Attributes.Insanity = 0;
   this.Attributes.Renown = 0;
 
-  //allow the user to immediately parse a character in the constructor
   var inqcharacter = this;
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+    Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
+    inqcharacter.parse(character, graphic);
+    callback(inqcharacter);
+    return;
+  }
+
+  //allow the user to immediately parse a character in the constructor
+
   var myPromise = new Promise(function(resolve){
     if(character != undefined){
       if(typeof character == "string"){
@@ -75,7 +83,7 @@ function INQCharacter(character, graphic, callback){
         resolve(inqcharacter);
       } else {
         Object.setPrototypeOf(inqcharacter, new INQCharacterParser());
-        inqcharacter.parse(character, graphic, function(){
+        inqcharacter.parse(character, graphic, (inqcharacter) => {
           resolve(inqcharacter);
         });
       }
@@ -84,7 +92,12 @@ function INQCharacter(character, graphic, callback){
     }
   });
 
-  myPromise.catch(function(e){log(e)});
+  myPromise.catch(function(e){
+    log('INQCharacter Error');
+    log(character)
+    log(graphic)
+    log(e);
+  });
   myPromise.then(function(inqcharacter){
     if(character != undefined){
       Object.setPrototypeOf(inqcharacter, new INQCharacter());
