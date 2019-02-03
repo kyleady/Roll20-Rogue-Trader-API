@@ -22,7 +22,7 @@ INQCharacterSheet.prototype.parseAttributes = function() {
                                                   graphicid: this.graphicid,
                                                   characterid: this.characterid
                                                 });
-      if(new_name == undefined) continue; 
+      if(new_value == undefined) continue; 
       this.Attributes[old_name] = Number(new_value);
       if(this.Attributes[old_name] === NaN) {
         this.Attributes[old_name] = new_value;

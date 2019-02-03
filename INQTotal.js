@@ -4469,8 +4469,12 @@ INQCharacterSheet.listUnnatural = function() {
 INQCharacterSheet.prototype.parse = function(character, graphic) {
   this.characterid = character.id;
   this.graphicid = graphic.id;
+  this.parseMetadata(character, graphic);
   this.parseAttributes();
   this.parseRepeating();
+  this.parseMovement();
+  delete this.characterid;
+  delete this.graphicid;
 }
 INQCharacterSheet.prototype.parseAttributes = function() {
   /*
@@ -4496,10 +4500,28 @@ INQCharacterSheet.prototype.parseAttributes = function() {
                                                   graphicid: this.graphicid,
                                                   characterid: this.characterid
                                                 });
+      if(new_name == undefined) continue; 
       this.Attributes[old_name] = Number(new_value);
       if(this.Attributes[old_name] === NaN) {
         this.Attributes[old_name] = new_value;
       }
+  }
+}
+INQCharacterSheet.prototype.parseMetadata = function(character, graphic) {
+  let name = character.get('name');
+  if(graphic) {
+    name = graphic.get('name');
+    inqcharacterparser.GraphicID = graphic.id;
+  }
+  inqcharacterparser.Name = name;
+  inqcharacterparser.ObjID = character.id;
+  inqcharacterparser.ObjType = character.get("_type");
+  inqcharacterparser.controlledby = character.get("controlledby");
+}
+INQCharacterSheet.prototype.parseMovement = function() {
+  const options = { graphicid: this.graphicid, characterid: this.characterid };
+  for(let moveType in this.Movement) {
+    this.Movement[moveType] = attributeValue(`${moveType}Move`, options);
   }
 }
 INQCharacterSheet.prototype.parseRepeating = function() {
