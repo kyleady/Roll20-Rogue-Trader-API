@@ -3787,7 +3787,8 @@ function INQCharacter(character, graphic, callback){
   this.Attributes.Renown = 0;
 
   var inqcharacter = this;
-  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+  if(typeof character == "object"
+  && INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     inqcharacter.parse(character, graphic);
     callback(inqcharacter);
@@ -3976,6 +3977,11 @@ INQCharacter.prototype.removeChildren = function(characterid){
 }
 //create a character object from the prototype
 INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+    const inqcharacter = this;
+    Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
+    return this.toCharacterObj(isPlayer, characterid);
+  }
   //get the character
   var character = undefined;
   if(characterid) character = getObj("character", characterid);
@@ -4263,10 +4269,108 @@ INQCharacterParser.prototype.parseMovement = function(){
 INQCharacterParser.prototype.parseSpecialRules = function(){
   this.SpecialRules = this.Content.Rules;
 }
-function INQCharacterSheet() {}
+function INQCharacterSheet() {
+  this.characterid = undefined;
+  this.graphicid = undefined;
+}
 
 INQCharacterSheet.prototype = Object.create(INQCharacter.prototype);
 INQCharacterSheet.prototype.constructor = INQCharacterSheet;
+INQCharacterSheet.prototype.createAttributes = function() {
+  for(var name in this.Attributes){
+    attributeValue(name, {
+      setTo: this.Attributes[name],
+      characterid: this.characterid,
+      alert: false
+    });
+  }
+}
+INQCharacterSheet.prototype.createList = function(items, map_to_attrs) {
+  for(let item of items) {
+    let row_id = generateRowID();
+    let attrs = map_to_attrs(item);
+    for(let attr_name in attrs) {
+      let attr_value = attrs[attr_name];
+      let attr_with_id = attr_name.replace('$$', row_id);
+      createObj('attribute', {
+        name: attr_with_id,
+        _characterid: this.characterid,
+        current: attr_value,
+        max: attr_value
+      });
+    }
+  }
+}
+INQCharacterSheet.prototype.createRepeating = function() {
+  this.createList(this.List.Skills, (inqlink) => {
+    let skill_name = inqlink.Name;
+    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0].join(', ')})`;
+    const modifier1 = inqlink.Bonus >= 0  ? 20 : 0;
+    const modifier2 = inqlink.Bonus >= 10 ? 10 : 0;
+    const modifier3 = inqlink.Bonus >= 20 ? 10 : 0;
+    const modifier4 = inqlink.Bonus >= 30 ? 10 : 0;
+    return {
+      'repeating_advancedskills_$$_advancedskillname': skill_name,
+      'repeating_advancedskills_$$_advancedskillbox1': modifier1,
+      'repeating_advancedskills_$$_advancedskillbox2': modifier2,
+      'repeating_advancedskills_$$_advancedskillbox3': modifier3,
+      'repeating_advancedskills_$$_advancedskillbox4': modifier4
+    }
+  });
+
+  const left_psychic = [];
+  const right_psychic = [];
+  for(let count = 0; count < this.List["Psychic Powers"].length; count++) {
+    let target_list = count % 2 ? right_psychic : left_psychic;
+    target_list.push(this.List["Psychic Powers"][count]);
+  }
+  this.createList(left_psychic, inqlink => ({
+    'repeating_psypowers_$$_PsyName': inqlink.Name
+  }));
+  this.createList(right_psychic, inqlink => ({
+    'repeating_psypowers_$$_PsyName2': inqlink.Name
+  }));
+
+  const melee_weapons = [];
+  const ranged_weapons = [];
+  _.each(this.List.Weapons, (inqweapon) => {
+    let target_list = inqweapon.Class == 'Melee' ? melee_weapons : ranged_weapons;
+    target_list.push(inqweapon);
+  });
+  this.createList(melee_weapons, inqweapon => ({
+    'repeating_meleeweapons_$$_meleeweaponname': inqweapon.Name
+  }));
+  this.createList(ranged_weapons, inqweapon => ({
+    'repeating_rangedweapons_$$_Rangedweaponname': inqweapon.Name
+  }));
+
+  this.createList(this.List.Gear,inqlink => ({
+    'repeating_gears_$$_Gears': inqlink.Name
+  }));
+  this.createList(this.List.Talents, inqlink => ({
+    'repeating_talents_$$_Talents': inqlink.Name
+  }));
+  this.createList(this.List.Traits, inqlink => ({
+    'repeating_abilities_$$_Abilities': inqlink.Name
+  }));
+  this.createList(this.SpecialRules, inqrule => ({
+    'repeating_sabilities_$$_SpecialTitleRe': inqrule.Name,
+    'repeating_sabilities_$$_othernotesRe': inqrule.Rule
+  }));
+}
+INQCharacterSheet.prototype.deleteList = function(re, first_name) {
+  const objs = this.getRepeating(re, first_name);
+  objs.forEach((obj) => obj.remove());
+}
+INQCharacterSheet.prototype.deleteLists = function() {
+  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box(1|2|3))$/);
+  this.deleteList(/^repeating_psypowers_[^_]+_PsyName2?$/);
+  this.deleteList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
+  this.deleteList(/^repeating_gears_[^_]+_Gears$/);
+  this.deleteList(/^repeating_talents_[^_]+_Talents$/);
+  this.deleteList(/^repeating_abilities_[^_]+_Abilities$/);
+  this.deleteList(/^repeating_sabilities_([^_]+)_(SpecialTitle|othernotes)Re$/);
+}
 INQCharacterSheet.prototype.getList = function(re, first_name) {
   const objs = this.getRepeating(re, first_name);
   const list_of_names = objs.map((obj) => new INQLink(obj.get('current')));
@@ -4280,9 +4384,7 @@ INQCharacterSheet.prototype.getRepeating = function(re, first_name) {
     return re.test(obj.get('name'));
   });
 }
-INQCharacterSheet.prototype.getSkill = function(skill_name, group_name, modifier_name) {
-  //should add in logic for custom default characteristic
-  modifier_name = modifier_name || group_name || skill_name;
+INQCharacterSheet.prototype.getSkill = function(skill_name, modifier_name) {
   let modifier = -20;
   for(let count = 1; count <= 4; count++) {
     modifier += Number(attributeValue(`${modifier_name}${count}`, {
@@ -4291,109 +4393,17 @@ INQCharacterSheet.prototype.getSkill = function(skill_name, group_name, modifier
     }));
   }
 
-  let text = skill_name;
-  if(group_name) text += `(${group_name})`;
-  const inqlink = new INQLink(text);
+  const inqlink = new INQLink(skill_name);
   inqlink.Bonus = modifier;
   return inqlink;
 }
 INQCharacterSheet.prototype.getSkills = function() {
-  const skills = [];
-  const base_skills = [
-    "Acrobatics",
-    "Athletics",
-    "Awareness",
-    "Charm",
-    "Command",
-    "Commerce",
-    "Deceive",
-    "Inquiry",
-    "Interrogation",
-    "Intimidate",
-    "Logic",
-    "Medicae",
-    "Psyniscience",
-    "Scrutiny",
-    "Security",
-    "Stealth",
-    "Survival"
-  ];
-  skills.push(this.getSkill("Tech Use", undefined, "TechUse"));
-  skills.push(this.getSkill("Sleight Of Hand", undefined, "SleightOfHand"));
-  for (let skill_name of base_skills) {
-    skills.push(this.getSkill(skill_name));
-  }
-
-  const navigation_groups = [
-    "Surface",
-    "Warp",
-    "Stellar"
-  ];
-  for(let group_name of navigation_groups) {
-    skills.push(this.getSkill("Navigate", group_name));
-  }
-
-  skills.push(this.getSkill("Operate", "Surface", "OSurface"));
-  const operate_groups = [
-    "Aeronautica",
-    "Voidship"
-  ];
-  for(let group_name of navigation_groups) {
-    skills.push(this.getSkill("Operate", group_name));
-  }
-
-  const custom_groups = [
-    {
-      'count': 3,
-      'modifier_name': 'Language',
-      'skill_name': 'Linguistics'
-    },
-    {
-      'count': 4,
-      'modifier_name': 'Trade',
-      'skill_name': 'Trade'
-    },
-    {
-      'count': 4,
-      'modifier_name': 'Common',
-      'skill_name': 'Common Lore'
-    },
-    {
-      'count': 6,
-      'modifier_name': 'Scholastic',
-      'skill_name': 'Scholastic Lore'
-    },
-    {
-      'count': 6,
-      'modifier_name': 'Forbidden',
-      'skill_name': 'Forbidden Lore'
-    }
-  ];
-  const counters = [
-    "1st",
-    "2nd",
-    "3rd",
-    "4th",
-    "5th",
-    "6th"
-  ];
-  for (let custom_group of custom_groups) {
-    let modifier_name = custom_group['modifier_name'];
-    let skill_name = custom_group['skill_name'];
-    for (let count = 1; count <= 6; count++) {
-      if(count >= custom_group['count']) break;
-      let counter = counters[count];
-      let group_name = getAttrByName(this.characterid, `${counter}${modifier_name}`);
-      if(!group_name) continue;
-      skills.push(this.getSkill(skill_name, group_name, `${counter}${modifier_name}`));
-    }
-  }
-
+  const skill = [];
   const extra_skills = this.getRepeating(/^repeating_advancedskills_[^_]+_advancedskillname$/);
   for (let extra_skill of extra_skills) {
     let skill_name = extra_skill.get('current');
     let modifier_name = extra_skill.get('name').replace(/name$/, 'box');
-    skills.push(this.getSkill(skill_name, undefined, modifier_name));
+    skills.push(this.getSkill(skill_name, modifier_name));
   }
 
   return skills;
@@ -4402,11 +4412,7 @@ INQCharacterSheet.prototype.getSpecialRules = function() {
   const title_re = /^repeating_sabilities_([^_]+)_SpecialTitleRe$/;
   const titles = this.getRepeating(title_re);
   const options = { characterid: this.characterid, graphicid: this.graphicid };
-  const specialRules = [{
-    Name: attributeValue("SpecialTitle", options),
-    Rule: attributeValue("Specialnotes", options)
-  }];
-
+  const specialRules = [];
   titles.forEach((title) => {
     const matches = title.get('name').match(title_re);
     const rule_id = matches[1];
@@ -4467,8 +4473,8 @@ INQCharacterSheet.listUnnatural = function() {
   }
 }
 INQCharacterSheet.prototype.parse = function(character, graphic) {
-  this.characterid = character.id;
-  this.graphicid = graphic.id;
+  if(character) this.characterid = character.id;
+  if(graphic) this.graphicid = graphic.id;
   this.parseMetadata(character, graphic);
   this.parseAttributes();
   this.parseRepeating();
@@ -4500,7 +4506,7 @@ INQCharacterSheet.prototype.parseAttributes = function() {
                                                   graphicid: this.graphicid,
                                                   characterid: this.characterid
                                                 });
-      if(new_name == undefined) continue; 
+      if(new_value == undefined) continue; 
       this.Attributes[old_name] = Number(new_value);
       if(this.Attributes[old_name] === NaN) {
         this.Attributes[old_name] = new_value;
@@ -4509,14 +4515,17 @@ INQCharacterSheet.prototype.parseAttributes = function() {
 }
 INQCharacterSheet.prototype.parseMetadata = function(character, graphic) {
   let name = character.get('name');
+  this.Name = name;
   if(graphic) {
     name = graphic.get('name');
-    inqcharacterparser.GraphicID = graphic.id;
+    this.GraphicID = graphic.id;
   }
-  inqcharacterparser.Name = name;
-  inqcharacterparser.ObjID = character.id;
-  inqcharacterparser.ObjType = character.get("_type");
-  inqcharacterparser.controlledby = character.get("controlledby");
+  
+  if(character) {
+    this.ObjID = character.id;
+    this.ObjType = character.get("_type");
+    this.controlledby = character.get("controlledby");
+  }
 }
 INQCharacterSheet.prototype.parseMovement = function() {
   const options = { graphicid: this.graphicid, characterid: this.characterid };
@@ -4528,10 +4537,53 @@ INQCharacterSheet.prototype.parseRepeating = function() {
   this.List.Skills            = this.getSkills();
   this.List["Psychic Powers"] = this.getList(/^repeating_psypowers_[^_]+_PsyName2?$/);
   this.List.Weapons           = this.getList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
-  this.List.Gear              = this.getList(/^repeating_gears_[^_]+_Gears$/, "GearCarry");
-  this.List.Talents           = this.getList(/^repeating_talents_[^_]+_Talents$/, "Talent");
-  this.List.Traits            = this.getList(/^repeating_abilities_[^_]+_Abilities$/, "Ability");
+  this.List.Gear              = this.getList(/^repeating_gears_[^_]+_Gears$/);
+  this.List.Talents           = this.getList(/^repeating_talents_[^_]+_Talents$/);
+  this.List.Traits            = this.getList(/^repeating_abilities_[^_]+_Abilities$/);
   this.SpecialRules           = this.getSpecialRules();
+}
+INQCharacterSheet.prototype.removeChildren = function() {
+  this.deleteLists();
+
+  const oldAbilities = findObjs({
+    _characterid: this.characterid,
+    _type: 'ability'
+  });
+
+  //_.each(oldAbilities, ability => ability.remove());
+}
+INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
+  //get the character
+  var character = undefined;
+  if(characterid) character = getObj('character', characterid);
+  if(!character) character = createObj('character', {});
+  this.characterid = character.id;
+  this.removeChildren(character.id);
+
+  this.ObjID = character.id;
+  character.set('name', this.Name);
+  character.set('controlledby', this.controlledby);
+
+  this.createAttributes();
+  this.createRepeating();
+
+  /*
+  var customWeapon = {custom: true};
+  for(var list in this.List){
+    for(var item of this.List[list]){
+      if(item.toAbility){
+        createObj("ability", {
+          name: item.Name,
+          _characterid: this.ObjID,
+          istokenaction: true,
+          action: item.toAbility(this, customWeapon)
+        });
+      }
+    }
+  }
+  */
+
+  return character;
 }
 INQCharacterSheet.translateAttribute = function(old_name) {
   return INQCharacterSheet.listArmour()[old_name] ||
@@ -8701,6 +8753,39 @@ function eachCharacter(msg, givenFunction){
     givenFunction(character, graphic);
   });
 }
+const generateUUID = (function() {
+    "use strict";
+
+    var a = 0, b = [];
+    return function() {
+        var c = (new Date()).getTime() + 0, d = c === a;
+        a = c;
+        for (var e = new Array(8), f = 7; 0 <= f; f--) {
+            e[f] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c % 64);
+            c = Math.floor(c / 64);
+        }
+        c = e.join("");
+        if (d) {
+            for (f = 11; 0 <= f && 63 === b[f]; f--) {
+                b[f] = 0;
+            }
+            b[f]++;
+        } else {
+            for (f = 0; 12 > f; f++) {
+                b[f] = Math.floor(64 * Math.random());
+            }
+        }
+        for (f = 0; 12 > f; f++){
+            c += "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);
+        }
+        return c;
+    };
+}())
+
+const generateRowID = function () {
+    "use strict";
+    return generateUUID().replace(/_/g, "Z");
+};
 function getAttribute(name, options) {
   if(typeof options != 'object') options = false;
   options = options || {};

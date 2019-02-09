@@ -1,6 +1,6 @@
 INQCharacterSheet.prototype.parse = function(character, graphic) {
-  this.characterid = character.id;
-  this.graphicid = graphic.id;
+  if(character) this.characterid = character.id;
+  if(graphic) this.graphicid = graphic.id;
   this.parseMetadata(character, graphic);
   this.parseAttributes();
   this.parseRepeating();

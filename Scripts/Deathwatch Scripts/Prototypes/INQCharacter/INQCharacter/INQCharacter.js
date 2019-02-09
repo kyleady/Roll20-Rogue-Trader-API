@@ -66,7 +66,8 @@ function INQCharacter(character, graphic, callback){
   this.Attributes.Renown = 0;
 
   var inqcharacter = this;
-  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+  if(typeof character == "object"
+  && INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     inqcharacter.parse(character, graphic);
     callback(inqcharacter);

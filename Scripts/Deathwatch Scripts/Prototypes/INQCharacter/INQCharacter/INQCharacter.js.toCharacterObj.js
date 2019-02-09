@@ -1,5 +1,10 @@
 //create a character object from the prototype
 INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
+  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+    const inqcharacter = this;
+    Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
+    return this.toCharacterObj(isPlayer, characterid);
+  }
   //get the character
   var character = undefined;
   if(characterid) character = getObj("character", characterid);
