@@ -3720,7 +3720,9 @@ INQAttack.prototype.prepareAttack = function(){
   }
 }
 //the prototype for characters
-function INQCharacter(character, graphic, callback){
+function INQCharacter(character, graphic, callback, options){
+  options = options || {};
+  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -3788,7 +3790,7 @@ function INQCharacter(character, graphic, callback){
 
   var inqcharacter = this;
   if(typeof character == "object"
-  && INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+  && options.CHARACTER_SHEET == 'DH2e') {
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     inqcharacter.parse(character, graphic);
     callback(inqcharacter);
@@ -3976,8 +3978,10 @@ INQCharacter.prototype.removeChildren = function(characterid){
   });
 }
 //create a character object from the prototype
-INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
-  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid, options){
+  options = options || {};
+  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
+  if(options.CHARACTER_SHEET == 'DH2e') {
     const inqcharacter = this;
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     return this.toCharacterObj(isPlayer, characterid);
@@ -4301,6 +4305,15 @@ INQCharacterSheet.prototype.createList = function(items, map_to_attrs) {
     }
   }
 }
+INQCharacterSheet.prototype.createMovement = function() {
+  for(let moveType in this.Movement) {
+    attributeValue(`${moveType}Move`, {
+      setTo: this.Movement[moveType],
+      characterid: this.characterid,
+      alert: false
+    });
+  }
+}
 INQCharacterSheet.prototype.createRepeating = function() {
   this.createList(this.List.Skills, (inqlink) => {
     let skill_name = inqlink.Name;
@@ -4363,7 +4376,7 @@ INQCharacterSheet.prototype.deleteList = function(re, first_name) {
   objs.forEach((obj) => obj.remove());
 }
 INQCharacterSheet.prototype.deleteLists = function() {
-  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box(1|2|3))$/);
+  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box)(|1|2|3)$/);
   this.deleteList(/^repeating_psypowers_[^_]+_PsyName2?$/);
   this.deleteList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
   this.deleteList(/^repeating_gears_[^_]+_Gears$/);
@@ -4550,7 +4563,7 @@ INQCharacterSheet.prototype.removeChildren = function() {
     _type: 'ability'
   });
 
-  //_.each(oldAbilities, ability => ability.remove());
+  _.each(oldAbilities, ability => ability.remove());
 }
 INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
   //get the character
@@ -4565,9 +4578,9 @@ INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
   character.set('controlledby', this.controlledby);
 
   this.createAttributes();
+  this.createMovement();
   this.createRepeating();
 
-  /*
   var customWeapon = {custom: true};
   for(var list in this.List){
     for(var item of this.List[list]){
@@ -4581,7 +4594,6 @@ INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
       }
     }
   }
-  */
 
   return character;
 }
@@ -8576,9 +8588,10 @@ function attributeTable(name, attribute, options){
   return attrTable;
 }
 function attributeValue(name, options){
-  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(typeof options != 'object') options = false;
   options = options || {};
+  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
+  if(options.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(options['alert'] == undefined) options['alert'] = true;
   if(!options['max'] || options['max'] == 'current'){
     var workingWith = 'current';

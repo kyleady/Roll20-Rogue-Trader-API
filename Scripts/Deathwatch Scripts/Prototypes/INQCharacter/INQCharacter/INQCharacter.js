@@ -1,5 +1,7 @@
 //the prototype for characters
-function INQCharacter(character, graphic, callback){
+function INQCharacter(character, graphic, callback, options){
+  options = options || {};
+  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -67,7 +69,7 @@ function INQCharacter(character, graphic, callback){
 
   var inqcharacter = this;
   if(typeof character == "object"
-  && INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') {
+  && options.CHARACTER_SHEET == 'DH2e') {
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     inqcharacter.parse(character, graphic);
     callback(inqcharacter);

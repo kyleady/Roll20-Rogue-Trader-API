@@ -1,5 +1,5 @@
 INQCharacterSheet.prototype.deleteLists = function() {
-  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box(1|2|3))$/);
+  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box)(|1|2|3|4)$/);
   this.deleteList(/^repeating_psypowers_[^_]+_PsyName2?$/);
   this.deleteList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
   this.deleteList(/^repeating_gears_[^_]+_Gears$/);

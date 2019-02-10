@@ -1,7 +1,8 @@
 function attributeValue(name, options){
-  if(INQ_VARIABLES.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(typeof options != 'object') options = false;
   options = options || {};
+  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
+  if(options.CHARACTER_SHEET == 'DH2e') name = INQCharacterSheet.translateAttribute(name);
   if(options['alert'] == undefined) options['alert'] = true;
   if(!options['max'] || options['max'] == 'current'){
     var workingWith = 'current';
