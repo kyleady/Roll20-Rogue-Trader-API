@@ -1068,10 +1068,25 @@ function initiativeHandler(matches,msg,secondAttempt){
   var turns = new INQTurns();
 
   var operator = matches[1];
-  var modifier = matches[2] + matches[3];
+  let modifier = matches[3];
+  if(/\$\[\[\d+\]\]/.test(modifier)){
+    let inlineMatch = modifier.match(/\$\[\[(\d+)\]\]/);
+    if(!inlineMatch || !inlineMatch[1]) return log(modifier);
+    let inlineIndex = Number(inlineMatch[1])
+    if(inlineIndex != undefined && msg.inlinerolls && msg.inlinerolls[inlineIndex]
+    && msg.inlinerolls[inlineIndex].results
+    && msg.inlinerolls[inlineIndex].results.total != undefined){
+      modifier = msg.inlinerolls[inlineIndex].results.total.toString();
+      log(msg.inlinerolls[inlineIndex])
+    } else {
+      log('Invalid Inline')
+      log(msg.inlinerolls);
+      return whisper('Invalid Inline');
+    }
+  }
 
+  modifier = matches[2] + modifier;
   var Promises = [];
-
 
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
@@ -1162,12 +1177,12 @@ on("ready",function(){
   //matches[3] is the absolute value of the modifier
 
   //lets the user quickly view their initiative bonus with modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler, true);
   //same as above, except this is a querry without any modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler, true);
 
   //similar to above, but allows the player to roll and edit initiative with modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler, true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+|\$\[\[\d+\]\])\s*$/i,initiativeHandler, true);
   //similar to above, but allows the player to roll and edit initiative without modifiers
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler, true);
   //allow the gm to clear the turn tracker
@@ -4368,7 +4383,7 @@ INQCharacterSheet.prototype.createRepeating = function() {
   }));
   this.createList(this.SpecialRules, inqrule => ({
     'repeating_sabilities_$$_SpecialTitleRe': inqrule.Name,
-    'repeating_sabilities_$$_othernotesRe': inqrule.Rule
+    'repeating_sabilities_$$_othernotesRe': inqrule.Rule || inqrule.Content
   }));
 }
 INQCharacterSheet.prototype.deleteList = function(re, first_name) {
@@ -4412,7 +4427,7 @@ INQCharacterSheet.prototype.getSkill = function(skill_name, modifier_name) {
   return inqlink;
 }
 INQCharacterSheet.prototype.getSkills = function() {
-  const skill = [];
+  const skills = [];
   const extra_skills = this.getRepeating(/^repeating_advancedskills_[^_]+_advancedskillname$/);
   for (let extra_skill of extra_skills) {
     let skill_name = extra_skill.get('current');
@@ -4501,25 +4516,6 @@ INQCharacterSheet.prototype.parse = function(character, graphic) {
   delete this.graphicid;
 }
 INQCharacterSheet.prototype.parseAttributes = function() {
-  /*
-  const attr_lists = [
-    INQCharacterSheet.armour(),
-    INQCharacterSheet.attributes(),
-    INQCharacterSheet.characteristics(),
-    INQCharacteristics.unnatural()
-  ];
-
-  for(let attr_list of attr_lists) {
-    for(let old_name in attr_list) {
-      let new_name = attr_list[old_name];
-      this.Attributes[old_name] = attributeValue(new_name, {
-                                                  graphicid: this.graphicid,
-                                                  characterid: this.characterid,
-                                                  CHARACTER_SHEET: this.options.CHARACTER_SHEET
-                                                });
-    }
-  }
-  */
   for(let old_name in this.Attributes) {
       let new_value = attributeValue(old_name, {
         graphicid: this.graphicid,
@@ -9073,6 +9069,7 @@ function modifyAttribute(attribute, options) {
     && options.inlinerolls[inlineIndex].results
     && options.inlinerolls[inlineIndex].results.total != undefined){
       options.modifier = options.inlinerolls[inlineIndex].results.total.toString();
+      log(options.inlinerolls[inlineIndex])
     } else {
       log('Invalid Inline')
       log(options.inlinerolls);

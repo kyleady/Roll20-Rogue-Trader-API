@@ -20,6 +20,7 @@ function modifyAttribute(attribute, options) {
     && options.inlinerolls[inlineIndex].results
     && options.inlinerolls[inlineIndex].results.total != undefined){
       options.modifier = options.inlinerolls[inlineIndex].results.total.toString();
+      log(options.inlinerolls[inlineIndex])
     } else {
       log('Invalid Inline')
       log(options.inlinerolls);

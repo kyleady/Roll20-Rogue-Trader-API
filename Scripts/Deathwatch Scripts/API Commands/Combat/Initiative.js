@@ -26,10 +26,25 @@ function initiativeHandler(matches,msg,secondAttempt){
   var turns = new INQTurns();
 
   var operator = matches[1];
-  var modifier = matches[2] + matches[3];
+  let modifier = matches[3];
+  if(/\$\[\[\d+\]\]/.test(modifier)){
+    let inlineMatch = modifier.match(/\$\[\[(\d+)\]\]/);
+    if(!inlineMatch || !inlineMatch[1]) return log(modifier);
+    let inlineIndex = Number(inlineMatch[1])
+    if(inlineIndex != undefined && msg.inlinerolls && msg.inlinerolls[inlineIndex]
+    && msg.inlinerolls[inlineIndex].results
+    && msg.inlinerolls[inlineIndex].results.total != undefined){
+      modifier = msg.inlinerolls[inlineIndex].results.total.toString();
+      log(msg.inlinerolls[inlineIndex])
+    } else {
+      log('Invalid Inline')
+      log(msg.inlinerolls);
+      return whisper('Invalid Inline');
+    }
+  }
 
+  modifier = matches[2] + modifier;
   var Promises = [];
-
 
   //work through each selected character
   eachCharacter(msg, function(character, graphic){
@@ -120,12 +135,12 @@ on("ready",function(){
   //matches[3] is the absolute value of the modifier
 
   //lets the user quickly view their initiative bonus with modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?\+|\?-|\?\*|\?\/)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler, true);
   //same as above, except this is a querry without any modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler,true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\?)()()$/i,initiativeHandler, true);
 
   //similar to above, but allows the player to roll and edit initiative with modifiers
-  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+)\s*$/i,initiativeHandler, true);
+  CentralInput.addCMD(/^!\s*init(?:iative)?\s*(\+|-|\*|\/|=|\+=|-=|\*=|\/=)\s*(|\+|-)\s*(\d+|\$\[\[\d+\]\])\s*$/i,initiativeHandler, true);
   //similar to above, but allows the player to roll and edit initiative without modifiers
   CentralInput.addCMD(/^!\s*init(?:iative)?\s*()()()$/i,initiativeHandler, true);
   //allow the gm to clear the turn tracker
