@@ -3,7 +3,8 @@ INQCharacterSheet.prototype.getSkill = function(skill_name, modifier_name) {
   for(let count = 1; count <= 4; count++) {
     modifier += Number(attributeValue(`${modifier_name}${count}`, {
       characterid: this.characterid,
-      graphicid: this.graphicid
+      graphicid: this.graphicid,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     }));
   }
 

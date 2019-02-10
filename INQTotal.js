@@ -3721,8 +3721,8 @@ INQAttack.prototype.prepareAttack = function(){
 }
 //the prototype for characters
 function INQCharacter(character, graphic, callback, options){
-  options = options || {};
-  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
+  this.options = options || {};
+  this.options.CHARACTER_SHEET = this.options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
   //object details
   this.controlledby = "";
   this.ObjType = "character";
@@ -3790,7 +3790,7 @@ function INQCharacter(character, graphic, callback, options){
 
   var inqcharacter = this;
   if(typeof character == "object"
-  && options.CHARACTER_SHEET == 'DH2e') {
+  && this.options.CHARACTER_SHEET == 'DH2e') {
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     inqcharacter.parse(character, graphic);
     callback(inqcharacter);
@@ -3978,10 +3978,8 @@ INQCharacter.prototype.removeChildren = function(characterid){
   });
 }
 //create a character object from the prototype
-INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid, options){
-  options = options || {};
-  options.CHARACTER_SHEET = options.CHARACTER_SHEET || INQ_VARIABLES.CHARACTER_SHEET;
-  if(options.CHARACTER_SHEET == 'DH2e') {
+INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
+  if(this.options.CHARACTER_SHEET == 'DH2e') {
     const inqcharacter = this;
     Object.setPrototypeOf(inqcharacter, new INQCharacterSheet());
     return this.toCharacterObj(isPlayer, characterid);
@@ -4285,7 +4283,8 @@ INQCharacterSheet.prototype.createAttributes = function() {
     attributeValue(name, {
       setTo: this.Attributes[name],
       characterid: this.characterid,
-      alert: false
+      alert: false,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     });
   }
 }
@@ -4310,7 +4309,8 @@ INQCharacterSheet.prototype.createMovement = function() {
     attributeValue(`${moveType}Move`, {
       setTo: this.Movement[moveType],
       characterid: this.characterid,
-      alert: false
+      alert: false,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     });
   }
 }
@@ -4376,7 +4376,7 @@ INQCharacterSheet.prototype.deleteList = function(re, first_name) {
   objs.forEach((obj) => obj.remove());
 }
 INQCharacterSheet.prototype.deleteLists = function() {
-  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box)(|1|2|3)$/);
+  this.deleteList(/^repeating_advancedskills_[^_]+_advancedskill(name|box)(|1|2|3|4)$/);
   this.deleteList(/^repeating_psypowers_[^_]+_PsyName2?$/);
   this.deleteList(/^repeating_(ranged|melee)weapons_[^_]+_(Ranged|melee)weaponname$/);
   this.deleteList(/^repeating_gears_[^_]+_Gears$/);
@@ -4402,7 +4402,8 @@ INQCharacterSheet.prototype.getSkill = function(skill_name, modifier_name) {
   for(let count = 1; count <= 4; count++) {
     modifier += Number(attributeValue(`${modifier_name}${count}`, {
       characterid: this.characterid,
-      graphicid: this.graphicid
+      graphicid: this.graphicid,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     }));
   }
 
@@ -4424,7 +4425,11 @@ INQCharacterSheet.prototype.getSkills = function() {
 INQCharacterSheet.prototype.getSpecialRules = function() {
   const title_re = /^repeating_sabilities_([^_]+)_SpecialTitleRe$/;
   const titles = this.getRepeating(title_re);
-  const options = { characterid: this.characterid, graphicid: this.graphicid };
+  const options = {
+    characterid: this.characterid,
+    graphicid: this.graphicid,
+    CHARACTER_SHEET: this.options.CHARACTER_SHEET
+  };
   const specialRules = [];
   titles.forEach((title) => {
     const matches = title.get('name').match(title_re);
@@ -4509,17 +4514,19 @@ INQCharacterSheet.prototype.parseAttributes = function() {
       let new_name = attr_list[old_name];
       this.Attributes[old_name] = attributeValue(new_name, {
                                                   graphicid: this.graphicid,
-                                                  characterid: this.characterid
+                                                  characterid: this.characterid,
+                                                  CHARACTER_SHEET: this.options.CHARACTER_SHEET
                                                 });
     }
   }
   */
   for(let old_name in this.Attributes) {
       let new_value = attributeValue(old_name, {
-                                                  graphicid: this.graphicid,
-                                                  characterid: this.characterid
-                                                });
-      if(new_value == undefined) continue; 
+        graphicid: this.graphicid,
+        characterid: this.characterid,
+        CHARACTER_SHEET: this.options.CHARACTER_SHEET
+      });
+      if(new_value == undefined) continue;
       this.Attributes[old_name] = Number(new_value);
       if(this.Attributes[old_name] === NaN) {
         this.Attributes[old_name] = new_value;
@@ -4541,7 +4548,11 @@ INQCharacterSheet.prototype.parseMetadata = function(character, graphic) {
   }
 }
 INQCharacterSheet.prototype.parseMovement = function() {
-  const options = { graphicid: this.graphicid, characterid: this.characterid };
+  const options = {
+    graphicid: this.graphicid,
+    characterid: this.characterid,
+    CHARACTER_SHEET: this.options.CHARACTER_SHEET
+  };
   for(let moveType in this.Movement) {
     this.Movement[moveType] = attributeValue(`${moveType}Move`, options);
   }
@@ -4556,13 +4567,17 @@ INQCharacterSheet.prototype.parseRepeating = function() {
   this.SpecialRules           = this.getSpecialRules();
 }
 INQCharacterSheet.prototype.removeChildren = function() {
-  this.deleteLists();
-
+  //this.deleteLists();
+  const oldAttributes = findObjs({
+    _characterid: this.characterid,
+    _type: 'attribute'
+  });
   const oldAbilities = findObjs({
     _characterid: this.characterid,
     _type: 'ability'
   });
 
+  _.each(oldAttributes, attribute => attribute.remove());
   _.each(oldAbilities, ability => ability.remove());
 }
 INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
@@ -9421,7 +9436,6 @@ function LocalAttributes(graphic) {
 String.prototype.toTitleCase = function () {
     return this.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 };
-charImport = {}
 function importCharacter(matches, msg) {
   var isPlayer = matches[1];
   var charType = matches[2].toLowerCase();

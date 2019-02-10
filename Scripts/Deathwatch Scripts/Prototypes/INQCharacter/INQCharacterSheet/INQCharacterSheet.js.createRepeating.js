@@ -52,6 +52,6 @@ INQCharacterSheet.prototype.createRepeating = function() {
   }));
   this.createList(this.SpecialRules, inqrule => ({
     'repeating_sabilities_$$_SpecialTitleRe': inqrule.Name,
-    'repeating_sabilities_$$_othernotesRe': inqrule.Rule
+    'repeating_sabilities_$$_othernotesRe': inqrule.Rule || inqrule.Content
   }));
 }

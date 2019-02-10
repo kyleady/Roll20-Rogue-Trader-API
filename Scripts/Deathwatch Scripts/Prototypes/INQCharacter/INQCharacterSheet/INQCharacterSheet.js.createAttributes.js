@@ -3,7 +3,8 @@ INQCharacterSheet.prototype.createAttributes = function() {
     attributeValue(name, {
       setTo: this.Attributes[name],
       characterid: this.characterid,
-      alert: false
+      alert: false,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     });
   }
 }

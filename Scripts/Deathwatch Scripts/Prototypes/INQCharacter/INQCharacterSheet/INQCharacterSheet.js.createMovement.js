@@ -3,7 +3,8 @@ INQCharacterSheet.prototype.createMovement = function() {
     attributeValue(`${moveType}Move`, {
       setTo: this.Movement[moveType],
       characterid: this.characterid,
-      alert: false
+      alert: false,
+      CHARACTER_SHEET: this.options.CHARACTER_SHEET
     });
   }
 }

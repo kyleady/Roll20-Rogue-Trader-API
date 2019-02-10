@@ -1,4 +1,3 @@
-charImport = {}
 function importCharacter(matches, msg) {
   var isPlayer = matches[1];
   var charType = matches[2].toLowerCase();
