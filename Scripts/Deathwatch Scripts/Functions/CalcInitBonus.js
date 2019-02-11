@@ -5,20 +5,20 @@ function calcInitBonus(charObj, graphicObj, initCallback){
   graphicObj = graphicObj || {};
   //if this character sheet has Detection, then it is a starship
   if (
-    findObjs({
-      _type: "attribute",
-      name: "Initiative",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Initiative", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ){
-    var initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
+    let initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
     if(typeof initCallback == 'function') initCallback(initBonus);
   } else if(
-    findObjs({
-      _type: "attribute",
-      name: "Detection",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Detection", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
@@ -26,11 +26,11 @@ function calcInitBonus(charObj, graphicObj, initCallback){
     if(typeof initCallback == 'function') initCallback(DetectionBonus);
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
-    findObjs({
-      _type: "attribute",
-      name: "Ag",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Ag", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ) {
     //load up all the notes on the character
     new INQCharacter(charObj, graphicObj, function(inqcharacter){

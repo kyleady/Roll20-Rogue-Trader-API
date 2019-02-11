@@ -2164,20 +2164,20 @@ function calcInitBonus(charObj, graphicObj, initCallback){
   graphicObj = graphicObj || {};
   //if this character sheet has Detection, then it is a starship
   if (
-    findObjs({
-      _type: "attribute",
-      name: "Initiative",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Initiative", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ){
-    var initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
+    let initBonus = Number(attributeValue("Initiative", {characterid: charObj.id, graphicid: graphicObj.id}));
     if(typeof initCallback == 'function') initCallback(initBonus);
   } else if(
-    findObjs({
-      _type: "attribute",
-      name: "Detection",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Detection", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ){
     //report the detection bonus for starships
     var Detection = Number(attributeValue("Detection", {characterid: charObj.id, graphicid: graphicObj.id}));
@@ -2185,11 +2185,11 @@ function calcInitBonus(charObj, graphicObj, initCallback){
     if(typeof initCallback == 'function') initCallback(DetectionBonus);
   //if this character sheet has Ag, then it rolls initiative like normal.
   } else if(
-    findObjs({
-      _type: "attribute",
-      name: "Ag",
-      _characterid: charObj.id
-    })[0] != undefined
+    attributeValue("Ag", {
+      characterid: charObj.id,
+      graphicid: graphicObj.id,
+      alert: false
+    }) != undefined
   ) {
     //load up all the notes on the character
     new INQCharacter(charObj, graphicObj, function(inqcharacter){
@@ -4563,7 +4563,8 @@ INQCharacterSheet.prototype.parseRepeating = function() {
   this.SpecialRules           = this.getSpecialRules();
 }
 INQCharacterSheet.prototype.removeChildren = function() {
-  //this.deleteLists();
+  this.deleteLists();
+  /*
   const oldAttributes = findObjs({
     _characterid: this.characterid,
     _type: 'attribute'
@@ -4575,6 +4576,7 @@ INQCharacterSheet.prototype.removeChildren = function() {
 
   _.each(oldAttributes, attribute => attribute.remove());
   _.each(oldAbilities, ability => ability.remove());
+  */
 }
 INQCharacterSheet.prototype.toCharacterObj = function(isPlayer, characterid) {
   //get the character
@@ -6872,14 +6874,13 @@ INQUse.prototype.calcEffectivePsyRating = function(){
   if(!this.inqcharacter) return;
   this.PR = this.inqcharacter.Attributes.PR;
   var bonusPR = Number(this.options.BonusPR) || 0;
-  var pushPR = Number(this.options.PushPR) || 0;
   if(this.inqweapon.Class != 'Psychic') return;
   if(!this.options.FocusStrength) this.options.FocusStrength = 'Fettered';
+  this.PR += bonusPR;
   var ModifierMultiplier = 0;
   var Strength = 'Invalid';
   if(/^\s*Fettered\s*$/i.test(this.options.FocusStrength)){
-    this.PR /= 2;
-    this.PR = Math.ceil(this.PR);
+    this.PR = Math.ceil(this.PR / 2);
     ModifierMultiplier = 2;
     Strength = 'Fettered';
     this.PsyPheModifier = 0;
@@ -6890,15 +6891,13 @@ INQUse.prototype.calcEffectivePsyRating = function(){
   } else if(/^\s*Push\s*$/i.test(this.options.FocusStrength)){
     ModifierMultiplier = 5;
     Strength = 'Push';
-    this.PsyPheModifier = pushPR * 5;
+    this.PsyPheModifier = Math.ceil(this.PR / 2) * 5;
   } else if(/^\s*True\s*$/i.test(this.options.FocusStrength)){
     ModifierMultiplier = 10;
     Strength = 'True';
-    this.PsyPheModifier = pushPR * 5;
+    this.PsyPheModifier = Math.ceil(this.PR / 2) * 5;
   }
 
-  this.PR += bonusPR;
-  this.PR += pushPR;
   this.modifiers.push({Name: Strength, Value: ModifierMultiplier * this.PR});
 }
 INQUse.prototype.calcModifiers = function(){
@@ -7195,11 +7194,10 @@ INQUse.prototype.displayHitReport = function(){
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
     var bonusPR = Number(this.options.BonusPR);
-    var pushPR = Number(this.options.PushPR);
-    var basePR = this.PR - bonusPR - pushPR;
+    var basePR = this.PR - bonusPR;
     extraLines.push({
       Name: 'Psy Rating',
-      Content: '[[' + basePR + '+' + pushPR + '+' + bonusPR + ']]'
+      Content: '[[' + basePR + '+' + bonusPR + ']]'
     });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
@@ -7347,16 +7345,18 @@ INQUse.prototype.parseModifiers = function(){
   }
 }
 INQUse.prototype.roll = function(){
-  var skill;
+  var skill = this.options.skill;
+  var characteristic = this.options.characteristic;
   if(this.inqweapon.Class == 'Melee'){
-    skill = 'WS';
+    characteristic = characteristic || 'WS';
   } else if(this.inqweapon.isRanged()){
-    skill = 'BS';
+    characteristic = characteristic || 'BS';
   } else {
-    skill = this.inqweapon.FocusTest;
+    skill = skill || this.inqweapon.FocusTest;
   }
 
   this.inqtest = new INQTest({
+    characteristic: characteristic,
     skill: skill,
     modifier: this.modifiers,
     inqcharacter: this.inqcharacter
@@ -8672,12 +8672,14 @@ function attributeValue(name, options){
   return attribute.get(workingWith);
 }
 function carefulParse(str) {
+  let altered_str = str.replace(/'/g, "\"");
   try {
-    return JSON.parse(str);
+    return JSON.parse(altered_str);
   } catch(e) {
     setTimeout(whisper, 200, 'JSON failed to parse. See the log for details.');
     log('failed to parse');
     log(str);
+    log(altered_str);
     log(e);
   }
 }

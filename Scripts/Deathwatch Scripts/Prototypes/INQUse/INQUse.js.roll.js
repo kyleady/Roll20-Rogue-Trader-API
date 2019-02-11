@@ -1,14 +1,16 @@
 INQUse.prototype.roll = function(){
-  var skill;
+  var skill = this.options.skill;
+  var characteristic = this.options.characteristic;
   if(this.inqweapon.Class == 'Melee'){
-    skill = 'WS';
+    characteristic = characteristic || 'WS';
   } else if(this.inqweapon.isRanged()){
-    skill = 'BS';
+    characteristic = characteristic || 'BS';
   } else {
-    skill = this.inqweapon.FocusTest;
+    skill = skill || this.inqweapon.FocusTest;
   }
 
   this.inqtest = new INQTest({
+    characteristic: characteristic,
     skill: skill,
     modifier: this.modifiers,
     inqcharacter: this.inqcharacter

@@ -5,11 +5,10 @@ INQUse.prototype.displayHitReport = function(){
   extraLines.push({Name: 'Hits', Content: '[[' + this.hits + ']]'});
   if(this.inqweapon.Class == 'Psychic') {
     var bonusPR = Number(this.options.BonusPR);
-    var pushPR = Number(this.options.PushPR);
-    var basePR = this.PR - bonusPR - pushPR;
+    var basePR = this.PR - bonusPR;
     extraLines.push({
       Name: 'Psy Rating',
-      Content: '[[' + basePR + '+' + pushPR + '+' + bonusPR + ']]'
+      Content: '[[' + basePR + '+' + bonusPR + ']]'
     });
     if(this.PsyPhe) {
       var PsyPhe = new INQFormula();
