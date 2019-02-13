@@ -1,7 +1,7 @@
 INQCharacterSheet.prototype.createRepeating = function() {
   this.createList(this.List.Skills, (inqlink) => {
     let skill_name = inqlink.Name;
-    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0].join(', ')})`;
+    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0]})`;
     const modifier1 = inqlink.Bonus >= 0  ? 20 : 0;
     const modifier2 = inqlink.Bonus >= 10 ? 10 : 0;
     const modifier3 = inqlink.Bonus >= 20 ? 10 : 0;

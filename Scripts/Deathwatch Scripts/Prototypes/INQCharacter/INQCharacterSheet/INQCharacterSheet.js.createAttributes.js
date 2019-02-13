@@ -1,5 +1,6 @@
 INQCharacterSheet.prototype.createAttributes = function() {
-  for(var name in this.Attributes){
+  const example_character = new INQCharacter();
+  for(var name in example_character.Attributes){
     attributeValue(name, {
       setTo: this.Attributes[name],
       characterid: this.characterid,

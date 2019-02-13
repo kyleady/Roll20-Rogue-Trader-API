@@ -4260,6 +4260,11 @@ INQCharacterParser.prototype.parseLists = function(){
       }
     });
   });
+
+  for(let name in this.List) {
+    Lists[name] = Lists[name] || this.List[name];
+  }
+  
   this.List = Lists;
 }
 //parse out the movement of the character
@@ -4294,7 +4299,8 @@ function INQCharacterSheet() {
 INQCharacterSheet.prototype = Object.create(INQCharacter.prototype);
 INQCharacterSheet.prototype.constructor = INQCharacterSheet;
 INQCharacterSheet.prototype.createAttributes = function() {
-  for(var name in this.Attributes){
+  const example_character = new INQCharacter();
+  for(var name in example_character.Attributes){
     attributeValue(name, {
       setTo: this.Attributes[name],
       characterid: this.characterid,
@@ -4332,7 +4338,7 @@ INQCharacterSheet.prototype.createMovement = function() {
 INQCharacterSheet.prototype.createRepeating = function() {
   this.createList(this.List.Skills, (inqlink) => {
     let skill_name = inqlink.Name;
-    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0].join(', ')})`;
+    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0]})`;
     const modifier1 = inqlink.Bonus >= 0  ? 20 : 0;
     const modifier2 = inqlink.Bonus >= 10 ? 10 : 0;
     const modifier3 = inqlink.Bonus >= 20 ? 10 : 0;

@@ -34,5 +34,10 @@ INQCharacterParser.prototype.parseLists = function(){
       }
     });
   });
+
+  for(let name in this.List) {
+    Lists[name] = Lists[name] || this.List[name];
+  }
+  
   this.List = Lists;
 }
