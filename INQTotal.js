@@ -4419,17 +4419,20 @@ INQCharacterSheet.prototype.getRepeating = function(re, first_name) {
   });
 }
 INQCharacterSheet.prototype.getSkill = function(skill_name, modifier_name) {
+  const options = {
+    characterid: this.characterid,
+    graphicid: this.graphicid,
+    CHARACTER_SHEET: this.options.CHARACTER_SHEET
+  };
+
   let modifier = -20;
   for(let count = 1; count <= 4; count++) {
-    modifier += Number(attributeValue(`${modifier_name}${count}`, {
-      characterid: this.characterid,
-      graphicid: this.graphicid,
-      CHARACTER_SHEET: this.options.CHARACTER_SHEET
-    }));
+    modifier += Number(attributeValue(`${modifier_name}box${count}`, options));
   }
 
   const inqlink = new INQLink(skill_name);
   inqlink.Bonus = modifier;
+  inqlink.Characteristic = attributeValue(`${modifier_name}characteristic`, options);
   return inqlink;
 }
 INQCharacterSheet.prototype.getSkills = function() {
@@ -4437,7 +4440,7 @@ INQCharacterSheet.prototype.getSkills = function() {
   const extra_skills = this.getRepeating(/^repeating_advancedskills_[^_]+_advancedskillname$/);
   for (let extra_skill of extra_skills) {
     let skill_name = extra_skill.get('current');
-    let modifier_name = extra_skill.get('name').replace(/name$/, 'box');
+    let modifier_name = extra_skill.get('name').replace(/name$/, '');
     skills.push(this.getSkill(skill_name, modifier_name));
   }
 
