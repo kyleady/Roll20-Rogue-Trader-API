@@ -4336,21 +4336,7 @@ INQCharacterSheet.prototype.createMovement = function() {
   }
 }
 INQCharacterSheet.prototype.createRepeating = function() {
-  this.createList(this.List.Skills, (inqlink) => {
-    let skill_name = inqlink.Name;
-    if(inqlink.Groups[0]) skill_name += `(${inqlink.Groups[0]})`;
-    const modifier1 = inqlink.Bonus >= 0  ? 20 : 0;
-    const modifier2 = inqlink.Bonus >= 10 ? 10 : 0;
-    const modifier3 = inqlink.Bonus >= 20 ? 10 : 0;
-    const modifier4 = inqlink.Bonus >= 30 ? 10 : 0;
-    return {
-      'repeating_advancedskills_$$_advancedskillname': skill_name,
-      'repeating_advancedskills_$$_advancedskillbox1': modifier1,
-      'repeating_advancedskills_$$_advancedskillbox2': modifier2,
-      'repeating_advancedskills_$$_advancedskillbox3': modifier3,
-      'repeating_advancedskills_$$_advancedskillbox4': modifier4
-    }
-  });
+  this.createList(this.List.Skills, this.createSkill);
 
   const left_psychic = [];
   const right_psychic = [];
@@ -4379,18 +4365,47 @@ INQCharacterSheet.prototype.createRepeating = function() {
   }));
 
   this.createList(this.List.Gear,inqlink => ({
-    'repeating_gears_$$_Gears': inqlink.Name
+    'repeating_gears_$$_Gears': inqlink.toNote(true)
   }));
   this.createList(this.List.Talents, inqlink => ({
-    'repeating_talents_$$_Talents': inqlink.Name
+    'repeating_talents_$$_Talents': inqlink.toNote(true)
   }));
   this.createList(this.List.Traits, inqlink => ({
-    'repeating_abilities_$$_Abilities': inqlink.Name
+    'repeating_abilities_$$_Abilities': inqlink.toNote(true)
   }));
   this.createList(this.SpecialRules, inqrule => ({
     'repeating_sabilities_$$_SpecialTitleRe': inqrule.Name,
     'repeating_sabilities_$$_othernotesRe': inqrule.Rule || inqrule.Content
   }));
+}
+INQCharacterSheet.prototype.createSkill = function(inqlink) {
+  let skill_name = inqlink.Name;
+  let groups = [];
+  const inqtest = new INQTest();
+  for(let group of inqlink.Groups) {
+    if(!inqtest.setCharacteristic(group)) {
+      groups.push(group);
+    }
+  }
+  if(groups.length) skill_name += `(${groups.join(', ')})`;
+
+  const modifier1 = inqlink.Bonus >= 0  ? 20 : 0;
+  const modifier2 = inqlink.Bonus >= 10 ? 10 : 0;
+  const modifier3 = inqlink.Bonus >= 20 ? 10 : 0;
+  const modifier4 = inqlink.Bonus >= 30 ? 10 : 0;
+
+  inqtest.Characteristic = undefined;
+  inqtest.setSkill(skill_name);
+  const default_characteristic = inqtest.Characteristic || 'WS';
+
+  return {
+    'repeating_advancedskills_$$_advancedskillname': skill_name,
+    'repeating_advancedskills_$$_advancedskillbox1': modifier1,
+    'repeating_advancedskills_$$_advancedskillbox2': modifier2,
+    'repeating_advancedskills_$$_advancedskillbox3': modifier3,
+    'repeating_advancedskills_$$_advancedskillbox4': modifier4,
+    'repeating_advancedskills_$$_advancedskillcharacteristic': default_characteristic
+  }
 }
 INQCharacterSheet.prototype.deleteList = function(re, first_name) {
   const objs = this.getRepeating(re, first_name);
