@@ -244,15 +244,16 @@ function skillHandler(matches, msg){
   }
 
   var characteristic = matches[4];
-  var inqtest = new INQTest({skill: skill, characteristic: characteristic});
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
       var isNPC = inqcharacter.controlledby == '';
-      inqtest.Modifiers = [];
-      inqtest.addModifier(modifiers);
-      inqtest.getStats(inqcharacter);
-      inqtest.getSkillModifier(inqcharacter);
+      const inqtest = new INQTest({
+        skill: skill,
+        characteristic: characteristic,
+        modifier: modifiers,
+        inqcharacter: inqcharacter
+      });
       inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
     });
   });
@@ -3939,14 +3940,16 @@ INQCharacter.prototype.has = function(ability, list){
           _.each(subgroups.split(/\s*,\s*/), function(subgroup){
             newRules.push({
               Name:  subgroup,
-              Bonus: rule.Bonus
+              Bonus: rule.Bonus,
+              Characteristic: rule.Characteristic
             });
           });
         });
       } else {
         newRules.push({
           Name: 'all',
-          Bonus: rule.Bonus
+          Bonus: rule.Bonus,
+          Characteristic: rule.Characteristic
         });
       }
       _.each(newRules, function(newRule){
@@ -3973,7 +3976,7 @@ INQCharacter.prototype.has = function(ability, list){
   if(info.length == 0) return undefined;
   log(`Has ${ability} in ${list}`);
   log(info);
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus, Characteristic: info[0].Characteristic};
   return info;
 }
 INQCharacter.prototype.removeChildren = function(characterid){
@@ -6473,10 +6476,10 @@ function INQTest(options){
 
   this.setSubgroup(options.skill);
   this.setSkill(options.skill);
+  this.getSkillModifier(options.inqcharacter);
   this.setCharacteristic(options.characteristic);
   this.addModifier(options.modifier);
   this.getStats(options.inqcharacter);
-  this.getSkillModifier(options.inqcharacter);
 }
 INQTest.prototype.addModifier = function(modifiers){
   if(Array.isArray(modifiers)) {
@@ -6569,6 +6572,7 @@ INQTest.prototype.display = function(playerid, name, gm, extraLines){
 INQTest.prototype.getSkillModifier = function(inqcharacter){
   if(!this.Skill || !inqcharacter) return;
   var modifier = -20;
+  let characteristic = undefined;
   var skill = inqcharacter.has(this.Skill, 'Skills');
   if(skill){
     if(skill.length > 0){
@@ -6576,7 +6580,10 @@ INQTest.prototype.getSkillModifier = function(inqcharacter){
         var re = toRegex(this.Subgroup);
         _.each(skill, function(subgroup){
           if(re.test(subgroup.Name) || /\s*all\s*/.test(subgroup.Name)){
-            if(subgroup.Bonus > modifier) modifier = subgroup.Bonus;
+            if(subgroup.Bonus > modifier) {
+              modifier = subgroup.Bonus;
+              characteristic = subgroup.Characteristic;
+            }
           }
         });
       } else {
@@ -6584,10 +6591,12 @@ INQTest.prototype.getSkillModifier = function(inqcharacter){
       }
     } else {
       modifier = skill.Bonus;
+      characteristic = skill.Characteristic;
     }
   }
 
   this.addModifier({Name: 'Skill', Value: modifier});
+  this.setCharacteristic(characteristic);
 }
 INQTest.prototype.getStats = function(inqcharacter){
   if(!this.Characteristic || (!inqcharacter && !this.PartyStat)) return;

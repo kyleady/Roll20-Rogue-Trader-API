@@ -11,15 +11,16 @@ function skillHandler(matches, msg){
   }
 
   var characteristic = matches[4];
-  var inqtest = new INQTest({skill: skill, characteristic: characteristic});
   eachCharacter(msg, function(character, graphic){
     var isNPC = false;
     new INQCharacter(character, graphic, function(inqcharacter){
       var isNPC = inqcharacter.controlledby == '';
-      inqtest.Modifiers = [];
-      inqtest.addModifier(modifiers);
-      inqtest.getStats(inqcharacter);
-      inqtest.getSkillModifier(inqcharacter);
+      const inqtest = new INQTest({
+        skill: skill,
+        characteristic: characteristic,
+        modifier: modifiers,
+        inqcharacter: inqcharacter
+      });
       inqtest.display(msg.playerid, inqcharacter.Name, toGM || isNPC);
     });
   });

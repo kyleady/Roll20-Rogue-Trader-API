@@ -14,14 +14,16 @@ INQCharacter.prototype.has = function(ability, list){
           _.each(subgroups.split(/\s*,\s*/), function(subgroup){
             newRules.push({
               Name:  subgroup,
-              Bonus: rule.Bonus
+              Bonus: rule.Bonus,
+              Characteristic: rule.Characteristic
             });
           });
         });
       } else {
         newRules.push({
           Name: 'all',
-          Bonus: rule.Bonus
+          Bonus: rule.Bonus,
+          Characteristic: rule.Characteristic
         });
       }
       _.each(newRules, function(newRule){
@@ -48,6 +50,6 @@ INQCharacter.prototype.has = function(ability, list){
   if(info.length == 0) return undefined;
   log(`Has ${ability} in ${list}`);
   log(info);
-  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus};
+  if(info.length == 1 && info[0].Name == 'all') return {Bonus: info[0].Bonus, Characteristic: info[0].Characteristic};
   return info;
 }

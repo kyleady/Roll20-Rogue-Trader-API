@@ -16,8 +16,8 @@ function INQTest(options){
 
   this.setSubgroup(options.skill);
   this.setSkill(options.skill);
+  this.getSkillModifier(options.inqcharacter);
   this.setCharacteristic(options.characteristic);
   this.addModifier(options.modifier);
   this.getStats(options.inqcharacter);
-  this.getSkillModifier(options.inqcharacter);
 }
