@@ -26,6 +26,15 @@ INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
     });
   }
 
+  const wounds_bonus = Math.floor(this.Attributes.Wounds / 10);
+  const critical = wounds_bonus > 0 ? wounds_bonus * 9 : 9;
+  createObj('attribute', {
+    name: 'Critical',
+    _characterid: this.ObjID,
+    current: critical,
+    max: critical
+  });
+
   var customWeapon = {custom: true};
   for(var list in this.List){
     for(var item of this.List[list]){

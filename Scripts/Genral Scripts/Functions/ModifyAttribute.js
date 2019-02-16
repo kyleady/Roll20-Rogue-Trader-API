@@ -42,11 +42,13 @@ function modifyAttribute(attribute, options) {
     max: attribute.max
   };
 
-  modifiedAttribute[options.workingWith] = numModifier.calc(
+  modifiedAttribute['current'] = numModifier.calc(
     attribute[options.workingWith],
     options.operator,
     options.sign + options.modifier
   );
+
+  if(options.workingWith =='max') modifiedAttribute['max'] = modifiedAttribute['current'];
 
   return modifiedAttribute;
 }

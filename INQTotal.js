@@ -4054,6 +4054,15 @@ INQCharacter.prototype.toCharacterObj = function(isPlayer, characterid){
     });
   }
 
+  const wounds_bonus = Math.floor(this.Attributes.Wounds / 10);
+  const critical = wounds_bonus > 0 ? wounds_bonus * 9 : 9;
+  createObj('attribute', {
+    name: 'Critical',
+    _characterid: this.ObjID,
+    current: critical,
+    max: critical
+  });
+
   var customWeapon = {custom: true};
   for(var list in this.List){
     for(var item of this.List[list]){
@@ -4343,6 +4352,15 @@ INQCharacterSheet.prototype.createAttributes = function() {
       CHARACTER_SHEET: this.options.CHARACTER_SHEET
     });
   }
+
+  const wounds_bonus = Math.floor(this.Attributes.Wounds / 10);
+  const critical = wounds_bonus > 0 ? wounds_bonus * 9 : 9;
+  attributeValue('Critical', {
+    setTo: critical,
+    characterid: this.characterid,
+    alert: false,
+    CHARACTER_SHEET: this.options.CHARACTER_SHEET
+  });
 }
 INQCharacterSheet.prototype.createList = function(items, map_to_attrs) {
   for(let item of items) {
@@ -8684,13 +8702,15 @@ function attributeValue(name, options){
 
     if(options['bar']){
       if(workingWith == 'current') workingWith = 'value';
-      if(options['setTo']) graphic.set(options['bar'] + '_' + workingWith, options['setTo']);
+      if(options['setTo'] != undefined) {
+        graphic.set(`${options['bar']}_value`, options['setTo']);
+        if(workingWith == 'max') graphic.set(`${options['bar']}_max`, options['setTo']);
+      }
       var barValue = graphic.get(options['bar'] + '_' + workingWith) || 0;
       return barValue;
     }
 
-    if(workingWith == 'current'
-    && graphic.get('bar1_link') == ''
+    if(graphic.get('bar1_link') == ''
     && graphic.get('bar2_link') == ''
     && graphic.get('bar3_link') == ''){
       var localAttributes = new LocalAttributes(graphic);
@@ -8704,7 +8724,7 @@ function attributeValue(name, options){
         return true;
       }
 
-      if(localAttributes.get(name) != undefined){
+      if(localAttributes.get(name) != undefined && workingWith == 'current'){
         return localAttributes.get(name);
       }
     }
@@ -8733,7 +8753,11 @@ function attributeValue(name, options){
 
     return;
   }
-  if(options['setTo'] != undefined) attribute.set(workingWith, options['setTo']);
+
+  if(options['setTo'] != undefined) {
+    attribute.set('current', options['setTo']);
+    if(workingWith == 'max') attribute.set('max', options['setTo']);
+  }
   return attribute.get(workingWith);
 }
 function carefulParse(str) {
@@ -9158,11 +9182,13 @@ function modifyAttribute(attribute, options) {
     max: attribute.max
   };
 
-  modifiedAttribute[options.workingWith] = numModifier.calc(
+  modifiedAttribute['current'] = numModifier.calc(
     attribute[options.workingWith],
     options.operator,
     options.sign + options.modifier
   );
+
+  if(workingWith =='max') modifiedAttribute['max'] = modifiedAttribute['current'];
 
   return modifiedAttribute;
 }
