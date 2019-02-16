@@ -6,7 +6,8 @@ INQCharacterParser.prototype.parseAttributes = function(graphic){
     _characterid: this.ObjID
   });
   for(var attr of attributes){
-    var value = attr.get('name') == 'Wounds' ? 'max' : 'current';
+    let useMax = attr.get('name') == 'Wounds' || this.options['useMax'];
+    var value =  useMax ? 'max' : 'current';
     this.Attributes[attr.get('name')] = Number(attr.get(value));
   }
 
