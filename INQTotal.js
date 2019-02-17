@@ -4401,6 +4401,7 @@ INQCharacterSheet.prototype.createList = function(items, map_to_attrs) {
     let attrs = map_to_attrs(item);
     for(let attr_name in attrs) {
       let attr_value = attrs[attr_name];
+      if(attr_value.replace) attr_value = attr_value.replace(/<[^>]*>/g, '');
       let attr_with_id = attr_name.replace('$$', row_id);
       createObj('attribute', {
         name: attr_with_id,
