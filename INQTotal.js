@@ -4848,6 +4848,15 @@ INQDamage.prototype.applyToughness = function() {
 INQDamage.prototype.calcCrit = function(remainingWounds) {
   const critical = Number(this.graphic.get('bar3_value'));
   const critical_max = Number(this.graphic.get('bar3_max'));
+  if(remainingWounds < 0 && (this.inqcharacter.has('True Grit', 'Talents')
+  || this.inqcharacter.has('True Grit', 'Traits'))) {
+    remainingWounds += this.inqcharacter.bonus('T');
+    if(remainingWounds >= 0) {
+      this.damage = 1;
+      remainingWounds = -1
+    };
+  }
+
   const critDamage = - remainingWounds - critical + critical_max;
   if(critDamage <= 0) return remainingWounds;
   var critLocation = '';
