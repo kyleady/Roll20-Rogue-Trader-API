@@ -14,6 +14,7 @@ function applyDamage (matches,msg){
       whisper(graphic.get('name') + ' took ' + inqdamage.damage + ' damage.');
       announce(Math.round(inqdamage.damage * 100 / graphic.get('bar1_max')) + '% taken.');
       if(/S/i.test(inqdamage.DamType.get('current'))) inqdamage.Dam.set('current', 0);
+      INQMoveCriticalDamage(graphic);
     });
   });
 }

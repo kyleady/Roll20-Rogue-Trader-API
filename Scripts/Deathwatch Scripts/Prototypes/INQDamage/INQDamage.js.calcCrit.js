@@ -1,17 +1,19 @@
 INQDamage.prototype.calcCrit = function(remainingWounds) {
-  if(remainingWounds >= 0) return remainingWounds;
+  const critical = Number(this.graphic.get('bar3_value'));
+  const critical_max = Number(this.graphic.get('bar3_max'));
+  const critDamage = - remainingWounds - critical + critical_max;
+  if(critDamage <= 0) return remainingWounds;
   var critLocation = '';
   var critType = '';
-  var critEffect =  (-1) * remainingWounds;
   var WBonus = 1;
   switch(this.targetType){
     case 'character':
-      WBonus = this.inqcharacter.bonus('Wounds');
+      WBonus = Math.floor(this.inqcharacter.Attributes.Wounds / 10);
       critType = this.DamType.get('current');
       critLocation = getHitLocation(this.TensLoc.get('current'), this.OnesLoc.get('current'));
     break;
     case 'vehicle':
-      WBonus = this.inqcharacter.bonus('Structural Integrity');
+      WBonus = Math.floor(this.inqcharacter.Attributes['Structural Integrity'] / 10);
       critType = 'v';
     break;
     case 'starship':
@@ -21,7 +23,7 @@ INQDamage.prototype.calcCrit = function(remainingWounds) {
   }
 
   WBonus = Math.max(WBonus, 1);
-  critEffect = Math.ceil(critEffect / WBonus);
+  const critEffect = Math.ceil(critDamage / WBonus);
   whisper('**' + this.inqcharacter.toLink() + '**: ' + getCritLink(['', critType, critLocation], {playerid: this.playerid}, {show: false}) + '(' + critEffect + ')');
   return remainingWounds;
 }

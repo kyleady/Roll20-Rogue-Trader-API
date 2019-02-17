@@ -1,4 +1,5 @@
 function INQDamage(character, graphic, callback) {
+  this.graphic = graphic;
   this.getDamDetails();
   if(this.Dam == undefined) {
     if(typeof callback == 'function') return callback(false);
