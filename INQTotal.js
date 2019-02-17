@@ -289,6 +289,9 @@ function getProperStatName(statName){
   var isUnnatural = /^unnatural\s*/i.test(statName);
   if(isUnnatural) statName = statName.replace(/^unnatural\s*/i,'');
   switch(statName.replace(/ /g, '').toLowerCase()){
+    case 'criticalwounds': case 'cwounds':
+      statName = 'critical';
+      break;
     case 'pr': case 'pe':
       statName = 'Per';
       break;
@@ -349,17 +352,17 @@ function getProperStatName(statName){
 
 function defaultToTokenBars(name){
   switch(name.toLowerCase().replace(/\s/g, '')){
-    case 'fatigue': case 'population': case 'tacticalspeed':
-      return 'bar1';
-    case 'fate': case 'morale': case 'aerialspeed':
+    case 'critical': case 'population':
+      return 'bar3';
+    case 'fate': case 'morale': case 'tacticalspeed':
       return 'bar2';
     case 'wounds': case 'structuralintegrity': case 'si': case 'hull':
-      return 'bar3';
+      return 'bar1';
   }
 }
 
 on('ready', function() {
-  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Structural\\s*Integrity', 'S\\s*I'];
+  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Critical\\s*Wounds', 'C\\s*Wounds', 'Structural\\s*Integrity', 'S\\s*I'];
   var inqLocations = ['H', 'RA', 'LA', 'B', 'RL', 'LL', 'F', 'S', 'R', 'P', 'A'];
   var inqAttributes = ['Psy\\s*Rating', 'Fate', 'Insanity', 'Renown', 'Crew', 'Fatigue', 'Population', 'Morale', 'Hull', 'Void\\s*Shields', 'Turret', 'Manoeuvrability', 'Detection', 'Tactical\\s*Speed', 'Aerial\\s*Speed'];
   var inqUnnatural = 'Unnatural\\s*(?:';
@@ -584,7 +587,7 @@ function applyDamage (matches,msg){
       inqdamage.recordWounds(graphic);
       saveHitLocation(randomInteger(100));
       whisper(graphic.get('name') + ' took ' + inqdamage.damage + ' damage.');
-      announce(Math.round(inqdamage.damage * 100 / graphic.get('bar3_max')) + '% taken.');
+      announce(Math.round(inqdamage.damage * 100 / graphic.get('bar1_max')) + '% taken.');
       if(/S/i.test(inqdamage.DamType.get('current'))) inqdamage.Dam.set('current', 0);
     });
   });
@@ -1785,10 +1788,10 @@ function setDefaultToken(matches, msg){
   var bars = ['bar1', 'bar2', 'bar3'];
   switch(characterType(character.id)){
     case 'character':
-      var names = {bar1: 'Fatigue', bar2: 'Fate', bar3: 'Wounds'};
+      var names = {bar1: 'Wounds', bar2: 'Fate', bar3: 'Critical'};
     break;
     case 'vehicle':
-      var names = {bar1: 'Tactical Speed', bar2: 'Aerial Speed', bar3: 'Structural Integrity'};
+      var names = {bar1: 'Structural Integrity', bar2: 'Tactical Speed', bar3: 'Critical'};
     break;
     case 'starship':
       var names = {bar1: 'Population', bar2: 'Morale', bar3: 'Hull'};
@@ -4904,22 +4907,32 @@ INQDamage.prototype.ignoreNaturalArmour = function(armour) {
 INQDamage.prototype.loadCharacter = function(character, graphic, character_callback) {
   if(!character) return character_callback();
   this.targetType = characterType(character.id);
+  const inqdamage = this;
   switch(this.targetType) {
     case 'character':
-      this.inqcharacter = new INQCharacter(character, graphic, character_callback);
+      new INQCharacter(character, graphic, (inqcharacter) => {
+        inqdamage.inqcharacter = inqcharacter;
+        character_callback(inqcharacter);
+      });
     break;
     case 'vehicle':
-      this.inqcharacter = new INQVehicle(character, graphic, character_callback);
+      new INQVehicle(character, graphic, (inqcharacter) => {
+        inqdamage.inqcharacter = inqcharacter;
+        character_callback(inqcharacter);
+      });
     break;
     case 'starship':
-      this.inqcharacter = new INQStarship(character, graphic, character_callback);
+      new INQStarship(character, graphic, (inqcharacter) => {
+        inqdamage.inqcharacter = inqcharacter;
+        character_callback(inqcharacter);
+      });
     break;
   }
 }
 INQDamage.prototype.recordWounds = function(graphic) {
-  remainingWounds = Number(graphic.get('bar3_value')) - this.damage;
+  remainingWounds = Number(graphic.get('bar1_value')) - this.damage;
   remainingWounds = this.calcCrit(remainingWounds);
-  graphic.set('bar3_value', remainingWounds);
+  graphic.set('bar1_value', remainingWounds);
   if(this.damage > 0) damageFx(graphic, attributeValue('DamageType'));
 }
 INQDamage.prototype.starshipDamage = function(graphic) {
@@ -9188,7 +9201,7 @@ function modifyAttribute(attribute, options) {
     options.sign + options.modifier
   );
 
-  if(workingWith =='max') modifiedAttribute['max'] = modifiedAttribute['current'];
+  if(options.workingWith =='max') modifiedAttribute['max'] = modifiedAttribute['current'];
 
   return modifiedAttribute;
 }

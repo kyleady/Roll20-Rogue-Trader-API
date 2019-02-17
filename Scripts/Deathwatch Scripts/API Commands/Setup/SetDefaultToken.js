@@ -18,10 +18,10 @@ function setDefaultToken(matches, msg){
   var bars = ['bar1', 'bar2', 'bar3'];
   switch(characterType(character.id)){
     case 'character':
-      var names = {bar1: 'Fatigue', bar2: 'Fate', bar3: 'Wounds'};
+      var names = {bar1: 'Wounds', bar2: 'Fate', bar3: 'Critical'};
     break;
     case 'vehicle':
-      var names = {bar1: 'Tactical Speed', bar2: 'Aerial Speed', bar3: 'Structural Integrity'};
+      var names = {bar1: 'Structural Integrity', bar2: 'Tactical Speed', bar3: 'Critical'};
     break;
     case 'starship':
       var names = {bar1: 'Population', bar2: 'Morale', bar3: 'Hull'};

@@ -2,6 +2,9 @@ function getProperStatName(statName){
   var isUnnatural = /^unnatural\s*/i.test(statName);
   if(isUnnatural) statName = statName.replace(/^unnatural\s*/i,'');
   switch(statName.replace(/ /g, '').toLowerCase()){
+    case 'criticalwounds': case 'cwounds':
+      statName = 'critical';
+      break;
     case 'pr': case 'pe':
       statName = 'Per';
       break;
@@ -62,17 +65,17 @@ function getProperStatName(statName){
 
 function defaultToTokenBars(name){
   switch(name.toLowerCase().replace(/\s/g, '')){
-    case 'fatigue': case 'population': case 'tacticalspeed':
-      return 'bar1';
-    case 'fate': case 'morale': case 'aerialspeed':
+    case 'critical': case 'population':
+      return 'bar3';
+    case 'fate': case 'morale': case 'tacticalspeed':
       return 'bar2';
     case 'wounds': case 'structuralintegrity': case 'si': case 'hull':
-      return 'bar3';
+      return 'bar1';
   }
 }
 
 on('ready', function() {
-  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Structural\\s*Integrity', 'S\\s*I'];
+  var inqStats = ['WS', 'BS', 'S', 'T', 'Ag', 'I(?:n|t|nt)', 'Wp', 'P(?:r|e|er)', 'Fel?', 'Cor', 'Corruption', 'Wounds', 'Critical\\s*Wounds', 'C\\s*Wounds', 'Structural\\s*Integrity', 'S\\s*I'];
   var inqLocations = ['H', 'RA', 'LA', 'B', 'RL', 'LL', 'F', 'S', 'R', 'P', 'A'];
   var inqAttributes = ['Psy\\s*Rating', 'Fate', 'Insanity', 'Renown', 'Crew', 'Fatigue', 'Population', 'Morale', 'Hull', 'Void\\s*Shields', 'Turret', 'Manoeuvrability', 'Detection', 'Tactical\\s*Speed', 'Aerial\\s*Speed'];
   var inqUnnatural = 'Unnatural\\s*(?:';

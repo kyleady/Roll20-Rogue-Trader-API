@@ -12,7 +12,7 @@ function applyDamage (matches,msg){
       inqdamage.recordWounds(graphic);
       saveHitLocation(randomInteger(100));
       whisper(graphic.get('name') + ' took ' + inqdamage.damage + ' damage.');
-      announce(Math.round(inqdamage.damage * 100 / graphic.get('bar3_max')) + '% taken.');
+      announce(Math.round(inqdamage.damage * 100 / graphic.get('bar1_max')) + '% taken.');
       if(/S/i.test(inqdamage.DamType.get('current'))) inqdamage.Dam.set('current', 0);
     });
   });
