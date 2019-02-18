@@ -6,11 +6,13 @@ INQTest.prototype.roll = function(){
   }
   var test = this.Stat + total - this.Die;
   this.Successes = Math.floor(Math.abs(test)/10);
-  this.Successes += Math.ceil(this.Unnatural/2);
   if(test < 0) {
     this.Failures = this.Successes;
+    this.Failures += 1;
     this.Successes = -1;
   } else {
+    this.Successes += Math.ceil(this.Unnatural/2);
+    this.Successes += 1;
     this.Failures = -1;
   }
 

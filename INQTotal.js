@@ -138,27 +138,23 @@ on('ready',function(){
   CentralInput.addCMD(/^!\s*fate\s*$/i, fateHandler, true);
 });
  function medic(matches, msg){
-  var Healing = Number(matches[1]);
-  if(!Healing) return whisper('Invalid amount to be healed.');
+  const healing = Number(matches[1]);
   eachCharacter(msg, function(character, graphic){
-    var Wounds = {
+    const critical = {
       current: Number(graphic.get('bar3_value')),
       max: Number(graphic.get('bar3_max'))
     }
 
-    if(Wounds.current == NaN || Wounds.max == NaN) return whisper(character.get('name') + ' has no wounds.');
-    var NewWounds = Wounds.current + Healing;
-
-    var MaxHealing = attributeValue('Max Healing', {graphicid: graphic.id, characterid: character.id, alert: false});
-    MaxHealing = Number(MaxHealing);
-
-    if(MaxHealing != NaN && NewWounds > MaxHealing) NewWounds = MaxHealing;
-    if(NewWounds > Wounds.max) NewWounds = Wounds.max;
-
-    attributeValue('Max Healing', {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
-    attributeValue('Max Healing', {max: true, setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
-    graphic.set('bar3_value', NewWounds);
-    announce(character.get('name') + ' has been healed to [[' + NewWounds.toString() + ']]/' + Wounds.max.toString() + ' Wounds.');
+    if(critical.current == NaN || critical.max == NaN) return whisper(character.get('name') + ': bar3 is not valid.');
+    new INQCharacter(character, graphic, (inqcharacter) => {
+      const wounds_bonus = inqcharacter.bonus('Wounds');
+      const enhancement = wounds_bonus > 0 ? Math.ceil(wounds_bonus / 2) : 1;
+      const enhanced_healing = healing * enhancement;
+      critical.healed = critical.current + enhanced_healing;
+      graphic.set('bar3_value', critical.healed);
+      INQMoveCriticalDamage(graphic);
+      announce(`${character.get('name')} has healed [[${healing}*ceil(${wounds_bonus}/2)]] Wounds.`);
+    });
   });
 }
 
@@ -2078,21 +2074,27 @@ const INQMoveCriticalDamage = function(graphic) {
   })[0];
 
   if(!critical_obj) return;
-  let wounds = Number(graphic.get('bar1_value'));
-  let critical = Number(graphic.get('bar3_value'));
-  const critical_max = Number(graphic.get('bar3_max'));
-  if(wounds < 0) {
-    critical += wounds;
-    wounds = 0;
-  } else if(critical > critical_max) {
-    wounds += critical - critical_max;
-    critical = critical_max;
+  const wounds = {
+    current: Number(graphic.get('bar1_value')),
+    max: Number(graphic.get('bar1_max'))
+  };
+  const critical = {
+    current: Number(graphic.get('bar3_value')),
+    max: Number(graphic.get('bar3_max'))
+  };
+  if(wounds.current < 0) {
+    critical.current += wounds.current;
+    wounds.current = 0;
+  } else if(critical.current > critical.max) {
+    wounds.current += critical.current - critical.max;
+    critical.current = critical.max;
+    if(wounds.current > wounds.max) wounds.current = wounds.max;
   } else {
     return;
   }
 
-  graphic.set('bar1_value', wounds);
-  graphic.set('bar3_value', critical);
+  graphic.set('bar1_value', wounds.current);
+  graphic.set('bar3_value', critical.current);
 }
 
 on('change:graphic:bar3_value', INQMoveCriticalDamage);
@@ -6724,11 +6726,13 @@ INQTest.prototype.roll = function(){
   }
   var test = this.Stat + total - this.Die;
   this.Successes = Math.floor(Math.abs(test)/10);
-  this.Successes += Math.ceil(this.Unnatural/2);
   if(test < 0) {
     this.Failures = this.Successes;
+    this.Failures += 1;
     this.Successes = -1;
   } else {
+    this.Successes += Math.ceil(this.Unnatural/2);
+    this.Successes += 1;
     this.Failures = -1;
   }
 

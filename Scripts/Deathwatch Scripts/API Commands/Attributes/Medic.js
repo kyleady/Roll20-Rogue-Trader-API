@@ -1,25 +1,21 @@
  function medic(matches, msg){
-  var Healing = Number(matches[1]);
-  if(!Healing) return whisper('Invalid amount to be healed.');
+  const healing = Number(matches[1]);
   eachCharacter(msg, function(character, graphic){
-    var Wounds = {
+    const critical = {
       current: Number(graphic.get('bar3_value')),
       max: Number(graphic.get('bar3_max'))
     }
 
-    if(Wounds.current == NaN || Wounds.max == NaN) return whisper(character.get('name') + ' has no wounds.');
-    var NewWounds = Wounds.current + Healing;
-
-    var MaxHealing = attributeValue('Max Healing', {graphicid: graphic.id, characterid: character.id, alert: false});
-    MaxHealing = Number(MaxHealing);
-
-    if(MaxHealing != NaN && NewWounds > MaxHealing) NewWounds = MaxHealing;
-    if(NewWounds > Wounds.max) NewWounds = Wounds.max;
-
-    attributeValue('Max Healing', {setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
-    attributeValue('Max Healing', {max: true, setTo: NewWounds, graphicid: graphic.id, characterid: character.id, alert: false});
-    graphic.set('bar3_value', NewWounds);
-    announce(character.get('name') + ' has been healed to [[' + NewWounds.toString() + ']]/' + Wounds.max.toString() + ' Wounds.');
+    if(critical.current == NaN || critical.max == NaN) return whisper(character.get('name') + ': bar3 is not valid.');
+    new INQCharacter(character, graphic, (inqcharacter) => {
+      const wounds_bonus = inqcharacter.bonus('Wounds');
+      const enhancement = wounds_bonus > 0 ? Math.ceil(wounds_bonus / 2) : 1;
+      const enhanced_healing = healing * enhancement;
+      critical.healed = critical.current + enhanced_healing;
+      graphic.set('bar3_value', critical.healed);
+      INQMoveCriticalDamage(graphic);
+      announce(`${character.get('name')} has healed [[${healing}*ceil(${wounds_bonus}/2)]] Wounds.`);
+    });
   });
 }
 
