@@ -3862,6 +3862,13 @@ function INQCharacter(character, graphic, callback, options){
   this.Attributes.Armour_RL = 0;
   this.Attributes.Armour_LL = 0;
 
+  this.Attributes.HTotal  = 0;
+  this.Attributes.ArTotal = 0;
+  this.Attributes.AlTotal = 0;
+  this.Attributes.BTotal  = 0;
+  this.Attributes.LrTotal = 0;
+  this.Attributes.LlTotal = 0;
+
   this.Attributes.PR = 0;
 
   this.Attributes.Fate = 0;
@@ -4846,6 +4853,12 @@ INQDamage.prototype.applyToughness = function() {
   if(this.targetType != 'character') return;
   this.damage += Math.min(this.Fell.get('current'), this.inqcharacter.Attributes['Unnatural T']);
   this.damage -= this.inqcharacter.bonus('T');
+  let hitLocation = getHitLocation(this.TensLoc, this.OnesLoc, this.targetType);
+  if(hitLocation.length >= 2) {
+    hitLocation = `${hitLocation[1]}${hitLocation[0].toLowerCase()}`;
+  }
+  
+  this.damage -= this.inqcharacter.Attributes[`${hitLocation}Total`];
   if(this.damage < 0) this.damage = 0;
 }
 INQDamage.prototype.calcCrit = function(remainingWounds) {

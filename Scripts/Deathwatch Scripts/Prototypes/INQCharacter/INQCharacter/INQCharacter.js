@@ -59,6 +59,13 @@ function INQCharacter(character, graphic, callback, options){
   this.Attributes.Armour_RL = 0;
   this.Attributes.Armour_LL = 0;
 
+  this.Attributes.HTotal  = 0;
+  this.Attributes.ArTotal = 0;
+  this.Attributes.AlTotal = 0;
+  this.Attributes.BTotal  = 0;
+  this.Attributes.LrTotal = 0;
+  this.Attributes.LlTotal = 0;
+
   this.Attributes.PR = 0;
 
   this.Attributes.Fate = 0;
