@@ -6,8 +6,10 @@ INQParser.prototype.parse = function(){
   this.Misc   = [];
 
   //break the text up by lines
-  this.Text = this.Text.replace(/\s*style\s*=\s*"background-color:\s*rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)\s*"/g, '');
-  var Lines = this.Text.split(/(?:<br>|\n|<\/?p>|<\/?ul>|<\/?div>|<\/?li>)/);
+  this.Text = this.Text.replace(/(<[^>]+)\s+style[^>]+(?=\s*>)/g, (match, p1) => p1);
+  this.Text = this.Text.replace(/&{1}nbsp;/g, ' ');
+  this.Text = this.Text.replace(/<\/?\s*span[^>]*>/g, '');
+  let Lines = this.Text.split(/(?:\n|<\/?(?:br|p|ul|div|li)(?:| [^>]+)>)/);
   Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++) {
     if(/<hr>/.test(Lines[i])) break;
