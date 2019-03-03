@@ -3006,7 +3006,9 @@ function damDetails() {
     Hits: 'Hits',
     OnesLoc: 'OnesLocation',
     TensLoc: 'TensLocation',
-    Ina: 'Ignores Natural Armour'
+    Ina: 'Ignores Natural Armour',
+    AttackerID: 'AttackerID',
+    DefenderID: 'DefenderID'
   }
 
   for(var prop in detailNames) {
@@ -3024,7 +3026,9 @@ function damDetails() {
   }
 
   for(var prop in details) {
-    var value = prop == 'DamType' ? 'I' : 0;
+    var value = 0;
+    if(prop == 'DamType') value = 'I';
+    if(prop.endsWith('ID')) value = '';
     if(!details[prop]) details[prop] = createObj('attribute', {
       name: detailNames[prop],
       current: value,
@@ -3797,9 +3801,10 @@ INQAttack.prototype.prepareAttack = function(){
       this.hordeDamage += this.inquse.hordeDamage;
     }
 
-    attributeValue('Hits', {setTo: this.hordeDamage});
     attributeValue('Hits', {setTo: this.hordeDamage, max: true});
   }
+
+  attributeValue('AttackerID', { setTo: this.inquse.inqcharacter.GraphicID, max: true });
 }
 //the prototype for characters
 function INQCharacter(character, graphic, callback, options){
@@ -5691,8 +5696,10 @@ INQParser.prototype.parse = function(){
   this.Misc   = [];
 
   //break the text up by lines
-  this.Text = this.Text.replace(/\s*style\s*=\s*"background-color:\s*rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)\s*"/g, '');
-  var Lines = this.Text.split(/(?:<br>|\n|<\/?p>|<\/?ul>|<\/?div>|<\/?li>)/);
+  this.Text = this.Text.replace(/(<[^>]+)\s+style[^>]+(?=\s*>)/g, (match, p1) => p1);
+  this.Text = this.Text.replace(/&{1}nbsp;/g, ' ');
+  this.Text = this.Text.replace(/<\/?\s*span[^>]*>/g, '');
+  let Lines = this.Text.split(/(?:\n|<\/?(?:br|p|ul|div|li)(?:| [^>]+)>)/);
   Lines = this.balanceTags(Lines);
   for(var i = 0; i < Lines.length; i++) {
     if(/<hr>/.test(Lines[i])) break;
@@ -6285,7 +6292,7 @@ INQQtt.prototype.razorSharp = function(){
   var inqweapon = this.inquse.inqweapon;
   var successes = this.inquse.inqtest.Successes;
   if(!inqweapon.has('Razor Sharp')) return;
-  if(successes >= 2) return;
+  if(successes <= 2) return;
   log('Razor Sharp');
   inqweapon.Penetration.Multiplier *= 2;
 }
@@ -8744,7 +8751,11 @@ function announce(content, options){
   var callback = options.callback || null;
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('announce() attempted to send an empty message.');
-  setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
+  try {
+    setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
+  } catch(e) {
+    log(printStackTrace(e));
+  }
 }
 function attributeTable(name, attribute, options){
   if(typeof options != 'object') options = {};
@@ -9390,13 +9401,21 @@ function whisper(content, options){
       setTimeout(function(){
         var player = getObj('player', options.speakingTo);
         if(!player) return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized, AFTER THE DELAY, and the following msg failed to be delivered: ' + content);
-        sendChat(speakingAs, '/w \"' + player.get('_displayname') + '\" ' + content, options.callback, options);
+        try {
+          sendChat(speakingAs, '/w \"' + player.get('_displayname') + '\" ' + content, options.callback, options);
+        } catch(e) {
+          log(printStackTrace(e));
+        }
       }, options.delay);
     } else {
       return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
   } else {
-    setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
+    try {
+      setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
+    } catch(e) {
+      log(printStackTrace(e));
+    }
   }
 }
 function canViewAttribute(name, options){

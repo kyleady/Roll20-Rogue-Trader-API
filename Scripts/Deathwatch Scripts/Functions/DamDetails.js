@@ -10,7 +10,9 @@ function damDetails() {
     Hits: 'Hits',
     OnesLoc: 'OnesLocation',
     TensLoc: 'TensLocation',
-    Ina: 'Ignores Natural Armour'
+    Ina: 'Ignores Natural Armour',
+    AttackerID: 'AttackerID',
+    DefenderID: 'DefenderID'
   }
 
   for(var prop in detailNames) {
@@ -28,7 +30,9 @@ function damDetails() {
   }
 
   for(var prop in details) {
-    var value = prop == 'DamType' ? 'I' : 0;
+    var value = 0;
+    if(prop == 'DamType') value = 'I';
+    if(prop.endsWith('ID')) value = '';
     if(!details[prop]) details[prop] = createObj('attribute', {
       name: detailNames[prop],
       current: value,

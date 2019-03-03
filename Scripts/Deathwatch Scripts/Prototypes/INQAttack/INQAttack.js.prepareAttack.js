@@ -12,7 +12,8 @@ INQAttack.prototype.prepareAttack = function(){
       this.hordeDamage += this.inquse.hordeDamage;
     }
 
-    attributeValue('Hits', {setTo: this.hordeDamage});
     attributeValue('Hits', {setTo: this.hordeDamage, max: true});
   }
+
+  attributeValue('AttackerID', { setTo: this.inquse.inqcharacter.GraphicID, max: true });
 }
