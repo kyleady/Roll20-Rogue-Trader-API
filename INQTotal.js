@@ -5951,7 +5951,7 @@ INQQtt.prototype.crushingBlow = function(){
   if(!inqcharacter.has('Crushing Blow', 'Talents')) return;
   if(!inqweapon.Class == 'Melee') return;
   log('Crushing Blow');
-  inqweapon.Damage.Modifier += 2;
+  inqweapon.Damage.Modifier += Math.ceil(this.inquse.inqcharacter.bonus('WS') / 2);
 }
 INQQtt.prototype.damage = function(){
   var inqweapon = this.inquse.inqweapon;
@@ -6196,7 +6196,7 @@ INQQtt.prototype.mightyShot = function(){
   if(!inqcharacter.has('Mighty Shot', 'Talents')) return;
   if(!inqweapon.isRanged()) return;
   log('Mighty Shot');
-  inqweapon.Damage.Modifier += 2;
+  inqweapon.Damage.Modifier += Math.ceil(this.inquse.inqcharacter.bonus('BS') / 2);
 }
 INQQtt.prototype.overcharge = function(){
   var inqweapon = this.inquse.inqweapon;
@@ -8751,11 +8751,7 @@ function announce(content, options){
   var callback = options.callback || null;
   if(options.noarchive == undefined) options.noarchive = true;
   if(!content) return whisper('announce() attempted to send an empty message.');
-  try {
-    setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
-  } catch(e) {
-    log(printStackTrace(e));
-  }
+  setTimeout(function(){sendChat(speakingAs, content, callback, options)}, options.delay);
 }
 function attributeTable(name, attribute, options){
   if(typeof options != 'object') options = {};
@@ -9401,21 +9397,13 @@ function whisper(content, options){
       setTimeout(function(){
         var player = getObj('player', options.speakingTo);
         if(!player) return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized, AFTER THE DELAY, and the following msg failed to be delivered: ' + content);
-        try {
-          sendChat(speakingAs, '/w \"' + player.get('_displayname') + '\" ' + content, options.callback, options);
-        } catch(e) {
-          log(printStackTrace(e));
-        }
+        sendChat(speakingAs, '/w \"' + player.get('_displayname') + '\" ' + content, options.callback, options);
       }, options.delay);
     } else {
       return whisper('The playerid ' + JSON.stringify(options.speakingTo) + ' was not recognized and the following msg failed to be delivered: ' + content);
     }
   } else {
-    try {
-      setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
-    } catch(e) {
-      log(printStackTrace(e));
-    }
+    setTimeout(function(){sendChat(speakingAs, '/w gm ' + content, options.callback, options)}, options.delay);
   }
 }
 function canViewAttribute(name, options){

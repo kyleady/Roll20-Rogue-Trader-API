@@ -4,5 +4,5 @@ INQQtt.prototype.crushingBlow = function(){
   if(!inqcharacter.has('Crushing Blow', 'Talents')) return;
   if(!inqweapon.Class == 'Melee') return;
   log('Crushing Blow');
-  inqweapon.Damage.Modifier += 2;
+  inqweapon.Damage.Modifier += Math.ceil(this.inquse.inqcharacter.bonus('WS') / 2);
 }

@@ -4,5 +4,5 @@ INQQtt.prototype.mightyShot = function(){
   if(!inqcharacter.has('Mighty Shot', 'Talents')) return;
   if(!inqweapon.isRanged()) return;
   log('Mighty Shot');
-  inqweapon.Damage.Modifier += 2;
+  inqweapon.Damage.Modifier += Math.ceil(this.inquse.inqcharacter.bonus('BS') / 2);
 }
