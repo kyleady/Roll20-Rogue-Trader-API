@@ -16,17 +16,38 @@ INQCharacterSheet.prototype.createRepeating = function() {
 
   const melee_weapons = [];
   const ranged_weapons = [];
-  _.each(this.List.Weapons, (inqweapon) => {
+  _.each(this.List.Weapons, (inqweaponlink) => {
+    const weapon_text = inqweaponlink.toNote(true);
+    const inqweapon = new INQWeapon(weapon_text);
     let target_list = inqweapon.Class == 'Melee' ? melee_weapons : ranged_weapons;
     target_list.push(inqweapon);
   });
+
   this.createList(melee_weapons, inqweapon => ({
-    'repeating_meleeweapons_$$_meleeweaponname': inqweapon.Name
-  }));
-  this.createList(ranged_weapons, inqweapon => ({
-    'repeating_rangedweapons_$$_Rangedweaponname': inqweapon.Name
+    'repeating_meleeweapons_$$_meleeweaponname': inqweapon.Name,
+    'repeating_meleeweapons_$$_meleeweaponclass': inqweapon.Class,
+    'repeating_meleeweapons_$$_meleeweapondamage': inqweapon.Damage.toNote(),
+    'repeating_meleeweapons_$$_meleeweapontype': inqweapon.DamageType.toNote(true),
+    'repeating_meleeweapons_$$_meleeweaponpen': inqweapon.Penetration.toNote(),
+    'repeating_meleeweapons_$$_meleeweaponspecial': inqweapon.getSpecial(true)
   }));
 
+  this.createList(ranged_weapons, inqweapon => ({
+    'repeating_rangedweapons_$$_Rangedweaponname': inqweapon.Name,
+    'repeating_rangedweapons_$$_Rangedweaponclass': inqweapon.Class,
+    'repeating_rangedweapons_$$_Rangedweapondamage': inqweapon.Damage.toNote(),
+    'repeating_rangedweapons_$$_Rangedweapontype': inqweapon.DamageType.toNote(true),
+    'repeating_rangedweapons_$$_Rangedweaponpen': inqweapon.Penetration.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponspecial': inqweapon.getSpecial(true),
+
+    'repeating_rangedweapons_$$_Rangedweaponrange': inqweapon.Range.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponsingle': inqweapon.Single ? 'S' : '-',
+    'repeating_rangedweapons_$$_Rangedweaponsemi': inqweapon.Semi.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponfull': inqweapon.Full.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponclip': inqweapon.Clip,
+    'repeating_rangedweapons_$$_Rangedweaponreload': inqweapon.getReload()
+  }));
+  
   this.createList(this.List.Gear,inqlink => ({
     'repeating_gears_$$_Gears': inqlink.toNote(true)
   }));

@@ -4454,17 +4454,39 @@ INQCharacterSheet.prototype.createRepeating = function() {
 
   const melee_weapons = [];
   const ranged_weapons = [];
-  _.each(this.List.Weapons, (inqweapon) => {
+  _.each(this.List.Weapons, (inqweaponlink) => {
+    const weapon_text = inqweaponlink.toNote(true);
+    const inqweapon = new INQWeapon(weapon_text);
     let target_list = inqweapon.Class == 'Melee' ? melee_weapons : ranged_weapons;
+    log(inqweapon)
     target_list.push(inqweapon);
   });
+  /*
   this.createList(melee_weapons, inqweapon => ({
-    'repeating_meleeweapons_$$_meleeweaponname': inqweapon.Name
-  }));
-  this.createList(ranged_weapons, inqweapon => ({
-    'repeating_rangedweapons_$$_Rangedweaponname': inqweapon.Name
+    'repeating_meleeweapons_$$_meleeweaponname': inqweapon.Name,
+    'repeating_meleeweapons_$$_meleeweaponclass': inqweapon.Class,
+    'repeating_meleeweapons_$$_meleeweapondamage': inqweapon.Damage.toNote(),
+    'repeating_meleeweapons_$$_meleeweapontype': inqweapon.DamageType.toNote(true),
+    'repeating_meleeweapons_$$_meleeweaponpen': inqweapon.Penetration.toNote(),
+    'repeating_meleeweapons_$$_meleeweaponspecial': inqweapon.getSpecial(true)
   }));
 
+  this.createList(ranged_weapons, inqweapon => ({
+    'repeating_rangedweapons_$$_Rangedweaponname': inqweapon.Name,
+    'repeating_rangedweapons_$$_Rangedweaponclass': inqweapon.Class,
+    'repeating_rangedweapons_$$_Rangedweapondamage': inqweapon.Damage.toNote(),
+    'repeating_rangedweapons_$$_Rangedweapontype': inqweapon.DamageType.toNote(true),
+    'repeating_rangedweapons_$$_Rangedweaponpen': inqweapon.Penetration.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponspecial': inqweapon.getSpecial(true),
+
+    'repeating_rangedweapons_$$_Rangedweaponrange': inqweapon.Range.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponsingle': inqweapon.Single ? 'S' : '-',
+    'repeating_rangedweapons_$$_Rangedweaponsemi': inqweapon.Semi.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponfull': inqweapon.Full.toNote(),
+    'repeating_rangedweapons_$$_Rangedweaponclip': inqweapon.Clip,
+    'repeating_rangedweapons_$$_Rangedweaponreload': inqweapon.getReload()
+  }));
+*/
   this.createList(this.List.Gear,inqlink => ({
     'repeating_gears_$$_Gears': inqlink.toNote(true)
   }));
@@ -7872,6 +7894,23 @@ function INQWeapon(weapon, callback){
 
 INQWeapon.prototype = new INQObject();
 INQWeapon.prototype.constructor = INQWeapon;
+INQWeapon.prototype.getReload = function() {
+  if(this.Reload == 0){
+    return 'Free';
+  } else if(this.Reload == 0.5){
+    return 'Half';
+  } else if(this.Reload == 1){
+    return 'Full';
+  } else if(this.Reload > 1) {
+    return this.Reload + ' Full';
+  } else {
+    return '';
+  }
+}
+INQWeapon.prototype.getSpecial = function(justText) {
+  const textList = this.Special.map(rule => rule.toNote(justText).replace('(', '[').replace(')', ']'));
+  return textList.join(', ');
+}
 INQWeapon.prototype.has = function(ability){
   var strMatch = typeof ability == 'string';
   var info = [];
@@ -8068,19 +8107,8 @@ INQWeapon.prototype.toNote = function(justText){
   output += this.Damage + ' ' + this.DamageType.toNote(justText) + '; ';
   output += 'Pen ' + this.Penetration + '; ';
   if(this.Clip) output += 'Clip ' + this.Clip + '; ';
-  if(this.Reload == 0){
-    output += 'Reload Free; ';
-  } else if(this.Reload == 0.5){
-    output += 'Reload Half; ';
-  } else if(this.Reload == 1){
-    output += 'Reload Full; ';
-  } else if(this.Reload > 1) {
-    output += 'Reload ' + this.Reload + ' Full; ';
-  }
-
-  _.each(this.Special, function(rule){
-    output += rule.toNote(justText).replace('(', '[').replace(')', ']') + ', ';
-  });
+  if(this.getReload()) output += `Reload ${this.getReload()}; `;
+  output += this.getSpecial(justText);
 
   output = output.replace(/(;|,)\s*$/, '');
   output += ')';

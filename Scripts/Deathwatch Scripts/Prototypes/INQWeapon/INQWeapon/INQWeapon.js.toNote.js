@@ -17,19 +17,8 @@ INQWeapon.prototype.toNote = function(justText){
   output += this.Damage + ' ' + this.DamageType.toNote(justText) + '; ';
   output += 'Pen ' + this.Penetration + '; ';
   if(this.Clip) output += 'Clip ' + this.Clip + '; ';
-  if(this.Reload == 0){
-    output += 'Reload Free; ';
-  } else if(this.Reload == 0.5){
-    output += 'Reload Half; ';
-  } else if(this.Reload == 1){
-    output += 'Reload Full; ';
-  } else if(this.Reload > 1) {
-    output += 'Reload ' + this.Reload + ' Full; ';
-  }
-
-  _.each(this.Special, function(rule){
-    output += rule.toNote(justText).replace('(', '[').replace(')', ']') + ', ';
-  });
+  if(this.getReload()) output += `Reload ${this.getReload()}; `;
+  output += this.getSpecial(justText);
 
   output = output.replace(/(;|,)\s*$/, '');
   output += ')';
