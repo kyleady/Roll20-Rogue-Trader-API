@@ -30,6 +30,9 @@ INQCharacterSheet.prototype.createRepeating = function() {
     'repeating_meleeweapons_$$_meleeweapontype': inqweapon.DamageType.toNote(true),
     'repeating_meleeweapons_$$_meleeweaponpen': inqweapon.Penetration.toNote(),
     'repeating_meleeweapons_$$_meleeweaponspecial': inqweapon.getSpecial(true)
+  }),
+  inqweapon => ({
+    'repeating_meleeweapons_$$_meleehit': inqweapon.Name
   }));
 
   this.createList(ranged_weapons, inqweapon => ({
@@ -46,8 +49,11 @@ INQCharacterSheet.prototype.createRepeating = function() {
     'repeating_rangedweapons_$$_Rangedweaponfull': inqweapon.Full.toNote(),
     'repeating_rangedweapons_$$_Rangedweaponclip': inqweapon.Clip,
     'repeating_rangedweapons_$$_Rangedweaponreload': inqweapon.getReload()
+  }),
+  inqweapon => ({
+    'repeating_rangedweapons_$$_Rangedhit': inqweapon.Name
   }));
-  
+
   this.createList(this.List.Gear,inqlink => ({
     'repeating_gears_$$_Gears': inqlink.toNote(true)
   }));

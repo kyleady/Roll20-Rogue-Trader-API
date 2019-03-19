@@ -1,5 +1,12 @@
 INQCharacterSheet.prototype.removeChildren = function() {
   this.deleteLists();
+  const characterSheetAbilities = filterObjs((obj) => {
+    if(obj.get('_type') != 'ability') return false;
+    if(obj.get('_characterid') != this.characterid) return false;
+    if(obj.get('action').startsWith('%')) return true;
+    return false;
+  });
+  characterSheetAbilities.forEach(ability => ability.remove());
   /*
   const oldAttributes = findObjs({
     _characterid: this.characterid,
