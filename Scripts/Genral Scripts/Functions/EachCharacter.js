@@ -1,8 +1,11 @@
-function eachCharacter(msg, givenFunction){
+function eachCharacter(msg, givenFunction, options){
+  options = options || {}
   if(msg.selected == undefined || msg.selected.length <= 0){
     msg.selected = [defaultCharacter(msg.playerid)];
     if(msg.selected[0] == undefined) return;
   }
+
+  if(options.onlyOneCharacter && msg.selected.length != 1) return whisper('Select only one graphic.');
 
   _.each(msg.selected, function(obj){
     if(obj._type == 'graphic'){
